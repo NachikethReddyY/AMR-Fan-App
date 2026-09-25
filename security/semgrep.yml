@@ -1,0 +1,29 @@
+rules:
+  - id: no-dynamic-code
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Treat external text as data; do not evaluate it as executable code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: no-disabled-tls
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Keep TLS certificate verification enabled at provider boundaries.
+    pattern-either:
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+  - id: no-client-provider-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Provider credentials must remain server-side; EXPO_PUBLIC values are bundled.
+    pattern-either:
+      - pattern: process.env.EXPO_PUBLIC_OPENAI_API_KEY
+      - pattern: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY
+      - pattern: process.env.EXPO_PUBLIC_PROVIDER_SECRET
+  - id: no-raw-html
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Render fan and model content as text; explicitly review any required sanitization boundary.
+    pattern: <$TAG ... dangerouslySetInnerHTML={$VALUE} ... />

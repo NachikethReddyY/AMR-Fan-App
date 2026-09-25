@@ -1,4 +1,4 @@
-.agents/
+.agents.local/
 skills-lock.json
 
 # Dependencies and generated application output
@@ -23,3 +23,10 @@ android/
 *.mobileprovision
 *.jks
 *.keystore
+
+# Local work, reports and agent settings. Existing tracked history is preserved.
+.scratch/
+.evidence/
+.claude/settings.local.json
+.pi/sessions/
+TODO.md

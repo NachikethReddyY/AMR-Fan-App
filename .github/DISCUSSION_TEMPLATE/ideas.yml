@@ -1,0 +1,28 @@
+title: ''
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who needs this, and what are they trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Smallest useful proposal
+      description: Include alternatives, constraints and what is outside scope.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence
+      description: What observation would demonstrate that this helps?
+    validations:
+      required: true
+  - type: textarea
+    id: attribution
+    attributes:
+      label: Agent attribution, if applicable
+      description: Action, exact model ID and harness.

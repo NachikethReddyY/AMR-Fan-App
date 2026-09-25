@@ -11,6 +11,10 @@ module.exports = defineConfig([
       '.scratch/**',
       '.evidence/**',
       'convex/_generated/**',
+      '.agents/**',
+      '.agents.local/**',
+      '.claude/**',
+      'security/fixtures/**',
     ],
   },
 ]);

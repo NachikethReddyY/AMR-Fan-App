@@ -1,5 +1,8 @@
 # AMR Fan App
 
+[Documentation](docs/README.md) · [Roadmap](ROADMAP.md) ·
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Agent instructions](AGENTS.md)
+
 Minimal Expo + React Native TypeScript foundation for iOS and Android. The only
 screen is a neutral development starter. Product features and final visual design
 are not implemented. No backend account, credentials, or environment file is
@@ -47,6 +50,10 @@ pnpm format:check
 pnpm test
 # Run all of the above:
 pnpm check
+# Docker-backed source/security checks and dependency audit:
+pnpm security:check
+# HTTP scanner self-test; the starter itself has no HTTP application target:
+pnpm security:dast:self-test
 # Apply formatting to maintained code/configuration:
 pnpm format
 ```
@@ -56,7 +63,12 @@ Jest uses the `jest-expo` preset and discovers `src/**/*.test.ts` and
 tests.** `pnpm test` deliberately reports no tests and exits successfully using
 `--passWithNoTests`; that is tooling readiness, not product coverage. Add behavior
 tests with future features; `pnpm test:watch` supports interactive development.
-Formatting excludes existing planning documents and evidence to preserve them.
+Tooling tests cover the security runner, not product behavior. Formatting excludes
+existing planning documents, unselected design work and evidence to preserve them.
+Shared instructions, skills and links are checked by `pnpm agents:check`.
+Read the [security testing procedure](docs/operations/security-testing.md) for
+scanner scope, Docker requirements and DAST applicability. Browser, computer-use
+and device verification require explicit user agreement.
 
 Production JavaScript/Hermes bundle check (both platforms):
 

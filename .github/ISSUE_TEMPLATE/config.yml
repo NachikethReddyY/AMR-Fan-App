@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Propose an idea
+    url: https://github.com/NachikethReddyY/AMR-Fan-App/discussions/categories/ideas
+    about: Discuss the user problem before proposing implementation.
+  - name: Security reporting
+    url: https://github.com/NachikethReddyY/AMR-Fan-App/security/policy
+    about: Use the private reporting procedure for sensitive findings.

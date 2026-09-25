@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a reproducible, non-sensitive defect.
+body:
+  - type: markdown
+    attributes:
+      value: 'For sensitive vulnerabilities, follow SECURITY.md instead of filing an issue.'
+  - type: textarea
+    id: problem
+    attributes:
+      label: Expected and observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Smallest reproduction
+      description: Include platform/build and synthetic steps; omit credentials and personal data.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: What would prove this is fixed?
+    validations:
+      required: true
+  - type: textarea
+    id: attribution
+    attributes:
+      label: Agent attribution, if applicable
+      description: Action, exact model ID and harness; ask if identity is unknown.

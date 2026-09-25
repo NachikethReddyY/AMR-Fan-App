@@ -12,3 +12,10 @@ AGENTS.md
 CLAUDE.md
 TODO.md
 convex/_generated/
+# Unselected design work is maintained separately from code formatting.
+DESIGN.md
+prototypes/
+.agents/
+.agents.local/
+.claude/
+security/fixtures/

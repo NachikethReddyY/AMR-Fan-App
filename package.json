@@ -18,7 +18,16 @@
     "format:check": "prettier --check .",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "agents:check": "node scripts/check-agents.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs",
+    "security:secrets": "node scripts/security.mjs secrets",
+    "security:sast": "node scripts/security.mjs sast",
+    "security:audit": "pnpm audit --audit-level high",
+    "security:self-test": "node scripts/security.mjs self-test",
+    "security:check": "pnpm security:secrets && pnpm security:sast && pnpm security:audit && pnpm security:self-test",
+    "security:dast": "node scripts/security.mjs dast",
+    "security:dast:self-test": "node scripts/security.mjs dast-self-test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check"
   },
   "dependencies": {
     "expo": "~57.0.25",
