@@ -1,6 +1,69 @@
-# Sustainable fan travel: working POC plan
+# Sustainable fan travel: prototype plan
 
-Status: consolidated for team discussion. Confirmed rules, proposals, and remaining questions are collected in the [local HTML brief](fan-app-team-brief.html). The interview still has open decisions; local build remains the intended next phase. UI selection is separate and no publication is requested.
+Status: revised after the user's Meeting 3 and clarity-review interview answers. Points/rewards design review is complete; calculation policy and ESG totals remain deferred; app implementation and external actions are not authorized by this task.
+
+## Outcome and boundaries
+
+Demonstrate ordinary sustainable travel, points, all five reward types, and team/personal ESG activity using one persistent demo profile per signed-in user, with every demo and real account starting at 0 points, alongside real-user accounts that may spend admin-granted points with demonstration fulfilment and receive no automatic starter points. Support Singapore first and use initial admin-configurable settings of 50 points/kg with a 2,000-point journey cap. Only the demo account earns simulated journey points. There is no daily trip-count limit; duplicate awards for one journey are still prohibited. Rewards has Redemption and History tabs. Journey completion is simulated. Tree redemption represents participation in an existing programme. Add a separate admin web dashboard; use the team's populated database for the fan ESG dashboard.
+
+The [product specification](fan-app-specification.md) records the current requirements. The [meeting reconciliation](meeting-3-reconciliation.md) records source evidence and interview decisions. Earlier HTML briefs and route mockups are historical design material until reconciled.
+
+## Ordered work packages
+
+These define work to be done after scope and implementation authorization. Checkboxes are not claims of completed software.
+
+| Order | Work package | Depends on | Owner recorded or needed | Completion evidence |
+| --- | --- | --- | --- | --- |
+| 1 | Use the confirmed points/rewards contract; schedule calculation policy and dashboard metrics for later review. | Current interview answers | Nachiketh decides product scope | Confirmed specification and open-decision disposition. |
+| 2 | Define zero-start persistent demo profiles, populated catalogue/dashboard examples, consistent personal History, retained rewards/shared votes and reset records. | Confirmed interactive demo; deferred metrics | App development; data contributor not assigned | Dataset covers all approved feature states and has no real-world fulfilment claims for demo activity. |
+| 3 | Select Singapore emissions data for bus, train, car, EV and cab; define units, baseline and assumptions. | Confirmed Singapore/rate/cap and start-version policy; baseline decision | AI/data team handoff to confirm | Source-backed factors and reproducible worked route calculations. |
+| 4 | Agree route/AI input/output, time tolerance, error handling and fallback. | Country coverage and calculation policy | Kong plus the meeting's second AI contributor | Sample request/response and recommendation cases accepted by app and AI teams. |
+| 5 | Select updated fan/admin designs using existing brand guidance. | Approved scope | App development/design | Chosen mockups cover ordinary routing, ESG, two rewards tabs and agreed admin tasks. |
+| 6 | Implement route comparison and time-constrained low-emission recommendation. | Packages 3–5 | App and AI teams | Demonstrate Singapore mode candidates and missing-data behaviour. |
+| 7 | Implement real accounts/shared progress, labelled journey simulation and consistent points/demo state. | Demo-only awards; calculation decisions; package 6 | App development | Complete the approved simulated flow; verify one-time credit and account separation. |
+| 8 | Implement Rewards with Redemption and History and all five reward types. | Confirmed tree/challenge/reward rules and price reconfirmation; agreed points/rewards module | App development | Directly inspect both tabs and each approved reward flow; check balance/history consistency and driver-question admin review. |
+| 9 | Implement fan ESG dashboard backed by the populated database. | Deferred metric definition; packages 2 and 7–8 | App development | Inspect team/personal records, years, units and demo labels against stored values. |
+| 10 | Implement admin pricing/content, earning rules, reason-recorded balance adjustments, questions/challenges, ESG/factors and demo reset. | Confirmed admin controls and start-version policy | App development | Demonstrate each agreed operation; deny ordinary fans access; prove each demo reset preserves other accounts' personal state and follows the agreed shared-contribution policy. |
+| 11 | Align data-processing documentation with actual demo/auth/data behaviour. | Real accounts, demo-only awards and approved integrations | Brianna/Sachita assignment from meeting to confirm | Collection, processing, retention and deletion descriptions match the implemented flow. |
+| 12 | Run the complete presentation scenario and reconcile slides with built scope. | Approved packages above | App development; Dilla links to slides team | Recorded walkthrough with all simulated/prepared/live parts identified. |
+
+## Current documentation checklist
+
+- [x] Record demo data/account, two rewards tabs, admin web dashboard, journey simulation, programme participation, route time tolerance and populated dashboard database.
+- [x] Update resolved glossary terms and retain earlier requirements with explicit precedence.
+- [x] Record interactive demo plus real accounts, Singapore first, retained rate/cap, driver-question review and deferred dashboard metrics.
+- [x] Record demo-only simulated earnings, all proposed admin controls, countrywide eligibility and question/content reward rules.
+- [x] Record start-version calculations, independent demo progress, admin-granted real-account rewards, minimal tree participation and challenge selection/resubmission.
+- [x] Record price reconfirmation and selected-challenge freezing; select points and rewards for module exploration.
+- [x] Record full History, repeat purchases, shared rankings, unavailable-offer protection and append-only corrections.
+- [x] Confirm zero starting points for everyone, persistent demo identity and preservation of rewards, submissions, History and shared contributions on reset; supersede starter-point restoration.
+- [x] Confirm zero-balance reset, unfinished-operation handling and the selected module responsibility. Calculation policy and dashboard metrics remain user-deferred.
+- [x] Update confirmed feature acceptance cases and actionable work packages; retain deferred calculation/ESG dependencies.
+- [x] Verify cross-document agreement and obtain consolidated points/rewards confirmation.
+
+## Later work and slides-only proposals
+
+- Later implementation: actual background tracking and journey validation on physical iOS/Android devices, real reward fulfilment and actual programme allocation.
+- Real-user sign-up and shared progress are in current scope. Only the demo account may earn simulated journey points. Real accounts wait for actual tracking to earn travel points; admin-granted points may be redeemed with demonstration fulfilment. There are no automatic starter points.
+- Automated ESG report ingestion: possible later mechanism; the prototype dashboard uses populated records.
+- Slides-only: AI sustainability ratings from photos/text/video/voice, regional campaigns and individual/regional leaderboards.
+- Chatbot and voice assistant: brainstorm only.
+
+## Selected module exploration
+
+The user confirmed the points and rewards module. Agreed responsibility: keep authorized point changes and associated reward outcomes consistent for fan and admin callers, with tests crossing the same interface. This is design exploration, not implementation approval or a new package requirement. See [module discussion](points-rewards-design.md).
+
+The journey-assessment implementation remains deferred. Rewards can be specified using authorized admin grants and explicit demo journey awards, with no automatic starting balance without deciding the emissions formula. A future journey award must be accepted only from trusted assessed journey state, never a client-supplied arbitrary credit.
+
+## Existing technical direction
+
+Retain Expo/React Native for the fan app, Convex as the backend direction, and Google Maps as the intended route integration pending verified contracts. The admin is a web dashboard; its frontend architecture has not been selected. The new admin requirement does not itself authorize a repository restructuring.
+
+The meeting assigns Nachiketh app development and Kong plus another member the AI pipeline. Exact AI provider/model identifiers, API access, supported country datasets and operational integration remain unverified. Existing APIs are intended; custom model training is not required. No teammates have been contacted by this task.
+
+## Earlier plan: historical record
+
+The text below preserves the prior race-first plan and research references. The current specification and plan above override conflicts. Earlier unchecked work is not automatically in the revised prototype scope.
 
 ## Source and precedence
 

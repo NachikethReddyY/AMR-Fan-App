@@ -1,5 +1,42 @@
 # Tasks
 
+## Specification clarity and architecture review, 25 September 2026
+
+- [x] Review the active spec, plan and glossary against confirmed interview answers; score clarity before recommendations.
+- [x] Inspect the existing code for actual architectural friction and distinguish future design from refactoring.
+- [x] Research Singapore emissions-method inputs and Convex transaction/authorization constraints using primary sources.
+- [x] Write a local Markdown clarity review and a temporary visual HTML architecture report; open it and verify file content. Rendered layout/CDN diagrams remain unverified.
+- [x] Present the independent scope decisions and architecture candidates.
+- [x] Record the six clarity-review answers and add acceptance cases; repair the acceptance table.
+- [x] Record deferred calculation policy, price reconfirmation, frozen selected challenges and points/rewards selection.
+- [x] Write the selected points/rewards module discussion and recheck latest clarity decisions.
+- [x] Record History, repeated purchases, shared demo/real rankings, unavailable offers and append-only corrections in the module discussion.
+- [x] Record shared-contribution reset; later zero-start answer supersedes starter-point restoration.
+- [x] Recheck reset using mixed sources, non-voting purchases and returning-user examples; correct glossary references to available points.
+- [x] Replace mixed-source starter accounting with zero-start accounts; record retained rewards/History and one persistent signed-in demo profile.
+- [x] Read the reset concurrency research and refresh the temporary selected-module report; content verified, rendered layout unverified.
+- [x] Obtain consolidated confirmation of zero-balance reset, unfinished-operation policy and module responsibility; preserve deferred topics.
+
+Review only: no implementation, staging, commits or `.evidence/` output. Parent owns the review and checklist; delegated research owns only its named note.
+
+## Meeting 3 specification correction, 25 September 2026
+
+- [x] Read every page of `meet 3.pdf` and compare it with the current specification and plan.
+- [x] Record a source-backed feature inventory, mark the old spec/plan as under correction, and identify the first interview decisions.
+- [x] Complete the points/rewards interview using grill-with-docs; defer calculation/ESG decisions as requested.
+- [x] Record first-round answers in the specification, plan, feature inventory and glossary; separate earlier requirements as historical records.
+- [x] Record interactive demo and real accounts, Singapore first, retained points rate/cap, question review and the user-deferred dashboard metrics.
+- [x] Record demo-only simulated awards, full admin controls, countrywide eligibility and question/content reward rules.
+- [x] Record no daily trip-count limit while preserving per-journey caps and duplicate-credit protection.
+- [x] Resolve start-version rules, demo ownership, real-account rewards, tree scope and challenge selection/resubmission.
+- [ ] Revisit user-deferred AI calculations/baseline later; resolve current points/rewards policies independently.
+- [ ] Capture dashboard total-savings definitions when the user supplies them; continue unrelated documentation meanwhile.
+- [x] Update the idea, feature inventory, specification, plan, and resolved glossary terms in Markdown.
+- [x] Verify current document agreement and actionable remaining work; preserve source reconciliation and explicit deferred topics.
+- [x] Obtain consolidated points/rewards and reset confirmation; calculation policy and ESG totals remain deferred.
+
+Scope: local Markdown only. Preserve unrelated work; no implementation, tracker changes, commits, or publication.
+
 ## Issue #1 — Expo setup (t3code/implement-issue-one)
 
 Full issue #1 setup verification completed locally at the user's request.
