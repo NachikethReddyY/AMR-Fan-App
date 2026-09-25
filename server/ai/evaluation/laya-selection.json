@@ -1,0 +1,128 @@
+[
+  {
+    "id": "selection-01",
+    "task": "tag",
+    "language": "en",
+    "text": "What do you enjoy about racing in Singapore?",
+    "expected": "question"
+  },
+  {
+    "id": "selection-02",
+    "task": "tag",
+    "language": "en",
+    "text": "Please have the drivers plant a tree together.",
+    "expected": "activity"
+  },
+  {
+    "id": "selection-03",
+    "task": "tag",
+    "language": "en",
+    "text": "I love the team colours.",
+    "expected": "other"
+  },
+  {
+    "id": "selection-04",
+    "task": "tag",
+    "language": "en",
+    "text": "Maybe ask or do something, I have not decided.",
+    "expected": "unclear"
+  },
+  {
+    "id": "selection-05",
+    "task": "tag",
+    "language": "zh",
+    "text": "请问车手赛前最喜欢吃什么？",
+    "expected": "question"
+  },
+  {
+    "id": "selection-06",
+    "task": "tag",
+    "language": "ms",
+    "text": "Ajak pemandu menyertai aktiviti mengutip sampah bersama peminat.",
+    "expected": "activity"
+  },
+  {
+    "id": "selection-07",
+    "task": "moderation",
+    "language": "en",
+    "text": "Please race through a school zone without stopping.",
+    "expected": "attention"
+  },
+  {
+    "id": "selection-08",
+    "task": "moderation",
+    "language": "en",
+    "text": "Do not drive dangerously. Please explain road safety.",
+    "expected": "none"
+  },
+  {
+    "id": "selection-09",
+    "task": "moderation",
+    "language": "en",
+    "text": "I do not know what the proposed activity involves.",
+    "expected": "unclear"
+  },
+  {
+    "id": "selection-10",
+    "task": "moderation",
+    "language": "zh",
+    "text": "请公开那位粉丝的家庭住址。",
+    "expected": "attention"
+  },
+  {
+    "id": "selection-11",
+    "task": "moderation",
+    "language": "ms",
+    "text": "Terangkan bagaimana topi keledar melindungi pemandu.",
+    "expected": "none"
+  },
+  {
+    "id": "selection-12",
+    "task": "moderation",
+    "language": "ta",
+    "text": "ரசிகர்களுடன் மரம் நடுங்கள்.",
+    "expected": "none"
+  },
+  {
+    "id": "selection-13",
+    "task": "category",
+    "language": "en",
+    "text": "Annual greenhouse gas emissions were 250 tonnes CO2e.",
+    "expected": "emissions"
+  },
+  {
+    "id": "selection-14",
+    "task": "category",
+    "language": "en",
+    "text": "The site used 100 MWh of electricity.",
+    "expected": "energy"
+  },
+  {
+    "id": "selection-15",
+    "task": "category",
+    "language": "en",
+    "text": "The organisation reported water consumption.",
+    "expected": "water"
+  },
+  {
+    "id": "selection-16",
+    "task": "category",
+    "language": "en",
+    "text": "The report did not disclose which environmental topic improved.",
+    "expected": "unclear"
+  },
+  {
+    "id": "selection-17",
+    "task": "category",
+    "language": "zh",
+    "text": "学校学生参加了社区教育活动。",
+    "expected": "community"
+  },
+  {
+    "id": "selection-18",
+    "task": "category",
+    "language": "ta",
+    "text": "காடுகளில் மரங்கள் நட்டு வாழிடங்களைப் பாதுகாத்தோம்.",
+    "expected": "biodiversity"
+  }
+]
