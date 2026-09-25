@@ -10,6 +10,8 @@ import {
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '../global.css';
+import { AccountProvider } from './features/account/provider';
+import { AccountPanel } from './features/account/AccountPanel';
 
 type Tabs = {
   Home: undefined;
@@ -72,6 +74,7 @@ function Screen({ children }: { children: React.ReactNode }) {
 function HomeScreen() {
   return (
     <Screen>
+      <AccountPanel />
       <Home />
     </Screen>
   );
@@ -101,61 +104,63 @@ export default function App() {
   return (
     <GluestackUIProvider mode="dark">
       <SafeAreaProvider>
-        <NavigationContainer
-          theme={{
-            ...DarkTheme,
-            colors: { ...DarkTheme.colors, background: '#121212' },
-          }}
-        >
-          <Tab.Navigator
-            screenOptions={{
-              headerShown: false,
-              tabBarActiveTintColor: '#FFFFFF',
-              tabBarInactiveTintColor: '#E0E0DC',
-              tabBarStyle: {
-                backgroundColor: '#04524B',
-                borderTopColor: '#3D3D3D',
-              },
+        <AccountProvider>
+          <NavigationContainer
+            theme={{
+              ...DarkTheme,
+              colors: { ...DarkTheme.colors, background: '#121212' },
             }}
           >
-            <Tab.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={House} focused={focused} />
-                ),
+            <Tab.Navigator
+              screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: '#FFFFFF',
+                tabBarInactiveTintColor: '#E0E0DC',
+                tabBarStyle: {
+                  backgroundColor: '#04524B',
+                  borderTopColor: '#3D3D3D',
+                },
               }}
-            />
-            <Tab.Screen
-              name="Travel"
-              component={TravelScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Route} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Rewards"
-              component={RewardsScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Gift} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Impact"
-              component={ImpactScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Leaf} focused={focused} />
-                ),
-              }}
-            />
-          </Tab.Navigator>
-        </NavigationContainer>
+            >
+              <Tab.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={House} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Travel"
+                component={TravelScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Route} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Rewards"
+                component={RewardsScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Gift} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Impact"
+                component={ImpactScreen}
+                options={{
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Leaf} focused={focused} />
+                  ),
+                }}
+              />
+            </Tab.Navigator>
+          </NavigationContainer>
+        </AccountProvider>
       </SafeAreaProvider>
     </GluestackUIProvider>
   );
