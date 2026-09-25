@@ -398,6 +398,22 @@ test('receipts and automatic state reject mutation/removal and same-assessment b
   const f = await fixture();
   const args = { pool, token: f.token, journeyId: f.journeyId, input: f.input };
   const first = await settleSyntheticJourneyAward(args);
+  const guarded = await pool.connect();
+  try {
+    // Keep even an unexpectedly accepted statement rollback-only in this proof.
+    for (const [sql, code] of [
+      ['TRUNCATE app.points_operations', '0A000'],
+      ['TRUNCATE app.points_operations CASCADE', '23514'],
+    ]) {
+      await guarded.query('BEGIN');
+      await assert.rejects(guarded.query(sql), { code });
+      await guarded.query('ROLLBACK');
+    }
+  } finally {
+    await guarded.query('ROLLBACK');
+    guarded.release();
+  }
+  assert.deepEqual(await settleSyntheticJourneyAward(args), first);
   await assert.rejects(
     pool.query(
       "UPDATE app.journey_award_assessments SET receipt='{}' WHERE journey_id=$1",

@@ -206,4 +206,13 @@ restricted disposable namespace, apply migrations including 0008, then run these
 groups serially with the existing account/points/journey checks. No root scripts,
 API wiring, CI or shared database lifecycle are changed in this slice.
 
+The existing points immutability test expects SQLSTATE `23514` for
+`TRUNCATE app.points_operations`. With 0008's receipt foreign key, PostgreSQL
+rejects that statement earlier with `0A000`. The points owner must update this
+exact assertion without weakening immutability: the plain truncate must fail,
+`TRUNCATE ... CASCADE` must still fail with `23514`, and original History/receipts
+must remain intact. The owned test verifies both denials in rollback-only
+transactions. This is a shared test compatibility handoff, not a points mutation
+or a fully green shared regression claim.
+
 Implemented by gpt-6-astra through Codex (T3 Code).
