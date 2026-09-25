@@ -1,5 +1,35 @@
 # Work record
 
+## 2026-09-25: execute the database CLI through casing aliases
+
+- Tracking: INFRA-001, PR #23, independent review R1. The prior correction failed the actual CLI execution criterion: the entry guard canonicalized argv but compared it with an unnormalized module path, so an uppercase absolute script alias exited successfully without running the command. Namespace helper tests did not prove CLI execution.
+- Reproduced the empty output with a real PostgreSQL-backed subprocess test, then canonicalized both entry-guard paths. The regression checks nonempty status JSON and matching database, role and PostgreSQL version through the normal path and a same-inode casing alias. It runs the normal path on every platform and skips only the casing subtest on case-sensitive filesystems.
+- Verification: nine PostgreSQL tests passed with no local skips, including actual alias CLI execution; pnpm check and pnpm security:check passed. Replacement hosted CI and independent review remain required.
+- Classification: project implementation defect and insufficient end-to-end proof; no reusable guidance edited. Preserved stdin import guards, connection-target/TLS fixes and all existing data. No shared service restart or reset.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: worktree namespace and database configuration corrections
+
+- Tracking: INFRA-001, PR #23. Reviewer provisioning exposed a failed acceptance criterion: case aliases of the same macOS directory produced different namespace hashes, so credentials provisioned through T3's uppercase path were unavailable to Node's lowercase runtime path. No incorrect reviewer database was provisioned.
+- Reproduced alias mismatch and Node stdin import failure before the fix. Use filesystem-native canonical paths for root/provisioning/hash inputs and guard the CLI entry point before resolving a stdin marker. Added filesystem-backed same-inode case and symlink alias tests, plus a real stdin import regression. The case test explicitly skips only on case-sensitive filesystems.
+- Independent review also reproduced pg query parameters overriding the validated host and TLS decision. Reject all URL query parameters, normalize network host aliases, set local TLS explicitly and retain verified remote TLS. Regression tests inspect pg Client effective connection parameters without network calls, including ambient PGSSLMODE and loopback aliases.
+- Classification: project implementation defects; no reusable guidance edited. Existing owner database names/data stay unchanged. Verification passed: four focused filesystem/import tests (no local skips), pnpm check, security checks and seven real database tests. Provisioning through the uppercase alias created the native-path reviewer namespace; both reviewer databases accept its restricted role. Replacement CI and exact-head review are required; no shared service restart.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: local PostgreSQL and foundation checks
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: INFRA-001; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3), supporting roots #4/#6 without closing them. Base: `e87268368bc12d4909293228df7b311213a3ea6e`.
+- Added one pinned PostgreSQL 17.11 Compose service, private local credentials, per-worktree development/test databases and restricted roles. Added TypeScript pool/transaction helpers, SQL migration checksums/locking, synthetic fixtures, safe own-test reset and reproducible lifecycle/proof commands. Root Expo layout and phone navigation are unchanged; no business tables, account/auth adapter, API or admin implementation.
+- Repaired the baseline formatting failure and replaced web theme inline HTML with direct layout-effect initialization. System mode reads the current preference and cleans up its listener when mode changes. Original security rules remain enabled.
+- Proof: `pnpm db:verify` passed real restart persistence, bidirectional namespace denial, preservation of peer/development data during own reset, repeatable migration/seed, exact single loopback binding and credential permissions. Seven database tests passed, including rollback, twelve concurrent increments, migration drift/missing migration and restricted privileges. `pnpm check`, frozen install, `pnpm security:check` and iOS/Android exports passed. Browser fixture of the actual web provider passed initial system mode and Light/Dark/System changes with zero inline scripts.
+- Security scorecard: source secrets pass (one full repository snapshot); SAST pass (25 source targets, four unchanged rules); scanner acceptance/rejection fixtures pass; database isolation/rollback/concurrency pass (two namespaces and twelve writes); production local-seed/configuration denial pass. Confidence is high for these executed local boundaries; no claim of product authorization or cloud deployment proof. One pre-existing moderate UUID tooling advisory remains visible as SEC-001; no high/critical audit findings.
+- Evidence: ignored `.evidence/local-infrastructure/`, including `db-verify.txt`, `security.txt`, `check-current.txt`, native export logs, theme screenshot and browser results. Commands and Azure setup gates: [local development](docs/operations/local-development.md). Shared PostgreSQL intentionally remains running on leased `127.0.0.1:55432`; owner is this infrastructure worktree, Compose project `amr-local-postgres`. Stop with `pnpm db:stop` only after consumers release it. Temporary theme server stopped; preview proof complete.
+- Limits: Azure credentials/services, cloud transaction/deployment checks, production authentication and all product behavior remain pending their owners. Hosted PR checks and independent review follow delivery; no merge or cloud action authorized here. Operations serializes this branch's record integration.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: prepare final specification for main
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-012; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
