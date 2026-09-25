@@ -65,12 +65,79 @@ credentials. It reads PDF bytes from stdin and emits only bounded JSON. Limits:
 1,000,000 parsed characters. RSS sampling is not a hard kernel memory partition
 and may miss short peaks. Timeout/output/memory failures kill and wait for the
 owned child before releasing the parser slot. Source text is not logged.
+An unavailable or invalid RSS measurement fails closed. The parent allows one
+50 ms sample interval for a normal child-exit notification before rejecting a
+still-live child; it clears that timer on close.
 
 The current runner refuses non-macOS hosts. A Linux/Azure network-disabled
 runner and cloud resource limits are an explicit deployment integration gate.
 It does not silently fall back to unsandboxed parsing. The PDF.js binary-data and
 text APIs are documented in the [upstream Node example](https://github.com/mozilla/pdf.js/blob/master/examples/node/getinfo.mjs)
 and [API](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html).
+
+### Locally verified process and Linux boundaries
+
+The focused native run passed 11 tests: six new process-boundary cases and five
+existing parser regressions. Controlled programs replaced only the child input
+program, retaining the actual sandbox, parent watchdog, pipes and termination.
+Output overflow, RSS overflow, timeout and abrupt exit each reaped the child and
+allowed a subsequent real PDF parse. An injected failed RSS command first
+reproduced a timeout instead of a memory-monitor error; the correction now
+rejects it. An unsupported platform refuses before spawning.
+
+Observed output at kill was 8,585,216 combined bytes; observed RSS was 817,808 KiB
+against the 768 MiB threshold. These observations demonstrate enforcement with
+sampling/pipe overshoot, not an exact peak-memory ceiling. Native macOS has no
+tested kernel memory ceiling in this implementation.
+
+A separate offline Linux arm64 container passed seven assertions using Node
+24.20.0 and the unchanged PDF.js worker: resource/network/read-only restrictions,
+real table/multiline/Unicode/two-page extraction, malformed refusal, page-limit
+refusal, default Linux runner refusal, kernel OOM termination and real extraction
+recovery. Base image:
+
+```text
+node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
+```
+
+The evidence image used an isolated frozen lockfile with `pdfjs-dist@6.3.289`,
+`@napi-rs/canvas@1.0.9` and pnpm 12.6.0. No root dependency files changed.
+Its actual cgroup v2 values were `memory.max=268435456`, `memory.swap.max=0`,
+`pids.max=64`, and `cpu.max="100000 100000"`. A finite allocator requested at
+most 320 MiB in 16 MiB touched blocks. The kernel sent SIGKILL after 387 ms;
+`oom_kill` increased from 0 to 1 and `memory.peak` equalled 268,435,456 bytes.
+The parent remained alive, then parsed the original fixture again successfully.
+This proves the isolated 256 MiB kernel boundary locally. It does not select a
+production memory budget from one small PDF.
+
+The container had network none, no published ports, a non-root UID, dropped
+capabilities, no-new-privileges and a read-only root. Only original synthetic
+fixtures were mounted read-only, plus an owned output directory. No credentials,
+repository, source storage or Docker socket was mounted. Numeric-UID execution
+without a home directory produced optional canvas/rendering warnings; exact text
+extraction still passed. Rendering/OCR is not supported by this proof.
+
+The reproducible offline invocation, after separately building the pinned image,
+uses these options (paths and image ID come from the scoped private handoff):
+
+```sh
+docker create --name "$report_container" --network none \
+  --memory 256m --memory-swap 256m --cpus 1 --pids-limit 64 \
+  --user "$(id -u):$(id -g)" --read-only --cap-drop ALL \
+  --security-opt no-new-privileges:true --ulimit core=0 --shm-size 16m \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m --log-driver none \
+  --mount "type=bind,src=$report_fixtures,dst=/fixtures,readonly" \
+  --mount "type=bind,src=$report_output,dst=/output" "$report_image"
+docker start --attach "$report_container"
+docker inspect "$report_container"
+docker rm --force "$report_container"
+```
+
+The proof parent imposes a 10-second child deadline and 8 MiB combined output;
+the host wrapper imposes a 30-second container deadline. Exact commands, input
+hashes, resource inspection and results remain private. Only this owned
+container was removed. Docker's [resource-limit documentation](https://docs.docker.com/engine/containers/resource_constraints/)
+defines equal memory and memory-swap values as no swap.
 
 ## Storage and retention
 
@@ -167,7 +234,7 @@ use normal installed dependencies and the existing `db:run-test` wrapper:
 
 ```sh
 node --test server/reports/contracts.test.ts server/reports/extraction.test.ts server/reports/disabled.test.ts
-node --test --test-concurrency=1 server/reports/parser.test.ts server/reports/storage.test.ts
+node --test --test-concurrency=1 server/reports/parser.test.ts server/reports/parser-boundaries.test.ts server/reports/storage.test.ts
 pnpm db:run-test -- node --test --test-concurrency=1 server/reports/reports.test.ts server/reports/http.test.ts
 pnpm db:run-test -- node --test server/reports/registration.test.ts
 ```
@@ -185,9 +252,10 @@ revisions, role/session revocation, unchanged-row expiry waits, immutable eviden
 source persistence across an actual API process restart and unchanged balances.
 The combined owned run passed 28 tests. A later HTTP asset case brought the
 distinct passing count to 29; the repeated five-case HTTP run is not five new
-tests. Timeout termination and recovery were exercised. The 8 MiB output kill
-and sampled 768 MiB RSS kill are implemented but were not forced by these PDF
-fixtures. No hard peak-memory bound is claimed.
+tests. The later parser-only stage adds six distinct tests and reruns five parser
+regressions, for 11/11 in that stage. Its seven Linux assertions are counted
+separately. No cumulative full-suite rerun is claimed. The process and kernel
+memory observations above replace the earlier output/RSS proof gap.
 
 Root integration needs the exact PDF.js dependency above in `package.json` and
 `pnpm-lock.yaml`, with the existing supported Node 24 runtime. Add report unit
@@ -196,7 +264,16 @@ files. `.github/workflows/checks.yml` currently runs on Ubuntu, where this local
 parser intentionally refuses execution. The integration owner must provide a
 network-disabled Linux runner with enforced resource limits, or retain an
 explicit platform gate and run real parser acceptance on macOS. Do not mark
-Linux upload acceptance green by substituting a fake parser.
+Linux upload acceptance green by substituting a fake parser. The isolated Linux
+worker is now proved locally; the application runner still refuses Linux until
+its supervised container/job integration is registered. The smallest proposed
+integration retains the existing stdin/JSON worker protocol, adds a dedicated
+parser image target with the pinned dependency, and launches each parser job
+with no network and explicit cgroup limits from a trusted host/job controller.
+The app must not receive a Docker socket mount. Its report adapter retains the
+timeout/output/schema checks and single-job limit. CI can use the same offline
+job command with synthetic fixtures. The root image target, dependency and API
+startup hooks require the serial owner's grant; none was added in this stage.
 
 `server/api/Dockerfile` already copies `server`, so it includes report assets and
 the migration after integration. Its Linux scanner target still needs explicit
