@@ -179,8 +179,8 @@ function Result({
           </Text>
           <Text style={styles.routeDetail}>
             {recommendation.avoidedKgCo2e >= 0
-              ? `${carbon(recommendation.avoidedKgCo2e)} estimated CO2e avoided`
-              : `${carbon(-recommendation.avoidedKgCo2e)} more than driving`}
+              ? `${recommendation.avoidedKgCo2e.toFixed(2)} kg estimated CO2e avoided`
+              : `${(-recommendation.avoidedKgCo2e).toFixed(2)} kg more CO2e than driving`}
           </Text>
           <Text style={styles.routeLegs}>
             Indicative demo estimates. Changi Airport Group FY2024/25
