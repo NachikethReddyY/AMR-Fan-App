@@ -26,6 +26,8 @@ import {
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
 import { createRouteQuery } from '../routes/query.ts';
 import { createJourneyService } from '../journeys/store.ts';
+import { handleSubmissionRequest } from '../submissions/http.ts';
+import { serveSubmissionAdmin } from '../submissions/admin.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -104,6 +106,8 @@ export function createApi({
     try {
       const path = new URL(req.url ?? '/', 'http://api.invalid').pathname;
       if (req.method === 'GET' && (await serveAdmin(path, res))) return;
+      if (req.method === 'GET' && (await serveSubmissionAdmin(path, res)))
+        return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
       if (Date.now() - windowStart >= 60000) {
@@ -139,6 +143,18 @@ export function createApi({
         });
       }
       const token = bearer(req);
+      const submissionResult = await handleSubmissionRequest({
+        pool,
+        token,
+        method: req.method,
+        path,
+        query: Object.fromEntries(
+          new URL(req.url ?? '/', 'http://api.invalid').searchParams,
+        ),
+        body: () => body(req),
+      });
+      if (submissionResult)
+        return send(res, submissionResult.status, submissionResult.value);
       if (path === '/v1/admin/points/profiles' && req.method === 'GET')
         return send(
           res,
