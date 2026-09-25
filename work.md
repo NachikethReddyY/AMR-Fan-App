@@ -430,3 +430,19 @@ comes only from verified server sessions; native public identifiers grant no
 authority. Evidence remains local under `.evidence/account-4/`.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account phone continuation on repaired main
+
+PR28's three mobile-only commits were replayed onto reviewed main
+`8e346aff606771662312697effe8fbff1742f131`. The only conflict joined the current
+server route environment examples with the already prepared public native auth
+entries; both were retained. The six native dependencies, app scheme/plugins and
+lock changes are unchanged in scope. No server, route source, CI or script was
+copied from the old API ancestry. Original head `8d9e2e5`, TODO and raw evidence
+remain preserved in the owned checkout's ignored evidence and Git history.
+Frozen install, full checks, security and both native exports pass. Root/native
+configuration is frozen for lease release before the balance/History UI work.
+Devices remain inactive pending an explicit resolved app-session lease. Required
+small-iPhone/VoiceOver and live provider evidence remain unavailable.
+
+Edited by gpt-6-astra through Codex (T3 Code).
