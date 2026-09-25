@@ -14,6 +14,12 @@ import {
   type RouteOption,
   type RouteResult,
 } from './routes';
+import {
+  estimateRoute,
+  singaporeFactors,
+  type RouteEstimate,
+} from './emissions';
+import { recommendRoute, type Recommendation } from './recommendation';
 
 const fixtureProvider = createFixtureRouteProvider();
 const modeLabels: Record<RouteMode, string> = {
@@ -32,14 +38,29 @@ function minutes(seconds: number) {
 function distance(meters: number) {
   return `${(meters / 1000).toFixed(1)} km`;
 }
+function carbon(kg: number) {
+  return `${kg.toFixed(2)} kg CO2e`;
+}
+
+function estimateLabel(estimate: RouteEstimate) {
+  if (estimate.kind === 'estimated')
+    return `${carbon(estimate.kgCo2e)} estimated`;
+  if (estimate.reason === 'missing_factor')
+    return 'Emissions estimate unavailable: no compatible factor';
+  return 'Emissions estimate unavailable';
+}
 
 function RouteRow({
   route,
   selected,
+  recommended,
+  estimate,
   onSelect,
 }: {
   route: RouteOption;
   selected: boolean;
+  recommended: boolean;
+  estimate: RouteEstimate;
   onSelect: () => void;
 }) {
   const isAvailable = route.availability.kind === 'available';
@@ -56,7 +77,7 @@ function RouteRow({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !isAvailable, selected }}
-      accessibilityLabel={`${modeLabels[route.mode]}, ${detail}${isAvailable ? `, ${legs}` : ''}${selected ? ', selected' : ''}`}
+      accessibilityLabel={`${modeLabels[route.mode]}, ${detail}, ${estimateLabel(estimate)}${recommended ? ', recommended' : ''}${isAvailable ? `, ${legs}` : ''}${selected ? ', selected' : ''}`}
       disabled={!isAvailable}
       onPress={onSelect}
       style={[
@@ -67,9 +88,18 @@ function RouteRow({
     >
       <View style={styles.routeHeading}>
         <Text style={styles.routeTitle}>{modeLabels[route.mode]}</Text>
-        {selected && <Text style={styles.selectedText}>Selected</Text>}
+        {(recommended || selected) && (
+          <Text style={styles.selectedText}>
+            {[recommended && 'Recommended', selected && 'Selected']
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        )}
       </View>
       <Text style={styles.routeDetail}>{detail}</Text>
+      {isAvailable && (
+        <Text style={styles.routeDetail}>{estimateLabel(estimate)}</Text>
+      )}
       {isAvailable && <Text style={styles.routeLegs}>{legs}</Text>}
     </Pressable>
   );
@@ -78,10 +108,12 @@ function RouteRow({
 function Result({
   result,
   selectedId,
+  extraMinutes,
   onSelect,
 }: {
   result: RouteResult;
   selectedId: string | null;
+  extraMinutes: number | null;
   onSelect: (id: string) => void;
 }) {
   if (result.kind === 'unavailable') {
@@ -100,6 +132,21 @@ function Result({
     };
     return <Text style={styles.message}>{messages[result.reason]}</Text>;
   }
+  const recommendation: Recommendation | null =
+    extraMinutes === null
+      ? null
+      : recommendRoute(result.routes, extraMinutes, singaporeFactors);
+  const recommendationMessage =
+    recommendation?.kind === 'unavailable'
+      ? {
+          invalid_tolerance: 'Enter whole extra minutes to compare routes.',
+          no_routes: 'No complete available routes to compare.',
+          missing_baseline:
+            'Estimated CO2e avoided is unavailable without a conventional driving route and factor.',
+          no_eligible_estimate:
+            'No route within this time limit has a complete emissions estimate. Routes remain available to select.',
+        }[recommendation.reason]
+      : null;
   return (
     <View>
       <Text style={styles.source}>
@@ -107,6 +154,44 @@ function Result({
           ? result.source.label
           : `Live routes from ${result.source.provider}`}
       </Text>
+      <Text style={styles.label}>Acceptable extra travel time</Text>
+      <Text style={styles.message}>
+        {extraMinutes === null
+          ? 'Enter whole extra minutes above.'
+          : `Up to ${extraMinutes} extra min from the fastest available route.`}
+      </Text>
+      {recommendation?.kind === 'recommended' && (
+        <View style={styles.summary} accessibilityRole="summary">
+          <Text style={styles.routeTitle}>
+            Recommended: {modeLabels[recommendation.route.mode]}
+          </Text>
+          <Text style={styles.routeDetail}>
+            Fastest {minutes(recommendation.fastestSeconds)} · Limit{' '}
+            {minutes(recommendation.limitSeconds)}
+          </Text>
+          <Text style={styles.routeDetail}>
+            {carbon(recommendation.estimate.kgCo2e)} estimated
+          </Text>
+          <Text style={styles.routeDetail}>
+            Baseline: one person driving{' '}
+            {distance(recommendation.baselineDistanceMeters)},{' '}
+            {carbon(recommendation.baseline.kgCo2e)}
+          </Text>
+          <Text style={styles.routeDetail}>
+            {recommendation.avoidedKgCo2e >= 0
+              ? `${carbon(recommendation.avoidedKgCo2e)} estimated CO2e avoided`
+              : `${carbon(-recommendation.avoidedKgCo2e)} more than driving`}
+          </Text>
+          <Text style={styles.routeLegs}>
+            Indicative demo estimates. Changi Airport Group FY2024/25
+            passenger-km factors; walking and cycling count operational travel
+            only. Not measured savings.
+          </Text>
+        </View>
+      )}
+      {recommendationMessage && (
+        <Text style={styles.message}>{recommendationMessage}</Text>
+      )}
       {result.routes.length === 0 ? (
         <Text style={styles.message}>No routes found. Try another trip.</Text>
       ) : (
@@ -115,6 +200,11 @@ function Result({
             key={route.id}
             route={route}
             selected={selectedId === route.id}
+            recommended={
+              recommendation?.kind === 'recommended' &&
+              recommendation.route.id === route.id
+            }
+            estimate={estimateRoute(route, singaporeFactors)}
             onSelect={() => onSelect(route.id)}
           />
         ))
@@ -134,6 +224,10 @@ export function TravelScreen() {
   const [result, setResult] = useState<RouteResult | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [extraMinutesText, setExtraMinutesText] = useState('15');
+  const extraMinutes = /^\d+$/.test(extraMinutesText)
+    ? Number(extraMinutesText)
+    : null;
 
   async function compare() {
     setLoading(true);
@@ -179,6 +273,17 @@ export function TravelScreen() {
         placeholderTextColor="#A9A9A3"
         autoCorrect={false}
       />
+      <Text style={styles.label}>Extra minutes</Text>
+      <TextInput
+        accessibilityLabel="Acceptable extra travel time in minutes"
+        value={extraMinutesText}
+        onChangeText={(value) => {
+          if (/^\d{0,3}$/.test(value)) setExtraMinutesText(value);
+        }}
+        keyboardType="number-pad"
+        style={styles.input}
+        placeholderTextColor="#A9A9A3"
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Compare demo routes"
@@ -198,6 +303,7 @@ export function TravelScreen() {
         <Result
           result={result}
           selectedId={selectedId}
+          extraMinutes={extraMinutes}
           onSelect={setSelectedId}
         />
       )}
@@ -237,11 +343,13 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: 'transparent',
   },
+  summary: { backgroundColor: '#191919', padding: 14, marginBottom: 16 },
   selectedRoute: { borderLeftColor: '#CEDC00' },
   unavailableRoute: { opacity: 0.8 },
   routeHeading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: 10,
   },
   routeTitle: {
