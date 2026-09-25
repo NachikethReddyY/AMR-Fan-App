@@ -10,7 +10,11 @@ The [server journey procedure](../operations/journeys.md) records persisted
 ownership, retry, evidence, retention and test interfaces. Its versioned
 prototype rules can return positive or negative assessments independently of
 their explicit unvalidated calibration and fixture/live provenance. They do not
-grant awards or establish physically verified travel.
+grant awards or establish physically verified travel. The separate
+[awards module](../operations/awards.md) consumes the trusted locked projection
+in the same points transaction and retains nonprecise calculation evidence after
+precise cleanup. Its local synthetic accounting proof does not validate physical
+calibration; production credit and shared API registration remain pending.
 
 ## Outcome
 

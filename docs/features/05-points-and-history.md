@@ -12,7 +12,7 @@ A fan earns or receives points, spends them once and can understand every change
 
 - Initial settings are 50 points per estimated kilogram reduced and a 2,000-point cap per eligible journey. Admins may change future earning rules.
 - Eligible ordinary travel can cover the supported country. There is no race-destination restriction, race-weekend restriction, daily trip-count limit or additional daily points cap. Duplicate credit for one journey is prohibited.
-- Example arithmetic: 10 kg gives 500 points; 60 kg reaches the 2,000-point cap. These are not typical Singapore route estimates. Final rounding and evidence thresholds must be defined before implementation.
+- Retained `floor-decimal-v1` arithmetic subtracts the sum of supported assessed-leg emissions from the conventional-car baseline, clamps nonpositive savings to zero, multiplies by 50, floors once and applies the 2,000-point cap. No per-leg or display rounding sets points. 0.0199 kg gives 0 points, 2.419 kg gives 120, 10 kg gives 500 and 60 kg reaches the cap. These are arithmetic examples, not typical Singapore route estimates. Physical evidence calibration and approved factor readiness remain pending.
 - Qualifying completion settles a real journey under its Start journey rule/factor versions. Provisional changes never remove points earned before that journey. Simulation awards remain confined to demo profiles.
 - With missing intervening GPS, award the smaller of 50 points and the expected journey award only if both start and arrival were recorded. Expected awards of 120 and 20 give fallbacks of 50 and 20. Missing either endpoint gives no fallback.
 - Retain the fallback reason and evidence status in History. The award does not establish verified travel or verified avoided emissions.
@@ -34,7 +34,17 @@ A fan earns or receives points, spends them once and can understand every change
 
 ## Before implementation
 
-Prove concurrency and replay protection through the authenticated points/rewards interface. Select whole-point rounding and verified evidence thresholds before calculated awards. The [module design](../points-rewards-design.md) records the agreed implementation responsibility; it does not require another deployment or a service per feature.
+Prove concurrency and replay protection through the authenticated points/rewards interface. Whole-point rounding is retained as `floor-decimal-v1`; validate evidence calibration and applicable factors before production credit. The [module design](../points-rewards-design.md) records the agreed implementation responsibility; it does not require another deployment or a service per feature.
+
+## Owned awards implementation
+
+The [awards procedure](../operations/awards.md) records deterministic calculation,
+immutable assessment receipts and difference-only accounting through the existing
+points transaction. Local real-PostgreSQL tests use explicit synthetic server
+fixtures. The public entry retains calculations while production credit remains
+pending trusted factor/calibration validation. API registration, phone UI, future
+admin rules and demo/reset integration remain separately owned. The current
+configured-rule assessment continues to work and does not imply physical proof.
 
 ## Acceptance cases
 
