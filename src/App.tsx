@@ -9,6 +9,7 @@ import {
 } from 'react-native-safe-area-context';
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import { TravelScreen as RouteOptionsScreen } from './features/routes/TravelScreen';
 import '../global.css';
 
 type Tabs = {
@@ -57,6 +58,7 @@ function Screen({ children }: { children: React.ReactNode }) {
     <View style={styles.screen}>
       <StatusBar style="light" />
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + 18, paddingBottom: 24 },
@@ -77,7 +79,11 @@ function HomeScreen() {
   );
 }
 function TravelScreen() {
-  return <Placeholder title="Travel" />;
+  return (
+    <Screen>
+      <RouteOptionsScreen />
+    </Screen>
+  );
 }
 function RewardsScreen() {
   return <Placeholder title="Rewards" />;
