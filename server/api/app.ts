@@ -18,6 +18,12 @@ import {
   createSession,
   revokeSession,
 } from '../auth/session.ts';
+import {
+  adjustPoints,
+  readPointsHistory,
+  listAdminProfiles,
+} from '../points/index.ts';
+import { adminOrigin, serveAdmin } from '../points/admin.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -69,6 +75,7 @@ export function createApi({
   verifyIdentity?: (token: string) => Promise<Identity>;
 }) {
   const config = authConfig(env);
+  const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -89,6 +96,7 @@ export function createApi({
     res.setHeader('Referrer-Policy', 'no-referrer');
     try {
       const path = new URL(req.url ?? '/', 'http://api.invalid').pathname;
+      if (req.method === 'GET' && (await serveAdmin(path, res))) return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
       if (Date.now() - windowStart >= 60000) {
@@ -96,8 +104,10 @@ export function createApi({
         requests = 0;
       }
       if (++requests > 300) throw new ApiError(429, 'Try again shortly.');
-      if (req.headers.origin)
+      if (req.headers.origin && req.headers.origin !== browserOrigin)
         throw new ApiError(403, 'Browser access is not configured.');
+      if (path === '/admin/config' && req.method === 'GET')
+        return send(res, 200, { synthetic: config.kind === 'synthetic' });
       if (path === '/v1/dev/session' && req.method === 'POST') {
         if (config.kind !== 'synthetic') throw new ApiError(404, 'Not found.');
         const fixture = onlyField(await body(req), 'fixture');
@@ -122,6 +132,38 @@ export function createApi({
         });
       }
       const token = bearer(req);
+      if (path === '/v1/admin/points/profiles' && req.method === 'GET')
+        return send(
+          res,
+          200,
+          await listAdminProfiles(
+            pool,
+            token,
+            Object.fromEntries(
+              new URL(req.url ?? '/', 'http://api.invalid').searchParams,
+            ),
+          ),
+        );
+      if (path === '/v1/admin/points/adjustments' && req.method === 'POST')
+        return send(res, 201, await adjustPoints(pool, token, await body(req)));
+      const pointsMatch =
+        /^\/v1\/(admin\/)?profiles\/([^/]+)\/points\/history$/.exec(path);
+      if (pointsMatch && req.method === 'GET') {
+        const query = Object.fromEntries(
+          new URL(req.url ?? '/', 'http://api.invalid').searchParams,
+        );
+        return send(
+          res,
+          200,
+          await readPointsHistory(
+            pool,
+            token,
+            pointsMatch[2],
+            query,
+            pointsMatch[1] ? 'admin' : 'owner',
+          ),
+        );
+      }
       const actor = await authenticateSession(pool, token);
       if (path === '/v1/session' && req.method === 'DELETE') {
         await revokeSession(pool, token);
