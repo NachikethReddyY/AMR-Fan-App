@@ -65,3 +65,53 @@ Recheck when dependencies or callers change. High/critical advisories fail the
 automated gate; lower severities need exposure-based triage, not blind upgrades.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## ACCOUNT-004: persistent sign-in and authorized account API
+
+Tracker [#4](https://github.com/NachikethReddyY/AMR-Fan-App/issues/4), under #3.
+Implement server-derived identity, one real and one demo profile per signed-in
+user, zero initial balances, resume/logout and assigned-admin authorization.
+Preserve four tabs and route ownership. Use isolated PostgreSQL and a production
+OIDC verification boundary, with explicitly separated synthetic local sign-in.
+Live provider provisioning remains pending. No points business or admin web scope.
+Status: acceptance tests and coordinated implementation in progress.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Provider contract accepted for ACCOUNT-004: configurable OIDC access-token
+verification and native code/PKCE, with deployment values explicitly unselected.
+Synthetic local identities must pass the same account authorization and may never
+be enabled in production. The manager schedules independent Astra review; no
+new helper threads or reviewer worktree reuse. Root changes are serialized after
+the AI owner's released lease and preserve its patch on subsequent rebases.
+
+ACCOUNT-004 local proof found `db:run` inherited a ten-minute subprocess timeout.
+The API stopped during Android logout. Preserve bounded test/tool commands but
+allow the explicitly started development server to run until its owner stops it.
+Pending logout hid data and recovered after the owned API restarted.
+
+## UI-ACCOUNT-004: large-text bottom tab labels truncate
+
+Observed on leased Pixel_10_API_36 at
+`accessibility-extra-extra-extra-large`: the four-tab bar displayed truncated
+Rewards/Impact labels (`Rewa…`/`Impa…`). Screenshot remains private at
+`.evidence/account-4/android-large-text.png`. Original `large` text setting
+restored. User authorized a minimal App fix on the held mobile branch after
+server freeze, preserving order and normal-size geometry. This is a failed
+accessibility criterion, not an accepted limitation. Required iPhone/VoiceOver
+proof remains separately pending. Tracker #4.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## ACCOUNT-004-R1: owned descendant survives launcher shutdown
+
+Independent PR27 review reproduced a SIGTERM-ignoring grandchild remaining alive
+after its wrapper exited. The launcher cleared its escalation timer when only
+the wrapper closed. A regression reproduced the leak before the fix. Shutdown
+now retains the five-second escalation and waits for the owned process group to
+terminate, even after wrapper exit. The regression checks that the descendant
+is gone, an unrelated process remains alive, and normal exit outcomes persist.
+The actual API owner-shutdown check also passes. No shared process is signalled.
+Tracker #4; reviewer evidence and repeated author proof remain private.
+
+Edited by gpt-6-astra through Codex (T3 Code).

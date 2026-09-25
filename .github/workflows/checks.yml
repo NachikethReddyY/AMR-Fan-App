@@ -46,6 +46,7 @@ jobs:
       - run: pnpm db:up --port 55432
       - run: pnpm db:verify
       - run: pnpm db:test
+      - run: pnpm account:test:database
       - name: Stop only this runner's database, preserving its volume until teardown
         if: always()
         run: pnpm db:stop

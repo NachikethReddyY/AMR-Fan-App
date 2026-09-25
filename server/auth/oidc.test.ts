@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import { before, test } from 'node:test';
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
+import { createIdentityVerifier } from './oidc.ts';
+
+const config = {
+  kind: 'oidc',
+  issuer: 'https://identity.example.test/tenant',
+  audience: 'amr-api',
+  jwksUrl: 'https://identity.example.test/keys',
+  scope: 'account.access',
+} as const;
+let keys: Awaited<ReturnType<typeof generateKeyPair>>;
+let verify: ReturnType<typeof createIdentityVerifier>;
+before(async () => {
+  keys = await generateKeyPair('RS256');
+  verify = createIdentityVerifier(
+    config,
+    createLocalJWKSet({
+      keys: [{ ...(await exportJWK(keys.publicKey)), kid: 'fixture' }],
+    }),
+  );
+});
+async function token(
+  overrides: Record<string, unknown> = {},
+  signingKey = keys.privateKey,
+) {
+  const now = Math.floor(Date.now() / 1000);
+  return new SignJWT({
+    iss: config.issuer,
+    aud: config.audience,
+    sub: 'provider-subject',
+    iat: now,
+    exp: now + 300,
+    scp: config.scope,
+    ...overrides,
+  })
+    .setProtectedHeader({ alg: 'RS256', kid: 'fixture' })
+    .sign(signingKey);
+}
+test('verified access token returns only issuer and subject, never client roles or email identity', async () => {
+  assert.deepEqual(
+    await verify(
+      await token({ roles: ['admin'], email: 'other@example.test' }),
+    ),
+    { issuer: config.issuer, subject: 'provider-subject' },
+  );
+});
+test('invalid issuer/audience/time/signature/subject/scope fail closed', async () => {
+  for (const claim of [
+    { iss: 'https://attacker.example.test' },
+    { aud: 'another-api' },
+    { exp: 1 },
+    { nbf: 9999999999 },
+    { exp: undefined },
+    { iat: undefined },
+    { iat: 9999999999 },
+    { sub: '' },
+    { sub: undefined },
+    { scp: '' },
+  ])
+    await assert.rejects(verify(await token(claim)), { status: 401 });
+  const attacker = await generateKeyPair('RS256');
+  await assert.rejects(verify(await token({}, attacker.privateKey)), {
+    status: 401,
+  });
+  await assert.rejects(verify('invalid-token'), { status: 401 });
+});

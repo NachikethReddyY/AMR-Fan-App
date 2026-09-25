@@ -8,15 +8,16 @@ owns product behavior.
 | --- | --- | --- |
 | Phone app | `index.ts` registers `src/App.tsx`; Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
 | Admin web | Absent | Authorized content, price, rule, moderation and demo administration |
-| Backend | `server/database/` contains a PostgreSQL pool, transactions and SQL migration scaffolding; local Docker setup is available; no API or deployment | Authenticated application operations and persistence on Azure |
-| Authentication | Absent; provider not selected | Server-verified identity and assigned admin role |
+| Backend | `server/api/` account HTTP API and `server/accounts/` PostgreSQL ownership, real/demo profiles and zero balances; no deployment | Feature operations and persistence on Azure |
+| Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
 | Maps and tracking | Absent | POC route comparison, real location collection and journey assessment; physical-device proof required |
 | AI media pipeline | Absent; future proposal | Bounded transient processing and validated results |
 | ESG integration | Source documents and proposals only | POC report upload, extraction, admin review and approved metrics with source evidence |
 | Operations | Local Expo commands, repository checks and isolated worktree PostgreSQL tooling | Release environment remains a maintainer decision |
 
-No admin endpoint, upload URL or deployed application service exists to audit
-dynamically. The DAST fixture validates the scanner, not future product behavior.
+The account API has an isolated application DAST target and authenticated HTTP
+boundary tests. No admin web, upload URL or deployed service exists. Passive DAST
+does not prove ownership; the PostgreSQL-backed HTTP tests cover that boundary.
 
 ## Design defaults
 
@@ -25,7 +26,8 @@ Keep the existing root Expo package. Database-only TypeScript modules live in
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. Do not introduce a monorepo, service layer or event system speculatively.
 Azure is the selected backend platform. No Azure service, deployment or auth provider
-has been selected or provisioned. Earlier Convex plans are superseded.
+has been selected or provisioned. The configurable account adapter and local
+setup are documented in [account operations](../operations/accounts.md). Earlier Convex plans are superseded.
 
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.

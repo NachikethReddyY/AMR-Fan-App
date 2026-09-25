@@ -297,3 +297,82 @@ Edited by gpt-6-astra through Codex (T3 Code).
   repository visibility change or browser/device verification was requested.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: account #4 identity and API foundation
+
+- Tracking: [#4](https://github.com/NachikethReddyY/AMR-Fan-App/issues/4), under #3.
+  Base `050d5035bd69f476cbcc51d252d1456df58ed947`, owned account worktree.
+- Implemented configurable OIDC access-token verification, server-owned real/demo
+  profiles with zero initial balances, hashed revocable sessions, assigned roles,
+  owner-only profile reads/renames and the transaction/row-lock interface for #5.
+  Native account/session code uses SecureStore and code/PKCE, with a separate
+  labelled development fixture selector. No points operations or admin web added.
+- Observed proof: four token/config tests, five native session tests, ten real
+  HTTP/PostgreSQL account tests and nine foundation PostgreSQL tests pass.
+  Cross-account reads/writes, forged role/owner fields, invalid token claims,
+  concurrent creation, role revocation, restart/resume and logout are exercised.
+  Full local checks, source/dependency security checks and both native exports
+  passed before final UI observation. Isolated application DAST passed with
+  zero alerts on the public unauthenticated API; authenticated boundaries have
+  separate HTTP tests.
+- Local performance sample: three sequential requests, sign-in 41.04 ms/360 bytes,
+  resume 2.67 ms/255 bytes, logout 4.09 ms/18 bytes. Synthetic loopback sample of
+  one per operation; no deployment or comparative latency claim.
+- Remaining verification: actual leased Android/iOS interaction, required largest
+  Dynamic Type/accessibility evidence, live provider provisioning, hosted checks and manager-scheduled independent exact-commit Astra review.
+  No external tenant, admin identity, cloud resource or deployment was invented.
+- Evidence: ignored `.evidence/account-4/`; sanitized setup and API contract in
+  [account operations](docs/operations/accounts.md). Database and API leases are
+  isolated; shared PostgreSQL lifecycle remains with infrastructure.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 server/UI delivery split
+
+The verified server candidate is on `feat/4-account-api`. Prepared phone code is
+preserved in commit `7879ebf` on `feat/4-account-identity`, with actual Android
+A/B sign-in, name persistence, demo resume, logout and largest-text scroll proof.
+Required small-iPhone/VoiceOver proof remains unavailable after the supported
+new-device setup failed; existing occupied iPhones were untouched. The server
+candidate excludes native dependencies, app scheme/plugins and UI changes.
+Issue #4 remains open. Android tab labels truncate at the largest text size; the
+held UI requires the authorized focused correction/proof before final acceptance.
+Server-only frozen install, full checks, security, ten HTTP/PostgreSQL tests,
+nine foundation tests and both unchanged native exports pass. The launcher
+controlled process test and actual API start/owner SIGTERM/closed-port proof pass.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 integrated dependency candidate
+
+Rebased the server branch after PR25 merged and all four postmerge checks passed
+on `0740a3c731c44e74a4f9a1cef122e271bcbaf126`. Resolved package scripts and
+environment examples by retaining both AI and account contracts. The frozen
+lock includes `zod@4.1.12` and `jose@6.2.2`; both AI flags remain false.
+AI source and its reviewed documentation are unchanged. Native source and
+dependencies remain on the held mobile branch, outside this server candidate.
+Frozen install, full checks (including both test suites), security, ten actual
+HTTP/PostgreSQL account cases, nine foundation cases and both native exports
+passed again on the integrated dependency tree. Evidence is kept under
+`.evidence/account-4/integrated-*`; current-head CI and independent review follow
+the authorized push. Issue #4 and the recorded platform/provider gaps stay open.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 independent launcher correction
+
+PR27's independent review found the owned-group cleanup gap described in
+ACCOUNT-004-R1. The author reproduced the exact probe, captured a failing
+regression, then retained shutdown escalation until the owned group terminated.
+Three process tests pass: stubborn-descendant cleanup with unrelated-process
+survival, normal success/nonzero outcomes, and service lifetime beyond a bounded
+one-shot timeout. The reviewer probe now reports no surviving descendant, and
+the actual API starts, remains usable and releases its port on owner SIGTERM.
+Only launcher code/tests and these records changed. The account/API/migration
+and isolated DAST target are unchanged; prior PostgreSQL and 61-check DAST proof
+remain applicable. Full repository/security checks are rerun before delivery.
+Mobile PR28 stays separate and preserved; a new server head requires exact-head
+independent review and a subsequent mobile rebase. Evidence: ignored
+`.evidence/account-4/launcher-descendant-*` and `review-fix-*`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
