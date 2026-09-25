@@ -24,6 +24,15 @@ A fan spends points to unlock admin-provided content and keeps access on later v
 
 Select actual permitted content and storage/delivery. Avoid assuming a format, rights agreement or external content service that has not been selected.
 
+## Implementation candidate
+
+The shared [rewards domain candidate](../operations/rewards.md) retains the
+purchased plain-text version and profile-owned access after edits or disablement.
+Admin-authored plain text in PostgreSQL with original synthetic local fixtures
+is the approved storage/delivery choice. New-key repeat purchase requests return
+the original receipt with a zero-point acknowledgement, without another right.
+Actual HTTP/admin/browser and phone acceptance remain pending.
+
 ## Acceptance cases
 
 | Scenario                                             | Expected observation                                                       |

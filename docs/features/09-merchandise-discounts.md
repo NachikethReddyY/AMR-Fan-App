@@ -23,6 +23,14 @@ A fan redeems points for an admin-priced merchandise discount and can see its st
 
 Choose the offer/history presentation. Real redemption, expiry and merchant integration require a separate fulfilment agreement; the POC does not invent them.
 
+## Implementation candidate
+
+The shared [rewards domain candidate](../operations/rewards.md) records each
+intentional voucher purchase with immutable paid price and discount percentage.
+Local synthetic 10%/60% offers are approved examples, with independently configured
+point prices and demonstration fulfilment. Actual HTTP/admin/browser and phone
+acceptance remain pending. No retailer code, expiry or fulfilment is invented.
+
 ## Acceptance cases
 
 | Scenario                                                              | Expected observation                                                                          |
