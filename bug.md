@@ -89,3 +89,16 @@ ACCOUNT-004 local proof found `db:run` inherited a ten-minute subprocess timeout
 The API stopped during Android logout. Preserve bounded test/tool commands but
 allow the explicitly started development server to run until its owner stops it.
 Pending logout hid data and recovered after the owned API restarted.
+
+## UI-ACCOUNT-004: large-text bottom tab labels truncate
+
+Observed on leased Pixel_10_API_36 at
+`accessibility-extra-extra-extra-large`: the four-tab bar displayed truncated
+Rewards/Impact labels (`Rewa…`/`Impa…`). Screenshot remains private at
+`.evidence/account-4/android-large-text.png`. Original `large` text setting
+restored. User authorized a minimal App fix on the held mobile branch after
+server freeze, preserving order and normal-size geometry. This is a failed
+accessibility criterion, not an accepted limitation. Required iPhone/VoiceOver
+proof remains separately pending. Tracker #4.
+
+Edited by gpt-6-astra through Codex (T3 Code).

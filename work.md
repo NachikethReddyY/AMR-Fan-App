@@ -326,3 +326,19 @@ Edited by gpt-6-astra through Codex (T3 Code).
   isolated; shared PostgreSQL lifecycle remains with infrastructure.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 server/UI delivery split
+
+The verified server candidate is on `feat/4-account-api`. Prepared phone code is
+preserved in commit `7879ebf` on `feat/4-account-identity`, with actual Android
+A/B sign-in, name persistence, demo resume, logout and largest-text scroll proof.
+Required small-iPhone/VoiceOver proof remains unavailable after the supported
+new-device setup failed; existing occupied iPhones were untouched. The server
+candidate excludes native dependencies, app scheme/plugins and UI changes.
+Issue #4 remains open. Android tab labels truncate at the largest text size; the
+held UI requires the authorized focused correction/proof before final acceptance.
+Server-only frozen install, full checks, security, ten HTTP/PostgreSQL tests,
+nine foundation tests and both unchanged native exports pass. The launcher
+controlled process test and actual API start/owner SIGTERM/closed-port proof pass.
+
+Edited by gpt-6-astra through Codex (T3 Code).

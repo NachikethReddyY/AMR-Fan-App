@@ -5,8 +5,6 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "platforms": ["ios", "android"],
-    "scheme": "amrfan",
-    "plugins": ["expo-secure-store", "expo-web-browser", "expo-font"]
+    "platforms": ["ios", "android"]
   }
 }

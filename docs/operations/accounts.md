@@ -1,15 +1,16 @@
-# Account API and native sign-in
+# Account API foundation
 
 Issue [#4](https://github.com/NachikethReddyY/AMR-Fan-App/issues/4) supplies the
 account foundation. The email identity provider and deployment values remain
 unselected. The production adapter accepts RS256 OIDC access tokens for this API,
 with exact issuer, audience and required scope plus signature, subject, issued-at,
 not-before and expiry verification. Email and client role claims never identify
-or authorize an account. Native sign-in uses an external browser and code/PKCE.
+or authorize an account. The prepared native code/PKCE flow is held on the separate account UI branch,
+pending required iOS accessibility proof. This server candidate changes no phone UI.
 
 ## Local run
 
-Obtain an operations API/Metro port lease and an infrastructure-provisioned
+Obtain an operations API port lease and an infrastructure-provisioned
 worktree namespace first. Use the existing local PostgreSQL service; do not start
 or restart another owner's service. Then:
 
@@ -20,10 +21,9 @@ pnpm db:migrate --test
 pnpm account:test
 pnpm account:test:database
 AUTH_DEV_ENABLED=true API_HOST=127.0.0.1 API_PORT=<leased-api-port> pnpm db:run -- pnpm api:start
-EXPO_PUBLIC_API_URL=http://127.0.0.1:<leased-api-port> EXPO_PUBLIC_LOCAL_SIGN_IN=true pnpm start --port <leased-metro-port>
 ```
 
-Use `10.0.2.2` instead of `127.0.0.1` in the Android emulator's API URL. These
+The held phone UI uses `10.0.2.2` instead of `127.0.0.1` for Android emulator API requests. These
 public values are endpoints and feature selectors, never credentials. The
 server fixture selector accepts `fan-a` or `fan-b`, mapped to fixed synthetic
 subjects. It never accepts an arbitrary issuer, subject, email, owner or role.
@@ -65,7 +65,7 @@ Migration `0002_accounts.sql` owns `app.principals`, `app.profiles`,
 profiles are unique on `(principal_id, kind)`. Both kinds start at zero. Repeated
 sign-in only creates missing profiles and does not reset names or balances.
 Only SHA-256 hashes of random 256-bit session tokens are stored on the server.
-Sessions expire after seven days; native storage uses SecureStore. Logout writes
+Sessions expire after seven days. The held native branch uses SecureStore. Its logout writes
 a pending-revocation marker before network I/O. A restart retries revocation
 instead of reopening that account. Network failures hide account data and offer
 retry; invalid/expired sessions return to sign-in. Switching demo/real stores a
@@ -104,7 +104,7 @@ must be selected before real accounts use it.
 - Set public native `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_AUTH_ISSUER`,
   `EXPO_PUBLIC_AUTH_CLIENT_ID`, `EXPO_PUBLIC_AUTH_API_SCOPE`, and
   `EXPO_PUBLIC_AUTH_REDIRECT_URI`; keep local sign-in disabled. `amrfan` is the
-  configured app scheme, not an externally registered redirect destination.
+  held UI branch's app scheme, not an externally registered redirect destination.
 - Provision Azure PostgreSQL/network/TLS and run the migrations with a designated
   migration identity. No paid resource or production deployment is created here.
 - Verify real email sign-in, cancellation, sign-out, expiry and another-device
