@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
 import { z } from 'zod';
 
 export const coordinate = z.strictObject({
@@ -15,8 +16,9 @@ export const boundarySource = {
   attribution:
     'Contains information from URA Master Plan 2019 Region Boundary (No Sea), accessed 25 September 2026 from data.gov.sg under Singapore Open Data Licence 1.0. Indicative planning geography; no official endorsement.',
 } as const;
-const bytes = readFileSync(
-  new URL('./data/singapore-regions.geojson', import.meta.url),
+const bytes = gunzipSync(
+  readFileSync(new URL('./data/singapore-regions.geojson.gz', import.meta.url)),
+  { maxOutputLength: 2_000_000 },
 );
 if (createHash('sha256').update(bytes).digest('hex') !== boundarySource.sha256)
   throw new Error('Route geography integrity check failed.');

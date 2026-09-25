@@ -87,11 +87,12 @@ made available under the [Singapore Open Data Licence 1.0](https://data.gov.sg/o
 No official endorsement is implied. The dataset describes indicative planning
 regions, not a legal national border or a complete present-day coastline.
 
-The unmodified 1,477,466-byte GeoJSON is pinned at
-`server/routes/data/singapore-regions.geojson`. Dataset period: December 2019;
+The unmodified 1,477,466-byte GeoJSON is pinned as deterministic gzip at
+`server/routes/data/singapore-regions.geojson.gz`. Compression preserves upstream
+line endings independently of Git text conversion and formatting. Dataset period: December 2019;
 catalog revision: 3 December 2025. SHA-256:
 `2ac87b6da63c39d6311c7bc018aafddbffcfa18fd8faed09243207c9b502627d`.
-Startup verifies checksum and structure. Download used the public dataset's
+Startup bounds decompression to 2 MB, then verifies checksum and structure. Download used the public dataset's
 `poll-download` API, without an account. Signed download URLs are not committed.
 The separately inspected SLA national-map download returned HTTP 403; no
 credential lookup or additional service was attempted.
