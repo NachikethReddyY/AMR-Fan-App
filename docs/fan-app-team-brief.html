@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Aston Martin fan app — team brief</title>
+  <style>
+    :root { color-scheme: dark; --bg:#000; --surface:#111; --border:#2a2a2a; --text:#f0f0f0; --body:#d0d0d0; --muted:#aaa; --link:#71caff; --info:#00e5ff; --warning:#ffea00; }
+    * { box-sizing:border-box; }
+    html { scroll-padding-top:24px; }
+    body { margin:0; background:var(--bg); color:var(--body); font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:16px; line-height:1.65; }
+    main { width:min(calc(100% - 48px),1000px); margin:40px auto 0; }
+    h1,h2,h3,h4 { color:var(--text); line-height:1.2; font-weight:650; }
+    h1 { font-size:clamp(32px,5vw,43px); letter-spacing:-.035em; margin:12px 0 20px; }
+    h2 { font-size:clamp(25px,3vw,30px); letter-spacing:-.025em; margin:0 0 12px; }
+    h3 { font-size:21px; margin:32px 0 10px; letter-spacing:-.015em; }
+    h4 { font-size:17px; margin:0 0 8px; }
+    p { margin:0 0 16px; }
+    p:last-child { margin-bottom:0; }
+    strong { color:var(--text); font-weight:650; }
+    a { color:var(--link); text-decoration-thickness:1px; text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:hover { color:#c5eaff; }
+    a:focus-visible,summary:focus-visible { outline:2px solid var(--link); outline-offset:5px; border-radius:2px; }
+    a[target="_blank"]::after { content:""; display:inline-block; width:.78em; height:.78em; margin-left:.24em; vertical-align:-.02em; background:currentColor; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M14 4h6v6M20 4L10 14M20 14v6H4V4h6'/%3E%3C/svg%3E") center/contain no-repeat; }
+    .meta,.note,figcaption,caption { color:var(--muted); font-size:15px; }
+    .meta { display:flex; align-items:center; gap:8px; margin:0; }
+    .meta svg { width:17px; height:17px; flex:0 0 auto; }
+    .intro { font-size:19px; line-height:1.55; color:var(--text); }
+    .jump { display:inline-block; margin-top:4px; }
+    section { border-top:1px solid #2a2a2a; padding-top:48px; margin-top:48px; }
+    .section-number { display:block; color:var(--muted); font-size:15px; margin-bottom:8px; font-variant-numeric:tabular-nums; }
+    ul,ol { padding-left:24px; margin:12px 0 20px; }
+    li { margin:7px 0; padding-left:3px; }
+    li::marker { color:var(--muted); }
+    .flow { list-style:none; padding:0; margin:24px 0 18px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:26px 30px; counter-reset:flow; }
+    .flow li { margin:0; padding:0; counter-increment:flow; min-width:0; }
+    .flow li::before { content:counter(flow,decimal-leading-zero); display:block; border-top:1px solid var(--border); padding-top:12px; color:var(--muted); font-size:15px; margin-bottom:6px; }
+    .flow strong { display:block; font-size:18px; line-height:1.35; margin-bottom:6px; }
+    .flow p { color:var(--muted); font-size:15px; }
+    .callout { display:grid; grid-template-columns:18px minmax(0,1fr); gap:12px; background:rgba(0,229,255,.10); border:0; border-radius:8px; padding:20px; margin:24px 0; }
+    .callout svg { width:18px; height:18px; margin-top:4px; color:var(--info); }
+    .callout .callout-label { color:var(--info); display:block; margin-bottom:5px; font-weight:650; }
+    .callout.warning { background:rgba(255,234,0,.10); }
+    .callout.warning svg,.callout.warning .callout-label { color:var(--warning); }
+    .table-wrap { width:100%; overflow-x:auto; border:1px solid var(--border); border-radius:8px; margin:20px 0 12px; background:#0a0a0a; }
+    table { width:100%; border-collapse:collapse; text-align:left; font-size:16px; }
+    caption { text-align:left; padding:16px; border-bottom:1px solid var(--border); }
+    th,td { padding:15px 18px; vertical-align:top; border-bottom:1px solid var(--border); overflow-wrap:anywhere; }
+    thead th { background:#1b1b1b; color:var(--text); font-weight:650; }
+    tbody th { width:26%; color:var(--text); font-weight:550; background:rgba(0,0,0,.05); }
+    tbody tr:last-child th,tbody tr:last-child td { border-bottom:0; }
+    .numbers td:last-child { font-variant-numeric:tabular-nums; font-weight:650; color:var(--text); }
+    .numbers th,.numbers td { width:50%; }
+    .formula { background:var(--surface); padding:20px; border-radius:8px; margin:20px 0; }
+    .formula h4 { margin-bottom:10px; }
+    .formula ol { margin:0 0 10px; }
+    .formula .note { margin-top:12px; }
+    details,details[open] { border:1px solid #2a2a2a; border-radius:8px; background:#0a0a0a; margin:20px 0; }
+    summary { padding:16px 20px; cursor:pointer; color:var(--text); font-weight:600; line-height:1.45; }
+    summary::marker { color:var(--muted); }
+    .detail-body { padding:0 20px 20px; }
+    .detail-body h4 { margin-top:20px; }
+    .detail-body > :last-child { margin-bottom:0; }
+    .detail-body .table-wrap { margin-top:0; }
+    .path { list-style:none; padding:0; margin:22px 0; counter-reset:stage; }
+    .path li { position:relative; padding:0 0 22px 38px; margin:0; counter-increment:stage; }
+    .path li::before { content:counter(stage); position:absolute; left:0; color:var(--muted); font-variant-numeric:tabular-nums; }
+    .path li:not(:last-child)::after { content:""; position:absolute; left:6px; top:29px; bottom:6px; width:1px; background:var(--border); }
+    .path li:last-child { padding-bottom:0; }
+    .path strong { display:block; margin-bottom:3px; }
+    .path p { margin:0; }
+    .split { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; margin:24px 0; }
+    .split > div { min-width:0; }
+    .split h3 { margin-top:0; }
+    .split ul { margin-bottom:0; }
+    .decisions { list-style:none; padding:0; margin:24px 0 0; counter-reset:decision; }
+    .decisions > li { margin:0; padding:24px 0; border-top:1px solid var(--border); counter-increment:decision; }
+    .decisions > li:first-child { padding-top:0; border-top:0; }
+    .decisions h3 { margin:0 0 8px; font-size:20px; }
+    .decisions h3::before { content:counter(decision,decimal-leading-zero) "  "; color:var(--muted); font-size:16px; white-space:pre; }
+    .decision-note { color:var(--muted); margin-top:10px; font-size:15px; }
+    .sources { margin-top:32px; }
+    .sources summary { font-size:17px; }
+    .references { padding-left:26px; margin:0; font-size:15px; }
+    .references li.ref { padding:0 0 8px; margin:0 0 12px; background:none; border:0; border-radius:0; overflow-wrap:anywhere; }
+    .references li:last-child { margin-bottom:0; padding-bottom:0; }
+    .references cite { font-style:normal; }
+    .references .url { display:block; color:var(--muted); margin-top:3px; }
+    footer { color:var(--muted); font-size:15px; margin:24px 0 30px; }
+    @media (max-width:640px) {
+      main { width:calc(100% - 32px); margin-top:26px; }
+      h1 { font-size:34px; }
+      .intro { font-size:18px; }
+      .flow { grid-template-columns:1fr; gap:18px; }
+      .flow li { display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:12px; border-top:1px solid var(--border); padding-top:12px; }
+      .flow li::before { grid-column:1; grid-row:1 / 3; border:0; padding:0; margin:0; }
+      .flow li strong,.flow li p { grid-column:2; }
+      .split { grid-template-columns:1fr; gap:28px; }
+      th,td { padding:12px; }
+      tbody th { width:30%; }
+      .callout,.formula { padding:16px; }
+      summary { padding:16px; }
+      .detail-body { padding:0 16px 16px; }
+      section { margin-top:40px; padding-top:48px; }
+    }
+    @media print {
+      :root { color-scheme:light; --bg:#fff; --surface:#f5f5f5; --text:#000; --body:#111; --muted:#444; --link:#164f75; }
+      body { background:#fff; color:#111; }
+      main { width:100%; margin:0; }
+      .jump { display:none; }
+      section { break-before:auto; margin-top:28px; padding-top:28px; }
+      h2,h3,h4 { break-after:avoid; }
+      .flow,table,.callout { break-inside:avoid; }
+      .table-wrap,details,details[open] { background:#fff; overflow:visible; }
+      thead th { background:#eee; }
+      a { color:#164f75; }
+      footer { margin-bottom:0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6"/></svg>Team discussion document</p>
+      <h1>Aston Martin fan app — team brief</h1>
+      <p class="intro">Help fans compare lower-carbon ways to reach a race, reward completed journeys, and turn earned points into participation with the team.</p>
+      <p>This brief brings together the product interview and supplied meeting summary. <strong>Agreed rules</strong> are distinguished from <strong>proposals and open decisions</strong>. It describes the intended core app; it does not report a finished implementation.</p>
+      <a class="jump" href="#team-decisions">Go to the decisions for the team</a>
+    </header>
+
+    <section id="first-feature" aria-labelledby="first-feature-heading">
+      <span class="section-number">01 / Product direction</span>
+      <h2 id="first-feature-heading">Start with the journey to the race</h2>
+      <p>The fan is already in the host location. They choose a race from the F1 calendar, compare routes from their current location, travel, and earn points. <strong>The return journey is included.</strong> The first feature sits within a broader fan app with challenges, a rewards store, and tree redemptions.</p>
+      <ol class="flow" aria-label="Main fan journey">
+        <li><strong>Select the race</strong><p>Use the current location and the race’s arrival point. Planning ahead is allowed.</p></li>
+        <li><strong>Compare the routes</strong><p>Put estimated emissions beside journey time and estimated points. Highlight the lowest emissions among the available options.</p></li>
+        <li><strong>Choose and travel</strong><p>Start actual location tracking and continue through arrival, including while the phone is locked.</p></li>
+        <li><strong>Assess the journey</strong><p>Check the reported mode, route, distance, duration, arrival, and reward eligibility.</p></li>
+        <li><strong>Receive the points</strong><p>Show the final estimated reduction and credit the qualifying award once.</p></li>
+        <li><strong>Choose a fan payoff</strong><p>Submit or support challenges, redeem a merchandise discount, or buy an individual tree with points.</p></li>
+      </ol>
+      <p class="note">Current scope: local travel to and from a selected race. Everyday destinations remain a broader direction from the earlier meeting brief; international flights are outside this first journey. Country examples do not establish actual scheduled races.</p>
+    </section>
+
+    <section id="travel-rules" aria-labelledby="travel-heading">
+      <span class="section-number">02 / Agreed rules</span>
+      <h2 id="travel-heading">Travel and earning points</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Part of the experience</th><th scope="col">Agreed behavior</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Race selection</th><td>Use the <a href="https://www.formula1.com/en/racing/2026" target="_blank" rel="noopener noreferrer">official F1 calendar</a>. Fans may plan before the event; earning is restricted to the race window.</td></tr>
+            <tr><th scope="row">Transport choices</th><td>Compare mixed bus/MRT/rail routes with walking connections, plus walking, cycling, and a separate cab option where route data is available. A cab route is not automatically combined with public transport.</td></tr>
+            <tr><th scope="row">Route information</th><td>Show estimated emissions prominently, journey duration, and estimated points before the fan chooses. Google Maps is the intended routing integration.</td></tr>
+            <tr><th scope="row">Tracking</th><td>Follow actual movement from start through arrival. Locked-phone and background tracking are required on both iOS and Android.</td></tr>
+            <tr><th scope="row">Reward window</th><td><strong>Thursday 00:00 to Monday 06:00, in the race’s local timezone.</strong> Both the start and completion must be inside that window. Exact endpoint inclusivity remains a technical rule to settle.</td></tr>
+            <tr><th scope="row">Daily limit</th><td><strong>One rewarded outbound journey and one rewarded return journey per race-local calendar day.</strong> Each has its own 2,000-point cap. Additional journeys may still be tracked without further automatic awards. Overnight day attribution remains open.</td></tr>
+            <tr><th scope="row">Earning rate</th><td><strong>50 points per estimated kg CO₂e reduced, capped at 2,000 points per eligible completed journey.</strong> Lower emissions earn more until the cap is reached.</td></tr>
+            <tr><th scope="row">Journey changes</th><td>Recalculate the current journey’s estimate when the reported mode or assessed journey changes. An estimate is provisional; it does not reduce the fan’s previously earned balance.</td></tr>
+            <tr><th scope="row">Journey evidence</th><td>Check reported mode against route, distance, and duration. This supports plausibility, not proof of the vehicle used. Insufficient tracking or no arrival means no automatic award.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="formula">
+        <h4>Calculation detail — proposed for confirmation</h4>
+        <ol>
+          <li>Estimate the difference between <strong>one person driving the same endpoints</strong> and the final assessed journey.</li>
+          <li>Treat a zero or negative difference as zero points.</li>
+          <li>Multiply the positive difference in kg CO₂e by <strong>50</strong>, round down to whole points, and cap the result at <strong>2,000</strong>.</li>
+        </ol>
+        <p class="note">The earning rate and cap are confirmed. The driving baseline is tentative; whole-point rounding and the emissions factors still need agreement. This is an estimated comparison, not measured or causally proven carbon savings.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="numbers">
+          <caption>Arithmetic examples only — these are not measurements of real routes.</caption>
+          <thead><tr><th scope="col">Final estimated reduction</th><th scope="col">Points for an eligible journey</th></tr></thead>
+          <tbody>
+            <tr><td>1.5 kg CO₂e</td><td>75</td></tr>
+            <tr><td>10 kg CO₂e</td><td>500</td></tr>
+            <tr><td>40 kg CO₂e</td><td>2,000</td></tr>
+            <tr><td>60 kg CO₂e</td><td>2,000 — capped</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">A fan with 100 earned points whose current estimate changes from 20 to 5 finishes with 105 points after qualifying completion.</p>
+    </section>
+
+    <section id="fan-payoff" aria-labelledby="payoff-heading">
+      <span class="section-number">03 / Agreed rules</span>
+      <h2 id="payoff-heading">Where fans spend their points</h2>
+      <h3>Driver and team challenges</h3>
+      <p>Fans propose activities and use points to support the approved ideas they want to see performed. An example from the interview was a driver doing a chicken dance before a Singapore fan interaction.</p>
+      <ol class="path" aria-label="Challenge lifecycle">
+        <li><strong>Submit a challenge · 500 points</strong><p>Deduct the submission fee from the fan’s available balance. <strong>The 500 points are non-refundable, even if the challenge is rejected.</strong> They never count toward ranking.</p></li>
+        <li><strong>Get admin approval</strong><p>Only an admin, including someone assigned the Aston Martin admin badge, can approve. Unapproved or rejected challenges cannot receive contributions. The badge represents permission granted by the system.</p></li>
+        <li><strong>Contribute points · minimum 10</strong><p>A fan can contribute any amount of at least 10, up to their available balance. Contributions are spent points and count toward the challenge’s ranking.</p></li>
+        <li><strong>Select the top three</strong><p>Select the three approved challenges with the highest contribution totals before the drivers’ fan-interaction stage appearance. The precise cutoff and tie rules remain open.</p></li>
+        <li><strong>Record performance, or keep the backlog</strong><p>Approval, selection, and performance are separate states. Approved challenges not yet performed retain their points and history in the backlog for later fulfilment. <strong>No challenge refunds.</strong></p></li>
+      </ol>
+      <p class="note">Rejected content is not a promise of a future performance. Editing and resubmission rules, including whether another fee applies, are still open. A proposal or ranking does not establish driver or team agreement to perform it.</p>
+
+      <div class="split">
+        <div>
+          <h3>Merchandise discounts</h3>
+          <ul>
+            <li>Redeem points for <strong>10%–60% discounts</strong>.</li>
+            <li><strong>Admins set each reward’s points price.</strong> Larger discounts should be substantially harder to earn.</li>
+            <li>Show the points cost and offer terms before redemption.</li>
+            <li>Use clearly labelled sample vouchers in the POC. Prices, merchant supply, and commercial terms need team input.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Individual trees</h3>
+          <ul>
+            <li>Buy individual trees with earned points at an <strong>admin-set points price per tree</strong>.</li>
+            <li>Assign every tree to the purchasing account and <strong>that account’s name</strong>.</li>
+            <li>If the original country cannot fulfil it, move the <strong>pending planting request</strong> to another country.</li>
+            <li>An optional quote remains a proposal. Visibility, notifications, and the no-alternative fallback remain open.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 22 21H2zM12 9v5M12 17v1"/></svg>
+        <div><span class="callout-label">Planting is a disclosed demonstration for the POC</span><p>Redeeming points creates a request, not evidence that a tree has been planted. A real service needs funding, a planting partner, and fulfilment evidence. Reassignment moves an unfulfilled request, not an already-planted tree. Keep tree activity separate from estimated travel emissions; do not claim immediate carbon removal.</p></div>
+      </div>
+    </section>
+
+    <section id="build-boundary" aria-labelledby="build-heading">
+      <span class="section-number">04 / Build boundary and proof</span>
+      <h2 id="build-heading">What the core POC must demonstrate</h2>
+      <p><strong>Expo + React Native for iOS and Android, with Convex as the backend direction.</strong> Email accounts and progress shared across devices are agreed. Detailed location traces are private and retained for seven days; summaries and points transactions last longer. Authentication and the exact cleanup implementation remain to be chosen.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Area</th><th scope="col">Required behavior and evidence</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Travel</th><td>A fan can select a race, compare routes and carbon estimates, travel, and see a final result. Actual movement must be tracked through arrival in the foreground and background. A replay alone does not meet this requirement.</td></tr>
+            <tr><th scope="row">Points and accounts</th><td>Show provisional estimates, final credit, spending, and the remaining balance consistently across devices. Prevent duplicate awards, duplicate debits, and spending beyond the available balance. Keep GPS access private and admin actions authorized.</td></tr>
+            <tr><th scope="row">Fan engagement</th><td>Demonstrate submission, admin approval or rejection, contributions, top-three selection, and backlog. Demonstrate admin pricing, discount redemption, and tree requests assigned to an account.</td></tr>
+            <tr><th scope="row">Disclosed placeholders</th><td>Sample vouchers, driver performance, and planting fulfilment may be demonstrated with explicit labels. Any fixture routes, calendar data, carbon factors, or admin-completed sample states must also be identified.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">These are acceptance targets, not claims that the app has been built or tested. Publishing and deployment are outside the requested local scope.</p>
+
+      <details>
+        <summary>Integration constraints checked in official documentation</summary>
+        <div class="detail-body">
+          <h4>Routing and advance planning</h4>
+          <p><a href="https://developers.google.com/maps/documentation/routes/transit-route" target="_blank" rel="noopener noreferrer">Google’s transit documentation</a> supports transit legs and walking connections, with future searches up to 100 days ahead. Route availability and schedules vary. The app must handle unavailable route data without inventing options.</p>
+          <h4>Carbon estimates</h4>
+          <p><a href="https://developers.google.com/maps/documentation/routes/eco-routes" target="_blank" rel="noopener noreferrer">Google eco-routing</a> documents fuel estimates for supported vehicle routes; it does not supply an established universal passenger-carbon model for all requested modes. A separate methodology and factor set are needed.</p>
+          <p>The proposed method sums each leg’s distance multiplied by a compatible emissions factor. Keep passenger-km and vehicle-km, occupancy, CO₂ and CO₂e, and operational versus upstream emissions consistent. The <a href="https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf" target="_blank" rel="noopener noreferrer">UK conversion methodology</a> informs these distinctions; its factors are not automatically valid for Singapore. Zero-emission walking/cycling would describe a chosen operational boundary, not their entire lifecycle.</p>
+          <h4>Background location</h4>
+          <p><a href="https://docs.expo.dev/versions/latest/sdk/location/#background-location" target="_blank" rel="noopener noreferrer">Expo Location</a> requires native configuration, permissions, and development builds for the required cross-platform background behavior. Force-quitting and Android device behavior can stop updates. Locked-screen travel and arrival must be checked on physical iOS and Android devices.</p>
+          <h4>Accounts, balances, and retention</h4>
+          <p><a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer">Convex’s React Native client</a>, <a href="https://docs.convex.dev/auth/overview" target="_blank" rel="noopener noreferrer">authentication options</a>, <a href="https://docs.convex.dev/functions/mutation-functions" target="_blank" rel="noopener noreferrer">transactional mutations</a>, and <a href="https://docs.convex.dev/scheduling/scheduled-functions" target="_blank" rel="noopener noreferrer">scheduled functions</a> support the planned direction. Access control, atomic points rules, and trace cleanup still need implementation. Convex Auth is documented as beta. A seven-day application deletion schedule does not itself establish deletion from every backup, log, or device cache.</p>
+          <p class="note">Evidence status: documentation reviewed; no live Maps request, deployed backend, calendar feed, or physical-device test is established by this brief.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Concrete acceptance examples for the later build</summary>
+        <div class="detail-body">
+          <p>Specification examples only; these are not executed app tests.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Given this situation</th><th scope="col">Expect this result</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">10 kg final reduction</th><td>An eligible completed journey credits 500 points once.</td></tr>
+                <tr><th scope="row">60 kg final reduction</th><td>An eligible completed journey credits the 2,000-point maximum once.</td></tr>
+                <tr><th scope="row">Outside the window</th><td>A journey starting before Thursday 00:00 or completing after Monday 06:00 gets no window award. Exact cutoff equality remains to be defined.</td></tr>
+                <tr><th scope="row">Second outbound that day</th><td>No extra outbound award after the first rewarded outbound. The return allowance is separate.</td></tr>
+                <tr><th scope="row">Missing arrival or evidence</th><td>No automatic journey award; previous earned points remain untouched.</td></tr>
+                <tr><th scope="row">600-point fan submits</th><td>Deduct 500, leaving 100. Ranking stays zero. Rejection returns none of the 500 points.</td></tr>
+                <tr><th scope="row">10-point contribution</th><td>For an approved challenge, debit 10 and increase its ranking by 10, once.</td></tr>
+                <tr><th scope="row">Invalid contribution</th><td>An unapproved challenge or insufficient wallet balance causes no debit and no ranking increase.</td></tr>
+                <tr><th scope="row">Approved but not performed</th><td>Keep the challenge and its contribution history in the backlog; no refund.</td></tr>
+                <tr><th scope="row">Tree priced at 300</th><td>A fan with 500 redeems one tree, leaving 200. Assign it to the account and account name. This price is illustrative admin input.</td></tr>
+                <tr><th scope="row">Planting country unavailable</th><td>Reassign the pending request and preserve account ownership; do not label it planted without evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section id="business-context" aria-labelledby="business-heading">
+      <span class="section-number">05 / Evidence and proposals</span>
+      <h2 id="business-heading">Value for Aston Martin and the ESG connection</h2>
+      <h3>How could the app make money?</h3>
+      <p><strong>Working hypothesis: sponsorship and additional merchandise sales.</strong> Partners could fund activities or rewards; fan engagement could lead to incremental purchases. Earned points and challenge contributions are not cash revenue. Reward costs, planting costs, platform costs, and discount margins need a viable funding model.</p>
+      <p>A 60% discount may require sponsored support or a restricted eligible offer to preserve margin. Those are commercial proposals for discussion, not agreed restrictions. No sponsor, merchant supply, driver participation, or planting arrangement has been established.</p>
+      <p>The existing <a href="https://www.astonmartinf1.com/en-GB/IAM" target="_blank" rel="noopener noreferrer">I / AM membership</a> is free and advertises fan experiences and a first-order merchandise discount. The team’s <a href="https://www.astonmartinf1.com/en-GB/partners" target="_blank" rel="noopener noreferrer">partner programme</a> shows an existing partnership context, not funding committed to this app. The proposed additional value is a repeatable link between race travel, points, and fan participation.</p>
+
+      <h3>What the tree idea can legitimately reference</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Evidence</th><th scope="col">What it supports, and its limit</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Campus planting</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2024.pdf#page=35" target="_blank" rel="noopener noreferrer">2024 Make A Mark report, pp. 35–36</a>, reports <strong>1,500 trees</strong> planted at the AMR Technology Campus. One reported campus count; no independent planting audit was performed here.</td></tr>
+            <tr><th scope="row">Restoration projects</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf#page=26" target="_blank" rel="noopener noreferrer">2025 report, p. 26</a>, describes community woodland/agroforestry in the North Ethiopian Highlands and mangrove restoration at Mtwapa Creek, Kenya. Two reported nature-based examples; no site or registry verification was performed here.</td></tr>
+            <tr><th scope="row">App fulfilment</th><td><strong>Unverified.</strong> These sources establish a thematic connection with the team’s published work. They do not establish a per-tree fan reward, an app partnership, or planting funded by app points.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Evidence scope: selected pages of two official reports. Confidence is high in attribution to those reports; delivery and environmental impact are not independently verified. Team totals must not be presented as app impact.</p>
+    </section>
+
+    <section id="team-decisions" aria-labelledby="decisions-heading">
+      <span class="section-number">06 / Take to the team</span>
+      <h2 id="decisions-heading">Decisions still open</h2>
+      <p>The direction and numeric rules above are recorded. The items below are carried forward for discussion, with suggestions clearly labelled. The interview is not being declared fully closed.</p>
+      <ol class="decisions">
+        <li>
+          <h3>Carbon baseline and fair comparisons</h3>
+          <p>Confirm the one-person driving baseline, whole-point rounding, the emissions boundary, and the factors for each supported location and mode. Decide how to disclose any proxy data.</p>
+          <p class="decision-note"><strong>Proposal:</strong> use one consistent per-passenger CO₂e boundary, source/version every factor, and show the estimate basis. Avoid implying that Google supplies a complete multimodal carbon calculation.</p>
+        </li>
+        <li>
+          <h3>Journey boundaries and evidence</h3>
+          <p>Choose race entrances, the return destination rule, arrival detection, acceptable tracking gaps, and what fans see when automatic validation fails. Set which race-local day owns a journey crossing midnight and the exact Monday cutoff behavior.</p>
+          <p class="decision-note"><strong>Proposal:</strong> attribute an overnight journey to its start day; require arrival before Monday 06:00. Neither detail is agreed yet. The already accepted daily limit remains one outbound and one return.</p>
+        </li>
+        <li>
+          <h3>Challenge moderation and stage selection</h3>
+          <p>Can fans edit and resubmit rejected ideas, and does that cost another submission fee? How are ties, fewer than three eligible ideas, zero-contribution ideas, postponed stage appearances, and backlog entry into later selections handled?</p>
+          <p class="decision-note"><strong>Fixed rule:</strong> the original 500-point fee is never returned and never counts toward ranking. Free resubmission has not been agreed. The exact vote-close time must precede the relevant stage appearance.</p>
+        </li>
+        <li>
+          <h3>Tree identity and reassignment</h3>
+          <p>Decide whether quotes are in the first build, who sees an account name, and what happens after a name change. Agree how a fan is notified of a country change, whether another project must have the same points cost, and what happens if no alternative can fulfil the request.</p>
+          <p class="decision-note"><strong>Fixed rule:</strong> every tree belongs to the purchasing account and uses that account’s name. The no-refund decision for challenges does not silently decide a failed tree request’s policy.</p>
+        </li>
+        <li>
+          <h3>Reward prices and who funds delivery</h3>
+          <p>Set the admin-managed points prices, real discount terms, tree funding, and fulfilment ownership. Confirm whether sponsorship and incremental merchandise sales are the intended business hypothesis.</p>
+          <p class="decision-note"><strong>Proposal:</strong> check sample local journeys against store prices before describing rewards as attainable or difficult. A 500-point challenge submission requires 10 kg of estimated reduction before other spending; typical earnings are not yet established.</p>
+        </li>
+        <li>
+          <h3>Implementation choices and proof</h3>
+          <p>Select the email authentication method for Convex; verify Maps route coverage, calendar ingestion, and race arrival data. Define and test private data access, seven-day trace cleanup, and background travel on actual iOS and Android devices.</p>
+          <p class="decision-note"><strong>Implementation prerequisite:</strong> documentation supports the intended approach, but live integration and device reliability remain unverified. UI direction selection is a separate step before app screens are built.</p>
+        </li>
+      </ol>
+      <div class="callout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>
+        <div><span class="callout-label">Boundary for the next build</span><p>Keep the first loop focused on race travel, points, challenges, the discount store, and individual tree requests. Fan teams, exclusive content, accommodation, food, group viewing, and other sustainable actions remain later possibilities. This document adds no commitment to publish or fulfil rewards.</p></div>
+      </div>
+
+      <details class="sources">
+        <summary>Source basis and references used</summary>
+        <div class="detail-body">
+          <p>The supplied AI summary attributes the original idea to meeting notes on 22 and 24 September 2026 and follow-up messages at 10:30–10:32 pm on 24 September. The original meeting documents were not inspected. Subsequent direct user answers take precedence, including race-focused travel, 50 points/kg, the 2,000-point cap, non-refundable challenge points, individual trees, and the daily journey allowance.</p>
+          <ol class="references">
+            <li class="ref">Project discussion (2026) <cite>Meeting extraction and direct product clarifications</cite>. [User-supplied conversation, consolidated 25 September 2026].</li>
+            <li class="ref">Formula 1 (2026) <a href="https://www.formula1.com/en/racing/2026" target="_blank" rel="noopener noreferrer"><cite>2026 race calendar</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://www.formula1.com/en/racing/2026</span></li>
+            <li class="ref">Google (n.d.) <a href="https://developers.google.com/maps/documentation/routes/transit-route" target="_blank" rel="noopener noreferrer"><cite>Transit routes</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://developers.google.com/maps/documentation/routes/transit-route</span></li>
+            <li class="ref">Google (n.d.) <a href="https://developers.google.com/maps/documentation/routes/eco-routes" target="_blank" rel="noopener noreferrer"><cite>Eco-friendly routing</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://developers.google.com/maps/documentation/routes/eco-routes</span></li>
+            <li class="ref">Department for Energy Security and Net Zero (2025) <a href="https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf" target="_blank" rel="noopener noreferrer"><cite>Greenhouse gas reporting conversion factors: methodology</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf</span></li>
+            <li class="ref">Expo (n.d.) <a href="https://docs.expo.dev/versions/latest/sdk/location/#background-location" target="_blank" rel="noopener noreferrer"><cite>Location: background location</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://docs.expo.dev/versions/latest/sdk/location/#background-location</span></li>
+            <li class="ref">Convex (n.d.) <a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer"><cite>React Native client</cite></a>; <a href="https://docs.convex.dev/auth/overview" target="_blank" rel="noopener noreferrer"><cite>Authentication overview</cite></a>; <a href="https://docs.convex.dev/functions/mutation-functions" target="_blank" rel="noopener noreferrer"><cite>Mutation functions</cite></a>; <a href="https://docs.convex.dev/scheduling/scheduled-functions" target="_blank" rel="noopener noreferrer"><cite>Scheduled functions</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://docs.convex.dev/client/react-native; https://docs.convex.dev/auth/overview; https://docs.convex.dev/functions/mutation-functions; https://docs.convex.dev/scheduling/scheduled-functions</span></li>
+            <li class="ref">Aston Martin Aramco Formula One Team (2024) <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2024.pdf#page=35" target="_blank" rel="noopener noreferrer"><cite>Make A Mark ESG report</cite></a>, pp. 35–36. Accessed 25 September 2026.<span class="url">Available at: https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2024.pdf#page=35</span></li>
+            <li class="ref">Aston Martin Aramco Formula One Team (2025) <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf#page=26" target="_blank" rel="noopener noreferrer"><cite>Make A Mark ESG report</cite></a>, p. 26. Accessed 25 September 2026.<span class="url">Available at: https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf#page=26</span></li>
+            <li class="ref">Aston Martin Aramco Formula One Team (n.d.) <a href="https://www.astonmartinf1.com/en-GB/IAM" target="_blank" rel="noopener noreferrer"><cite>I / AM</cite></a>; <a href="https://www.astonmartinf1.com/en-GB/partners" target="_blank" rel="noopener noreferrer"><cite>Partners</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://www.astonmartinf1.com/en-GB/IAM; https://www.astonmartinf1.com/en-GB/partners</span></li>
+          </ol>
+        </div>
+      </details>
+    </section>
+    <footer>25 September 2026 · Generated by GPT-6 through the Codex harness.</footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Fan app · screen directions</title>
+<style>
+:root{--bg:#000;--surface:#0b0c0e;--raised:#15171b;--border:#2a2a2a;--text:#f4f4f5;--muted:#aaaeb7;--accent:#8db7ff;--selected:#131c2b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{width:calc(100% - 64px);max-width:1280px;margin:40px auto 0}
+h1{font-size:clamp(30px,4vw,43px);line-height:1.15;letter-spacing:-.02em;margin:0 0 16px}
+h2{font-size:27px;line-height:1.25;letter-spacing:-.01em;margin:0 0 10px}
+h3,h4,p{margin:0}
+p{color:var(--muted)}
+.intro{display:grid;gap:12px}
+.intro p{max-width:none}
+.note{padding:16px 20px;background:#101925;color:#d9e5fb;margin-top:20px}
+.jump{display:flex;gap:24px;flex-wrap:wrap;margin:24px 0 0}
+a{color:var(--accent);text-underline-offset:4px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:5px}
+.direction{border-top:1px solid #2a2a2a;padding-top:48px;margin-top:48px;scroll-margin-top:24px}
+.direction .description{margin:0 0 8px}
+.direction .choice-note{font-weight:600;color:var(--text)}
+.screens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px;align-items:start}
+.screen-sample{min-width:0;margin:0}
+figcaption{color:var(--muted);font-size:15px;min-height:48px}
+.phone{width:100%;max-width:390px;margin:0 auto;min-height:880px;display:flex;flex-direction:column;background:var(--surface);border:1px solid #36383d;border-radius:24px;overflow:hidden;font-size:15px;line-height:1.4}
+.phone-head{min-height:64px;padding:24px 20px 16px;display:flex;justify-content:space-between;gap:12px;font-weight:600;border-bottom:1px solid #24262b}
+.phone-head>span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.phone-body{padding:20px;flex:1}
+.phone h3{font-size:23px;line-height:1.2;font-weight:650;letter-spacing:-.02em}
+.phone h4{font-size:16px;line-height:1.35;font-weight:600}
+.sub{margin-top:8px;font-size:15px}
+.selected-summary{margin:24px 0;display:grid;grid-template-columns:1.45fr 1fr .8fr;gap:8px}
+.selected-summary span{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+.selected-summary strong{font-size:25px;font-weight:600;white-space:nowrap;letter-spacing:-.02em}
+.selected-summary small{font-size:12px;font-weight:400;letter-spacing:0}
+.routes{margin-top:12px}
+.route{display:flex;justify-content:space-between;gap:10px;padding:14px 0;border-bottom:1px solid #292c31;min-height:72px}
+.route-label{min-width:0;flex:1}
+.route-label strong,.route-label span,.route-metrics strong,.route-metrics span{display:block}
+.route-label strong{font-size:15px;font-weight:600}
+.route-label span,.route-metrics span{font-size:13px;color:var(--muted);margin-top:5px}
+.route-metrics{text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.route-metrics strong{font-size:20px;font-weight:600}
+.route-metrics small{font-size:11px;font-weight:400}
+.selected{padding:14px 10px;margin-inline:-10px;background:var(--selected);border-bottom-color:#5677a8;border-left:3px solid var(--accent)}
+.selected .route-label strong{color:var(--accent)}
+.map{margin-top:20px;background:#141619;border-radius:8px;overflow:hidden}
+.map svg{display:block;width:100%;height:auto;min-height:150px}
+.map.small svg{height:120px;min-height:120px;object-fit:cover}
+.phone-bottom{padding:16px 20px 24px;border-top:1px solid #24262b;background:var(--surface)}
+.mock-primary,.mock-secondary,.mock-disabled{display:flex;align-items:center;justify-content:center;min-height:48px;padding:12px;border-radius:8px;font-size:15px;font-weight:600;text-align:center}
+.mock-primary{background:var(--accent);color:#0b172b}
+.mock-secondary{border:1px solid #668cc6;color:var(--accent)}
+.mock-disabled{background:#1c1e23;color:#9ca1ad}
+.smallprint{font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center}
+.phone-bottom .mock-disabled{margin-top:12px}
+.challenge-list{list-style:none;padding:0;margin:24px 0 0}
+.challenge-list li{display:flex;gap:12px;padding:20px 0;border-bottom:1px solid #2a2a2a}
+.rank{color:var(--muted);font-variant-numeric:tabular-nums;width:20px;flex-shrink:0;font-size:17px}
+.challenge-copy{min-width:0;flex:1}
+.challenge-copy p{font-size:14px;margin-top:8px}
+.challenge-copy p strong{color:var(--text);font-weight:500}
+.contribute{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.contribute>span{grid-column:1/-1;color:var(--muted);font-size:13px}
+.mock-input{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:12px;border:1px solid #535761;border-radius:6px;color:var(--muted)}
+.mock-input>span{font-size:13px}
+.create-block{padding-top:24px}
+.create-block .mock-input{margin-top:16px}
+.create-block .smallprint{text-align:left}
+.balance{display:flex;align-items:baseline;justify-content:space-between;margin:28px 0;padding-bottom:20px;border-bottom:1px solid #2a2a2a}
+.balance span{color:var(--muted);font-size:14px}
+.balance strong{font-size:30px;font-weight:600;letter-spacing:-.02em}
+.reward{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:24px 0;border-bottom:1px solid #2a2a2a}
+.discount{display:block;font-size:38px;letter-spacing:-.03em;font-weight:600;line-height:1.1}
+.discount small{font-size:16px;letter-spacing:0;font-weight:400}
+.reward>div>span{display:block;color:var(--muted);font-size:14px;margin-top:8px}
+.reward-price{text-align:right}
+.reward-price strong{font-weight:500;font-size:20px}
+.store-note{font-size:14px;margin-top:24px}
+.b .phone-head{border-bottom:0}
+.b .phone-body{padding-top:12px}
+.b .map{margin-inline:-20px;border-radius:0;margin-top:20px}
+.b .map svg{height:200px}
+.b .selected-summary{padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid #2a2a2a}
+.b .route{padding-block:11px;min-height:64px}
+.b .challenge-list li:first-child{display:block;padding:20px;background:#15171b;border-radius:10px}
+.b .challenge-list li:first-child .rank{display:block;margin-bottom:12px}
+.b .reward{display:block}
+.b .reward-price{display:flex;align-items:center;justify-content:space-between;margin-top:16px;text-align:left}
+.b .reward-price>span{margin:0}
+.c .phone-head{padding-inline:16px}
+.c .phone-body,.c .phone-bottom{padding-inline:16px}
+.c .comparison-head{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);margin-top:28px}
+.c .route{padding-block:12px}
+.c .route-metrics strong{font-size:20px}
+.c .routes{margin-top:4px;margin-bottom:24px}
+.c .selected-summary{padding-top:20px;margin-top:20px;border-top:1px solid #2a2a2a}
+.c .challenge-list li{gap:8px}
+.c .challenge-copy h4{font-size:17px}
+.c .reward{align-items:baseline;padding-block:28px}
+.c .discount{font-size:30px}
+.c .create-block{border-top:1px solid #2a2a2a;margin-top:24px}
+details{border:1px solid #2a2a2a;border-radius:10px;padding:16px 20px;margin-top:32px}
+details[open]{border:1px solid #2a2a2a}
+summary{cursor:pointer;font-weight:600}
+details ul{padding-left:20px;color:var(--muted)}
+footer{margin:32px 0;padding-bottom:32px;color:var(--muted);font-size:13px}
+@media(max-width:1080px){.screens{grid-template-columns:1fr;gap:32px}.screen-sample{width:min(100%,390px);margin-inline:auto}.phone{min-height:0}.phone-body{min-height:620px}figcaption{min-height:0;margin-bottom:12px}}
+@media(max-width:600px){main{width:calc(100% - 32px);margin-top:24px}.direction{padding-top:40px;margin-top:40px}h2{font-size:24px}.phone{border-radius:18px}.phone-body{padding:16px}.phone-head{padding-inline:16px}.selected-summary{gap:5px}.selected-summary strong{font-size:23px}.b .map{margin-inline:-16px}.screens{gap:32px}.note{padding:16px}.jump{gap:20px}.route-label strong{font-size:14px}.route-metrics strong{font-size:19px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+@media print{main{width:100%}.direction{break-before:page}.phone{break-inside:avoid}.jump{display:none}}
+</style>
+</head>
+<body><main>
+<header class="intro">
+<h1>Fan app · screen directions</h1>
+<p>Three static layout options for the same core feature: compare travel to the race, support driver challenges, and redeem merchandise discounts.</p>
+<p>Near-black surfaces, clear type, and restrained blue actions. No team logo or final branding is assumed.</p>
+</header>
+<div class="note"><strong>Mockups, not a working app.</strong> Routes, map, emissions, points estimates, balances, and challenge totals are illustrative. Store prices are left unset. The 500-point submission cost and 10-point minimum contribution are confirmed.</div>
+<nav class="jump" aria-label="Screen directions"><a href="#a">A · Routes first</a><a href="#b">B · Map first</a><a href="#c">C · Compact comparison</a></nav>
+<section id="a" class="direction" aria-labelledby="a-title"><h2 id="a-title">A · Routes first</h2><p class="description">A compact list keeps emissions and alternatives together. The map supports the decision below the list.</p><p class="choice-note">Recommended starting point</p><div class="screens"><figure class="screen-sample"><figcaption>Travel · compare routes</figcaption><div class="phone a"><div class="phone-head"><span>Travel</span><span>1,200 pts</span></div><div class="phone-body"><h3>Singapore race</h3><p class="sub">From your current location</p><div class="selected-summary"><div><span>Estimated emissions</span><strong>0.4 <small>kg CO₂e</small></strong></div><div><span>Journey</span><strong>42 <small>min</small></strong></div><div><span>Est. points</span><strong>+18</strong></div></div><h4>Choose a route</h4><div class="routes"><div class="route"><div class="route-label"><strong>Cycle</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>38 min · +24 pts</span></div></div><div class="route"><div class="route-label"><strong>Walk</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>1 h 55 · +24 pts</span></div></div><div class="route selected"><div class="route-label"><strong>MRT + walk</strong><span>One transfer</span></div><div class="route-metrics"><strong>0.4<small> kg CO₂e</small></strong><span>42 min · +18 pts</span></div></div><div class="route"><div class="route-label"><strong>Bus + MRT + walk</strong><span>Two transfers</span></div><div class="route-metrics"><strong>0.7<small> kg CO₂e</small></strong><span>49 min · +12 pts</span></div></div><div class="route"><div class="route-label"><strong>Cab</strong><span>Direct route</span></div><div class="route-metrics"><strong>3.2<small> kg CO₂e</small></strong><span>26 min · +2 pts</span></div></div></div><div class="map small"><svg viewBox="0 0 340 190" role="img" aria-label="Illustrative route diagram, not an actual map"><rect width="340" height="190" fill="#141619"/><g stroke="#2b2e33" stroke-width="9" fill="none"><path d="M-10 43H360M-10 112H360M65-10V205M171-10V205M279-10V205"/><path d="M-20 177L130 50L355 171"/></g><path d="M65 151V112H171V43H279" stroke="#7eacff" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="65" cy="151" r="7" fill="#fff" stroke="#15171b" stroke-width="3"/><circle cx="279" cy="43" r="8" fill="#7eacff" stroke="#101114" stroke-width="3"/><g font-family="system-ui,sans-serif" font-size="14" fill="#f4f4f5"><text x="78" y="167">You</text><text x="193" y="27">Race venue</text></g></svg></div></div><div class="phone-bottom"><div class="mock-primary" aria-label="Static representation of Start journey button">Start journey</div><p class="smallprint">MRT + walk · Singapore race</p></div></div></figure><figure class="screen-sample"><figcaption>Challenges · contribute or create</figcaption><div class="phone a"><div class="phone-head"><span>Challenges</span><span>1,200 pts</span></div><div class="phone-body"><h3>Fan challenges</h3><p class="sub">Approved · highest points first</p><ol class="challenge-list"><li><span class="rank">1</span><div class="challenge-copy"><h4>Chicken dance before the race</h4><p>Singapore · <strong>8,640 pts</strong></p><div class="contribute"><span>Contribute points</span><div class="mock-input">10 <span>pts</span></div><div class="mock-secondary">Contribute</div></div></div></li><li><span class="rank">2</span><div class="challenge-copy"><h4>Drivers answer fan questions</h4><p>Singapore · <strong>6,210 pts</strong></p></div></li><li><span class="rank">3</span><div class="challenge-copy"><h4>Team pit-stop challenge</h4><p>Singapore · <strong>4,380 pts</strong></p></div></li></ol><div class="create-block"><h4>Create a challenge</h4><p class="sub">500 points to submit · admin approval</p><div class="mock-input">Describe your challenge</div><p class="smallprint">At least 10 points per contribution.</p></div></div><div class="phone-bottom"><div class="mock-primary">Submit challenge · 500 pts</div></div></div></figure><figure class="screen-sample"><figcaption>Store · sample merchandise discounts</figcaption><div class="phone a"><div class="phone-head"><span>Store</span><span>1,200 pts</span></div><div class="phone-body"><h3>Merchandise discounts</h3><p class="sub">Sample rewards</p><div class="balance"><span>Available points</span><strong>1,200</strong></div><div class="rewards"><div class="reward"><div><strong class="discount">10% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">30% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">60% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div></div><p class="store-note">Higher discounts require more points.</p></div><div class="phone-bottom"><p class="smallprint">Sample vouchers · no cash value</p><div class="mock-disabled">Choose a reward</div></div></div></figure></div></section><section id="b" class="direction" aria-labelledby="b-title"><h2 id="b-title">B · Map first</h2><p class="description">A larger route preview leads the screen. The same alternatives follow beneath it.</p><p class="choice-note">More geographic context</p><div class="screens"><figure class="screen-sample"><figcaption>Travel · compare routes</figcaption><div class="phone b"><div class="phone-head"><span>Travel</span><span>1,200 pts</span></div><div class="phone-body"><h3>Singapore race</h3><p class="sub">From your current location</p><div class="map "><svg viewBox="0 0 340 190" role="img" aria-label="Illustrative route diagram, not an actual map"><rect width="340" height="190" fill="#141619"/><g stroke="#2b2e33" stroke-width="9" fill="none"><path d="M-10 43H360M-10 112H360M65-10V205M171-10V205M279-10V205"/><path d="M-20 177L130 50L355 171"/></g><path d="M65 151V112H171V43H279" stroke="#7eacff" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="65" cy="151" r="7" fill="#fff" stroke="#15171b" stroke-width="3"/><circle cx="279" cy="43" r="8" fill="#7eacff" stroke="#101114" stroke-width="3"/><g font-family="system-ui,sans-serif" font-size="14" fill="#f4f4f5"><text x="78" y="167">You</text><text x="193" y="27">Race venue</text></g></svg></div><div class="selected-summary"><div><span>Estimated emissions</span><strong>0.4 <small>kg CO₂e</small></strong></div><div><span>Journey</span><strong>42 <small>min</small></strong></div><div><span>Est. points</span><strong>+18</strong></div></div><h4>Choose a route</h4><div class="routes"><div class="route"><div class="route-label"><strong>Cycle</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>38 min · +24 pts</span></div></div><div class="route"><div class="route-label"><strong>Walk</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>1 h 55 · +24 pts</span></div></div><div class="route selected"><div class="route-label"><strong>MRT + walk</strong><span>One transfer</span></div><div class="route-metrics"><strong>0.4<small> kg CO₂e</small></strong><span>42 min · +18 pts</span></div></div><div class="route"><div class="route-label"><strong>Bus + MRT + walk</strong><span>Two transfers</span></div><div class="route-metrics"><strong>0.7<small> kg CO₂e</small></strong><span>49 min · +12 pts</span></div></div><div class="route"><div class="route-label"><strong>Cab</strong><span>Direct route</span></div><div class="route-metrics"><strong>3.2<small> kg CO₂e</small></strong><span>26 min · +2 pts</span></div></div></div></div><div class="phone-bottom"><div class="mock-primary" aria-label="Static representation of Start journey button">Start journey</div><p class="smallprint">MRT + walk · Singapore race</p></div></div></figure><figure class="screen-sample"><figcaption>Challenges · contribute or create</figcaption><div class="phone b"><div class="phone-head"><span>Challenges</span><span>1,200 pts</span></div><div class="phone-body"><h3>Fan challenges</h3><p class="sub">Approved · highest points first</p><ol class="challenge-list"><li><span class="rank">1</span><div class="challenge-copy"><h4>Chicken dance before the race</h4><p>Singapore · <strong>8,640 pts</strong></p><div class="contribute"><span>Contribute points</span><div class="mock-input">10 <span>pts</span></div><div class="mock-secondary">Contribute</div></div></div></li><li><span class="rank">2</span><div class="challenge-copy"><h4>Drivers answer fan questions</h4><p>Singapore · <strong>6,210 pts</strong></p></div></li><li><span class="rank">3</span><div class="challenge-copy"><h4>Team pit-stop challenge</h4><p>Singapore · <strong>4,380 pts</strong></p></div></li></ol><div class="create-block"><h4>Create a challenge</h4><p class="sub">500 points to submit · admin approval</p><div class="mock-input">Describe your challenge</div><p class="smallprint">At least 10 points per contribution.</p></div></div><div class="phone-bottom"><div class="mock-primary">Submit challenge · 500 pts</div></div></div></figure><figure class="screen-sample"><figcaption>Store · sample merchandise discounts</figcaption><div class="phone b"><div class="phone-head"><span>Store</span><span>1,200 pts</span></div><div class="phone-body"><h3>Merchandise discounts</h3><p class="sub">Sample rewards</p><div class="balance"><span>Available points</span><strong>1,200</strong></div><div class="rewards"><div class="reward"><div><strong class="discount">10% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">30% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">60% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div></div><p class="store-note">Higher discounts require more points.</p></div><div class="phone-bottom"><p class="smallprint">Sample vouchers · no cash value</p><div class="mock-disabled">Choose a reward</div></div></div></figure></div></section><section id="c" class="direction" aria-labelledby="c-title"><h2 id="c-title">C · Compact comparison</h2><p class="description">Aligned values make the transport tradeoffs easy to scan. The selected route has a separate summary.</p><p class="choice-note">Denser comparison</p><div class="screens"><figure class="screen-sample"><figcaption>Travel · compare routes</figcaption><div class="phone c"><div class="phone-head"><span>Travel</span><span>1,200 pts</span></div><div class="phone-body"><h3>Singapore race</h3><p class="sub">From your current location</p><div class="comparison-head"><span>Choose a route</span><span>CO₂e · time · points</span></div><div class="routes"><div class="route"><div class="route-label"><strong>Cycle</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>38 min · +24 pts</span></div></div><div class="route"><div class="route-label"><strong>Walk</strong><span>Lowest emissions</span></div><div class="route-metrics"><strong>0.0<small> kg CO₂e</small></strong><span>1 h 55 · +24 pts</span></div></div><div class="route selected"><div class="route-label"><strong>MRT + walk</strong><span>One transfer</span></div><div class="route-metrics"><strong>0.4<small> kg CO₂e</small></strong><span>42 min · +18 pts</span></div></div><div class="route"><div class="route-label"><strong>Bus + MRT + walk</strong><span>Two transfers</span></div><div class="route-metrics"><strong>0.7<small> kg CO₂e</small></strong><span>49 min · +12 pts</span></div></div><div class="route"><div class="route-label"><strong>Cab</strong><span>Direct route</span></div><div class="route-metrics"><strong>3.2<small> kg CO₂e</small></strong><span>26 min · +2 pts</span></div></div></div><h4>Selected: MRT + walk</h4><div class="map small"><svg viewBox="0 0 340 190" role="img" aria-label="Illustrative route diagram, not an actual map"><rect width="340" height="190" fill="#141619"/><g stroke="#2b2e33" stroke-width="9" fill="none"><path d="M-10 43H360M-10 112H360M65-10V205M171-10V205M279-10V205"/><path d="M-20 177L130 50L355 171"/></g><path d="M65 151V112H171V43H279" stroke="#7eacff" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="65" cy="151" r="7" fill="#fff" stroke="#15171b" stroke-width="3"/><circle cx="279" cy="43" r="8" fill="#7eacff" stroke="#101114" stroke-width="3"/><g font-family="system-ui,sans-serif" font-size="14" fill="#f4f4f5"><text x="78" y="167">You</text><text x="193" y="27">Race venue</text></g></svg></div><div class="selected-summary"><div><span>Estimated emissions</span><strong>0.4 <small>kg CO₂e</small></strong></div><div><span>Journey</span><strong>42 <small>min</small></strong></div><div><span>Est. points</span><strong>+18</strong></div></div></div><div class="phone-bottom"><div class="mock-primary" aria-label="Static representation of Start journey button">Start journey</div><p class="smallprint">MRT + walk · Singapore race</p></div></div></figure><figure class="screen-sample"><figcaption>Challenges · contribute or create</figcaption><div class="phone c"><div class="phone-head"><span>Challenges</span><span>1,200 pts</span></div><div class="phone-body"><h3>Fan challenges</h3><p class="sub">Approved · highest points first</p><ol class="challenge-list"><li><span class="rank">1</span><div class="challenge-copy"><h4>Chicken dance before the race</h4><p>Singapore · <strong>8,640 pts</strong></p><div class="contribute"><span>Contribute points</span><div class="mock-input">10 <span>pts</span></div><div class="mock-secondary">Contribute</div></div></div></li><li><span class="rank">2</span><div class="challenge-copy"><h4>Drivers answer fan questions</h4><p>Singapore · <strong>6,210 pts</strong></p></div></li><li><span class="rank">3</span><div class="challenge-copy"><h4>Team pit-stop challenge</h4><p>Singapore · <strong>4,380 pts</strong></p></div></li></ol><div class="create-block"><h4>Create a challenge</h4><p class="sub">500 points to submit · admin approval</p><div class="mock-input">Describe your challenge</div><p class="smallprint">At least 10 points per contribution.</p></div></div><div class="phone-bottom"><div class="mock-primary">Submit challenge · 500 pts</div></div></div></figure><figure class="screen-sample"><figcaption>Store · sample merchandise discounts</figcaption><div class="phone c"><div class="phone-head"><span>Store</span><span>1,200 pts</span></div><div class="phone-body"><h3>Merchandise discounts</h3><p class="sub">Sample rewards</p><div class="balance"><span>Available points</span><strong>1,200</strong></div><div class="rewards"><div class="reward"><div><strong class="discount">10% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">30% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div><div class="reward"><div><strong class="discount">60% <small>off</small></strong><span>Merchandise voucher</span></div><div class="reward-price"><span>Point cost</span><strong>—</strong></div></div></div><p class="store-note">Higher discounts require more points.</p></div><div class="phone-bottom"><p class="smallprint">Sample vouchers · no cash value</p><div class="mock-disabled">Choose a reward</div></div></div></figure></div></section>
+<details><summary>Rules these screens preserve</summary><ul>
+<li>iOS and Android using Expo and React Native. Actual location tracking continues through arrival while backgrounded, subject to OS permissions and lifecycle limits.</li>
+<li>Local travel to and from the selected race. Public transport may mix bus, MRT/rail, and walking; a cab is a separate route.</li>
+<li>Race-local reward window: Thursday 00:00 through Monday 06:00. Boundary eligibility still needs a rule.</li>
+<li>Journey points are estimates until completion. Recalculation changes that journey’s award, not the fan’s previously earned points.</li>
+<li>A challenge costs 500 points to submit and needs admin approval. Contributions start at 10 points; higher totals rank higher. No fixed funding goal is assumed.</li>
+<li>The store offers 10%–60% merchandise discounts with clearly labelled sample fulfilment. Prices and earning rates still need agreement.</li>
+</ul></details>
+<footer>25 September 2026 · Generated by GPT-6 through the Codex harness.</footer>
+</main></body></html>

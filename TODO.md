@@ -2,9 +2,11 @@
 
 ## Team discussion HTML — 25 September 2026
 
-- [ ] Record the non-refundable 500-point submission fee and accepted daily outbound/return reward limit.
-- [ ] Create a local HTML brief separating confirmed rules, proposals, open team decisions, and disclosed demo fulfilment.
-- [ ] Verify local readability, agreement with the plan, internal links, and self-contained markup; report rendered layout separately.
+- [x] Record the non-refundable 500-point submission fee and accepted daily outbound/return reward limit.
+- [x] Create a local HTML brief separating confirmed rules, proposals, open team decisions, and disclosed demo fulfilment.
+- [x] Verify local readability, agreement with the plan, internal links, and self-contained markup; report rendered layout separately.
+
+Artifact: [team discussion brief](docs/fan-app-team-brief.html). Verification: [.evidence/team-discussion-html/verification.md](.evidence/team-discussion-html/verification.md). Local content and source checks passed; rendered appearance and interaction remain unverified. Nothing published by this task.
 
 This deliverable is a team discussion document. It does not close unresolved interview questions or authorize app implementation or publication.
 
