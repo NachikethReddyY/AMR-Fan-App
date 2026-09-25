@@ -228,6 +228,10 @@ test('upstream status, redirects, malformed output, oversize and timeouts fail w
         return;
       }
       res.setHeader('Content-Type', 'application/json');
+      if (scenario === 'body-timeout') {
+        res.write('{');
+        return;
+      }
       if (scenario === 'malformed') res.end('{');
       if (scenario === 'oversize') res.end(' '.repeat(131073));
       if (scenario === 'declared-oversize') {
@@ -248,6 +252,7 @@ test('upstream status, redirects, malformed output, oversize and timeouts fail w
         ['oversize', 'response_too_large'],
         ['declared-oversize', 'response_too_large'],
         ['timeout', 'timeout'],
+        ['body-timeout', 'timeout'],
         ['empty', 'no_route'],
       ]) {
         scenario = name;
@@ -264,7 +269,7 @@ test('upstream status, redirects, malformed output, oversize and timeouts fail w
       }
     },
   );
-  assert.equal(requests, 7);
+  assert.equal(requests, 8);
 });
 
 test('malformed route contradictions and coercible values never reach calculations', async () => {
@@ -338,4 +343,72 @@ test('global minute budget caps repeated queries at 60 paid attempts', async () 
     },
   );
   assert.equal(requests, 60);
+});
+
+test('fixture configuration refuses real keys and production loopback, and sanitizes configuration errors', () => {
+  const fixtureEnv = {
+    NODE_ENV: 'test',
+    AMR_ROUTES_SYNTHETIC: 'true',
+    AMR_GOOGLE_ROUTES_ENDPOINT:
+      'http://127.0.0.1:1234/directions/v2:computeRoutes',
+  };
+  for (const env of [
+    { ...fixtureEnv, AMR_GOOGLE_ROUTES_KEY: 'private-key-do-not-leak' },
+    { ...fixtureEnv, NODE_ENV: 'production' },
+    {
+      ...fixtureEnv,
+      AMR_GOOGLE_ROUTES_ENDPOINT:
+        'http://localhost:1234/directions/v2:computeRoutes',
+    },
+    {
+      ...fixtureEnv,
+      AMR_GOOGLE_ROUTES_ENDPOINT:
+        'http://127.0.0.1:1234/directions/v2:computeRoutes?secret=private',
+    },
+    { AMR_ROUTES_TIMEOUT_MS: '5001' },
+    { AMR_ROUTES_TIMEOUT_MS: 'NaN' },
+    { AMR_ROUTES_SYNTHETIC: 'yes' },
+  ])
+    assert.throws(() => createRouteProvider(env), {
+      message: 'Invalid route provider configuration.',
+    });
+});
+
+test('lifetime cost ceiling survives minute-window rollover and transport emits no sensitive logs', async (context) => {
+  let now = Date.now(),
+    requests = 0;
+  context.mock.method(Date, 'now', () => now);
+  const logs: string[] = [];
+  for (const level of ['log', 'warn', 'error', 'info', 'debug'] as const)
+    context.mock.method(console, level, (...args: unknown[]) =>
+      logs.push(args.map(String).join(' ')),
+    );
+  await fixture(
+    (_req, res) => {
+      requests++;
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(
+        '{"secret":"amr-synthetic-routes","location":"private-coordinate"}',
+      );
+    },
+    async (env) => {
+      const provider = createRouteProvider(env);
+      for (let i = 0; i < 250; i++) {
+        if (i % 15 === 0) now += 60001;
+        const result = await provider.search({
+          ...input,
+          modes: ['DRIVE', 'TRANSIT', 'WALK', 'BICYCLE'],
+        });
+        assert.equal(result.kind, 'unavailable');
+        assert.ok(!JSON.stringify(result).includes('private-coordinate'));
+      }
+      now += 60001;
+      assert.deepEqual(await provider.search(input), {
+        kind: 'unavailable',
+        reason: 'budget_exhausted',
+      });
+    },
+  );
+  assert.equal(requests, 1000);
+  assert.deepEqual(logs, []);
 });

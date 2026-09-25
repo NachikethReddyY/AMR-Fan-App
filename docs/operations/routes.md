@@ -12,11 +12,10 @@ unknown request body. A null actor fails with 401 before a provider call. The
 actor is trusted server context, never a request field. Unknown fields, including
 account/profile IDs, endpoints, factors and geometry, fail validation.
 
-The intended registration is `POST /v1/routes/query`, after the existing bearer
-session check in `server/api/app.ts`. At this source-slice commit registration
-and its root test/CI hook await the serialized API-owner handoff. Direct query
-tests are not proof of registered HTTP authentication. There is no saved query
-or cross-account query identifier to retrieve.
+`POST /v1/routes/query` runs after the existing bearer session check in
+`server/api/app.ts`. Actual local HTTP tests use persisted revocable sessions in
+the worktree's isolated PostgreSQL test namespace. There is no saved query or
+cross-account query identifier to retrieve.
 
 Input has `origin` and `destination`, each either a nonempty address of at most
 200 characters or `{latitude, longitude}` with globally valid finite coordinates;
@@ -125,11 +124,17 @@ native configuration or whole UI commit was copied. PR24/26 remain held for
 their own small-iPhone Dynamic Type/VoiceOver proof; this candidate does not
 approve phone behavior or close #6/#7.
 
-Run `node --test server/routes/*.test.ts`, `pnpm exec jest src/features/routes
---runInBand`, `pnpm check` and `pnpm security:check`. Synthetic tests run temporary
+Run `pnpm route:test`, `pnpm route:test:database`, `pnpm account:test:database`,
+`pnpm exec jest src/features/routes --runInBand`, `pnpm check`,
+`pnpm security:check` and `pnpm security:dast`. The database commands use only
+the namespace assigned to this checkout; see [local setup](local-development.md).
+The root check and CI include route unit/HTTP tests. Synthetic tests run temporary
 127.0.0.1 port-0 HTTP servers and close them in `finally`. No live Google request
 was made: no authorized credential configuration was available. Live mode
 coverage, actual Google response compatibility and provider cost remain pending.
-Raw evidence is private under `.evidence/route-provider/`.
+Raw evidence is private under `.evidence/route-provider/`. Application DAST uses
+the real account/route API in its existing isolated container, with no host port
+or live credential. Its unauthenticated passive scan is separate from protected
+POST-route and session behavior tested through actual HTTP/PostgreSQL.
 
 Written by gpt-6-astra through Codex (T3 Code).
