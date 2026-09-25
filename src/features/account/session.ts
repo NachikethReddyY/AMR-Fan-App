@@ -3,7 +3,7 @@ import {
   type Account,
   type AccountApi,
   type Session,
-} from './api';
+} from './api.ts';
 export type StoredSession =
   | { kind: 'active'; token: string; selected: 'real' | 'demo' }
   | { kind: 'revoking'; token: string };
@@ -133,15 +133,35 @@ export function createSessionController(api: AccountApi, storage: Storage) {
     resume,
     signIn,
     logout,
+    expire: async (token: string) => {
+      if (state.kind !== 'signedIn' || state.token !== token) return;
+      const attempt = ++generation;
+      set({ kind: 'loading' });
+      try {
+        await storage.clear();
+        if (attempt === generation)
+          set({
+            kind: 'signedOut',
+            error: 'Your session expired. Sign in again.',
+          });
+      } catch {
+        if (attempt === generation)
+          set({
+            kind: 'unavailable',
+            message: 'Could not clear expired sign-in. Retry.',
+          });
+      }
+    },
     select: async (selected: 'real' | 'demo') => {
       if (state.kind !== 'signedIn') return;
       const current = state;
+      const attempt = ++generation;
       set({ kind: 'loading' });
       try {
         await storage.write({ kind: 'active', token: current.token, selected });
-        set({ ...current, selected });
+        if (attempt === generation) set({ ...current, selected });
       } catch (error) {
-        set(current);
+        if (attempt === generation) set(current);
         throw error;
       }
     },

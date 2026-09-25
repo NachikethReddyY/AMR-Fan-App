@@ -25,6 +25,12 @@ function fixture() {
     resume: jest.fn(async () => account),
     logout: jest.fn(async () => {}),
     rename: jest.fn(async () => account.profiles[0]),
+    history: jest.fn(async () => ({
+      profile: account.profiles[0],
+      balance: 0,
+      entries: [],
+      nextCursor: null,
+    })),
   };
   const storage = {
     read: async () => stored,
@@ -60,6 +66,19 @@ test('sign-in persists token, app restart resumes account, demo selection preser
   const third = createSessionController(f.api, f.storage);
   await third.resume();
   expect(third.getState()).toMatchObject({ selected: 'demo', account });
+});
+
+test('a History401 hides the active account and removes its stored credential; an old token cannot invalidate a new session', async () => {
+  const f = fixture();
+  const controller = createSessionController(f.api, f.storage);
+  await controller.signIn(() => f.api.signIn('access'));
+  await controller.expire('old-token');
+  expect(controller.getState().kind).toBe('signedIn');
+  const expired = controller.expire('token');
+  expect(controller.getState().kind).toBe('loading');
+  await expired;
+  expect(controller.getState().kind).toBe('signedOut');
+  expect(f.stored).toBeNull();
 });
 test('offline resume never displays cached authority and keeps credential for retry', async () => {
   const f = fixture();

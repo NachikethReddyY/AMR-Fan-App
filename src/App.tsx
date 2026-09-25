@@ -1,6 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import {
+  NavigationContainer,
+  DarkTheme,
+  useFocusEffect,
+} from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
 import {
@@ -19,6 +23,9 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '../global.css';
 import { AccountProvider } from './features/account/provider';
 import { AccountPanel } from './features/account/AccountPanel';
+import { PointsProvider, useHistory } from './features/points/provider';
+import { Balance } from './features/points/Balance';
+import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
 
 type Tabs = {
   Home: undefined;
@@ -37,6 +44,12 @@ function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
 }
 
 function Home() {
+  const { controller } = useHistory();
+  useFocusEffect(
+    useCallback(() => {
+      void controller.refresh();
+    }, [controller]),
+  );
   return (
     <>
       <View style={styles.hero}>
@@ -46,9 +59,7 @@ function Home() {
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Points and rewards</Text>
-        <Text style={styles.points}>
-          0 <Text style={styles.muted}>available points</Text>
-        </Text>
+        <Balance />
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Team impact</Text>
@@ -90,7 +101,11 @@ function TravelScreen() {
   return <Placeholder title="Travel" />;
 }
 function RewardsScreen() {
-  return <Placeholder title="Rewards" />;
+  return (
+    <Screen>
+      <PointsRewards />
+    </Screen>
+  );
 }
 function ImpactScreen() {
   return <Placeholder title="Impact" />;
@@ -115,96 +130,98 @@ function AccountNavigation() {
   const labelHeight = Math.max(14 * fontScale, ...Object.values(labelHeights));
   return (
     <AccountProvider>
-      <NavigationContainer
-        theme={{
-          ...DarkTheme,
-          colors: { ...DarkTheme.colors, background: '#121212' },
-        }}
-      >
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: '#FFFFFF',
-            tabBarInactiveTintColor: '#E0E0DC',
-            ...(largeLabels
-              ? {
-                  tabBarLabel: ({ color, children }) => (
-                    <Text
-                      style={{
-                        color,
-                        fontSize: 12,
-                        lineHeight: 14,
-                        textAlign: 'center',
-                        paddingHorizontal: 2,
-                        maxWidth: '100%',
-                      }}
-                      accessibilityElementsHidden
-                      importantForAccessibility="no"
-                      onLayout={({ nativeEvent }) => {
-                        const { height } = nativeEvent.layout;
-                        setLabelHeights((previous) =>
-                          previous[children] === height
-                            ? previous
-                            : { ...previous, [children]: height },
-                        );
-                      }}
-                    >
-                      {children}
-                    </Text>
-                  ),
-                }
-              : {}),
-            tabBarStyle: {
-              backgroundColor: '#04524B',
-              borderTopColor: '#3D3D3D',
-              ...(largeLabels
-                ? { height: 44 + labelHeight + insets.bottom }
-                : {}),
-            },
+      <PointsProvider>
+        <NavigationContainer
+          theme={{
+            ...DarkTheme,
+            colors: { ...DarkTheme.colors, background: '#121212' },
           }}
         >
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
-              tabBarIcon: ({ focused }) => (
-                <TabIcon Icon={House} focused={focused} />
-              ),
+          <Tab.Navigator
+            screenOptions={{
+              headerShown: false,
+              tabBarActiveTintColor: '#FFFFFF',
+              tabBarInactiveTintColor: '#E0E0DC',
+              ...(largeLabels
+                ? {
+                    tabBarLabel: ({ color, children }) => (
+                      <Text
+                        style={{
+                          color,
+                          fontSize: 12,
+                          lineHeight: 14,
+                          textAlign: 'center',
+                          paddingHorizontal: 2,
+                          maxWidth: '100%',
+                        }}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no"
+                        onLayout={({ nativeEvent }) => {
+                          const { height } = nativeEvent.layout;
+                          setLabelHeights((previous) =>
+                            previous[children] === height
+                              ? previous
+                              : { ...previous, [children]: height },
+                          );
+                        }}
+                      >
+                        {children}
+                      </Text>
+                    ),
+                  }
+                : {}),
+              tabBarStyle: {
+                backgroundColor: '#04524B',
+                borderTopColor: '#3D3D3D',
+                ...(largeLabels
+                  ? { height: 44 + labelHeight + insets.bottom }
+                  : {}),
+              },
             }}
-          />
-          <Tab.Screen
-            name="Travel"
-            component={TravelScreen}
-            options={{
-              tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
-              tabBarIcon: ({ focused }) => (
-                <TabIcon Icon={Route} focused={focused} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Rewards"
-            component={RewardsScreen}
-            options={{
-              tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
-              tabBarIcon: ({ focused }) => (
-                <TabIcon Icon={Gift} focused={focused} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Impact"
-            component={ImpactScreen}
-            options={{
-              tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
-              tabBarIcon: ({ focused }) => (
-                <TabIcon Icon={Leaf} focused={focused} />
-              ),
-            }}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
+          >
+            <Tab.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{
+                tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon Icon={House} focused={focused} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="Travel"
+              component={TravelScreen}
+              options={{
+                tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon Icon={Route} focused={focused} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="Rewards"
+              component={RewardsScreen}
+              options={{
+                tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon Icon={Gift} focused={focused} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="Impact"
+              component={ImpactScreen}
+              options={{
+                tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon Icon={Leaf} focused={focused} />
+                ),
+              }}
+            />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </PointsProvider>
     </AccountProvider>
   );
 }

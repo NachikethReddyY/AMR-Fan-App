@@ -1,3 +1,5 @@
+import { parseHistoryPage } from '../points/contracts.ts';
+
 export type Profile = {
   id: string;
   kind: 'real' | 'demo';
@@ -134,6 +136,17 @@ export function createAccountApi(baseUrl: string, development: boolean) {
           { displayName },
         ),
       ),
+    history: async (token: string, id: string, before?: string) => {
+      const query = new URLSearchParams({ limit: '25' });
+      if (before) query.set('before', before);
+      return parseHistoryPage(
+        await request(
+          `/v1/profiles/${encodeURIComponent(id)}/points/history?${query}`,
+          token,
+        ),
+        id,
+      );
+    },
   };
 }
 export type AccountApi = ReturnType<typeof createAccountApi>;

@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAccount } from './provider';
 import { api, localSignInEnabled, signInWithProvider } from './native-auth';
+import { Balance } from '../points/Balance';
+import { useHistory } from '../points/provider';
 
 const BoldText = createContext(false);
 function Text(props: TextProps) {
@@ -55,6 +57,7 @@ function Action({
 }
 export function AccountPanel() {
   const { controller, state } = useAccount();
+  const { controller: history } = useHistory();
   const [bold, setBold] = useState(false);
   useEffect(() => {
     void AccessibilityInfo.isBoldTextEnabled().then(setBold);
@@ -65,7 +68,10 @@ export function AccountPanel() {
     return () => listener.remove();
   }, []);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editOwner, setEditOwner] = useState<{
+    token: string;
+    profileId: string;
+  } | null>(null);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -73,12 +79,25 @@ export function AccountPanel() {
     state.kind === 'signedIn'
       ? state.account.profiles.find((p) => p.kind === state.selected)
       : undefined;
+  const editing =
+    state.kind === 'signedIn' &&
+    editOwner?.token === state.token &&
+    editOwner.profileId === profile?.id;
+  useEffect(
+    () =>
+      controller.subscribe(() => {
+        setEditOwner(null);
+        setName('');
+        setError('');
+      }),
+    [controller],
+  );
   async function save() {
     setSaving(true);
     setError('');
     try {
       await controller.rename(name);
-      setEditing(false);
+      setEditOwner(null);
     } catch {
       setError('Could not save your name. Try again.');
     } finally {
@@ -95,7 +114,10 @@ export function AccountPanel() {
               ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
               : 'Sign in'
           }
-          onPress={() => setOpen(true)}
+          onPress={() => {
+            setOpen(true);
+            void history.refresh();
+          }}
         />
       </View>
       <Modal
@@ -185,10 +207,7 @@ export function AccountPanel() {
                     ? 'Demo profile · simulated activity'
                     : 'Real profile'}
                 </Text>
-                <Text style={styles.balance}>
-                  {profile.balance}
-                  <Text style={styles.body}>{' available points'}</Text>
-                </Text>
+                <Balance />
                 {state.account.role === 'admin' && (
                   <Text style={styles.caption}>Assigned admin</Text>
                 )}
@@ -229,7 +248,7 @@ export function AccountPanel() {
                       secondary
                       label="Cancel"
                       disabled={saving}
-                      onPress={() => setEditing(false)}
+                      onPress={() => setEditOwner(null)}
                     />
                   </>
                 ) : (
@@ -239,7 +258,10 @@ export function AccountPanel() {
                       label="Edit name"
                       onPress={() => {
                         setName(profile.displayName);
-                        setEditing(true);
+                        setEditOwner({
+                          token: state.token,
+                          profileId: profile.id,
+                        });
                         setError('');
                       }}
                     />
@@ -262,7 +284,7 @@ export function AccountPanel() {
                       secondary
                       label="Sign out"
                       onPress={() => {
-                        setEditing(false);
+                        setEditOwner(null);
                         void controller.logout();
                       }}
                     />

@@ -34,9 +34,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   if (!fontsLoaded && !fontError) return null;
   return <Context.Provider value={controller}>{children}</Context.Provider>;
 }
-export function useAccount() {
+export function useSessionController() {
   const controller = useContext(Context);
   if (!controller) throw new Error('AccountProvider is required.');
+  return controller;
+}
+export function useAccount() {
+  const controller = useSessionController();
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
   return { controller, state };
 }

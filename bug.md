@@ -146,3 +146,22 @@ private screenshots are recorded under `.evidence/account-4/tabfix-*`. Required
 small-iPhone/VoiceOver acceptance is still pending, not replaced by Android.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## PHONE-004-005: activate held account UI and current balance/History
+
+User authorized replaying only the three held mobile commits onto repaired main
+`8e346af`, then connecting Home/account/Rewards to the existing owner-checked
+History endpoint. Root/native integration is verified and frozen at `6eb5585`;
+the root writer moved to submissions. The continuation adds no backend, route,
+CI or dependency changes after that freeze. Real/demo state clears on changes,
+logout and expiry; server order, cursor strings and immutable records are retained.
+
+State and HTTP/PostgreSQL proof pass, including two-page History, maximum balance,
+cross-account denial, restart, offline recovery and revocation. New native UI
+proof remains held: Pixel/iPad reservations are inactive because supported
+cross-thread app-session ownership cannot be confirmed. No further owner hunt,
+device open or Metro startup is permitted. Prior Android proof covers only the
+unchanged account/tab lineage. Small-iPhone largest Dynamic Type, actual VoiceOver
+and live OIDC remain mandatory pending gates. This does not close #4 or #5.
+
+Edited by gpt-6-astra through Codex (T3 Code).

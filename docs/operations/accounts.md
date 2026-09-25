@@ -5,8 +5,10 @@ account foundation. The email identity provider and deployment values remain
 unselected. The production adapter accepts RS256 OIDC access tokens for this API,
 with exact issuer, audience and required scope plus signature, subject, issued-at,
 not-before and expiry verification. Email and client role claims never identify
-or authorize an account. The prepared native code/PKCE flow is held on the separate account UI branch,
-pending required iOS accessibility proof. This server candidate changes no phone UI.
+or authorize an account. The prepared native code/PKCE flow, SecureStore resume
+and profile controls are in the held phone candidate. Its current balance and
+History integration still requires native interaction proof, including mandatory
+small-iPhone accessibility checks. See [phone History](points.md#phone-consumer).
 
 ## Local run
 

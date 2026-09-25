@@ -446,3 +446,46 @@ Devices remain inactive pending an explicit resolved app-session lease. Required
 small-iPhone/VoiceOver and live provider evidence remain unavailable.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Phone current balance and History candidate, #4/#5
+
+Home, the account sheet and Rewards now share the current selected-profile
+balance from the existing authenticated History endpoint. Rewards retains the
+accepted Redemption/History sections; Redemption reports unavailable. The phone
+validates pages, preserves server order and opaque cursors, and displays changes,
+reasons, resulting balances and times without calculating a balance. It clears
+state on profile/session changes, logout or expiry and ignores stale responses.
+Refresh, outage and pagination retry states are scoped to the active profile.
+No server, route, root dependency/config, CI or script changes follow the root
+freeze. No reward purchase, vote, reset or journey behavior is claimed.
+
+Thirteen focused account/History state cases pass. The new phone adapter proof
+runs against real HTTP/PostgreSQL with unique controlled identities and legitimate
+assigned-admin adjustments. Five nested cases pass: zero-state/ownership,
+31 entries over 25+6 pages and maximum balance, server/pool/controller restart,
+outage recovery/offline logout, and expiry with unchanged History. In-memory
+storage stands in for SecureStore in this proof; native restart is not established.
+Full checks pass, including 45 native Jest cases. Frozen install, security checks
+and both native production exports pass. Security scanning reports no source
+findings; audit retains one moderate transitive uuid advisory and no high/critical
+findings. No dependency upgrade was attempted under the released root lease.
+
+One local first-page sample used one request, 25 entries, 7,993 decoded JSON bytes
+and 4.9 ms. This is not a device or production latency benchmark. Hermes artifacts
+grew from 6,014,003 to 6,471,787 bytes on iOS and 6,016,723 to 6,475,259 on Android
+against the root integration export. Rendering, memory and device latency remain
+unmeasured. API55436 was closed and passed a fresh bind/close check; no Metro or
+device session was started. Only the owned disposable test namespace received
+migrations and synthetic fixtures; shared database lifecycle was untouched.
+
+Mandatory UI HOLD: new balance/History interaction and normal/largest-text Android
+proof are unverified because supported app-session ownership is unresolved.
+Historical Pixel account/tab evidence remains only for unchanged lineage; the
+four-label wrapping/height/normal geometry implementation is preserved. Small
+iPhone largest Dynamic Type, actual VoiceOver and live OIDC remain pending.
+PR28 is partial #4/#5 delivery, with exact-head independent review and CI/bot
+monitoring handed to the manager. No merge or whole-issue completion is claimed.
+Commands and raw evidence remain under ignored `.evidence/account-4/continuation-*`
+and `history-*`; reproducible commands are in `docs/operations/points.md`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
