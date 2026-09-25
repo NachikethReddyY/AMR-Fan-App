@@ -566,9 +566,49 @@ test('History is immutable at the database boundary and pages stay owned and ord
     'DELETE FROM app.points_operations WHERE id = $1',
   ])
     await assert.rejects(pool.query(statement, [id]), { code: '23514' });
-  await assert.rejects(pool.query('TRUNCATE app.points_operations'), {
-    code: '23514',
-  });
+  const storedRecords = async () =>
+    (
+      await pool.query<{ records: string }>(
+        'SELECT json_agg(p ORDER BY p.sequence)::text AS records FROM app.points_operations p',
+      )
+    ).rows[0].records;
+  const beforeTruncate = await storedRecords();
+  const truncateProbe = await pool.connect();
+  try {
+    await truncateProbe.query('BEGIN');
+    await assert.rejects(
+      truncateProbe.query('TRUNCATE app.points_operations'),
+      (error) =>
+        error instanceof Error &&
+        'code' in error &&
+        ((error.code === '0A000' &&
+          error.message ===
+            'cannot truncate a table referenced in a foreign key constraint') ||
+          (error.code === '23514' &&
+            error.message ===
+              'Points History is immutable; append a correction.')),
+    );
+  } finally {
+    await truncateProbe.query('ROLLBACK');
+    truncateProbe.release();
+  }
+  assert.equal(await storedRecords(), beforeTruncate);
+  const triggerProbe = await pool.connect();
+  try {
+    await triggerProbe.query('BEGIN');
+    // Include FK dependents to reach the actual points trigger. Never commit this probe.
+    await assert.rejects(
+      triggerProbe.query('TRUNCATE app.points_operations CASCADE'),
+      {
+        code: '23514',
+        message: 'Points History is immutable; append a correction.',
+      },
+    );
+  } finally {
+    await triggerProbe.query('ROLLBACK');
+    triggerProbe.release();
+  }
+  assert.equal(await storedRecords(), beforeTruncate);
   assert.deepEqual(await history(fan.token, fan.real.id), original);
   const first = await request(
     `/v1/profiles/${fan.real.id}/points/history?limit=2`,
