@@ -681,3 +681,56 @@ test('UUID spelling is canonical across retries and capture/sample ownership', a
     active,
   );
 });
+
+test('session expiry is checked after an unchanged session-row wait, before a conflicting replay can run', async () => {
+  const account = await ensureAccount(pool, { issuer, subject: 'a' });
+  const short = await createSession(pool, account.id);
+  const hash = createHash('sha256').update(short.token).digest('hex');
+  const route = routeFixture();
+  const input = { profileId, requestId: randomUUID() };
+  await journeys.prepare(token, input, route);
+  const lock = await pool.connect();
+  try {
+    await pool.query(
+      "UPDATE app.sessions SET expires_at = clock_timestamp() + interval '1 second' WHERE token_hash=$1",
+      [hash],
+    );
+    await lock.query('BEGIN');
+    const blocker = await lock.query<{ pid: number }>(
+      'SELECT pg_backend_pid() AS pid',
+    );
+    await lock.query(
+      'SELECT token_hash FROM app.sessions WHERE token_hash=$1 FOR UPDATE',
+      [hash],
+    );
+    const pending = assert.rejects(
+      journeys.prepare(short.token, input, { ...route, routeId: 'changed' }),
+      { status: 401 },
+    );
+    let waiting = false;
+    for (let i = 0; i < 100; i++) {
+      const rows = await pool.query(
+        'SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid))',
+        [blocker.rows[0].pid],
+      );
+      if (rows.rowCount) {
+        waiting = true;
+        break;
+      }
+      await pool.query('SELECT pg_sleep(0.01)');
+    }
+    assert.ok(
+      waiting,
+      'request must actually wait on the unchanged session row',
+    );
+    await lock.query(
+      'SELECT pg_sleep(GREATEST(0, EXTRACT(EPOCH FROM (expires_at-clock_timestamp()))) + 0.05) FROM app.sessions WHERE token_hash=$1',
+      [hash],
+    );
+    await lock.query('COMMIT');
+    await pending;
+  } finally {
+    await lock.query('ROLLBACK');
+    lock.release();
+  }
+});

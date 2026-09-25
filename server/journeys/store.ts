@@ -59,7 +59,11 @@ export function createJourneyService({
 
   async function authorized<T>(
     token: string,
-    operation: (client: PoolClient, principalId: string) => Promise<T>,
+    operation: (
+      client: PoolClient,
+      principalId: string,
+      current: () => Promise<void>,
+    ) => Promise<T>,
   ) {
     const actor = await authenticateSession(pool, token);
     return transaction(pool, async (client) => {
@@ -70,13 +74,17 @@ export function createJourneyService({
         [fingerprintToken(token), actor.principalId],
       );
       if (session.rowCount !== 1) throw new ApiError(401, 'Sign in again.');
-      const result = await operation(client, actor.principalId);
-      // Lock waits and bounded work may outlive the session. Recheck before commit.
-      const current = await client.query(
-        'SELECT 1 FROM app.sessions WHERE token_hash = $1 AND expires_at > clock_timestamp() AND revoked_at IS NULL',
-        [fingerprintToken(token)],
-      );
-      if (current.rowCount !== 1) throw new ApiError(401, 'Sign in again.');
+      const current = async () => {
+        const live = await client.query(
+          'SELECT 1 FROM app.sessions WHERE token_hash = $1 AND expires_at > clock_timestamp() AND revoked_at IS NULL',
+          [fingerprintToken(token)],
+        );
+        if (live.rowCount !== 1) throw new ApiError(401, 'Sign in again.');
+      };
+      // The locking SELECT may test its predicate before an unchanged-row wait.
+      await current();
+      const result = await operation(client, actor.principalId, current);
+      await current();
       return result;
     });
   }
@@ -211,13 +219,14 @@ export function createJourneyService({
       const route = parse(routeSchema, serverRoute);
       if (route.source.kind === 'fixture' && !fixturesAllowed)
         throw new ApiError(403, 'Synthetic journey routes are disabled.');
-      return authorized(token, async (client, principalId) => {
+      return authorized(token, async (client, principalId, current) => {
         await requestLock(client, principalId, input.requestId);
         const profile = await lockOwnedProfile(
           client,
           principalId,
           input.profileId,
         );
+        await current();
         if (profile.kind !== 'real')
           throw new ApiError(
             409,
@@ -284,9 +293,10 @@ export function createJourneyService({
     async start(token: string, rawId: unknown, raw: unknown) {
       const journeyId = parse(id, rawId);
       const input = parse(startSchema, raw);
-      return authorized(token, async (client, principalId) => {
+      return authorized(token, async (client, principalId, current) => {
         await requestLock(client, principalId, input.requestId);
         const journey = await owned(client, principalId, journeyId);
+        await current();
         const hash = fingerprint({ action: 'start', journeyId, input });
         const previous = await replay(
           client,
@@ -320,9 +330,10 @@ export function createJourneyService({
     async appendEvidence(token: string, rawId: unknown, raw: unknown) {
       const journeyId = parse(id, rawId);
       const input = parse(batchSchema, raw);
-      return authorized(token, async (client, principalId) => {
+      return authorized(token, async (client, principalId, current) => {
         await requestLock(client, principalId, input.requestId);
         const journey = await owned(client, principalId, journeyId);
+        await current();
         const hash = fingerprint({ action: 'evidence', journeyId, input });
         const previous = await replay(
           client,
@@ -407,9 +418,10 @@ export function createJourneyService({
     async finish(token: string, rawId: unknown, raw: unknown) {
       const journeyId = parse(id, rawId);
       const input = parse(finishSchema, raw);
-      return authorized(token, async (client, principalId) => {
+      return authorized(token, async (client, principalId, current) => {
         await requestLock(client, principalId, input.requestId);
         const journey = await owned(client, principalId, journeyId);
+        await current();
         const hash = fingerprint({ action: 'finish', journeyId, input });
         const previous = await replay(
           client,
