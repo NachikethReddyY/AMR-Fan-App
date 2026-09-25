@@ -183,6 +183,30 @@ network denial. PostgreSQL and HTTP tests cover exact hashes, corrections,
 missing-field refusal, rejection, idempotency, concurrent replacement, stale
 revisions, role/session revocation, unchanged-row expiry waits, immutable evidence,
 source persistence across an actual API process restart and unchanged balances.
+The combined owned run passed 28 tests. A later HTTP asset case brought the
+distinct passing count to 29; the repeated five-case HTTP run is not five new
+tests. Timeout termination and recovery were exercised. The 8 MiB output kill
+and sampled 768 MiB RSS kill are implemented but were not forced by these PDF
+fixtures. No hard peak-memory bound is claimed.
+
+Root integration needs the exact PDF.js dependency above in `package.json` and
+`pnpm-lock.yaml`, with the existing supported Node 24 runtime. Add report unit
+and database scripts to the shared check workflow; serialize parser-backed test
+files. `.github/workflows/checks.yml` currently runs on Ubuntu, where this local
+parser intentionally refuses execution. The integration owner must provide a
+network-disabled Linux runner with enforced resource limits, or retain an
+explicit platform gate and run real parser acceptance on macOS. Do not mark
+Linux upload acceptance green by substituting a fake parser.
+
+`server/api/Dockerfile` already copies `server`, so it includes report assets and
+the migration after integration. Its Linux scanner target still needs explicit
+private storage provisioning, parser availability policy and cleanup in
+`server/api/dast-start.ts`. Migration discovery needs no filename registration.
+The shared API composition in `server/api/app.ts`, storage startup configuration
+in `server/api/start.ts`, and authenticated report coverage for
+`.github/workflows/security.yml`/`security/dast-target.json` remain queued. Source
+and dependency security checks, actual upload DAST and the rendered admin flow
+must be verified after registration; this slice does not change those files.
 
 `registration.test.ts` deliberately requires the real `createApi` report route.
 It currently fails with 404 instead of 200, independently of passing module
