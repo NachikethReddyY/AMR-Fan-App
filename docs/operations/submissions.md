@@ -12,10 +12,17 @@ The owned PostgreSQL module and request adapter implement submission, owner
 reads and terminal admin decisions. Shared API registration and actual admin
 browser verification are pending the serialized integration grant. Do not treat
 the presence of the owned page or passing module tests as a complete HTTP flow.
-The base points History query also has a reproduced numeric-order defect at the
-9/10 sequence boundary. Its separate repair must integrate before the candidate
-can claim complete History verification; a later passing run with same-length
-sequence numbers does not resolve that defect.
+The module refresh is based on reviewed main
+`8e346aff606771662312697effe8fbff1742f131`. The repaired points History query
+passes its numeric digit-boundary/pagination regression and the unchanged
+submission newest-first assertions. Original failing evidence is retained
+privately. The narrowly authorized shared points test now accepts the precise
+foreign-key `0A000` denial as well as the immutable trigger's `23514` denial for
+plain `TRUNCATE`. A second, always-rolled-back probe includes FK dependents to
+reach the actual points trigger and requires its exact `23514` error. Complete
+stored points rows, including outcomes, must serialize identically before and
+after each probe. UPDATE/DELETE trigger checks remain unchanged; independent
+final review must include this test compatibility change.
 
 ## Atomic payment and ownership
 
@@ -51,6 +58,13 @@ then serializes the admin request key and submission. Pending can become
 approved or rejected once. A matching retry returns the decision; conflicting
 keys, opposite decisions and another review of a terminal record fail.
 
+After acquiring the initial session authority lock, the module checks expiry
+against the database clock again. PostgreSQL can evaluate the locking query's
+predicate before waiting for an unchanged row. Controlled tests prove that
+expiry during that wait denies both fresh decisions and replays with 401 and
+preserves submission status and History. Valid-session controls still succeed.
+This check does not redefine session timing during later domain/profile waits.
+
 The immutable submission keeps its server UUID, owner profile, original text,
 tag, fee, creation sequence/time and points operation ID. A separate immutable
 decision records admin, request key, status and server time. Submission or
@@ -64,8 +78,10 @@ submission. It pays 500 again, preserving the original rejection and fee.
 Approval, rejection and an unanswered submission produce no refund or award.
 Approval does not guarantee an answer or activity.
 
-Issue #12 owns contributions and ranking. The #11 response reports zero ranking;
-the fee is never a contribution. Issue #13 owns selection and fulfilment.
+Issue #12 owns contributions and ranking. Original #11 creation receipts report
+zero ranking and remain immutable. A future current-participation read must
+combine live contributions and eligibility separately, without rewriting those
+receipts. The fee is never a contribution. Issue #13 owns selection and fulfilment.
 Future records can reference the stable submission UUID and use the approved
 decision time for the accepted earlier-approval tie rule. No vote, session,
 selection, fulfilment or upload endpoint is implemented here.
@@ -76,6 +92,22 @@ The shared API supplies its bounded JSON reader, origin/rate checks and error
 handling to `handleSubmissionRequest`. `serveSubmissionAdmin` serves the owned
 page and script; the existing `/admin/style.css` supplies the accepted admin
 presentation. These are same-process modules, not separate deployed services.
+
+In `server/api/app.ts`, import `handleSubmissionRequest` from
+`../submissions/http.ts` and `serveSubmissionAdmin` from
+`../submissions/admin.ts`. The GET asset handling must preserve the existing
+`serveAdmin`. After `bearer(req)` and existing origin/rate guards, pass
+`{ pool, token, method: req.method, path, query, body: () => body(req) }` to the
+submission handler. Derive `query` from the request URL's search parameters.
+Send a non-null result through the existing `send(res, result.status,
+result.value)`; otherwise continue existing routes. Preserve the route-provider
+registration and any journey registration present at the manager's transfer.
+
+During that same grant, add root scripts `submissions:test` for
+`node --test server/submissions/http.test.ts` and `submissions:test:database`
+for `pnpm db:run-test -- node --test server/submissions/submissions.test.ts`.
+Add the first to the normal check command and the full database suite to the
+PostgreSQL CI job. Never register the filtered handoff command in CI.
 
 | Endpoint | Request | Result |
 | --- | --- | --- |
@@ -118,6 +150,45 @@ remain failing until the real API registration lands. Keep the captured
 pre-registration failure as acceptance evidence.
 The owned asset test observes HTTP content types, the CSP and path allowlisting;
 it does not inspect rendered interaction.
+
+## Prepared browser fixture procedure
+
+This procedure is prepared for the later registration/service/preview grant;
+it has not been run by the module refresh. Use only the own dev database and
+the assigned loopback API/admin port. Keep model/provider flags disabled and
+use the existing synthetic identity issuer `urn:amr:local-synthetic`.
+
+1. Migrate the own dev database once registration is available. Start the actual
+   API with `AUTH_DEV_ENABLED=true`, `API_HOST=127.0.0.1`, the leased `API_PORT`,
+   and matching `ADMIN_ORIGIN=http://127.0.0.1:<leased-port>`. Use the documented
+   `pnpm db:run -- pnpm api:start` launcher. Do not start a substitute server.
+2. Obtain local `fan-a` and `fan-b` sessions through `POST /v1/dev/session`.
+   Keep tokens only in process/page memory, never evidence. Use the returned
+   principal ID for A and the trusted account role-assignment command to grant
+   A admin rights with a synthetic-fixture reason. Do not infer IDs or grant
+   privileges through HTTP fields. B remains an ordinary fan.
+3. Through A's points-adjustment endpoint, bring B's selected real profile to
+   exactly 600 with a recorded fixture reason. Use observed current balance;
+   do not reset accounts or replace existing History. B submits a question with
+   `confirmedFee: 500`, a new request UUID and text such as
+   `How do you prepare? <img src=x onerror=alert(1)>`. Assert 100 remaining,
+   pending status, zero original ranking and the linked debit.
+4. With T3 preview, open `/admin/submissions/` and sign in as A. Observe the
+   literal fixture text, pending status, and accessible Approve/Reject controls.
+   Approve, then read B's current status and unchanged fee through the real API.
+   Check reviewed state in the page and take sanitized evidence without tokens.
+5. Bring B to 600 through a reasoned fixture adjustment, submit a proposed
+   activity tagged `activity`, and reject it. Restore B to 600 through another
+   reasoned adjustment, then resubmit with a new request UUID and
+   `resubmissionOf`. Observe the new 500-point charge and both retained records.
+   Demonstrate retry without another charge.
+6. Sign in as B on the admin page and verify denial. Revoke A's role through the
+   trusted command while its page is open and verify protected refresh/decision
+   denial. Finish fixture role cleanup and stop only the leased API process.
+
+The API-driven fan setup plus actual admin page proves the server/admin path
+only. Phone confirmation, native History and assistive-technology acceptance
+remain pending their own granted devices and source integration.
 
 ## Remaining full-issue acceptance
 

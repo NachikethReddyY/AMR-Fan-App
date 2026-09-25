@@ -7,9 +7,11 @@ Status: accepted product behavior; implementation pending. Acceptance cases belo
 ## Issue #11 implementation status
 
 The owned server candidate implements atomic paid submission, current owner
-status reads and assigned-admin approval/rejection. Shared HTTP registration and
-admin browser proof remain pending integration. Phone Rewards/History, native
-accessibility and actual demo-reset integration remain required acceptance.
+status reads and assigned-admin approval/rejection. Its initial session-lock
+expiry check has controlled fresh/replay regression proof on the reviewed base.
+Shared HTTP registration and admin browser proof remain pending integration.
+Phone Rewards/History, native accessibility and actual demo-reset integration
+remain required acceptance.
 [Submission operations](../operations/submissions.md) records interfaces,
 verification and limits. Voting and selection remain with issues #12 and #13;
 their accepted rules below are unchanged. This candidate does not close #11.
