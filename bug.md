@@ -102,3 +102,16 @@ accessibility criterion, not an accepted limitation. Required iPhone/VoiceOver
 proof remains separately pending. Tracker #4.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## ACCOUNT-004-R1: owned descendant survives launcher shutdown
+
+Independent PR27 review reproduced a SIGTERM-ignoring grandchild remaining alive
+after its wrapper exited. The launcher cleared its escalation timer when only
+the wrapper closed. A regression reproduced the leak before the fix. Shutdown
+now retains the five-second escalation and waits for the owned process group to
+terminate, even after wrapper exit. The regression checks that the descendant
+is gone, an unrelated process remains alive, and normal exit outcomes persist.
+The actual API owner-shutdown check also passes. No shared process is signalled.
+Tracker #4; reviewer evidence and repeated author proof remain private.
+
+Edited by gpt-6-astra through Codex (T3 Code).

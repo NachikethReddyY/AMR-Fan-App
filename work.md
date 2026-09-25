@@ -358,3 +358,21 @@ passed again on the integrated dependency tree. Evidence is kept under
 the authorized push. Issue #4 and the recorded platform/provider gaps stay open.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 independent launcher correction
+
+PR27's independent review found the owned-group cleanup gap described in
+ACCOUNT-004-R1. The author reproduced the exact probe, captured a failing
+regression, then retained shutdown escalation until the owned group terminated.
+Three process tests pass: stubborn-descendant cleanup with unrelated-process
+survival, normal success/nonzero outcomes, and service lifetime beyond a bounded
+one-shot timeout. The reviewer probe now reports no surviving descendant, and
+the actual API starts, remains usable and releases its port on owner SIGTERM.
+Only launcher code/tests and these records changed. The account/API/migration
+and isolated DAST target are unchanged; prior PostgreSQL and 61-check DAST proof
+remain applicable. Full repository/security checks are rerun before delivery.
+Mobile PR28 stays separate and preserved; a new server head requires exact-head
+independent review and a subsequent mobile rebase. Evidence: ignored
+`.evidence/account-4/launcher-descendant-*` and `review-fix-*`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
