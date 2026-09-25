@@ -8,10 +8,10 @@ the fee, authority or future ranking eligibility.
 
 ## Current candidate
 
-The owned PostgreSQL module and request adapter implement submission, owner
-reads and terminal admin decisions. Shared API registration and actual admin
-browser verification are pending the serialized integration grant. Do not treat
-the presence of the owned page or passing module tests as a complete HTTP flow.
+The actual API registers submission, owner reads, terminal admin decisions and
+the separate `/admin/submissions/` page. Real fan-to-admin-to-fan HTTP and actual
+process-restart tests pass. Browser proof used synthetic accounts in the own
+dev database, with current server-assigned admin authority and the leased API.
 The module refresh is based on reviewed main
 `8e346aff606771662312697effe8fbff1742f131`. The repaired points History query
 passes its numeric digit-boundary/pagination regression and the unchanged
@@ -86,28 +86,28 @@ Future records can reference the stable submission UUID and use the approved
 decision time for the accepted earlier-approval tie rule. No vote, session,
 selection, fulfilment or upload endpoint is implemented here.
 
-## Intended HTTP registration
+## HTTP registration
 
 The shared API supplies its bounded JSON reader, origin/rate checks and error
 handling to `handleSubmissionRequest`. `serveSubmissionAdmin` serves the owned
 page and script; the existing `/admin/style.css` supplies the accepted admin
 presentation. These are same-process modules, not separate deployed services.
 
-In `server/api/app.ts`, import `handleSubmissionRequest` from
+`server/api/app.ts` imports `handleSubmissionRequest` from
 `../submissions/http.ts` and `serveSubmissionAdmin` from
-`../submissions/admin.ts`. The GET asset handling must preserve the existing
-`serveAdmin`. After `bearer(req)` and existing origin/rate guards, pass
+`../submissions/admin.ts`. GET asset handling preserves the existing
+`serveAdmin`. After `bearer(req)` and existing origin/rate guards, it passes
 `{ pool, token, method: req.method, path, query, body: () => body(req) }` to the
-submission handler. Derive `query` from the request URL's search parameters.
-Send a non-null result through the existing `send(res, result.status,
-result.value)`; otherwise continue existing routes. Preserve the route-provider
-registration and any journey registration present at the manager's transfer.
+submission handler. `query` comes from the request URL's search parameters.
+A non-null result uses the existing `send(res, result.status, result.value)`;
+otherwise existing routes continue. The shared body reader retains its
+4,096-byte limit, and route-provider registration remains intact.
 
-During that same grant, add root scripts `submissions:test` for
+Root scripts are `submissions:test` for
 `node --test server/submissions/http.test.ts` and `submissions:test:database`
 for `pnpm db:run-test -- node --test server/submissions/submissions.test.ts`.
-Add the first to the normal check command and the full database suite to the
-PostgreSQL CI job. Never register the filtered handoff command in CI.
+The first runs in the normal check command; the full database suite runs in the
+PostgreSQL CI job. No filtered handoff command is registered in CI.
 
 | Endpoint | Request | Result |
 | --- | --- | --- |
@@ -135,30 +135,46 @@ node --test server/submissions/http.test.ts
 pnpm db:run-test -- node --test server/submissions/submissions.test.ts
 ```
 
-For the bounded pre-integration module handoff, explicitly exclude only the two
-tests that need shared registration:
-
-```sh
-pnpm db:run-test -- node --test --test-skip-pattern='real API registers|actual API process shutdown' server/submissions/submissions.test.ts
-```
-
 Input and database policy tests cover the 600-to-100 case, concurrent retries and
 spending, rollback, owner denial, moderation races, current role/session
 revocation, retained rejection fees and paid resubmission, and persistent
-real/demo ownership. HTTP registration and process-restart tests deliberately
-remain failing until the real API registration lands. Keep the captured
-pre-registration failure as acceptance evidence.
+real/demo ownership. HTTP registration and process-restart tests pass through
+the actual API. The original pre-registration 404 failures remain in private
+evidence, along with the former numeric History-order and session-expiry failures.
 The owned asset test observes HTTP content types, the CSP and path allowlisting;
 it does not inspect rendered interaction.
 
-## Prepared browser fixture procedure
+Passive ZAP 2.17.0 scans used the actual API and PostgreSQL in disposable
+containers on an internal network with no host-published ports. The normal root
+scan reported no alerts. An explicit `/admin/submissions/` scan reported eight
+GET endpoints and only informational `10109` (Modern Web Application); no
+medium/high findings occurred. A diagnostic repeat traced internal log errors
+to blocked scanner telemetry/update DNS requests. The scan reached public page,
+script and stylesheet content without signing in. It does not prove protected
+queue/decision coverage or account isolation; real HTTP tests cover those paths.
 
-This procedure is prepared for the later registration/service/preview grant;
-it has not been run by the module refresh. Use only the own dev database and
-the assigned loopback API/admin port. Keep model/provider flags disabled and
-use the existing synthetic identity issuer `urn:amr:local-synthetic`.
+## Browser proof and fixture procedure
 
-1. Migrate the own dev database once registration is available. Start the actual
+Observed with T3 preview and the actual registered API: fan access denial,
+admin sign-in/queue, question approval, activity rejection, literal hostile text,
+long-text wrapping at 375 CSS pixels, 44-pixel controls, keyboard focus/refresh,
+same-key replay after a controlled lost response, and a competing-review conflict.
+Owner HTTP reads then confirmed unchanged original debits, all four decisions,
+and one new paid resubmission with no extra debit on retry.
+
+The preview host became unavailable during later filter inspection. The supported
+fallback listed no browsers and could not create an in-app tab. Approved/rejected
+filter rendering and live role revocation in the browser remain unverified;
+current revocation is covered by real HTTP/database tests. Saved screenshots
+are private. The owned T3 tab close request succeeded; renderer cleanup could
+not be observed after host loss. The fixed API stopped and fixture admin rights
+were revoked through the trusted command.
+
+For an authorized repeat, use only the own dev database and assigned loopback
+API/admin port. Keep model/provider flags disabled and use the existing synthetic
+identity issuer `urn:amr:local-synthetic`.
+
+1. Migrate the own dev database. Start the actual
    API with `AUTH_DEV_ENABLED=true`, `API_HOST=127.0.0.1`, the leased `API_PORT`,
    and matching `ADMIN_ORIGIN=http://127.0.0.1:<leased-port>`. Use the documented
    `pnpm db:run -- pnpm api:start` launcher. Do not start a substitute server.
@@ -192,9 +208,9 @@ remain pending their own granted devices and source integration.
 
 ## Remaining full-issue acceptance
 
-- Observe the actual registered fan HTTP to admin browser to owner-status path,
-  then repeat it through phone Rewards and History after the held phone work
-  integrates. The phone form must show the new non-refundable 500-point fee
+- Repeat the observed registered fan HTTP to admin browser to owner-status path
+  through phone Rewards and History after the held phone work integrates.
+  The phone form must show the new non-refundable 500-point fee
   before each submission/resubmission and explain that approval promises no
   fulfilment. Rewards retains exactly Redemption and History tabs.
 - Verify native iOS and Android interaction, small-iPhone layout, large text and
@@ -204,9 +220,9 @@ remain pending their own granted devices and source integration.
   shared contributions and selections survive; unfinished confirmations become
   stale; completed replay remains valid. There is no reset operation or invented
   reset epoch in this candidate. Actual reset proof remains pending.
-- Run the actual HTTP target through isolated DAST after registration. Passive
-  public crawling does not establish authenticated authorization, accounting or
-  full protected-route coverage; retain the authenticated business tests.
+- Complete the two browser observations limited by preview availability.
+  Passive public crawling does not establish authenticated authorization,
+  accounting or full protected-route coverage; retain the authenticated tests.
 
 Laya remains optional advisory infrastructure, disabled by default. This module
 does not call a model. Advisory availability or quality cannot block an ordinary
