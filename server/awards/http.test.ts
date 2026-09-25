@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { createServer, type Server } from 'node:http';
+import type { Server } from 'node:http';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { namespaceFor } from '../../scripts/local-db.mjs';
 import { ensureAccount } from '../accounts/store.ts';
-import { ApiError } from '../accounts/types.ts';
 import { createSession } from '../auth/session.ts';
 import { createApi } from '../api/app.ts';
 import { createDatabase } from '../database/index.ts';
@@ -96,7 +95,7 @@ async function prepared() {
   };
 }
 
-test('owned HTTP handler uses current sessions and trusted PG calculations without a credit bypass', async (t) => {
+test('registered API uses current sessions and trusted PG calculations without a credit bypass', async (t) => {
   const f = await prepared();
   const handler = createAwardsHandler({ pool });
   let reads = 0;
@@ -113,46 +112,9 @@ test('owned HTTP handler uses current sessions and trusted PG calculations witho
     null,
   );
   assert.equal(reads, 0);
-  // This bounded fixture supplies the API owner's existing transport duties.
-  // The owned handler receives no alternate authority or accounting callback.
-  const server = createServer(async (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    try {
-      const authorization = req.headers.authorization;
-      if (!authorization?.startsWith('Bearer '))
-        throw new ApiError(401, 'Sign in again.');
-      const result = await handler({
-        method: req.method,
-        path: new URL(req.url ?? '/', 'http://api.invalid').pathname,
-        token: authorization.slice(7),
-        readBody: async () => {
-          if (req.headers['content-type'] !== 'application/json')
-            throw new ApiError(415, 'Use application/json.');
-          const chunks: Buffer[] = [];
-          let size = 0;
-          for await (const chunk of req) {
-            const part = Buffer.from(chunk);
-            size += part.length;
-            if (size > 4096) throw new ApiError(413, 'Request is too large.');
-            chunks.push(part);
-          }
-          try {
-            return JSON.parse(Buffer.concat(chunks).toString());
-          } catch {
-            throw new ApiError(400, 'Invalid JSON.');
-          }
-        },
-      });
-      res.statusCode = result?.status ?? 404;
-      res.end(JSON.stringify(result?.body ?? { error: 'Not found.' }));
-    } catch (error) {
-      res.statusCode = error instanceof ApiError ? error.status : 500;
-      res.end(
-        JSON.stringify({
-          error: error instanceof ApiError ? error.message : 'Request failed.',
-        }),
-      );
-    }
+  const server = createApi({
+    pool,
+    env: { NODE_ENV: 'test', AUTH_DEV_ENABLED: 'true', API_HOST: '127.0.0.1' },
   });
   const base = await listen(server);
   const path = `/v1/journeys/${f.journeyId}/settlements`;
@@ -235,7 +197,7 @@ test('owned HTTP handler uses current sessions and trusted PG calculations witho
   }
 });
 
-test('shared createApi remains unregistered until the separate root handoff', async () => {
+test('registered GET and POST expose owned receipt and settlement outcomes', async () => {
   const f = await prepared();
   const server = createApi({
     pool,
@@ -249,9 +211,16 @@ test('shared createApi remains unregistered until the separate root handoff', as
     ]) {
       const response = await fetch(
         `${base}/v1/journeys/${f.journeyId}/${suffix}`,
-        { method, headers: { authorization: `Bearer ${f.token}` } },
+        {
+          method,
+          headers: {
+            authorization: `Bearer ${f.token}`,
+            'content-type': 'application/json',
+          },
+          ...(method === 'POST' ? { body: JSON.stringify(f.input) } : {}),
+        },
       );
-      assert.equal(response.status, 404);
+      assert.equal(response.status, 200);
     }
   } finally {
     await close(server);
