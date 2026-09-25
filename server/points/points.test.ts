@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
+import { setTimeout as delay } from 'node:timers/promises';
 import { after, before, test } from 'node:test';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
@@ -382,6 +383,174 @@ test('stored role change wins before a blocked adjustment obtains current author
   } finally {
     await connection.query('ROLLBACK');
     connection.release();
+  }
+});
+
+async function withSessionLockWait<T>(
+  token: string,
+  expire: boolean,
+  action: () => Promise<T>,
+) {
+  const hash = createHash('sha256').update(token).digest('hex');
+  await pool.query(
+    'UPDATE app.sessions SET expires_at = clock_timestamp() + $2::interval WHERE token_hash = $1',
+    [hash, expire ? '2 seconds' : '1 minute'],
+  );
+  const clock = async () =>
+    (
+      await pool.query<{ valid: boolean }>(
+        'SELECT expires_at > clock_timestamp() AS valid FROM app.sessions WHERE token_hash = $1',
+        [hash],
+      )
+    ).rows[0];
+  const holder = await pool.connect();
+  let pending: Promise<T> | undefined;
+  try {
+    await holder.query('BEGIN');
+    await holder.query('SET LOCAL idle_in_transaction_session_timeout = 15000');
+    const holderPid = (
+      await holder.query<{ pid: number }>('SELECT pg_backend_pid() AS pid')
+    ).rows[0].pid;
+    // Do not update the tuple while blocked: that would trigger PostgreSQL's row recheck.
+    await holder.query(
+      'SELECT token_hash FROM app.sessions WHERE token_hash = $1 FOR UPDATE',
+      [hash],
+    );
+    assert.equal((await clock()).valid, true);
+    pending = action();
+    void pending.catch(() => {});
+    async function waiter() {
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        const result = await pool.query<{ pid: number }>(
+          `SELECT pid FROM pg_stat_activity
+           WHERE datname = current_database() AND usename = current_user
+           AND wait_event_type = 'Lock' AND query LIKE '%FROM app.sessions%FOR SHARE%'
+           AND $1::int = ANY(pg_blocking_pids(pid))`,
+          [holderPid],
+        );
+        if (result.rows[0]) return result.rows[0].pid;
+        await delay(10);
+      }
+      assert.fail('The session authorization waiter was not observed.');
+    }
+    const waitingPid = await waiter();
+    assert.equal((await clock()).valid, true);
+    if (expire) {
+      const deadline = Date.now() + 8000;
+      while ((await clock()).valid) {
+        assert.ok(
+          Date.now() < deadline,
+          'Database-clock expiry was not observed.',
+        );
+        await delay(10);
+      }
+    }
+    assert.equal((await clock()).valid, !expire);
+    assert.equal(await waiter(), waitingPid);
+    await holder.query('ROLLBACK');
+    return await pending;
+  } finally {
+    await holder.query('ROLLBACK');
+    holder.release();
+    await pending?.catch(() => {});
+  }
+}
+
+test('session validity is checked after its unchanged authority row lock is acquired', async (t) => {
+  for (const expire of [false, true]) {
+    for (const replay of [false, true]) {
+      await t.test(
+        `${expire ? 'expired' : 'valid'} ${replay ? 'replay' : 'fresh adjustment'}`,
+        async () => {
+          const subject = `authority-wait-${expire}-${replay}`;
+          const admin = await account(`${subject}-admin`, true);
+          const fan = await account(`${subject}-fan`);
+          const other = await account(`${subject}-other`);
+          const key = randomUUID();
+          const action = () => adjust(admin.token, fan.real.id, 17, key);
+          const receipt = replay
+            ? historyEntry.parse(await (await action()).json())
+            : null;
+          const original = await history(fan.token, fan.real.id);
+          const unrelated = await history(other.token, other.real.id);
+          const response = await withSessionLockWait(
+            admin.token,
+            expire,
+            action,
+          );
+          assert.equal(response.status, expire ? 401 : 201);
+          const result = await history(fan.token, fan.real.id);
+          if (expire || replay) assert.deepEqual(result, original);
+          else {
+            assert.equal(result.balance, 17);
+            assert.equal(result.entries.length, 1);
+          }
+          if (!expire && replay)
+            assert.deepEqual(await response.json(), receipt);
+          assert.deepEqual(
+            await history(other.token, other.real.id),
+            unrelated,
+          );
+        },
+      );
+    }
+  }
+});
+
+test('expired authority lock waits cannot run a composed domain effect', async (t) => {
+  await pool.query('CREATE SCHEMA IF NOT EXISTS local_fixture');
+  await pool.query(
+    'CREATE TABLE IF NOT EXISTS local_fixture.points_effects(id uuid PRIMARY KEY, profile_id uuid NOT NULL)',
+  );
+  for (const expire of [false, true]) {
+    await t.test(expire ? 'expired effect' : 'valid effect', async () => {
+      const fan = await account(`authority-domain-${expire}`);
+      const original = await history(fan.token, fan.real.id);
+      let calls = 0;
+      const operation = () =>
+        runPointsOperation({
+          pool,
+          token: fan.token,
+          access: 'owner',
+          request: {
+            profileId: fan.real.id,
+            requestId: randomUUID(),
+            kind: 'synthetic_lock_wait_effect',
+          },
+          intent: 'synthetic effect 17',
+          outcomeSchema: z.null(),
+          perform: async ({ client, operationId }) => {
+            calls++;
+            await client.query(
+              'INSERT INTO local_fixture.points_effects VALUES ($1,$2)',
+              [operationId, fan.real.id],
+            );
+            return {
+              delta: 17,
+              reason: 'Synthetic lock wait effect',
+              outcome: null,
+            };
+          },
+        });
+      if (expire) {
+        await assert.rejects(withSessionLockWait(fan.token, true, operation), {
+          status: 401,
+        });
+        const resumed = await createSession(pool, fan.id);
+        assert.deepEqual(await history(resumed.token, fan.real.id), original);
+      } else {
+        const result = await withSessionLockWait(fan.token, false, operation);
+        assert.equal(result.entry.balanceAfter, 17);
+        assert.equal((await history(fan.token, fan.real.id)).entries.length, 1);
+      }
+      assert.equal(calls, expire ? 0 : 1);
+      const effects = await pool.query<{ count: number }>(
+        'SELECT count(*)::int AS count FROM local_fixture.points_effects WHERE profile_id = $1',
+        [fan.real.id],
+      );
+      assert.equal(effects.rows[0].count, expire ? 0 : 1);
+    });
   }
 });
 
