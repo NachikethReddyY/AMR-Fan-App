@@ -4,6 +4,16 @@ Part of the [product specification](../fan-app-specification.md). [Feature index
 
 Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
 
+## Issue #11 implementation status
+
+The owned server candidate implements atomic paid submission, current owner
+status reads and assigned-admin approval/rejection. Shared HTTP registration and
+admin browser proof remain pending integration. Phone Rewards/History, native
+accessibility and actual demo-reset integration remain required acceptance.
+[Submission operations](../operations/submissions.md) records interfaces,
+verification and limits. Voting and selection remain with issues #12 and #13;
+their accepted rules below are unchanged. This candidate does not close #11.
+
 ## Outcome
 
 Fans submit questions or proposed driver/team activities and spend points to choose what is selected for a fan interaction.

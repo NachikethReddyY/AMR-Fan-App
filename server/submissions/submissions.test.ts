@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 import { after, before, test } from 'node:test';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
@@ -13,6 +17,8 @@ import {
   moderateSubmission,
 } from './index.ts';
 import { ApiError } from '../accounts/types.ts';
+import { createApi } from '../api/app.ts';
+import { handleSubmissionRequest } from './http.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -296,6 +302,61 @@ test('competing admin decisions serialize, and role or session revocation denies
   );
 });
 
+test('a role revoked during initial authentication cannot approve while waiting for current authority', async () => {
+  const admin = await account('locked-revocation-admin', true);
+  const fan = await account('locked-revocation-fan');
+  await grant(admin.token, fan.real.id, 600);
+  const created = await createSubmission(
+    pool,
+    fan.token,
+    fan.real.id,
+    intent(),
+  );
+  const blocker = await pool.connect();
+  let result: Promise<{ ok: boolean; error?: unknown }> | undefined;
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query(
+      "UPDATE app.principals SET role = 'fan' WHERE id = $1",
+      [admin.id],
+    );
+    result = moderateSubmission(pool, admin.token, created.outcome.id, {
+      requestId: randomUUID(),
+      status: 'approved',
+    }).then(
+      () => ({ ok: true }),
+      (error: unknown) => ({ ok: false, error }),
+    );
+    let waiting = false;
+    for (let attempt = 0; attempt < 100 && !waiting; attempt++) {
+      const locks = await pool.query<{ waiting: boolean }>(`SELECT EXISTS (
+        SELECT 1 FROM pg_stat_activity WHERE datname = current_database()
+        AND wait_event_type = 'Lock' AND query LIKE 'SELECT role FROM app.principals%'
+      ) AS waiting`);
+      waiting = locks.rows[0].waiting;
+      if (!waiting) await delay(10);
+    }
+    assert.equal(
+      waiting,
+      true,
+      'Moderation must wait for the current principal role lock.',
+    );
+    await blocker.query('COMMIT');
+    const completed = await result;
+    assert.equal(completed.ok, false);
+    assert.ok(status(403)(completed.error));
+    assert.equal(
+      (await listOwnSubmissions(pool, fan.token, fan.real.id)).submissions[0]
+        .status,
+      'pending',
+    );
+  } finally {
+    await blocker.query('ROLLBACK');
+    blocker.release();
+    if (result) await result;
+  }
+});
+
 test('rejection retains its fee and immutable history; a confirmed resubmission is a new paid record', async () => {
   const admin = await account('reject-admin', true);
   const fan = await account('reject-fan');
@@ -418,4 +479,339 @@ test('real and persistent demo profiles keep separate balances, submissions and 
       listOwnSubmissions(pool, resumed.token, resumed.demo.id, query),
       status(400),
     );
+});
+
+test('the real API registers the fan-to-admin-to-fan submission path', async () => {
+  const server = createApi({
+    pool,
+    env: { NODE_ENV: 'test', AUTH_DEV_ENABLED: 'true', API_HOST: '127.0.0.1' },
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  try {
+    const admin = await account('http-admin', true);
+    const fan = await account('http-fan');
+    await grant(admin.token, fan.real.id, 600);
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/v1/profiles/${fan.real.id}/submissions`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${fan.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(intent()),
+      },
+    );
+    assert.equal(response.status, 201);
+    const result = await response.json();
+    const base = `http://127.0.0.1:${address.port}`;
+    const request = (
+      path: string,
+      token: string,
+      method = 'GET',
+      value?: unknown,
+    ) =>
+      fetch(`${base}${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(value === undefined
+            ? {}
+            : { 'Content-Type': 'application/json' }),
+        },
+        body: value === undefined ? undefined : JSON.stringify(value),
+      });
+    const ownerPath = `/v1/profiles/${fan.real.id}/submissions`;
+    const decisionPath = `/v1/admin/submissions/${result.outcome.id}/decision`;
+    assert.equal((await request(ownerPath, admin.token)).status, 404);
+    assert.equal((await request(ownerPath, '')).status, 401);
+    assert.equal(
+      (await request('/v1/admin/submissions', fan.token)).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request(decisionPath, fan.token, 'POST', {
+          requestId: randomUUID(),
+          status: 'approved',
+        })
+      ).status,
+      403,
+    );
+    const queue = await request('/v1/admin/submissions', admin.token);
+    assert.equal(queue.status, 200);
+    assert.ok(
+      (await queue.json()).submissions.some(
+        (row: { id: string }) => row.id === result.outcome.id,
+      ),
+    );
+    const decision = { requestId: randomUUID(), status: 'approved' };
+    assert.equal(
+      (await request(decisionPath, admin.token, 'POST', decision)).status,
+      200,
+    );
+    assert.equal(
+      (await request(decisionPath, admin.token, 'POST', decision)).status,
+      200,
+    );
+    assert.equal(
+      (await (await request(ownerPath, fan.token)).json()).submissions[0]
+        .status,
+      'approved',
+    );
+    const history = await request(
+      `/v1/profiles/${fan.real.id}/points/history`,
+      fan.token,
+    );
+    assert.equal((await history.json()).balance, 100);
+    assert.equal((await request(ownerPath, fan.token, 'DELETE')).status, 405);
+    assert.equal(
+      (
+        await request(ownerPath, fan.token, 'POST', {
+          ...intent(),
+          role: 'admin',
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await request(ownerPath, fan.token, 'POST', {
+          ...intent(),
+          text: 'x'.repeat(5000),
+        })
+      ).status,
+      413,
+    );
+    const malformed = await fetch(`${base}${ownerPath}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${fan.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{',
+    });
+    assert.equal(malformed.status, 400);
+    const upload = await fetch(`${base}${ownerPath}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${fan.token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+      body: 'upload',
+    });
+    assert.equal(upload.status, 415);
+    const foreignOrigin = await fetch(`${base}${ownerPath}`, {
+      headers: {
+        Authorization: `Bearer ${fan.token}`,
+        Origin: 'https://untrusted.example.test',
+      },
+    });
+    assert.equal(foreignOrigin.status, 403);
+    for (const path of [
+      '/v1/submissions/votes',
+      '/v1/admin/submissions/selections',
+    ])
+      assert.equal((await request(path, admin.token, 'POST', {})).status, 404);
+    const page = await fetch(`${base}/admin/submissions/`);
+    assert.equal(page.status, 200);
+    assert.match(
+      page.headers.get('content-security-policy') ?? '',
+      /script-src 'self'/,
+    );
+    assert.match(await page.text(), /Submission review/);
+    assert.equal((await fetch(`${base}/admin/submissions/app.js`)).status, 200);
+    assert.equal((await fetch(`${base}/admin/style.css`)).status, 200);
+    await assignRole(pool, admin.id, 'fan', 'Synthetic HTTP revocation');
+    assert.equal(
+      (await request('/v1/admin/submissions', admin.token)).status,
+      403,
+    );
+    assert.equal(
+      (await request(decisionPath, admin.token, 'POST', decision)).status,
+      403,
+    );
+  } finally {
+    server.close();
+    await once(server, 'close');
+  }
+});
+
+test('submission identity, moderation and original debit survive actual API process shutdown and restart', async () => {
+  const admin = await account('restart-admin', true);
+  const fan = await account('restart-fan');
+  await grant(admin.token, fan.demo.id, 600);
+  async function start() {
+    const child = spawn(
+      process.execPath,
+      [fileURLToPath(new URL('./testing/api-process.ts', import.meta.url))],
+      { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    const port = await new Promise<number>((resolve, reject) => {
+      let output = '';
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM');
+        reject(new Error('Test API startup timed out.'));
+      }, 5000);
+      child.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.once('exit', (code) => {
+        clearTimeout(timer);
+        reject(new Error(`Test API exited ${code}.`));
+      });
+      child.stdout.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+        if (/^\d+\n$/.test(output)) {
+          clearTimeout(timer);
+          resolve(Number(output.trim()));
+        }
+      });
+    });
+    return {
+      request: (path: string, token: string, method = 'GET', body?: unknown) =>
+        fetch(`http://127.0.0.1:${port}${path}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(body === undefined
+              ? {}
+              : { 'Content-Type': 'application/json' }),
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+      stop: async () => {
+        child.kill('SIGTERM');
+        await once(child, 'exit');
+      },
+    };
+  }
+  const input = intent('Persistent demo submission');
+  const path = `/v1/profiles/${fan.demo.id}/submissions`;
+  const first = await start();
+  let receipt;
+  try {
+    const response = await first.request(path, fan.token, 'POST', input);
+    assert.equal(response.status, 201);
+    receipt = await response.json();
+    const response2 = await first.request(
+      `/v1/admin/submissions/${receipt.outcome.id}/decision`,
+      admin.token,
+      'POST',
+      { requestId: randomUUID(), status: 'rejected' },
+    );
+    assert.equal(response2.status, 200);
+  } finally {
+    await first.stop();
+  }
+  const second = await start();
+  try {
+    const page = await second.request(path, fan.token);
+    assert.equal(page.status, 200);
+    const stored = (await page.json()).submissions[0];
+    assert.equal(stored.id, receipt.outcome.id);
+    assert.equal(stored.status, 'rejected');
+    assert.equal(stored.profileKind, 'demo');
+    const replay = await second.request(path, fan.token, 'POST', input);
+    assert.equal(replay.status, 201);
+    assert.deepEqual(await replay.json(), receipt);
+    const history = await second.request(
+      `/v1/profiles/${fan.demo.id}/points/history`,
+      fan.token,
+    );
+    const current = await history.json();
+    assert.equal(current.balance, 100);
+    assert.equal(
+      current.entries.filter(
+        (entry: { kind: string }) => entry.kind === 'fan_submission',
+      ).length,
+      1,
+    );
+  } finally {
+    await second.stop();
+  }
+});
+
+test('the owned HTTP adapter exposes bounded owner and moderation routes through the same policy', async () => {
+  const admin = await account('adapter-admin', true);
+  const fan = await account('adapter-fan');
+  await grant(admin.token, fan.real.id, 600);
+  const base = {
+    pool,
+    token: fan.token,
+    query: {},
+    body: async () => intent(),
+  };
+  const created = await handleSubmissionRequest({
+    ...base,
+    method: 'POST',
+    path: `/v1/profiles/${fan.real.id}/submissions`,
+  });
+  assert.equal(created?.status, 201);
+  const [row] = (await listOwnSubmissions(pool, fan.token, fan.real.id))
+    .submissions;
+  const path = `/v1/admin/submissions/${row.id}/decision`;
+  const decision = {
+    ...base,
+    method: 'POST',
+    path,
+    body: async () => ({ requestId: randomUUID(), status: 'approved' }),
+  };
+  await assert.rejects(handleSubmissionRequest(decision), status(403));
+  assert.equal(
+    (await handleSubmissionRequest({ ...decision, token: admin.token }))
+      ?.status,
+    200,
+  );
+  assert.equal(
+    (await listOwnSubmissions(pool, fan.token, fan.real.id)).submissions[0]
+      .status,
+    'approved',
+  );
+  await assert.rejects(
+    handleSubmissionRequest({
+      ...base,
+      path: `/v1/profiles/${fan.real.id}/submissions`,
+      method: 'DELETE',
+    }),
+    status(405),
+  );
+  await assert.rejects(
+    handleSubmissionRequest({
+      ...base,
+      path: '/v1/admin/submissions',
+      method: 'GET',
+    }),
+    status(403),
+  );
+  await assert.rejects(
+    handleSubmissionRequest({
+      ...base,
+      path,
+      method: 'POST',
+      token: admin.token,
+      body: async () => ({ requestId: randomUUID(), status: 'fulfilled' }),
+    }),
+    status(400),
+  );
+  assert.equal(
+    await handleSubmissionRequest({
+      ...base,
+      method: 'POST',
+      path: '/v1/submissions/votes',
+    }),
+    null,
+  );
+  assert.equal(
+    await handleSubmissionRequest({
+      ...base,
+      method: 'POST',
+      path: '/v1/admin/submissions/selections',
+    }),
+    null,
+  );
 });
