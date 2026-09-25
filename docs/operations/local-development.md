@@ -48,7 +48,9 @@ After operations assigns another worktree a namespace, the service owner runs:
 pnpm db:provision --worktree /absolute/path/to/consumer-worktree
 ```
 
-The database names are `amr_<first-12-SHA256-of-canonical-worktree-path>_dev`
+Worktree paths use the filesystem-native canonical path, so case and symlink
+aliases of one directory select one namespace. The database names are
+`amr_<first-12-SHA256-of-canonical-worktree-path>_dev`
 and `_test`. The worktree login can connect only to its own databases among
 provisioned namespaces. Repeated provisioning reuses the existing credential.
 Each consumer runs its own migration/seed/test commands from its own checkout.
@@ -89,7 +91,9 @@ connection URL. Production refuses local commands and seed/reset operations.
 
 Pool defaults are five connections, five seconds to connect, ten seconds per
 statement and ten seconds idle. Remote connections verify TLS certificates;
-production rejects loopback databases and URL SSL overrides. Future deployment
+production rejects loopback databases. Database URLs reject all query
+parameters because pg can reinterpret them as host, identity, session or TLS
+overrides; use the URL authority/path and explicit server configuration. Future deployment
 may add a trusted CA through its server configuration, without disabling TLS.
 The transaction pattern follows [node-postgres](https://node-postgres.com/features/transactions).
 Database isolation uses PostgreSQL [connection privileges](https://www.postgresql.org/docs/17/sql-grant.html).

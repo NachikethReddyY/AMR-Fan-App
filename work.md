@@ -1,5 +1,14 @@
 # Work record
 
+## 2026-09-25: worktree namespace and database configuration corrections
+
+- Tracking: INFRA-001, PR #23. Reviewer provisioning exposed a failed acceptance criterion: case aliases of the same macOS directory produced different namespace hashes, so credentials provisioned through T3's uppercase path were unavailable to Node's lowercase runtime path. No incorrect reviewer database was provisioned.
+- Reproduced alias mismatch and Node stdin import failure before the fix. Use filesystem-native canonical paths for root/provisioning/hash inputs and guard the CLI entry point before resolving a stdin marker. Added filesystem-backed same-inode case and symlink alias tests, plus a real stdin import regression. The case test explicitly skips only on case-sensitive filesystems.
+- Independent review also reproduced pg query parameters overriding the validated host and TLS decision. Reject all URL query parameters, normalize network host aliases, set local TLS explicitly and retain verified remote TLS. Regression tests inspect pg Client effective connection parameters without network calls, including ambient PGSSLMODE and loopback aliases.
+- Classification: project implementation defects; no reusable guidance edited. Existing owner database names/data stay unchanged. Verification passed: four focused filesystem/import tests (no local skips), pnpm check, security checks and seven real database tests. Provisioning through the uppercase alias created the native-path reviewer namespace; both reviewer databases accept its restricted role. Replacement CI and exact-head review are required; no shared service restart.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: local PostgreSQL and foundation checks
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: INFRA-001; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3), supporting roots #4/#6 without closing them. Base: `e87268368bc12d4909293228df7b311213a3ea6e`.

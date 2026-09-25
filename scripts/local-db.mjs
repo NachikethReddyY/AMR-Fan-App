@@ -17,7 +17,7 @@ import { createDatabase } from '../server/database/index.ts';
 import { migrate } from '../server/database/migrate.ts';
 import { seedLocal } from '../server/database/seed.ts';
 
-const root = realpathSync(
+const root = realpathSync.native(
   resolve(dirname(fileURLToPath(import.meta.url)), '..'),
 );
 const auth = join(homedir(), '.auth', 'amr-local-postgres');
@@ -35,7 +35,11 @@ export function requireLocalMode(env = process.env) {
 }
 export function namespaceFor(worktree) {
   return (
-    'amr_' + createHash('sha256').update(worktree).digest('hex').slice(0, 12)
+    'amr_' +
+    createHash('sha256')
+      .update(realpathSync.native(worktree))
+      .digest('hex')
+      .slice(0, 12)
   );
 }
 function privateWrite(path, value) {
@@ -70,6 +74,7 @@ function requireOwner(config) {
     );
 }
 function worktreeConfig(worktree = root) {
+  worktree = realpathSync.native(worktree);
   const namespace = namespaceFor(worktree);
   const value = JSON.parse(
     privateRead(join(auth, 'worktrees', namespace + '.json')),
@@ -423,7 +428,7 @@ async function main([action, ...args]) {
       throw new LocalSetupError(
         'Usage: provision [--worktree <existing-path>]',
       );
-    const worktree = args.length ? realpathSync(args[1]) : root;
+    const worktree = args.length ? realpathSync.native(args[1]) : root;
     if (!existsSync(join(worktree, '.git')))
       throw new LocalSetupError('Provision only an existing Git worktree.');
     await provision(ownerConfig(), worktree);
@@ -497,7 +502,8 @@ async function main([action, ...args]) {
 }
 if (
   process.argv[1] &&
-  realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)
+  existsSync(process.argv[1]) &&
+  realpathSync.native(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(
