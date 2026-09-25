@@ -1,5 +1,25 @@
 # Tasks
 
+## Skill cleanup and local workflow commit, 25 September 2026
+
+- [x] Read the requested file-pr skill and classify existing skills by project relevance and duplication.
+- [x] Add file-pr, remove redundant or unrelated skills, and repair Claude links and references.
+- [x] Verify the focused staged snapshot without unrelated design work or local plans.
+- [x] Commit the authorized setup and report the remaining worktree changes; do not push.
+
+## Portable agent workflow and security setup, 25 September 2026
+
+- [x] Inspect repository state, implemented behavior, existing guidance, local tools and GitHub settings.
+- [x] Confirm local checks plus GitHub Actions; preserve the user's browser-consent requirement.
+- [x] Write canonical project instructions and shared portable SDLC skills, preserving existing design guidance.
+- [x] Add documentation navigation, architecture/status, workflow glossary, security/privacy/performance procedures and contributor workflows.
+- [x] Add bug and work ledgers, contribution templates, roadmap and requested Ideas discussion setup.
+- [x] Implement local and CI dependency, secret, source and DAST checks with explicit applicability and failure behavior.
+- [x] Test the tooling against safe positive and negative fixtures; run available repository checks.
+- [x] Verify fresh-checkout portability, inspect the final diff, reconcile requirements and record remaining limits.
+
+Scope: local repository setup and the explicitly requested private Ideas discussion configuration. No branch changes, commits, pushes, PRs, deployment, browser/device automation or live-provider requests. Licensing is excluded by the user's latest correction. Existing design artifacts and historical work records are preserved.
+
 ## Specification clarity and architecture review, 25 September 2026
 
 - [x] Review the active spec, plan and glossary against confirmed interview answers; score clarity before recommendations.
@@ -36,6 +56,14 @@ Review only: no implementation, staging, commits or `.evidence/` output. Parent 
 - [x] Obtain consolidated points/rewards and reset confirmation; calculation policy and ESG totals remain deferred.
 
 Scope: local Markdown only. Preserve unrelated work; no implementation, tracker changes, commits, or publication.
+
+## Apple HIG review of fan app design, 25 September 2026
+
+- [x] Record current Apple guidance with direct source links and iOS-specific limits.
+- [x] Audit the existing route mockups against the guidance with an honest scorecard.
+- [x] Correct confirmed design issues while preserving the route task, user palette, and Geist.
+- [x] Link durable project guidance from `AGENTS.md` and align `DESIGN.md` with it.
+- [x] Verify the revised document, tokens, and rendered mockup; report checks that remain unavailable.
 
 ## Issue #1 — Expo setup (t3code/implement-issue-one)
 

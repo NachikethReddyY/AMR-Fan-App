@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AMR fan app · revised design directions</title><style>
+:root{--doc-bg:#000;--doc-surface:#111;--doc-line:#2a2a2a;--doc-text:#f0f0f0;--doc-muted:#a1a1a1;--doc-link:#00e5ff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--doc-bg);color:var(--doc-text);font:15px/1.65 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:var(--doc-link);text-underline-offset:4px}
+a:focus-visible{outline:2px solid var(--doc-link);outline-offset:4px}
+main{width:min(calc(100% - 48px),1440px);margin:40px auto 70px}
+h1{font-size:clamp(32px,5vw,43px);line-height:1.15;margin:0 0 12px;color:#fff}
+h2{font-size:24px;line-height:1.25;margin:0 0 8px}
+h3,h4,p{margin:0}
+.intro p{color:var(--doc-muted);max-width:800px}
+.note{margin:22px 0 0;background:#111;padding:14px 18px;color:#d0d0d0}
+.jump{display:flex;gap:12px 20px;flex-wrap:wrap;margin:24px 0 0}
+.comparison,.colors,.states,.type-specimens{border-top:1px solid var(--doc-line);margin-top:48px;padding-top:50px}
+.section-intro{margin-bottom:22px;color:var(--doc-muted)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.concept{min-width:0}
+.concept-label{min-height:100px}
+.concept-label p{color:var(--doc-muted)}
+.phone,.app-specimen{--primary:#04524B;--primary-active:#03423D;--primary-disabled:#3A3A3A;--accent:#CEDC00;--canvas:#121212;--soft:#191919;--card:#222222;--elevated:#2B2B2B;--hairline:#3D3D3D;--ink:#F5F5F3;--body:#E0E0DC;--muted:#A9A9A3;--muted-soft:#8B8B85;color:var(--ink);font:16px/1.5 Geist,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.phone{width:min(100%,390px);height:790px;margin:auto;background:var(--canvas);border:1px solid #3d3d3d;border-radius:22px;display:flex;flex-direction:column;overflow:hidden}
+.phone-scroll{flex:1;min-height:0;overflow:auto;scrollbar-color:#444 #121212}
+.safe-top{height:28px;flex:none}
+.app-bar{min-height:50px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--hairline);font-size:14px}
+.app-bar span{color:var(--muted);white-space:nowrap}
+.app-bar .back{color:var(--ink)}
+.app-bar strong{font-size:16px}
+.race-head{position:relative;overflow:hidden;padding:18px;background:var(--soft);min-height:122px}
+.race-head h3{font-size:28px;line-height:32px;font-weight:500;margin:18px 0 5px;letter-spacing:-.025em}
+.race-head p{font-size:14px;line-height:20px;color:var(--body)}
+.race-head .eyebrow{font-size:12px;line-height:18px;letter-spacing:.06em;font-weight:600;color:var(--body)}
+.race-copy{position:relative;z-index:1}
+.race-green{background:var(--primary);min-height:160px}
+.race-green h3{font-size:32px;line-height:36px;margin-top:28px}
+.race-compact{min-height:0;padding:14px 18px;background:var(--soft);border-bottom:1px solid var(--hairline)}
+.race-compact h3{font-size:24px;line-height:28px;margin:7px 0 3px}
+.race-calm{background:var(--soft);min-height:140px}
+.circuit{position:absolute;right:-88px;top:-65px;width:400px;height:246px;opacity:.22;color:var(--ink);pointer-events:none}
+.race-calm .circuit{opacity:.18}
+.circuit .streets{opacity:.45}
+.circuit .route-shadow{fill:none;stroke:currentColor;stroke-width:8;opacity:.4;stroke-linecap:round;stroke-linejoin:round}
+.circuit .route-line{fill:none;stroke:currentColor;stroke-width:2;opacity:.85;stroke-linecap:round;stroke-linejoin:round}
+.phone-content{padding:16px 18px 22px}
+.context{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--hairline);padding-bottom:14px;font-size:14px;line-height:20px;color:var(--muted)}
+.context b{display:block;color:var(--ink);font-size:16px;line-height:22px;font-weight:600}
+.context span:last-child{text-align:right}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:17px 0 4px}
+.section-title h4{font-size:20px;line-height:26px;font-weight:600}
+.section-title span{font-size:13px;color:var(--muted)}
+.route{min-height:65px;border-bottom:1px solid var(--hairline);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 0}
+.route>div:first-child{min-width:0}
+.route strong{display:block;font-size:16px;line-height:22px;font-weight:600}
+.route small{display:block;font-size:14px;line-height:20px;color:var(--muted);margin-top:3px}
+.route-data{text-align:right;flex:none;max-width:100%;margin-left:auto;font-variant-numeric:tabular-nums}
+.route-data strong{font-size:16px}
+.route.selected{background:var(--card);border-left:3px solid var(--accent);padding:10px 9px;margin-inline:-9px;border-bottom-color:var(--hairline)}
+.route.selected small{color:var(--body)}
+.provisional{font-size:14px;line-height:20px;color:var(--muted);margin-top:14px}
+.phone-footer{padding:12px 17px 20px;border-top:1px solid var(--hairline);background:var(--canvas)}
+.app-button{min-height:49px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:17px;line-height:22px;font-weight:600;border-radius:2px}
+.phone-footer p{text-align:center;margin-top:8px;font-size:13px;line-height:18px;color:var(--muted)}
+.b .app-bar{border-top:3px solid var(--primary)}
+.b .phone-content{padding-top:12px}
+.b .route{min-height:70px}
+.c .featured{background:var(--ink);color:var(--primary);margin:16px 0 0;padding:13px 14px;border-left:3px solid var(--accent)}
+.featured-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.featured-top span{font-size:14px;color:#555}
+.featured-stats{display:flex;justify-content:space-between;gap:10px;margin-top:12px;font-variant-numeric:tabular-nums}
+.featured-stats span{display:block;color:#555;font-size:13px}
+.featured-stats b{font-size:16px;font-weight:600}
+.c .section-title{margin-top:14px}
+.c .route{min-height:63px}
+.state-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.color-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.color-token{background:#161616;border:1px solid var(--doc-line);padding:10px;color:var(--doc-text);min-width:0}
+.color-token .swatch{display:block;height:70px;border:1px solid #555;margin-bottom:10px;background:var(--swatch)}
+.color-token strong,.color-token code{display:block;overflow-wrap:anywhere}
+.color-token strong{font-size:13px;line-height:18px}
+.color-token code{color:var(--doc-muted);font:12px/18px ui-monospace,SFMono-Regular,monospace}
+.app-specimen{background:var(--canvas);padding:20px;border:1px solid var(--hairline);min-width:0}
+.app-specimen h3{font-size:20px;line-height:26px;font-weight:600;margin:0 0 14px}
+.state-row{display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--hairline)}
+.state-row span:first-child{font-size:13px;color:var(--muted)}
+.state-btn{min-height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);font-size:17px;line-height:22px;font-weight:600;border-radius:2px;color:#fff;text-align:center;padding:8px}
+.state-btn.pressed{background:var(--primary-active)}
+.state-btn.disabled{background:var(--primary-disabled);color:#c2c2c0}
+.state-btn.focused{outline:2px solid var(--accent);outline-offset:3px}
+.state-route{background:var(--card);padding:10px 12px;font-size:14px;border-left:3px solid transparent}
+.state-route.selected{border-left-color:var(--accent)}
+.state-route.unavailable{color:var(--muted)}
+.state-route small{display:block;color:var(--muted);font-size:14px}
+.state-grid .state-row{grid-template-columns:100px minmax(0,1fr)}
+.journey-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px}
+.journey{min-height:118px}
+.journey strong{display:block;font-size:16px;line-height:22px}
+.journey p{font-size:14px;line-height:20px;color:var(--muted);margin-top:6px}
+.journey-action{display:block;margin-top:10px;color:var(--ink);font-size:14px;line-height:20px;text-decoration:underline;text-underline-offset:3px}
+.journey.tracking{border-top:3px solid var(--accent)}
+.journey.credited{border-top:3px solid var(--primary)}
+.type-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.type-sample{border-top:1px solid var(--hairline);padding:12px 0}
+.type-sample label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+.type-sample span{display:block;line-height:1.2}
+.type-sample .display-xl{font-size:40px;line-height:44px;font-weight:500}
+.type-sample .display-lg{font-size:32px;line-height:36px;font-weight:500}
+.type-sample .display-md{font-size:28px;line-height:32px;font-weight:500}
+.type-sample .display-sm{font-size:24px;line-height:28px;font-weight:500}
+.type-sample .title-xl{font-size:24px;line-height:30px;font-weight:600}
+.type-sample .title-lg{font-size:22px;line-height:28px;font-weight:600}
+.type-sample .title-md{font-size:20px;line-height:26px;font-weight:600}
+.type-sample .title-sm{font-size:17px;line-height:22px;font-weight:600}
+.type-sample .body-md{font-size:17px;line-height:25px;font-weight:400}
+.type-sample .caption{font-size:14px;line-height:20px;font-weight:400;color:var(--muted)}
+.type-sample .code{font:13px/18px "Geist Mono",monospace}
+.type-sample .button-type{font-size:17px;line-height:22px;font-weight:600}
+.type-sample.stat{background:var(--ink);color:var(--primary);padding:12px}
+.type-sample.stat label{color:#555}
+.type-sample .stat-display{font-size:32px;line-height:36px;font-weight:600;font-variant-numeric:tabular-nums}
+.doc-footer{margin-top:46px;color:var(--doc-muted);font-size:13px}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}.concept-label{min-height:0;max-width:390px;margin:0 auto 12px}.concept{margin-bottom:22px}.state-grid{grid-template-columns:1fr}.journey-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.color-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){main{width:calc(100% - 32px);margin-top:26px}.comparison,.colors,.states,.type-specimens{margin-top:40px;padding-top:42px}.phone{height:760px}.journey-grid,.type-grid{grid-template-columns:1fr}.color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.state-row,.state-grid .state-row{grid-template-columns:90px minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head><body><main>
+<header class="intro"><h1>AMR fan app · revised design directions</h1><p>One AM green, a restrained F1 lime accent, neutral app surfaces, Geist type, and square controls. The three phone views hold the route content constant while changing its hierarchy.</p><div class="note">Static design specimens. The circuit is a faint, illustrative line drawing inspired by the supplied Baku City Circuit reference; it is not a live map. Routes, emissions, points and balance are example data.</div><nav class="jump" aria-label="Jump to"><a href="#a">A · Race editorial</a><a href="#b">B · Trackside utility</a><a href="#c">C · Grand touring</a><a href="#colors">Colors</a><a href="#states">States</a><a href="#type">Typography</a><a href="../DESIGN.md">Design rules</a></nav></header>
+<section class="comparison" aria-label="Layout directions"><div class="grid">
+<section class="concept" id="a"><header class="concept-label"><h2>A · Race editorial</h2><p>One brand-green race feature; comparison follows immediately.</p></header><div class="phone a"><div class="phone-scroll"><div class="safe-top" aria-hidden="true"></div><div class="app-bar"><span class="back">‹ Races</span><strong>Routes</strong><span>1,200 pts</span></div><div class="race-head race-green">
+<svg class="circuit" viewBox="0 0 620 380" aria-hidden="true">
+  <g class="streets" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 60 140 112 230 40 420 100 560 0M0 100 150 155 280 44 450 118 620 12M0 143 130 196 280 80 430 156 620 36M0 194 110 230 275 108 445 190 620 80M0 245 118 275 300 147 480 230 620 125M20 320 155 305 325 180 495 255 620 170M80 380 220 340 350 225 515 300 620 220"/>
+    <path d="M70 0 20 190 140 380M140 0 70 195 215 380M215 0 125 225 290 380M300 0 180 240 360 380M380 0 270 240 435 380M465 0 350 250 520 380M550 0 430 265 590 380"/>
+  </g>
+  <path class="route-shadow" d="M251 335 C198 319 185 258 214 227 L252 188 270 168 299 170 319 157 344 175 369 158 413 199 439 159 431 136 501 44 546 -11"/>
+  <path class="route-line" d="M251 335 C198 319 185 258 214 227 L252 188 270 168 299 170 319 157 344 175 369 158 413 199 439 159 431 136 501 44 546 -11"/>
+  <path class="route-shadow" d="M251 335 C320 347 390 331 435 289 L447 244 439 159"/>
+  <path class="route-line" d="M251 335 C320 347 390 331 435 289 L447 244 439 159"/>
+</svg><div class="race-copy"><span class="eyebrow">RACE TRAVEL · OUTBOUND</span><h3>Azerbaijan GP</h3><p>Baku City Circuit · from current location</p></div></div><div class="phone-content"><div class="context"><span><b>Planning</b>Estimate only</span><span><b>Race weekend</b>Eligibility checked later</span></div><div class="section-title"><h4>Choose a route</h4><span>CO₂e · time · pts</span></div><div class="route"><div><strong>Cycle</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>38 min · +160 pts</small></div></div><div class="route"><div><strong>Walk</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>1 h 55 · +160 pts</small></div></div><div class="route selected"><div><strong>Metro + walk</strong><small>One transfer · Selected ✓</small></div><div class="route-data"><strong>0.4 kg</strong><small>42 min · +140 pts</small></div></div><div class="route"><div><strong>Bus + metro + walk</strong><small>Two transfers</small></div><div class="route-data"><strong>0.7 kg</strong><small>49 min · +125 pts</small></div></div><div class="route"><div><strong>Cab</strong><small>Direct</small></div><div class="route-data"><strong>3.2 kg</strong><small>26 min · +0 pts</small></div></div><p class="provisional">Provisional points become earned only after an eligible completed journey.</p></div></div><div class="phone-footer"><div class="app-button">Start journey</div><p>Metro + walk selected · points are provisional</p></div></div></section>
+<section class="concept" id="b"><header class="concept-label"><h2>B · Trackside utility</h2><p>A compact race header leaves more room for route decisions.</p></header><div class="phone b"><div class="phone-scroll"><div class="safe-top" aria-hidden="true"></div><div class="app-bar"><span class="back">‹ Races</span><strong>Routes</strong><span>1,200 pts</span></div><div class="race-head race-compact"><span class="eyebrow">RACE TRAVEL · OUTBOUND</span><h3>Azerbaijan GP</h3><p>Baku City Circuit · from current location</p></div><div class="phone-content"><div class="context"><span><b>Planning</b>Estimate only</span><span><b>Race weekend</b>Eligibility checked later</span></div><div class="section-title"><h4>Choose a route</h4><span>CO₂e · time · pts</span></div><div class="route"><div><strong>Cycle</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>38 min · +160 pts</small></div></div><div class="route"><div><strong>Walk</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>1 h 55 · +160 pts</small></div></div><div class="route selected"><div><strong>Metro + walk</strong><small>One transfer · Selected ✓</small></div><div class="route-data"><strong>0.4 kg</strong><small>42 min · +140 pts</small></div></div><div class="route"><div><strong>Bus + metro + walk</strong><small>Two transfers</small></div><div class="route-data"><strong>0.7 kg</strong><small>49 min · +125 pts</small></div></div><div class="route"><div><strong>Cab</strong><small>Direct</small></div><div class="route-data"><strong>3.2 kg</strong><small>26 min · +0 pts</small></div></div><p class="provisional">Provisional points become earned only after an eligible completed journey.</p></div></div><div class="phone-footer"><div class="app-button">Start journey</div><p>Metro + walk selected · points are provisional</p></div></div></section>
+<section class="concept" id="c"><header class="concept-label"><h2>C · Grand touring</h2><p>A single light neutral inset gives the selected route and green statistic room.</p></header><div class="phone c"><div class="phone-scroll"><div class="safe-top" aria-hidden="true"></div><div class="app-bar"><span class="back">‹ Races</span><strong>Routes</strong><span>1,200 pts</span></div><div class="race-head race-calm">
+<svg class="circuit" viewBox="0 0 620 380" aria-hidden="true">
+  <g class="streets" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 60 140 112 230 40 420 100 560 0M0 100 150 155 280 44 450 118 620 12M0 143 130 196 280 80 430 156 620 36M0 194 110 230 275 108 445 190 620 80M0 245 118 275 300 147 480 230 620 125M20 320 155 305 325 180 495 255 620 170M80 380 220 340 350 225 515 300 620 220"/>
+    <path d="M70 0 20 190 140 380M140 0 70 195 215 380M215 0 125 225 290 380M300 0 180 240 360 380M380 0 270 240 435 380M465 0 350 250 520 380M550 0 430 265 590 380"/>
+  </g>
+  <path class="route-shadow" d="M251 335 C198 319 185 258 214 227 L252 188 270 168 299 170 319 157 344 175 369 158 413 199 439 159 431 136 501 44 546 -11"/>
+  <path class="route-line" d="M251 335 C198 319 185 258 214 227 L252 188 270 168 299 170 319 157 344 175 369 158 413 199 439 159 431 136 501 44 546 -11"/>
+  <path class="route-shadow" d="M251 335 C320 347 390 331 435 289 L447 244 439 159"/>
+  <path class="route-line" d="M251 335 C320 347 390 331 435 289 L447 244 439 159"/>
+</svg><div class="race-copy"><span class="eyebrow">RACE TRAVEL · OUTBOUND</span><h3>Azerbaijan GP</h3><p>Baku City Circuit · from current location</p></div></div><div class="phone-content"><div class="context"><span><b>Planning</b>Estimate only</span><span><b>Race weekend</b>Eligibility checked later</span></div><div class="featured"><div class="featured-top"><strong>Metro + walk</strong><span>Selected ✓</span></div><div class="featured-stats"><div><span>Est. CO₂e</span><b>0.4 kg</b></div><div><span>Duration</span><b>42 min</b></div><div><span>Provisional</span><b>+140 pts</b></div></div></div><div class="section-title"><h4>Other routes</h4><span>CO₂e · time · pts</span></div><div class="route"><div><strong>Cycle</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>38 min · +160 pts</small></div></div><div class="route"><div><strong>Walk</strong><small>Lowest estimated emissions</small></div><div class="route-data"><strong>0.0 kg</strong><small>1 h 55 · +160 pts</small></div></div><div class="route"><div><strong>Bus + metro + walk</strong><small>Two transfers</small></div><div class="route-data"><strong>0.7 kg</strong><small>49 min · +125 pts</small></div></div><div class="route"><div><strong>Cab</strong><small>Direct</small></div><div class="route-data"><strong>3.2 kg</strong><small>26 min · +0 pts</small></div></div><p class="provisional">Provisional points become earned only after an eligible completed journey.</p></div></div><div class="phone-footer"><div class="app-button">Start journey</div><p>Metro + walk selected · points are provisional</p></div></div></section>
+</div></section>
+<section class="colors" id="colors"><h2>App color tokens</h2><p class="section-intro">Exact values for the app specimens. The outer document uses its own neutral communicator palette.</p><div class="color-grid">
+<div class="color-token"><span class="swatch" style="--swatch:#04524B"></span><strong>Primary · AM green</strong><code>#04524B</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#03423D"></span><strong>Primary active</strong><code>#03423D</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#3A3A3A"></span><strong>Primary disabled</strong><code>#3A3A3A</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#CEDC00"></span><strong>Secondary accent · F1 lime</strong><code>#CEDC00</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#121212"></span><strong>Canvas · base</strong><code>#121212</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#191919"></span><strong>Surface soft</strong><code>#191919</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#222222"></span><strong>Surface card</strong><code>#222222</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#2B2B2B"></span><strong>Surface elevated</strong><code>#2B2B2B</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#3D3D3D"></span><strong>Hairline</strong><code>#3D3D3D</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#F5F5F3"></span><strong>Ink</strong><code>#F5F5F3</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#E0E0DC"></span><strong>Ink body</strong><code>#E0E0DC</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#A9A9A3"></span><strong>Ink muted</strong><code>#A9A9A3</code></div>
+<div class="color-token"><span class="swatch" style="--swatch:#8B8B85"></span><strong>Ink muted soft</strong><code>#8B8B85</code></div>
+</div></section>
+<section class="states" id="states"><h2>App states</h2><p class="section-intro">These specimens show how the same tokens communicate action, selection, availability and journey progress. They are static representations.</p><div class="state-grid">
+<div class="app-specimen"><h3>Primary action</h3><div class="state-row"><span>Default</span><div class="state-btn">Start journey</div></div><div class="state-row"><span>Pressed</span><div class="state-btn pressed">Start journey</div></div><div class="state-row"><span>Disabled</span><div><div class="state-btn disabled">Start journey</div><small>Select a route first.</small></div></div><div class="state-row"><span>Focus</span><div class="state-btn focused">Start journey</div></div></div>
+<div class="app-specimen"><h3>Route choice</h3><div class="state-row"><span>Default</span><div class="state-route">Cycle <small>38 min · 0.0 kg CO₂e</small></div></div><div class="state-row"><span>Selected</span><div class="state-route selected">Metro + walk ✓ <small>Selected · 42 min · 0.4 kg CO₂e</small></div></div><div class="state-row"><span>Unavailable</span><div class="state-route unavailable">Cab <small>Unavailable · route data cannot load</small></div></div></div>
+</div><div class="journey-grid">
+<div class="app-specimen journey"><strong>Planning</strong><p>Estimate only. Points have not entered the balance.</p></div>
+<div class="app-specimen journey tracking"><strong>Recording journey</strong><p>Tracking is active. Points are still provisional.</p><span class="journey-action">Stop journey</span></div>
+<div class="app-specimen journey"><strong>Evidence gap</strong><p>Location signal was lost. No automatic award.</p><span class="journey-action">Review journey</span></div>
+<div class="app-specimen journey credited"><strong>Credited</strong><p>+140 points awarded after eligible completion.</p></div>
+<div class="app-specimen journey"><strong>Location off</strong><p>Enter a starting address to compare routes.</p><span class="journey-action">Enter address</span></div>
+<div class="app-specimen journey"><strong>Loading routes</strong><p>Finding route options for this origin.</p></div>
+<div class="app-specimen journey"><strong>Routes unavailable</strong><p>Check your connection and try again.</p><span class="journey-action">Retry routes</span></div>
+<div class="app-specimen journey"><strong>Tracking paused</strong><p>Location signal was lost during travel.</p><span class="journey-action">Stop and review</span></div>
+</div></section>
+<section class="type-specimens" id="type"><h2>App typography</h2><p class="section-intro">Geist across interface roles; Geist Mono only for code or identifiers. The document around these specimens retains its neutral communicator style.</p><div class="app-specimen type-grid">
+<div class="type-sample"><label>display-xl · 40/44</label><span class="display-xl">Race weekend</span></div>
+<div class="type-sample"><label>display-lg · 32/36</label><span class="display-lg">Azerbaijan GP</span></div>
+<div class="type-sample"><label>display-md · 28/32</label><span class="display-md">Azerbaijan GP</span></div>
+<div class="type-sample"><label>display-sm · 24/28</label><span class="display-sm">Azerbaijan GP</span></div>
+<div class="type-sample"><label>title-xl · 24/30</label><span class="title-xl">Choose a route</span></div>
+<div class="type-sample"><label>title-lg · 22/28</label><span class="title-lg">Choose a route</span></div>
+<div class="type-sample"><label>title-md · 20/26</label><span class="title-md">Your journey</span></div>
+<div class="type-sample"><label>title-sm · 17/22</label><span class="title-sm">Metro + walk</span></div>
+<div class="type-sample stat"><label>stat-display · 32/36</label><span class="stat-display">+140 pts</span></div>
+<div class="type-sample"><label>body-md · 17/25</label><span class="body-md">Compare time and estimated emissions.</span></div>
+<div class="type-sample"><label>body-caption · 14/20</label><span class="caption">Eligibility checked after travel</span></div>
+<div class="type-sample"><label>code · 13/18</label><span class="code">journey_id: 042</span></div>
+<div class="type-sample"><label>button · 17/22</label><span class="button-type">Start journey</span></div>
+</div></section>
+<footer class="doc-footer">25 September 2026 · Generated by GPT-6 through the Codex harness.</footer>
+</main></body></html>
