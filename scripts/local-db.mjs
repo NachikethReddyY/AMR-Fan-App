@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { runLocalService } from './local-service.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 import {
   existsSync,
@@ -493,7 +494,9 @@ async function main([action, ...args]) {
         throw new LocalSetupError(
           'run requires a server-side command. Never print its environment.',
         );
-      command(args[0], args.slice(1), env);
+      // A development API is a service, not a bounded one-shot test command.
+      if (action === 'run') await runLocalService(args[0], args.slice(1), env);
+      else command(args[0], args.slice(1), env);
     }
   } else
     throw new LocalSetupError(

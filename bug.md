@@ -84,3 +84,8 @@ Synthetic local identities must pass the same account authorization and may neve
 be enabled in production. The manager schedules independent Astra review; no
 new helper threads or reviewer worktree reuse. Root changes are serialized after
 the AI owner's released lease and preserve its patch on subsequent rebases.
+
+ACCOUNT-004 local proof found `db:run` inherited a ten-minute subprocess timeout.
+The API stopped during Android logout. Preserve bounded test/tool commands but
+allow the explicitly started development server to run until its owner stops it.
+Pending logout hid data and recovered after the owned API restarted.
