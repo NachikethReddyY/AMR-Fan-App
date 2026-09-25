@@ -20,3 +20,11 @@ Checked 25 September 2026. Artifact: `docs/fan-app-team-brief.html`.
 - This task performed local document edits only. It did not commit, push, deploy, or publish. A concurrent workspace commit advanced HEAD during the task; it was not created by this agent and was left untouched.
 
 The local HTML deliverable is complete. Remaining product decisions are intentionally preserved for team discussion; the broader interview and app build are not marked complete.
+
+## Follow-up: callouts for doubts and discussions
+
+The updated artifact adds 35 labelled callouts: 15 open questions, nine discussion proposals, seven items needing verification, and four evidence limits. All six team agenda items and 34 specific uncertainty/proposal passages are covered, including doubts embedded in tables and supporting notes.
+
+A before/after HTML parse confirmed that all original wording, heading and section order, source links, and existing IDs are preserved. Only callout labels were added to the text. Main width and the existing split layout rules remain unchanged. Balanced markup, local `curl` readability, link attributes, and the size limit passed. Current size: 43,149 bytes; SHA-256: `98f8cb7751950eab43ec1780671cda024bb09d7afd30babedbd7c98a6caa6c4e`.
+
+Yellow callouts identify open questions and verification limits; cyan callouts identify proposals for discussion. Both use visible text labels. Rendered appearance and browser interaction remain unverified. No publication was performed.

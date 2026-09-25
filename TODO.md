@@ -1,5 +1,28 @@
 # Tasks
 
+## Separate the specification from issue #1
+
+- [x] Read the current issue and preserve its full product requirements in a standalone specification document.
+- [x] Draft a replacement issue focused only on repository setup, with implementation still awaiting a separate instruction.
+- [x] Update issue #1 and verify its title, setup-only scope and labels.
+- [x] Verify that the 69 product stories, 32 acceptance scenarios and open decisions remain in the standalone specification.
+
+Verified [issue #1 — Set up the repository for the Expo/React Native app](https://github.com/NachikethReddyY/AMR-Fan-App/issues/1). It contains setup scope and future acceptance criteria only, preserves the instruction not to start building, and no longer has the `ready-for-agent` label. The [full product specification](docs/fan-app-specification.md) is a local document; it has not been committed or pushed by this task.
+
+Project correction: keep the overall product specification separate from scoped implementation tasks. This does not change agent guidance or authorize repository setup.
+
+## to-spec — publish the core fan-app specification
+
+- [x] Confirm repository, glossary, tracker conventions, authentication, and existing application/test state.
+- [x] Synthesize the complete specification with extensive user stories, confirmed decisions, open decisions, and observable acceptance criteria.
+- [x] Check the proposed testing boundary with the user as required by the invoked skill.
+- [x] Validate the specification against the current brief and protect unresolved decisions from becoming assumed requirements.
+- [x] Publish the specification to this repository's GitHub Issues with the `ready-for-agent` label, then read it back to verify the body and label.
+
+Historical result: the full specification was initially published and read back as issue #1, including 69 user stories, 32 acceptance scenarios, seven required sections, approved test seams, and open-decision callouts. The user subsequently requested that issue #1 cover repository setup instead. The product specification is now preserved separately in [the specification document](docs/fan-app-specification.md); the correction above supersedes the original issue purpose. No app implementation or build was started.
+
+The explicit `to-spec` invocation authorizes this specification issue and its required label in the private project tracker. The user confirmed the testing approach and explicitly said not to build anything yet. Do not scaffold or implement the app, run a build, commit, push, or deploy during this task.
+
 ## Team discussion HTML — 25 September 2026
 
 - [x] Record the non-refundable 500-point submission fee and accepted daily outbound/return reward limit.

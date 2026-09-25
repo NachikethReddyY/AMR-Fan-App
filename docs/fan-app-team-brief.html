@@ -43,6 +43,17 @@
     .callout .callout-label { color:var(--info); display:block; margin-bottom:5px; font-weight:650; }
     .callout.warning { background:rgba(255,234,0,.10); }
     .callout.warning svg,.callout.warning .callout-label { color:var(--warning); }
+    .callout.text-only { display:block; }
+    .callout.compact { padding:12px 14px; margin:12px 0 0; }
+    .callout .note,.callout .decision-note { color:var(--body); }
+    .callout .decision-note { margin:0; }
+    .callout p:last-child { margin-bottom:0; }
+    .decisions .callout { margin:12px 0 0; }
+    .callout.discussion { background:rgba(0,229,255,.10); }
+    @media print {
+      .callout .callout-label { color:#07516c; }
+      .callout.warning .callout-label { color:#6b5700; }
+    }
     .table-wrap { width:100%; overflow-x:auto; border:1px solid var(--border); border-radius:8px; margin:20px 0 12px; background:#0a0a0a; }
     table { width:100%; border-collapse:collapse; text-align:left; font-size:16px; }
     caption { text-align:left; padding:16px; border-bottom:1px solid var(--border); }
@@ -52,7 +63,7 @@
     tbody tr:last-child th,tbody tr:last-child td { border-bottom:0; }
     .numbers td:last-child { font-variant-numeric:tabular-nums; font-weight:650; color:var(--text); }
     .numbers th,.numbers td { width:50%; }
-    .formula { background:var(--surface); padding:20px; border-radius:8px; margin:20px 0; }
+    .formula { padding:20px; border-radius:8px; margin:20px 0; }
     .formula h4 { margin-bottom:10px; }
     .formula ol { margin:0 0 10px; }
     .formula .note { margin-top:12px; }
@@ -155,15 +166,16 @@
             <tr><th scope="row">Transport choices</th><td>Compare mixed bus/MRT/rail routes with walking connections, plus walking, cycling, and a separate cab option where route data is available. A cab route is not automatically combined with public transport.</td></tr>
             <tr><th scope="row">Route information</th><td>Show estimated emissions prominently, journey duration, and estimated points before the fan chooses. Google Maps is the intended routing integration.</td></tr>
             <tr><th scope="row">Tracking</th><td>Follow actual movement from start through arrival. Locked-phone and background tracking are required on both iOS and Android.</td></tr>
-            <tr><th scope="row">Reward window</th><td><strong>Thursday 00:00 to Monday 06:00, in the race’s local timezone.</strong> Both the start and completion must be inside that window. Exact endpoint inclusivity remains a technical rule to settle.</td></tr>
-            <tr><th scope="row">Daily limit</th><td><strong>One rewarded outbound journey and one rewarded return journey per race-local calendar day.</strong> Each has its own 2,000-point cap. Additional journeys may still be tracked without further automatic awards. Overnight day attribution remains open.</td></tr>
+            <tr><th scope="row">Reward window</th><td><strong>Thursday 00:00 to Monday 06:00, in the race’s local timezone.</strong> Both the start and completion must be inside that window.<div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>Exact endpoint inclusivity remains a technical rule to settle.</p></div></td></tr>
+            <tr><th scope="row">Daily limit</th><td><strong>One rewarded outbound journey and one rewarded return journey per race-local calendar day.</strong> Each has its own 2,000-point cap. Additional journeys may still be tracked without further automatic awards.<div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>Overnight day attribution remains open.</p></div></td></tr>
             <tr><th scope="row">Earning rate</th><td><strong>50 points per estimated kg CO₂e reduced, capped at 2,000 points per eligible completed journey.</strong> Lower emissions earn more until the cap is reached.</td></tr>
             <tr><th scope="row">Journey changes</th><td>Recalculate the current journey’s estimate when the reported mode or assessed journey changes. An estimate is provisional; it does not reduce the fan’s previously earned balance.</td></tr>
             <tr><th scope="row">Journey evidence</th><td>Check reported mode against route, distance, and duration. This supports plausibility, not proof of the vehicle used. Insufficient tracking or no arrival means no automatic award.</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="formula">
+      <div class="formula callout discussion text-only">
+        <span class="callout-label">For discussion</span>
         <h4>Calculation detail — proposed for confirmation</h4>
         <ol>
           <li>Estimate the difference between <strong>one person driving the same endpoints</strong> and the final assessed journey.</li>
@@ -196,10 +208,10 @@
         <li><strong>Submit a challenge · 500 points</strong><p>Deduct the submission fee from the fan’s available balance. <strong>The 500 points are non-refundable, even if the challenge is rejected.</strong> They never count toward ranking.</p></li>
         <li><strong>Get admin approval</strong><p>Only an admin, including someone assigned the Aston Martin admin badge, can approve. Unapproved or rejected challenges cannot receive contributions. The badge represents permission granted by the system.</p></li>
         <li><strong>Contribute points · minimum 10</strong><p>A fan can contribute any amount of at least 10, up to their available balance. Contributions are spent points and count toward the challenge’s ranking.</p></li>
-        <li><strong>Select the top three</strong><p>Select the three approved challenges with the highest contribution totals before the drivers’ fan-interaction stage appearance. The precise cutoff and tie rules remain open.</p></li>
+        <li><strong>Select the top three</strong><p>Select the three approved challenges with the highest contribution totals before the drivers’ fan-interaction stage appearance.</p><div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>The precise cutoff and tie rules remain open.</p></div></li>
         <li><strong>Record performance, or keep the backlog</strong><p>Approval, selection, and performance are separate states. Approved challenges not yet performed retain their points and history in the backlog for later fulfilment. <strong>No challenge refunds.</strong></p></li>
       </ol>
-      <p class="note">Rejected content is not a promise of a future performance. Editing and resubmission rules, including whether another fee applies, are still open. A proposal or ranking does not establish driver or team agreement to perform it.</p>
+      <div class="callout warning text-only"><span class="callout-label">Open question</span><p class="note">Rejected content is not a promise of a future performance. Editing and resubmission rules, including whether another fee applies, are still open. A proposal or ranking does not establish driver or team agreement to perform it.</p></div>
 
       <div class="split">
         <div>
@@ -208,7 +220,7 @@
             <li>Redeem points for <strong>10%–60% discounts</strong>.</li>
             <li><strong>Admins set each reward’s points price.</strong> Larger discounts should be substantially harder to earn.</li>
             <li>Show the points cost and offer terms before redemption.</li>
-            <li>Use clearly labelled sample vouchers in the POC. Prices, merchant supply, and commercial terms need team input.</li>
+            <li>Use clearly labelled sample vouchers in the POC.<div class="callout discussion text-only compact"><span class="callout-label">For discussion</span><p>Prices, merchant supply, and commercial terms need team input.</p></div></li>
           </ul>
         </div>
         <div>
@@ -217,7 +229,7 @@
             <li>Buy individual trees with earned points at an <strong>admin-set points price per tree</strong>.</li>
             <li>Assign every tree to the purchasing account and <strong>that account’s name</strong>.</li>
             <li>If the original country cannot fulfil it, move the <strong>pending planting request</strong> to another country.</li>
-            <li>An optional quote remains a proposal. Visibility, notifications, and the no-alternative fallback remain open.</li>
+            <li><div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>An optional quote remains a proposal. Visibility, notifications, and the no-alternative fallback remain open.</p></div></li>
           </ul>
         </div>
       </div>
@@ -230,7 +242,8 @@
     <section id="build-boundary" aria-labelledby="build-heading">
       <span class="section-number">04 / Build boundary and proof</span>
       <h2 id="build-heading">What the core POC must demonstrate</h2>
-      <p><strong>Expo + React Native for iOS and Android, with Convex as the backend direction.</strong> Email accounts and progress shared across devices are agreed. Detailed location traces are private and retained for seven days; summaries and points transactions last longer. Authentication and the exact cleanup implementation remain to be chosen.</p>
+      <p><strong>Expo + React Native for iOS and Android, with Convex as the backend direction.</strong> Email accounts and progress shared across devices are agreed. Detailed location traces are private and retained for seven days; summaries and points transactions last longer.</p>
+      <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Authentication and the exact cleanup implementation remain to be chosen.</p></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">Area</th><th scope="col">Required behavior and evidence</th></tr></thead>
@@ -248,15 +261,18 @@
         <summary>Integration constraints checked in official documentation</summary>
         <div class="detail-body">
           <h4>Routing and advance planning</h4>
-          <p><a href="https://developers.google.com/maps/documentation/routes/transit-route" target="_blank" rel="noopener noreferrer">Google’s transit documentation</a> supports transit legs and walking connections, with future searches up to 100 days ahead. Route availability and schedules vary. The app must handle unavailable route data without inventing options.</p>
+          <p><a href="https://developers.google.com/maps/documentation/routes/transit-route" target="_blank" rel="noopener noreferrer">Google’s transit documentation</a> supports transit legs and walking connections, with future searches up to 100 days ahead.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Route availability and schedules vary. The app must handle unavailable route data without inventing options.</p></div>
           <h4>Carbon estimates</h4>
-          <p><a href="https://developers.google.com/maps/documentation/routes/eco-routes" target="_blank" rel="noopener noreferrer">Google eco-routing</a> documents fuel estimates for supported vehicle routes; it does not supply an established universal passenger-carbon model for all requested modes. A separate methodology and factor set are needed.</p>
-          <p>The proposed method sums each leg’s distance multiplied by a compatible emissions factor. Keep passenger-km and vehicle-km, occupancy, CO₂ and CO₂e, and operational versus upstream emissions consistent. The <a href="https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf" target="_blank" rel="noopener noreferrer">UK conversion methodology</a> informs these distinctions; its factors are not automatically valid for Singapore. Zero-emission walking/cycling would describe a chosen operational boundary, not their entire lifecycle.</p>
+          <div class="callout warning text-only"><span class="callout-label">Needs verification</span><p><a href="https://developers.google.com/maps/documentation/routes/eco-routes" target="_blank" rel="noopener noreferrer">Google eco-routing</a> documents fuel estimates for supported vehicle routes; it does not supply an established universal passenger-carbon model for all requested modes. A separate methodology and factor set are needed.</p></div>
+          <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p>The proposed method sums each leg’s distance multiplied by a compatible emissions factor. Keep passenger-km and vehicle-km, occupancy, CO₂ and CO₂e, and operational versus upstream emissions consistent. The <a href="https://assets.publishing.service.gov.uk/media/6846b0870392ed9b784c0187/2025-GHG-CF-methodology-paper.pdf" target="_blank" rel="noopener noreferrer">UK conversion methodology</a> informs these distinctions; its factors are not automatically valid for Singapore. Zero-emission walking/cycling would describe a chosen operational boundary, not their entire lifecycle.</p></div>
           <h4>Background location</h4>
-          <p><a href="https://docs.expo.dev/versions/latest/sdk/location/#background-location" target="_blank" rel="noopener noreferrer">Expo Location</a> requires native configuration, permissions, and development builds for the required cross-platform background behavior. Force-quitting and Android device behavior can stop updates. Locked-screen travel and arrival must be checked on physical iOS and Android devices.</p>
+          <p><a href="https://docs.expo.dev/versions/latest/sdk/location/#background-location" target="_blank" rel="noopener noreferrer">Expo Location</a> requires native configuration, permissions, and development builds for the required cross-platform background behavior.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Force-quitting and Android device behavior can stop updates. Locked-screen travel and arrival must be checked on physical iOS and Android devices.</p></div>
           <h4>Accounts, balances, and retention</h4>
-          <p><a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer">Convex’s React Native client</a>, <a href="https://docs.convex.dev/auth/overview" target="_blank" rel="noopener noreferrer">authentication options</a>, <a href="https://docs.convex.dev/functions/mutation-functions" target="_blank" rel="noopener noreferrer">transactional mutations</a>, and <a href="https://docs.convex.dev/scheduling/scheduled-functions" target="_blank" rel="noopener noreferrer">scheduled functions</a> support the planned direction. Access control, atomic points rules, and trace cleanup still need implementation. Convex Auth is documented as beta. A seven-day application deletion schedule does not itself establish deletion from every backup, log, or device cache.</p>
-          <p class="note">Evidence status: documentation reviewed; no live Maps request, deployed backend, calendar feed, or physical-device test is established by this brief.</p>
+          <p><a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer">Convex’s React Native client</a>, <a href="https://docs.convex.dev/auth/overview" target="_blank" rel="noopener noreferrer">authentication options</a>, <a href="https://docs.convex.dev/functions/mutation-functions" target="_blank" rel="noopener noreferrer">transactional mutations</a>, and <a href="https://docs.convex.dev/scheduling/scheduled-functions" target="_blank" rel="noopener noreferrer">scheduled functions</a> support the planned direction.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Access control, atomic points rules, and trace cleanup still need implementation. Convex Auth is documented as beta. A seven-day application deletion schedule does not itself establish deletion from every backup, log, or device cache.</p></div>
+          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p class="note">Evidence status: documentation reviewed; no live Maps request, deployed backend, calendar feed, or physical-device test is established by this brief.</p></div>
         </div>
       </details>
 
@@ -270,7 +286,7 @@
               <tbody>
                 <tr><th scope="row">10 kg final reduction</th><td>An eligible completed journey credits 500 points once.</td></tr>
                 <tr><th scope="row">60 kg final reduction</th><td>An eligible completed journey credits the 2,000-point maximum once.</td></tr>
-                <tr><th scope="row">Outside the window</th><td>A journey starting before Thursday 00:00 or completing after Monday 06:00 gets no window award. Exact cutoff equality remains to be defined.</td></tr>
+                <tr><th scope="row">Outside the window</th><td>A journey starting before Thursday 00:00 or completing after Monday 06:00 gets no window award.<div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>Exact cutoff equality remains to be defined.</p></div></td></tr>
                 <tr><th scope="row">Second outbound that day</th><td>No extra outbound award after the first rewarded outbound. The return allowance is separate.</td></tr>
                 <tr><th scope="row">Missing arrival or evidence</th><td>No automatic journey award; previous earned points remain untouched.</td></tr>
                 <tr><th scope="row">600-point fan submits</th><td>Deduct 500, leaving 100. Ranking stays zero. Rejection returns none of the 500 points.</td></tr>
@@ -290,22 +306,23 @@
       <span class="section-number">05 / Evidence and proposals</span>
       <h2 id="business-heading">Value for Aston Martin and the ESG connection</h2>
       <h3>How could the app make money?</h3>
-      <p><strong>Working hypothesis: sponsorship and additional merchandise sales.</strong> Partners could fund activities or rewards; fan engagement could lead to incremental purchases. Earned points and challenge contributions are not cash revenue. Reward costs, planting costs, platform costs, and discount margins need a viable funding model.</p>
-      <p>A 60% discount may require sponsored support or a restricted eligible offer to preserve margin. Those are commercial proposals for discussion, not agreed restrictions. No sponsor, merchant supply, driver participation, or planting arrangement has been established.</p>
-      <p>The existing <a href="https://www.astonmartinf1.com/en-GB/IAM" target="_blank" rel="noopener noreferrer">I / AM membership</a> is free and advertises fan experiences and a first-order merchandise discount. The team’s <a href="https://www.astonmartinf1.com/en-GB/partners" target="_blank" rel="noopener noreferrer">partner programme</a> shows an existing partnership context, not funding committed to this app. The proposed additional value is a repeatable link between race travel, points, and fan participation.</p>
+      <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p><strong>Working hypothesis: sponsorship and additional merchandise sales.</strong> Partners could fund activities or rewards; fan engagement could lead to incremental purchases. Earned points and challenge contributions are not cash revenue. Reward costs, planting costs, platform costs, and discount margins need a viable funding model.</p></div>
+      <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p>A 60% discount may require sponsored support or a restricted eligible offer to preserve margin. Those are commercial proposals for discussion, not agreed restrictions. No sponsor, merchant supply, driver participation, or planting arrangement has been established.</p></div>
+      <p>The existing <a href="https://www.astonmartinf1.com/en-GB/IAM" target="_blank" rel="noopener noreferrer">I / AM membership</a> is free and advertises fan experiences and a first-order merchandise discount. The team’s <a href="https://www.astonmartinf1.com/en-GB/partners" target="_blank" rel="noopener noreferrer">partner programme</a> shows an existing partnership context, not funding committed to this app.</p>
+      <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p>The proposed additional value is a repeatable link between race travel, points, and fan participation.</p></div>
 
       <h3>What the tree idea can legitimately reference</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">Evidence</th><th scope="col">What it supports, and its limit</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Campus planting</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2024.pdf#page=35" target="_blank" rel="noopener noreferrer">2024 Make A Mark report, pp. 35–36</a>, reports <strong>1,500 trees</strong> planted at the AMR Technology Campus. One reported campus count; no independent planting audit was performed here.</td></tr>
-            <tr><th scope="row">Restoration projects</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf#page=26" target="_blank" rel="noopener noreferrer">2025 report, p. 26</a>, describes community woodland/agroforestry in the North Ethiopian Highlands and mangrove restoration at Mtwapa Creek, Kenya. Two reported nature-based examples; no site or registry verification was performed here.</td></tr>
-            <tr><th scope="row">App fulfilment</th><td><strong>Unverified.</strong> These sources establish a thematic connection with the team’s published work. They do not establish a per-tree fan reward, an app partnership, or planting funded by app points.</td></tr>
+            <tr><th scope="row">Campus planting</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2024.pdf#page=35" target="_blank" rel="noopener noreferrer">2024 Make A Mark report, pp. 35–36</a>, reports <strong>1,500 trees</strong> planted at the AMR Technology Campus.<div class="callout warning text-only compact"><span class="callout-label">Evidence limit</span><p>One reported campus count; no independent planting audit was performed here.</p></div></td></tr>
+            <tr><th scope="row">Restoration projects</th><td>The <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf#page=26" target="_blank" rel="noopener noreferrer">2025 report, p. 26</a>, describes community woodland/agroforestry in the North Ethiopian Highlands and mangrove restoration at Mtwapa Creek, Kenya.<div class="callout warning text-only compact"><span class="callout-label">Evidence limit</span><p>Two reported nature-based examples; no site or registry verification was performed here.</p></div></td></tr>
+            <tr><th scope="row">App fulfilment</th><td><div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p><strong>Unverified.</strong> These sources establish a thematic connection with the team’s published work. They do not establish a per-tree fan reward, an app partnership, or planting funded by app points.</p></div></td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note">Evidence scope: selected pages of two official reports. Confidence is high in attribution to those reports; delivery and environmental impact are not independently verified. Team totals must not be presented as app impact.</p>
+      <div class="callout warning text-only"><span class="callout-label">Evidence limit</span><p class="note">Evidence scope: selected pages of two official reports. Confidence is high in attribution to those reports; delivery and environmental impact are not independently verified. Team totals must not be presented as app impact.</p></div>
     </section>
 
     <section id="team-decisions" aria-labelledby="decisions-heading">
@@ -315,33 +332,35 @@
       <ol class="decisions">
         <li>
           <h3>Carbon baseline and fair comparisons</h3>
-          <p>Confirm the one-person driving baseline, whole-point rounding, the emissions boundary, and the factors for each supported location and mode. Decide how to disclose any proxy data.</p>
-          <p class="decision-note"><strong>Proposal:</strong> use one consistent per-passenger CO₂e boundary, source/version every factor, and show the estimate basis. Avoid implying that Google supplies a complete multimodal carbon calculation.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Confirm the one-person driving baseline, whole-point rounding, the emissions boundary, and the factors for each supported location and mode. Decide how to disclose any proxy data.</p></div>
+          <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p class="decision-note"><strong>Proposal:</strong> use one consistent per-passenger CO₂e boundary, source/version every factor, and show the estimate basis. Avoid implying that Google supplies a complete multimodal carbon calculation.</p></div>
         </li>
         <li>
           <h3>Journey boundaries and evidence</h3>
-          <p>Choose race entrances, the return destination rule, arrival detection, acceptable tracking gaps, and what fans see when automatic validation fails. Set which race-local day owns a journey crossing midnight and the exact Monday cutoff behavior.</p>
-          <p class="decision-note"><strong>Proposal:</strong> attribute an overnight journey to its start day; require arrival before Monday 06:00. Neither detail is agreed yet. The already accepted daily limit remains one outbound and one return.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Choose race entrances, the return destination rule, arrival detection, acceptable tracking gaps, and what fans see when automatic validation fails. Set which race-local day owns a journey crossing midnight and the exact Monday cutoff behavior.</p></div>
+          <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p class="decision-note"><strong>Proposal:</strong> attribute an overnight journey to its start day; require arrival before Monday 06:00. Neither detail is agreed yet. The already accepted daily limit remains one outbound and one return.</p></div>
         </li>
         <li>
           <h3>Challenge moderation and stage selection</h3>
-          <p>Can fans edit and resubmit rejected ideas, and does that cost another submission fee? How are ties, fewer than three eligible ideas, zero-contribution ideas, postponed stage appearances, and backlog entry into later selections handled?</p>
-          <p class="decision-note"><strong>Fixed rule:</strong> the original 500-point fee is never returned and never counts toward ranking. Free resubmission has not been agreed. The exact vote-close time must precede the relevant stage appearance.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Can fans edit and resubmit rejected ideas, and does that cost another submission fee? How are ties, fewer than three eligible ideas, zero-contribution ideas, postponed stage appearances, and backlog entry into later selections handled?</p></div>
+          <p class="decision-note"><strong>Fixed rule:</strong> the original 500-point fee is never returned and never counts toward ranking.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>Free resubmission has not been agreed. The exact vote-close time must precede the relevant stage appearance.</p></div>
         </li>
         <li>
           <h3>Tree identity and reassignment</h3>
-          <p>Decide whether quotes are in the first build, who sees an account name, and what happens after a name change. Agree how a fan is notified of a country change, whether another project must have the same points cost, and what happens if no alternative can fulfil the request.</p>
-          <p class="decision-note"><strong>Fixed rule:</strong> every tree belongs to the purchasing account and uses that account’s name. The no-refund decision for challenges does not silently decide a failed tree request’s policy.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Decide whether quotes are in the first build, who sees an account name, and what happens after a name change. Agree how a fan is notified of a country change, whether another project must have the same points cost, and what happens if no alternative can fulfil the request.</p></div>
+          <p class="decision-note"><strong>Fixed rule:</strong> every tree belongs to the purchasing account and uses that account’s name.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Open question</span><p>The no-refund decision for challenges does not silently decide a failed tree request’s policy.</p></div>
         </li>
         <li>
           <h3>Reward prices and who funds delivery</h3>
-          <p>Set the admin-managed points prices, real discount terms, tree funding, and fulfilment ownership. Confirm whether sponsorship and incremental merchandise sales are the intended business hypothesis.</p>
-          <p class="decision-note"><strong>Proposal:</strong> check sample local journeys against store prices before describing rewards as attainable or difficult. A 500-point challenge submission requires 10 kg of estimated reduction before other spending; typical earnings are not yet established.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Set the admin-managed points prices, real discount terms, tree funding, and fulfilment ownership. Confirm whether sponsorship and incremental merchandise sales are the intended business hypothesis.</p></div>
+          <div class="callout discussion text-only"><span class="callout-label">For discussion</span><p class="decision-note"><strong>Proposal:</strong> check sample local journeys against store prices before describing rewards as attainable or difficult. A 500-point challenge submission requires 10 kg of estimated reduction before other spending; typical earnings are not yet established.</p></div>
         </li>
         <li>
           <h3>Implementation choices and proof</h3>
-          <p>Select the email authentication method for Convex; verify Maps route coverage, calendar ingestion, and race arrival data. Define and test private data access, seven-day trace cleanup, and background travel on actual iOS and Android devices.</p>
-          <p class="decision-note"><strong>Implementation prerequisite:</strong> documentation supports the intended approach, but live integration and device reliability remain unverified. UI direction selection is a separate step before app screens are built.</p>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Select the email authentication method for Convex; verify Maps route coverage, calendar ingestion, and race arrival data. Define and test private data access, seven-day trace cleanup, and background travel on actual iOS and Android devices.</p></div>
+          <div class="callout warning text-only"><span class="callout-label">Needs verification</span><p class="decision-note"><strong>Implementation prerequisite:</strong> documentation supports the intended approach, but live integration and device reliability remain unverified. UI direction selection is a separate step before app screens are built.</p></div>
         </li>
       </ol>
       <div class="callout">
@@ -352,7 +371,9 @@
       <details class="sources">
         <summary>Source basis and references used</summary>
         <div class="detail-body">
-          <p>The supplied AI summary attributes the original idea to meeting notes on 22 and 24 September 2026 and follow-up messages at 10:30–10:32 pm on 24 September. The original meeting documents were not inspected. Subsequent direct user answers take precedence, including race-focused travel, 50 points/kg, the 2,000-point cap, non-refundable challenge points, individual trees, and the daily journey allowance.</p>
+          <p>The supplied AI summary attributes the original idea to meeting notes on 22 and 24 September 2026 and follow-up messages at 10:30–10:32 pm on 24 September.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Evidence limit</span><p>The original meeting documents were not inspected.</p></div>
+          <p>Subsequent direct user answers take precedence, including race-focused travel, 50 points/kg, the 2,000-point cap, non-refundable challenge points, individual trees, and the daily journey allowance.</p>
           <ol class="references">
             <li class="ref">Project discussion (2026) <cite>Meeting extraction and direct product clarifications</cite>. [User-supplied conversation, consolidated 25 September 2026].</li>
             <li class="ref">Formula 1 (2026) <a href="https://www.formula1.com/en/racing/2026" target="_blank" rel="noopener noreferrer"><cite>2026 race calendar</cite></a>. Accessed 25 September 2026.<span class="url">Available at: https://www.formula1.com/en/racing/2026</span></li>
