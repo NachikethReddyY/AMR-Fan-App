@@ -17,6 +17,18 @@ remain required acceptance.
 verification and limits. Voting and selection remain with issues #12 and #13;
 their accepted rules below are unchanged. This candidate does not close #11.
 
+## Issues #12/#13 owned module status
+
+The participation module implements atomic contributions, one exact shared
+ranking, assigned-admin session creation/closure and audited release or
+demonstration fulfilment. Local PostgreSQL concurrency/authorization and owned
+HTTP/restart cases pass. Original #11 receipts and moderation remain unchanged;
+a separate live projection supplies totals and statuses. Root/API, admin-shell
+and phone registration remain reserved integration work. The retained actual
+API registration case is red (404); no full phone, browser or reset completion
+is claimed. [Participation operations](../operations/participation.md) records
+the exact handoff, verification and remaining acceptance. #12/#13 remain open.
+
 ## Outcome
 
 Fans submit questions or proposed driver/team activities and spend points to choose what is selected for a fan interaction.

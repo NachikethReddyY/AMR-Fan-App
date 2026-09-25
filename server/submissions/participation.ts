@@ -160,12 +160,10 @@ export async function readSharedSubmissions({
         page.limit + 1,
       ],
     );
-    const visible = rows.rows
-      .slice(0, page.limit)
-      .map((row) => ({
-        item: sharedSubmission.parse(row.item),
-        sequence: rankingCursor.shape.sequence.parse(row.sequence),
-      }));
+    const visible = rows.rows.slice(0, page.limit).map((row) => ({
+      item: sharedSubmission.parse(row.item),
+      sequence: rankingCursor.shape.sequence.parse(row.sequence),
+    }));
     const last = visible.at(-1);
     return {
       items: visible.map((row) => row.item),
@@ -468,12 +466,10 @@ export async function listInteractionSessions({
       WHERE ($1::numeric IS NULL OR s.sequence < $1::numeric) ORDER BY s.sequence DESC LIMIT $2`,
       [page.before ?? null, page.limit + 1],
     );
-    const items = result.rows
-      .slice(0, page.limit)
-      .map((row) => ({
-        session: interactionSession.parse(row.session),
-        selections: z.array(selection).max(3).parse(row.selections),
-      }));
+    const items = result.rows.slice(0, page.limit).map((row) => ({
+      session: interactionSession.parse(row.session),
+      selections: z.array(selection).max(3).parse(row.selections),
+    }));
     return {
       items,
       nextCursor:
