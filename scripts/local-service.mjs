@@ -16,6 +16,7 @@ export async function runLocalService(
   let stopping = false;
   let escalation;
   let stoppedAt;
+  let probeError;
   function terminate(name = 'SIGTERM') {
     if (!child.pid) return;
     try {
@@ -41,6 +42,12 @@ export async function runLocalService(
       return true;
     } catch (error) {
       if (error.code === 'ESRCH') return false;
+      // macOS can report EPERM while an exiting group has only zombies.
+      // It is still unresolved presence; only ESRCH proves group absence.
+      if (error.code === 'EPERM') {
+        probeError = error;
+        return true;
+      }
       throw error;
     }
   }
@@ -67,7 +74,9 @@ export async function runLocalService(
       // owner alive until the entire owned group has terminated.
       while (groupExists()) {
         if (performance.now() - stoppedAt > 10000)
-          throw new Error('Local service process group did not stop.');
+          throw new Error('Local service process group did not stop.', {
+            cause: probeError,
+          });
         await delay(20);
       }
     } finally {
