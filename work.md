@@ -71,3 +71,20 @@ Edited by gpt-6-astra through Codex (T3 Code).
   hosted CI remains unverified until a separately authorized push.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: GitHub delivery authorization
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: AGENT-007; unlinked.
+- The user requested committing and pushing the completed setup. Implementation
+  commit `82efb87` already exists. This authorization supersedes the earlier
+  local-only delivery scope and targets the configured `origin/main` on GitHub.
+- Preflight: authenticated GitHub access; remote main is the implementation
+  commit's parent. The app and dependency lockfile remain unchanged. Separate
+  design files and local `TODO.md` edits are excluded from delivery.
+- Proof: the implementation passed local checks, security scanner tests and a
+  fresh staged-snapshot install/check. Delivery repeats the applicable local
+  gates before pushing; GitHub's branch and Actions runs record the remote result.
+- Scope: push the setup and this authorization record. No PR, deployment,
+  repository visibility change or browser/device verification was requested.
+
+Edited by gpt-6-astra through Codex (T3 Code).
