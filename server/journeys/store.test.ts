@@ -650,3 +650,34 @@ test('bounded batches retain independent server receipt time and refuse a 4097th
     }),
   );
 });
+
+test('UUID spelling is canonical across retries and capture/sample ownership', async () => {
+  const route = routeFixture();
+  const requestId = randomUUID();
+  const prepared = await journeys.prepare(
+    token,
+    { profileId, requestId },
+    route,
+  );
+  assert.deepEqual(
+    await journeys.prepare(
+      token,
+      {
+        profileId: profileId.toUpperCase(),
+        requestId: requestId.toUpperCase(),
+      },
+      route,
+    ),
+    prepared,
+  );
+  const captureSessionId = randomUUID();
+  const input = { requestId: randomUUID(), captureSessionId };
+  const active = await journeys.start(token, prepared.id, input);
+  assert.deepEqual(
+    await journeys.start(token, prepared.id.toUpperCase(), {
+      requestId: input.requestId.toUpperCase(),
+      captureSessionId: captureSessionId.toUpperCase(),
+    }),
+    active,
+  );
+});

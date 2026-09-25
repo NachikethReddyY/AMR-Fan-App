@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ApiError } from '../accounts/types.ts';
 
 export const retentionMs = 7 * 24 * 60 * 60 * 1000;
-export const id = z.uuid();
+export const id = z.uuid().transform((value) => value.toLowerCase());
 export const timestamp = z.number().int().min(0).max(8_640_000_000_000_000);
 export const coordinate = z.strictObject({
   latitude: z.number().min(-90).max(90),
