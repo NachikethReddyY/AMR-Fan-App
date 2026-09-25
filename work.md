@@ -406,3 +406,27 @@ Verified by gpt-6-astra through Codex (T3 Code).
 - No cloud/config/auth/SMTP mutation, source publication, production migration, deployment or Actions call. Exact integrated guest catalogue and admin-origin candidates remain pending. Evidence: `.evidence/participation-deployment-readiness/`. Full local gate result is recorded in the handoff; an initial unrelated AI40ms timeout test failure is retained honestly.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+### Account #4 held mobile stack and tab correction
+
+The phone stack now follows server PR27's frozen `77776c0` candidate. It retains
+all prepared account source, public native configuration and SecureStore/PKCE/
+Geist dependencies. The server PR has none of those additions. Five native
+session tests cover persisted sign-in/demo selection, restart, expiry, offline
+resume and durable logout intent. Prior synthetic A/B Android identity, profile
+persistence and logout evidence is preserved.
+
+The observed largest-text navigation defect is corrected with wrapped labels,
+measured bar height and explicit accessible tab names. On leased Pixel Android
+16 at font scale 3.2, all four labels are fully visible; tab selection reaches
+the expected screen and exposes selected state. Scale 1.0 retains the normal
+bar geometry. Frozen install, full checks, security and both native production
+exports pass on the integrated stack. The original font scale 1.0 was restored,
+both device sessions closed, and owned Metro stopped with a fresh port bind
+confirming release. No iPhone was used.
+
+This is partial #4 delivery. Live OIDC issuer/client/scope/redirect setup and
+required small-iPhone Dynamic Type/VoiceOver proof remain pending. API ownership
+comes only from verified server sessions; native public identifiers grant no
+authority. Evidence remains local under `.evidence/account-4/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).

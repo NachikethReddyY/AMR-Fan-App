@@ -136,3 +136,13 @@ Verified by gpt-6-astra through Codex (T3 Code).
 Unlinked local deployment-readiness follow-up, 26 September 2026. Merged main09b61e9 includes migration0009, but the hosted bootstrap is fixed at eight migrations and returns unchanged on the existing installation. Acceptance: checksum/ownership/privilege-guarded atomic eight-to-nine upgrade, scoped runtime grants, retained data/role/password/ACL proof and replay/collision/rollback tests. No production migration/deploy until the manager supplies the exact reviewed integrated candidate.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+UI-ACCOUNT-004 correction on the held mobile branch: large-text tab labels now
+wrap inside their existing columns and the bar uses measured label height.
+Explicit tab names preserve accessible labels when a custom visual label is
+used; React Navigation retains selected state. Pixel proof at font scale 3.2
+shows every full label and reachable destinations, with selected state in the
+accessibility tree. Scale 1.0 restores the original geometry. Both settings and
+private screenshots are recorded under `.evidence/account-4/tabfix-*`. Required
+small-iPhone/VoiceOver acceptance is still pending, not replaced by Android.
+
+Edited by gpt-6-astra through Codex (T3 Code).

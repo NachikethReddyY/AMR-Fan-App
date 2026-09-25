@@ -1,8 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -100,67 +107,113 @@ function Placeholder({ title }: { title: string }) {
   );
 }
 
+function AccountNavigation() {
+  const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const largeLabels = fontScale > 1.3;
+  const [labelHeights, setLabelHeights] = useState<Record<string, number>>({});
+  const labelHeight = Math.max(14 * fontScale, ...Object.values(labelHeights));
+  return (
+    <AccountProvider>
+      <NavigationContainer
+        theme={{
+          ...DarkTheme,
+          colors: { ...DarkTheme.colors, background: '#121212' },
+        }}
+      >
+        <Tab.Navigator
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: '#FFFFFF',
+            tabBarInactiveTintColor: '#E0E0DC',
+            ...(largeLabels
+              ? {
+                  tabBarLabel: ({ color, children }) => (
+                    <Text
+                      style={{
+                        color,
+                        fontSize: 12,
+                        lineHeight: 14,
+                        textAlign: 'center',
+                        paddingHorizontal: 2,
+                        maxWidth: '100%',
+                      }}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                      onLayout={({ nativeEvent }) => {
+                        const { height } = nativeEvent.layout;
+                        setLabelHeights((previous) =>
+                          previous[children] === height
+                            ? previous
+                            : { ...previous, [children]: height },
+                        );
+                      }}
+                    >
+                      {children}
+                    </Text>
+                  ),
+                }
+              : {}),
+            tabBarStyle: {
+              backgroundColor: '#04524B',
+              borderTopColor: '#3D3D3D',
+              ...(largeLabels
+                ? { height: 44 + labelHeight + insets.bottom }
+                : {}),
+            },
+          }}
+        >
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{
+              tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
+              tabBarIcon: ({ focused }) => (
+                <TabIcon Icon={House} focused={focused} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Travel"
+            component={TravelScreen}
+            options={{
+              tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
+              tabBarIcon: ({ focused }) => (
+                <TabIcon Icon={Route} focused={focused} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Rewards"
+            component={RewardsScreen}
+            options={{
+              tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
+              tabBarIcon: ({ focused }) => (
+                <TabIcon Icon={Gift} focused={focused} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Impact"
+            component={ImpactScreen}
+            options={{
+              tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
+              tabBarIcon: ({ focused }) => (
+                <TabIcon Icon={Leaf} focused={focused} />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </AccountProvider>
+  );
+}
+
 export default function App() {
   return (
     <GluestackUIProvider mode="dark">
       <SafeAreaProvider>
-        <AccountProvider>
-          <NavigationContainer
-            theme={{
-              ...DarkTheme,
-              colors: { ...DarkTheme.colors, background: '#121212' },
-            }}
-          >
-            <Tab.Navigator
-              screenOptions={{
-                headerShown: false,
-                tabBarActiveTintColor: '#FFFFFF',
-                tabBarInactiveTintColor: '#E0E0DC',
-                tabBarStyle: {
-                  backgroundColor: '#04524B',
-                  borderTopColor: '#3D3D3D',
-                },
-              }}
-            >
-              <Tab.Screen
-                name="Home"
-                component={HomeScreen}
-                options={{
-                  tabBarIcon: ({ focused }) => (
-                    <TabIcon Icon={House} focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Travel"
-                component={TravelScreen}
-                options={{
-                  tabBarIcon: ({ focused }) => (
-                    <TabIcon Icon={Route} focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Rewards"
-                component={RewardsScreen}
-                options={{
-                  tabBarIcon: ({ focused }) => (
-                    <TabIcon Icon={Gift} focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Impact"
-                component={ImpactScreen}
-                options={{
-                  tabBarIcon: ({ focused }) => (
-                    <TabIcon Icon={Leaf} focused={focused} />
-                  ),
-                }}
-              />
-            </Tab.Navigator>
-          </NavigationContainer>
-        </AccountProvider>
+        <AccountNavigation />
       </SafeAreaProvider>
     </GluestackUIProvider>
   );
