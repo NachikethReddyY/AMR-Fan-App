@@ -34,12 +34,20 @@ async function authorize(
   );
   if (access === 'admin' && principal.rows[0]?.role !== 'admin')
     throw new ApiError(403, 'Assigned admin access required.');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
   const session = await client.query(
     `SELECT token_hash FROM app.sessions WHERE token_hash = $1 AND principal_id = $2
      AND revoked_at IS NULL AND expires_at > clock_timestamp() FOR SHARE`,
-    [createHash('sha256').update(token).digest('hex'), actor.principalId],
+    [tokenHash, actor.principalId],
   );
   if (!session.rowCount) throw new ApiError(401, 'Sign in again.');
+  // The locking SELECT can evaluate expiry before waiting on an unchanged row.
+  // Recheck the database clock after the session authority lock is held.
+  const unexpired = await client.query(
+    'SELECT 1 FROM app.sessions WHERE token_hash = $1 AND expires_at > clock_timestamp()',
+    [tokenHash],
+  );
+  if (!unexpired.rowCount) throw new ApiError(401, 'Sign in again.');
 }
 async function lockProfile(
   client: PoolClient,
