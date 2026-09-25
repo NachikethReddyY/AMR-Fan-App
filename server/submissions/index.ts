@@ -47,12 +47,19 @@ async function authorize(
   );
   if (admin && principal.rows[0]?.role !== 'admin')
     throw new ApiError(403, 'Assigned admin access required.');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
   const session = await client.query(
     `SELECT token_hash FROM app.sessions WHERE token_hash = $1 AND principal_id = $2
     AND revoked_at IS NULL AND expires_at > clock_timestamp() FOR SHARE`,
-    [createHash('sha256').update(token).digest('hex'), principalId],
+    [tokenHash, principalId],
   );
   if (!session.rowCount) throw new ApiError(401, 'Sign in again.');
+  // An unchanged locked row can pass the predicate before waiting. Check time after the wait.
+  const unexpired = await client.query(
+    'SELECT 1 FROM app.sessions WHERE token_hash = $1 AND expires_at > clock_timestamp()',
+    [tokenHash],
+  );
+  if (!unexpired.rowCount) throw new ApiError(401, 'Sign in again.');
 }
 
 export async function createSubmission(

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -354,6 +354,143 @@ test('a role revoked during initial authentication cannot approve while waiting 
     await blocker.query('ROLLBACK');
     blocker.release();
     if (result) await result;
+  }
+});
+
+async function withSessionAuthorityWait<T>(
+  token: string,
+  expire: boolean,
+  action: () => Promise<T>,
+) {
+  const hash = createHash('sha256').update(token).digest('hex');
+  await pool.query(
+    'UPDATE app.sessions SET expires_at = clock_timestamp() + $2::interval WHERE token_hash = $1',
+    [hash, expire ? '2 seconds' : '1 minute'],
+  );
+  const valid = async () =>
+    (
+      await pool.query<{ valid: boolean }>(
+        'SELECT expires_at > clock_timestamp() AS valid FROM app.sessions WHERE token_hash = $1',
+        [hash],
+      )
+    ).rows[0].valid;
+  const holder = await pool.connect();
+  let pending: Promise<T> | undefined;
+  try {
+    await holder.query('BEGIN');
+    await holder.query('SET LOCAL idle_in_transaction_session_timeout = 15000');
+    const holderPid = (
+      await holder.query<{ pid: number }>('SELECT pg_backend_pid() AS pid')
+    ).rows[0].pid;
+    // Keep the tuple unchanged; an UPDATE would make PostgreSQL re-evaluate the predicate.
+    await holder.query(
+      'SELECT token_hash FROM app.sessions WHERE token_hash = $1 FOR UPDATE',
+      [hash],
+    );
+    assert.equal(await valid(), true);
+    pending = action();
+    void pending.catch(() => {});
+    async function waiter() {
+      const deadline = Date.now() + 8000;
+      while (Date.now() < deadline) {
+        const result = await pool.query<{ pid: number }>(
+          `SELECT pid FROM pg_stat_activity
+          WHERE datname = current_database() AND usename = current_user
+          AND wait_event_type = 'Lock' AND query LIKE '%FROM app.sessions%FOR SHARE%'
+          AND $1::int = ANY(pg_blocking_pids(pid))`,
+          [holderPid],
+        );
+        if (result.rows[0]) return result.rows[0].pid;
+        await delay(10);
+      }
+      assert.fail('The session authority waiter was not observed.');
+    }
+    const waitingPid = await waiter();
+    assert.equal(await valid(), true);
+    if (expire) {
+      const deadline = Date.now() + 8000;
+      while (await valid()) {
+        assert.ok(
+          Date.now() < deadline,
+          'Database-clock expiry was not observed.',
+        );
+        await delay(10);
+      }
+    }
+    assert.equal(await valid(), !expire);
+    assert.equal(await waiter(), waitingPid);
+    await holder.query('ROLLBACK');
+    return (await Promise.allSettled([pending]))[0];
+  } finally {
+    await holder.query('ROLLBACK');
+    holder.release();
+    await pending?.catch(() => {});
+  }
+}
+
+test('moderation checks session expiry after its unchanged authority row lock for fresh decisions and replays', async (t) => {
+  for (const expire of [false, true]) {
+    for (const replay of [false, true]) {
+      await t.test(
+        `${expire ? 'expired' : 'valid'} ${replay ? 'replay' : 'fresh decision'}`,
+        async () => {
+          const subject = `session-wait-${expire}-${replay}`;
+          const admin = await account(`${subject}-admin`, true);
+          const fan = await account(`${subject}-fan`);
+          const other = await account(`${subject}-other`);
+          await grant(admin.token, fan.real.id, 600);
+          const created = await createSubmission(
+            pool,
+            fan.token,
+            fan.real.id,
+            intent(),
+          );
+          const decision = { requestId: randomUUID(), status: 'approved' };
+          const action = () =>
+            moderateSubmission(pool, admin.token, created.outcome.id, decision);
+          const receipt = replay ? await action() : null;
+          const original = await listOwnSubmissions(
+            pool,
+            fan.token,
+            fan.real.id,
+          );
+          const history = await readPointsHistory(pool, fan.token, fan.real.id);
+          const unrelated = await listOwnSubmissions(
+            pool,
+            other.token,
+            other.real.id,
+          );
+          const result = await withSessionAuthorityWait(
+            admin.token,
+            expire,
+            action,
+          );
+          if (expire) {
+            assert.equal(result.status, 'rejected');
+            assert.ok(
+              result.status === 'rejected' && status(401)(result.reason),
+            );
+          } else {
+            assert.equal(result.status, 'fulfilled');
+            if (result.status === 'fulfilled') {
+              assert.equal(result.value.status, 'approved');
+              if (replay) assert.deepEqual(result.value, receipt);
+            }
+          }
+          const after = await listOwnSubmissions(pool, fan.token, fan.real.id);
+          if (expire || replay) assert.deepEqual(after, original);
+          else assert.equal(after.submissions[0].status, 'approved');
+          assert.deepEqual(
+            await readPointsHistory(pool, fan.token, fan.real.id),
+            history,
+          );
+          assert.deepEqual(
+            await listOwnSubmissions(pool, other.token, other.real.id),
+            unrelated,
+          );
+        },
+      );
+    }
   }
 });
 
