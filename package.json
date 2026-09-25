@@ -27,7 +27,7 @@
     "security:check": "pnpm security:secrets && pnpm security:sast && pnpm security:audit && pnpm security:self-test",
     "security:dast": "node scripts/security.mjs dast",
     "security:dast:self-test": "node scripts/security.mjs dast-self-test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test",
     "test:web": "jest --config jest.web.config.js --runInBand",
     "test:database:unit": "node --test server/database/config.test.ts",
     "db:up": "node scripts/local-db.mjs up",
@@ -52,6 +52,8 @@
     "points:test:database": "pnpm db:run-test -- node --test server/points/*.test.ts",
     "journey:test": "node --test server/journeys/evidence.test.ts",
     "journey:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/journeys/store.test.ts server/journeys/http.test.ts",
+    "rewards:test": "node --test server/rewards/http.test.ts",
+    "rewards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts",
     "submissions:test": "node --test server/submissions/http.test.ts",
     "submissions:test:database": "pnpm db:run-test -- node --test server/submissions/submissions.test.ts"
   },

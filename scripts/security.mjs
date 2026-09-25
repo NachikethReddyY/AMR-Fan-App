@@ -48,7 +48,25 @@ export function validateDastConfig(config) {
       'DAST requires status implemented, a repository Dockerfile and port 1–65535.',
     );
   }
-  return { applicable: true, dockerfile: target.dockerfile, port: target.port };
+  const path = target.path === undefined ? '/' : target.path;
+  if (
+    typeof path !== 'string' ||
+    path.length > 2048 ||
+    path.trim() !== path ||
+    !/^\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*(?:\/[A-Za-z0-9_-][A-Za-z0-9._-]*)*\/?)?$/.test(
+      path,
+    )
+  ) {
+    throw new Error(
+      'DAST requires a plain absolute pathname without traversal, query or fragment.',
+    );
+  }
+  return {
+    applicable: true,
+    dockerfile: target.dockerfile,
+    port: target.port,
+    path,
+  };
 }
 
 export function evaluateZapReport(status, report) {
@@ -291,7 +309,8 @@ function dast(target, fixtureMode) {
       ],
       { capture: true },
     );
-    const url = 'http://target:' + target.port;
+    const origin = 'http://target:' + target.port;
+    const url = origin + (target.path ?? '/');
     const readiness =
       'import urllib.request,time\n' +
       'for attempt in range(30):\n' +
@@ -346,7 +365,7 @@ function dast(target, fixtureMode) {
     );
     const report = JSON.parse(readFileSync(reportPath, 'utf8'));
     const outcome = evaluateZapReport(result.status, report);
-    if (!report.site.every((site) => site['@name'] === url)) {
+    if (!report.site.every((site) => site['@name'] === origin)) {
       throw new Error('Unexpected scanned site in DAST report.');
     }
     console.log(
@@ -355,6 +374,7 @@ function dast(target, fixtureMode) {
           ? 'scanner-' + fixtureMode + '-fixture'
           : 'application',
         scannerExit: result.status,
+        startPath: target.path ?? '/',
         ...outcome,
       }),
     );

@@ -1,4 +1,8 @@
 {
   "status": "implemented",
-  "target": { "dockerfile": "server/api/Dockerfile", "port": 3000 }
+  "target": {
+    "dockerfile": "server/api/Dockerfile",
+    "port": 3000,
+    "path": "/admin/rewards/"
+  }
 }

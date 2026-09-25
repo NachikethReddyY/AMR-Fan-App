@@ -24,6 +24,15 @@ A fan spends points on participation in an existing tree programme and sees the 
 
 Choose the offer and confirmation presentation. Real allocation requires an actual programme arrangement; do not invent a planting partner or fulfilment integration.
 
+## Implementation candidate
+
+The shared [rewards domain candidate](../operations/rewards.md) records an
+admin-priced synthetic participation and account-name snapshot atomically with
+points History. Registered HTTP and admin browser behavior are verified; phone
+acceptance remains pending.
+Demonstration fixture selection is approved; actual programme allocation remains
+outside this slice. Accepted rules above are unchanged.
+
 ## Acceptance cases
 
 | Scenario                                                                                 | Expected observation                                                                                                          |

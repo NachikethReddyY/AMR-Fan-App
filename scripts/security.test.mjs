@@ -91,6 +91,54 @@ test('malformed or contradictory DAST configuration fails closed', () => {
   }
 });
 
+const pathnameConfig = {
+  status: 'implemented',
+  target: { dockerfile: 'server/api/Dockerfile', port: 3000 },
+};
+
+test('DAST pathname defaults to root', () => {
+  assert.equal(validateDastConfig(pathnameConfig).path, '/');
+});
+
+test('DAST accepts a bounded plain pathname', () => {
+  const config = pathnameConfig;
+  for (const path of ['/', '/admin/rewards/', '/health', '/assets/app.js'])
+    assert.equal(
+      validateDastConfig({ ...config, target: { ...config.target, path } })
+        .path,
+      path,
+    );
+});
+
+test('DAST refuses authority, traversal and query or fragment ambiguity', () => {
+  const config = pathnameConfig;
+  for (const path of [
+    '',
+    null,
+    123,
+    'admin/rewards',
+    '//other.test/',
+    'https://other.test/',
+    '/a/../admin',
+    '/a/./admin',
+    '/%2e%2e/admin',
+    '/%252e%252e/admin',
+    '/a\\b',
+    '/admin?next=//other.test',
+    '/admin#fragment',
+    '/admin//rewards',
+    '/admin\n',
+    '/admin ',
+    '/x@y',
+    '/.',
+    '/..',
+    '/' + 'a'.repeat(2048),
+  ])
+    assert.throws(() =>
+      validateDastConfig({ ...config, target: { ...config.target, path } }),
+    );
+});
+
 test('untrusted config fields cannot override the applicability result', () => {
   const result = validateDastConfig({
     status: 'implemented',
