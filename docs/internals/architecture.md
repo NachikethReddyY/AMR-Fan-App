@@ -7,8 +7,8 @@ owns product behavior.
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
 | Phone app | `index.ts` registers `src/App.tsx`; Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
-| Admin web | Absent | Authorized content, price, rule, moderation and demo administration |
-| Backend | `server/api/` account HTTP API and `server/accounts/` PostgreSQL ownership, real/demo profiles and zero balances; no deployment | Feature operations and persistence on Azure |
+| Admin web | Separate `/admin/` points adjustment and History page with synthetic local sign-in; live browser sign-in remains pending | Authorized content, price, rule, moderation and demo administration |
+| Backend | `server/api/` account HTTP API, `server/accounts/` PostgreSQL ownership and independent real/demo profiles, and `server/points/` integer adjustments with immutable History and stored outcomes; no deployment | Feature operations and persistence on Azure |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
 | Maps and tracking | Absent | POC route comparison, real location collection and journey assessment; physical-device proof required |
 | AI media pipeline | Absent; future proposal | Bounded transient processing and validated results |
@@ -16,8 +16,11 @@ owns product behavior.
 | Operations | Local Expo commands, repository checks and isolated worktree PostgreSQL tooling | Release environment remains a maintainer decision |
 
 The account API has an isolated application DAST target and authenticated HTTP
-boundary tests. No admin web, upload URL or deployed service exists. Passive DAST
-does not prove ownership; the PostgreSQL-backed HTTP tests cover that boundary.
+boundary tests. The points admin flow has local browser and PostgreSQL-backed
+HTTP proof; phone History acceptance remains pending the held account UI and
+native verification. No upload URL or deployed service exists. Passive DAST
+covers public HTTP only; authenticated tests prove points authorization,
+atomicity, replay, concurrency and isolation. See [points operations](../operations/points.md).
 
 ## Design defaults
 

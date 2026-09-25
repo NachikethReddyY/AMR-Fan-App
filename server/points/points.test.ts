@@ -1,0 +1,595 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { once } from 'node:events';
+import { after, before, test } from 'node:test';
+import { createDatabase } from '../database/index.ts';
+import { migrate } from '../database/migrate.ts';
+import { assignRole, ensureAccount } from '../accounts/store.ts';
+import { createSession, revokeSession } from '../auth/session.ts';
+import { createApi } from '../api/app.ts';
+import { runPointsOperation, readPointsHistory } from './index.ts';
+import { MAX_POINTS } from './contracts.ts';
+import { z } from 'zod';
+
+if (
+  process.env.NODE_ENV !== 'test' ||
+  !/^\/amr_[a-f0-9]{12}_test$/.test(
+    new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname,
+  )
+)
+  throw new Error('Use this worktree disposable test database.');
+
+const pool = createDatabase();
+const issuer = `urn:amr:points-test:${randomUUID()}`;
+let server: ReturnType<typeof createApi>;
+let base = '';
+async function account(subject: string, admin = false) {
+  const value = await ensureAccount(pool, { issuer, subject });
+  if (admin) await assignRole(pool, value.id, 'admin', 'Synthetic points test');
+  const session = await createSession(pool, value.id);
+  const real = value.profiles.find((profile) => profile.kind === 'real');
+  const demo = value.profiles.find((profile) => profile.kind === 'demo');
+  assert.ok(real && demo);
+  return { ...value, token: session.token, real, demo };
+}
+async function request(
+  path: string,
+  token: string,
+  method = 'GET',
+  body?: unknown,
+) {
+  return fetch(`${base}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+before(async () => {
+  await migrate(pool);
+  server = createApi({
+    pool,
+    env: {
+      NODE_ENV: 'test',
+      AUTH_DEV_ENABLED: 'true',
+      API_HOST: '127.0.0.1',
+      ADMIN_ORIGIN: 'http://127.0.0.1:55437',
+    },
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  base = `http://127.0.0.1:${address.port}`;
+});
+after(async () => {
+  if (server) {
+    server.close();
+    await once(server, 'close');
+  }
+  // Immutable accounting fixtures remain in this disposable test namespace.
+  await pool.end();
+});
+
+test('assigned admin grants points and the intended fan reads the recorded History', async () => {
+  const admin = await account('admin', true);
+  const fan = await account('fan');
+  const input = {
+    targetProfileId: fan.real.id,
+    requestId: randomUUID(),
+    delta: 100,
+    reason: 'Event participation correction',
+  };
+  const response = await request(
+    '/v1/admin/points/adjustments',
+    admin.token,
+    'POST',
+    input,
+  );
+  assert.equal(response.status, 201);
+  const receipt = await response.json();
+  assert.equal(receipt.delta, 100);
+  assert.equal(receipt.balanceAfter, 100);
+  assert.equal(receipt.reason, input.reason);
+  assert.equal(receipt.actorId, admin.id);
+  assert.ok(Number.isFinite(Date.parse(receipt.recordedAt)));
+  const history = await request(
+    `/v1/profiles/${fan.real.id}/points/history`,
+    fan.token,
+  );
+  assert.equal(history.status, 200);
+  const page = await history.json();
+  assert.equal(page.balance, 100);
+  assert.equal(page.entries.length, 1);
+  assert.deepEqual(page.entries[0], receipt);
+  const demo = await request(`/v1/profiles/${fan.demo.id}`, fan.token);
+  assert.equal((await demo.json()).balance, 0);
+});
+
+async function adjust(
+  token: string,
+  profile: string,
+  delta: number,
+  requestId = randomUUID(),
+  reason = 'Synthetic correction',
+) {
+  return request('/v1/admin/points/adjustments', token, 'POST', {
+    targetProfileId: profile,
+    requestId,
+    delta,
+    reason,
+  });
+}
+async function history(token: string, profile: string) {
+  const response = await request(
+    `/v1/profiles/${profile}/points/history`,
+    token,
+  );
+  assert.equal(response.status, 200);
+  return response.json();
+}
+
+test('corrections preserve earlier records and refuse negative balance or invalid integer input', async () => {
+  const admin = await account('bounds-admin', true);
+  const fan = await account('bounds-fan');
+  assert.equal((await adjust(admin.token, fan.real.id, 100)).status, 201);
+  const original = (await history(fan.token, fan.real.id)).entries[0];
+  assert.equal((await adjust(admin.token, fan.real.id, -40)).status, 201);
+  assert.equal((await adjust(admin.token, fan.real.id, -61)).status, 409);
+  for (const delta of [
+    0,
+    0.5,
+    -0.5,
+    MAX_POINTS + 1,
+    -MAX_POINTS - 1,
+    '10',
+    null,
+  ]) {
+    assert.equal(
+      (
+        await request('/v1/admin/points/adjustments', admin.token, 'POST', {
+          targetProfileId: fan.real.id,
+          requestId: randomUUID(),
+          delta,
+          reason: 'Invalid fixture',
+        })
+      ).status,
+      400,
+    );
+  }
+  for (const reason of ['', '   ', 'x'.repeat(501), 'line\nbreak'])
+    assert.equal(
+      (await adjust(admin.token, fan.real.id, 1, randomUUID(), reason)).status,
+      400,
+    );
+  const page = await history(fan.token, fan.real.id);
+  assert.equal(page.balance, 60);
+  assert.equal(page.entries.length, 2);
+  assert.deepEqual(page.entries[1], original);
+  assert.equal(
+    (await adjust(admin.token, fan.real.id, MAX_POINTS - 60)).status,
+    201,
+  );
+  assert.equal((await adjust(admin.token, fan.real.id, 1)).status, 409);
+  assert.equal((await history(fan.token, fan.real.id)).balance, MAX_POINTS);
+});
+
+test('fan, forged client authority, cross-account reads and revoked credentials cannot adjust or read another profile', async () => {
+  const admin = await account('auth-admin', true);
+  const a = await account('auth-a');
+  const b = await account('auth-b');
+  assert.equal((await adjust(a.token, b.real.id, 100)).status, 403);
+  for (const token of ['', 'forged'])
+    assert.equal((await adjust(token, b.real.id, 100)).status, 401);
+  for (const field of ['role', 'badge', 'actorId', 'ownerId', 'balance']) {
+    assert.equal(
+      (
+        await request('/v1/admin/points/adjustments', admin.token, 'POST', {
+          targetProfileId: b.real.id,
+          requestId: randomUUID(),
+          delta: 100,
+          reason: 'Forged field',
+          [field]: 'admin',
+        })
+      ).status,
+      400,
+    );
+  }
+  assert.equal(
+    (await request(`/v1/profiles/${b.real.id}/points/history`, a.token)).status,
+    404,
+  );
+  assert.equal(
+    (await request(`/v1/admin/profiles/${b.real.id}/points/history`, a.token))
+      .status,
+    403,
+  );
+  await assignRole(pool, admin.id, 'fan', 'Test revocation');
+  assert.equal((await adjust(admin.token, b.real.id, 100)).status, 403);
+  await assignRole(pool, admin.id, 'admin', 'Restore fixture');
+  await revokeSession(pool, admin.token);
+  assert.equal((await adjust(admin.token, b.real.id, 100)).status, 401);
+  const expired = await createSession(pool, admin.id);
+  await pool.query(
+    "UPDATE app.sessions SET expires_at = now() - interval '1 second' WHERE principal_id = $1",
+    [admin.id],
+  );
+  assert.equal((await adjust(expired.token, b.real.id, 100)).status, 401);
+  assert.equal((await history(b.token, b.real.id)).balance, 0);
+});
+
+test('successful retries return the immutable result and changed payload or target keys conflict', async () => {
+  const admin = await account('retry-admin', true);
+  const fan = await account('retry-fan');
+  const key = randomUUID();
+  const responses = await Promise.all(
+    Array.from({ length: 8 }, () => adjust(admin.token, fan.real.id, 100, key)),
+  );
+  const receipts = await Promise.all(
+    responses.map(async (response) => {
+      assert.equal(response.status, 201);
+      return response.json();
+    }),
+  );
+  for (const receipt of receipts) assert.deepEqual(receipt, receipts[0]);
+  await adjust(admin.token, fan.real.id, 25);
+  assert.deepEqual(
+    await (await adjust(admin.token, fan.real.id, 100, key)).json(),
+    receipts[0],
+  );
+  assert.equal((await adjust(admin.token, fan.real.id, 99, key)).status, 409);
+  assert.equal(
+    (await adjust(admin.token, fan.real.id, 100, key, 'Changed reason')).status,
+    409,
+  );
+  assert.equal((await adjust(admin.token, fan.demo.id, 100, key)).status, 409);
+  assert.equal((await history(fan.token, fan.real.id)).balance, 125);
+  assert.equal((await history(fan.token, fan.real.id)).entries.length, 2);
+  assert.equal((await history(fan.token, fan.demo.id)).balance, 0);
+});
+
+test('concurrent changed-target key reuse records only one target outcome', async () => {
+  const admin = await account('target-admin', true);
+  const fan = await account('target-fan');
+  const key = randomUUID();
+  const results = await Promise.all([
+    adjust(admin.token, fan.real.id, 40, key),
+    adjust(admin.token, fan.demo.id, 40, key),
+  ]);
+  assert.deepEqual(
+    results.map((response) => response.status).sort(),
+    [201, 409],
+  );
+  const pages = await Promise.all([
+    history(fan.token, fan.real.id),
+    history(fan.token, fan.demo.id),
+  ]);
+  assert.deepEqual(pages.map((page) => page.balance).sort(), [0, 40]);
+  assert.equal(pages.flatMap((page) => page.entries).length, 1);
+});
+
+test('concurrent adjustments preserve all credits and refuse a second unaffordable debit', async () => {
+  const admin = await account('concurrent-admin', true);
+  const fan = await account('concurrent-fan');
+  await Promise.all(
+    Array.from({ length: 10 }, async () => {
+      assert.equal((await adjust(admin.token, fan.real.id, 10)).status, 201);
+    }),
+  );
+  assert.equal((await history(fan.token, fan.real.id)).balance, 100);
+  const debits = await Promise.all([
+    adjust(admin.token, fan.real.id, -80),
+    adjust(admin.token, fan.real.id, -80),
+  ]);
+  assert.deepEqual(
+    debits.map((response) => response.status).sort(),
+    [201, 409],
+  );
+  const page = await history(fan.token, fan.real.id);
+  assert.equal(page.balance, 20);
+  assert.equal(page.entries.length, 11);
+});
+
+test('stored role change wins before a blocked adjustment obtains current authority', async () => {
+  const admin = await account('race-role-admin', true);
+  const fan = await account('race-role-fan');
+  const connection = await pool.connect();
+  try {
+    await connection.query('BEGIN');
+    await connection.query(
+      "UPDATE app.principals SET role = 'fan' WHERE id = $1",
+      [admin.id],
+    );
+    const pending = adjust(admin.token, fan.real.id, 100);
+    await connection.query('COMMIT');
+    assert.equal((await pending).status, 403);
+    assert.equal((await history(fan.token, fan.real.id)).balance, 0);
+  } finally {
+    await connection.query('ROLLBACK');
+    connection.release();
+  }
+});
+
+test('History is immutable at the database boundary and pages stay owned and ordered', async () => {
+  const admin = await account('history-admin', true);
+  const fan = await account('history-fan');
+  for (const delta of [10, 20, -5])
+    await adjust(admin.token, fan.real.id, delta);
+  const original = await history(fan.token, fan.real.id);
+  const id = original.entries[0].id;
+  for (const statement of [
+    'UPDATE app.points_operations SET reason = reason WHERE id = $1',
+    'DELETE FROM app.points_operations WHERE id = $1',
+  ])
+    await assert.rejects(pool.query(statement, [id]), { code: '23514' });
+  await assert.rejects(pool.query('TRUNCATE app.points_operations'), {
+    code: '23514',
+  });
+  assert.deepEqual(await history(fan.token, fan.real.id), original);
+  const first = await request(
+    `/v1/profiles/${fan.real.id}/points/history?limit=2`,
+    fan.token,
+  );
+  const page = await first.json();
+  assert.equal(page.entries.length, 2);
+  const second = await request(
+    `/v1/profiles/${fan.real.id}/points/history?limit=2&before=${page.nextCursor}`,
+    fan.token,
+  );
+  assert.deepEqual((await second.json()).entries, [original.entries[2]]);
+  assert.equal(
+    (
+      await request(
+        `/v1/profiles/${fan.real.id}/points/history?limit=101`,
+        fan.token,
+      )
+    ).status,
+    400,
+  );
+});
+
+test('server-only operation joins domain effects and debit in one transaction, and replay skips fresh checks', async () => {
+  const admin = await account('seam-admin', true);
+  const fan = await account('seam-fan');
+  await adjust(admin.token, fan.real.id, 100);
+  await pool.query('CREATE SCHEMA IF NOT EXISTS local_fixture');
+  await pool.query(
+    'CREATE TABLE IF NOT EXISTS local_fixture.points_effects(id uuid PRIMARY KEY, profile_id uuid NOT NULL)',
+  );
+  const key = randomUUID();
+  const options = {
+    pool,
+    token: fan.token,
+    access: 'owner' as const,
+    request: {
+      profileId: fan.real.id,
+      requestId: key,
+      kind: 'synthetic_atomic_effect',
+    },
+    intent: 'test effect 80',
+    outcomeSchema: z.strictObject({ effectId: z.uuid() }),
+  };
+  const operation = () =>
+    runPointsOperation({
+      ...options,
+      perform: async ({ client, profile, operationId }) => {
+        await client.query(
+          'INSERT INTO local_fixture.points_effects VALUES ($1,$2)',
+          [operationId, profile.id],
+        );
+        return {
+          delta: -80,
+          reason: 'Synthetic atomic effect',
+          outcome: { effectId: operationId },
+        };
+      },
+    });
+  const result = await operation();
+  assert.equal(result.entry.balanceAfter, 20);
+  const replay = await runPointsOperation({
+    ...options,
+    perform: async () => {
+      throw new Error(
+        'A later price/epoch check must not run for successful replay.',
+      );
+    },
+  });
+  assert.deepEqual(replay, result);
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT count(*)::int AS count FROM local_fixture.points_effects WHERE profile_id=$1',
+        [fan.real.id],
+      )
+    ).rows[0].count,
+    1,
+  );
+  await assert.rejects(
+    runPointsOperation({
+      ...options,
+      request: { ...options.request, requestId: randomUUID() },
+      perform: async ({ client, profile, operationId }) => {
+        await client.query(
+          'INSERT INTO local_fixture.points_effects VALUES ($1,$2)',
+          [operationId, profile.id],
+        );
+        return {
+          delta: -80,
+          reason: 'Insufficient synthetic debit',
+          outcome: { effectId: operationId },
+        };
+      },
+    }),
+    { status: 409 },
+  );
+  await assert.rejects(
+    runPointsOperation({
+      ...options,
+      request: { ...options.request, requestId: randomUUID() },
+      perform: async ({ client, profile, operationId }) => {
+        await client.query(
+          'INSERT INTO local_fixture.points_effects VALUES ($1,$2)',
+          [operationId, profile.id],
+        );
+        throw new Error('Synthetic outcome failure');
+      },
+    }),
+    /Synthetic outcome failure/,
+  );
+  assert.equal((await history(fan.token, fan.real.id)).balance, 20);
+  assert.equal((await history(fan.token, fan.real.id)).entries.length, 2);
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT count(*)::int AS count FROM local_fixture.points_effects WHERE profile_id=$1',
+        [fan.real.id],
+      )
+    ).rows[0].count,
+    1,
+  );
+});
+
+test('balance and History survive a new database connection and account resume', async () => {
+  const admin = await account('persistent-admin', true);
+  const fan = await account('persistent-fan');
+  const receipt = await (await adjust(admin.token, fan.demo.id, 55)).json();
+  const anotherPool = createDatabase();
+  try {
+    const page = await readPointsHistory(anotherPool, fan.token, fan.demo.id);
+    assert.equal(page.balance, 55);
+    assert.deepEqual(page.entries, [receipt]);
+    const resumed = await ensureAccount(anotherPool, {
+      issuer,
+      subject: 'persistent-fan',
+    });
+    assert.equal(
+      resumed.profiles.find((profile) => profile.kind === 'demo')?.balance,
+      55,
+    );
+    assert.equal(
+      resumed.profiles.find((profile) => profile.kind === 'real')?.balance,
+      0,
+    );
+  } finally {
+    await anotherPool.end();
+  }
+});
+
+test('admin browser assets and explicit same-origin requests work without allowing other browser origins', async () => {
+  const response = await fetch(`${base}/admin/`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type') ?? '', /text\/html/);
+  assert.match(await response.text(), /Points administration/);
+  const admin = await account('browser-admin', true);
+  const fan = await account('browser-fan');
+  const allowed = await fetch(`${base}/v1/admin/points/profiles`, {
+    headers: {
+      Authorization: `Bearer ${admin.token}`,
+      Origin: 'http://127.0.0.1:55437',
+    },
+  });
+  assert.equal(allowed.status, 200);
+  let profiles = await allowed.json();
+  let found = profiles.profiles.some(
+    (profile: { id: string }) => profile.id === fan.real.id,
+  );
+  while (!found && profiles.nextCursor) {
+    assert.ok(profiles.profiles.length <= 50);
+    profiles = await (
+      await request(
+        `/v1/admin/points/profiles?after=${profiles.nextCursor}`,
+        admin.token,
+      )
+    ).json();
+    found = profiles.profiles.some(
+      (profile: { id: string }) => profile.id === fan.real.id,
+    );
+  }
+  assert.ok(found);
+  assert.equal(
+    (await request('/v1/admin/points/profiles', fan.token)).status,
+    403,
+  );
+  assert.equal(
+    (
+      await fetch(`${base}/v1/admin/points/profiles`, {
+        headers: {
+          Authorization: `Bearer ${admin.token}`,
+          Origin: 'https://foreign.example.test',
+        },
+      })
+    ).status,
+    403,
+  );
+});
+
+test('committed points and replay survive actual API process shutdown and restart', async () => {
+  const admin = await account('restart-admin', true);
+  const fan = await account('restart-fan');
+  const input = {
+    targetProfileId: fan.real.id,
+    delta: 77,
+    reason: 'Restart fixture',
+    requestId: randomUUID(),
+  };
+  async function child() {
+    const process = spawn(
+      globalThis.process.execPath,
+      [fileURLToPath(new URL('./testing/api-process.ts', import.meta.url))],
+      { stdio: ['ignore', 'pipe', 'inherit'] },
+    );
+    const closed = once(process, 'exit');
+    const [chunk] = await once(process.stdout, 'data');
+    const port = Number(String(chunk).trim());
+    assert.ok(Number.isInteger(port) && port > 0);
+    return {
+      url: `http://127.0.0.1:${port}`,
+      stop: async () => {
+        process.kill('SIGTERM');
+        await closed;
+      },
+    };
+  }
+  const first = await child();
+  let saved;
+  try {
+    const response = await fetch(`${first.url}/v1/admin/points/adjustments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+    assert.equal(response.status, 201);
+    saved = await response.json();
+  } finally {
+    await first.stop();
+  }
+  const second = await child();
+  try {
+    const response = await fetch(`${second.url}/v1/admin/points/adjustments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), saved);
+    const page = await fetch(
+      `${second.url}/v1/profiles/${fan.real.id}/points/history`,
+      { headers: { Authorization: `Bearer ${fan.token}` } },
+    );
+    const data = await page.json();
+    assert.equal(data.balance, 77);
+    assert.equal(data.entries.length, 1);
+  } finally {
+    await second.stop();
+  }
+});

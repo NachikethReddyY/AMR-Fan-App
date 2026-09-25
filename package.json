@@ -46,7 +46,8 @@
     "ai:evaluate": "node server/ai/evaluation/run.ts",
     "account:test": "node --test server/auth/*.test.ts",
     "account:test:database": "pnpm db:run-test -- node --test server/accounts/*.test.ts server/api/*.test.ts",
-    "api:start": "node server/api/start.ts"
+    "api:start": "node server/api/start.ts",
+    "points:test:database": "pnpm db:run-test -- node --test server/points/*.test.ts"
   },
   "dependencies": {
     "@expo/html-elements": "^57.0.0",

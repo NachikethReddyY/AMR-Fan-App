@@ -40,10 +40,13 @@ redirect URI.
 
 ## HTTP contract and accounting handoff
 
-All replies are JSON with `no-store`; writes accept bounded JSON bodies. Native
-clients send `Authorization: Bearer <credential>`. Browser origins are rejected
-until the separate admin web integration configures an explicit origin policy.
-No cookie session or public role-assignment endpoint exists.
+API replies are JSON with `no-store`; writes accept bounded JSON bodies. Native
+clients send `Authorization: Bearer <credential>`. Requests with an `Origin` header
+require an exact configured `ADMIN_ORIGIN`, using HTTPS or loopback HTTP at `127.0.0.1`.
+Other origins are rejected; omitting the setting retains browser-origin rejection.
+The separate [points admin page](points.md) uses same-origin requests and keeps
+its bearer session in memory. No cookie session, cross-origin credential policy
+or public role-assignment endpoint exists.
 
 | Endpoint | Credential | Result |
 | --- | --- | --- |

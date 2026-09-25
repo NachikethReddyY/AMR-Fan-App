@@ -48,3 +48,4 @@ source-backed decisions into maintained docs. Historical `docs/research/` and
 Written by gpt-6-astra through Codex (T3 Code).
 
 Account identity, local API commands and live setup gates: [account operations](operations/accounts.md).
+Points adjustments, History and atomic operation integration: [points operations](operations/points.md).
