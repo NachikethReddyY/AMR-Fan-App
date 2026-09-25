@@ -381,3 +381,252 @@ test('purchase receipt and content right survive an actual API process restart',
     await resumed.stop();
   }
 });
+
+test('HTTP mixed purchases serialize funds; stale confirmations and changed request payloads cannot charge', async () => {
+  const admin = await account('mixed-admin', true);
+  const fan = await account('mixed-fan');
+  await data(
+    await request('/v1/admin/points/adjustments', admin.token, 'POST', {
+      targetProfileId: fan.real.id,
+      requestId: randomUUID(),
+      delta: 150,
+      reason: 'Synthetic mixed fixture',
+    }),
+    201,
+  );
+  const offers = [];
+  for (const product of [
+    {
+      kind: 'tree',
+      title: 'Synthetic tree participation',
+      description: 'Demonstration only.',
+      pointsPrice: 100,
+    },
+    {
+      kind: 'discount',
+      title: 'Synthetic 60% voucher',
+      description: 'Demonstration only. No retailer code.',
+      pointsPrice: 100,
+      percentage: 60,
+    },
+    synthetic,
+  ])
+    offers.push(
+      await data(
+        await request('/v1/admin/rewards/offers', admin.token, 'POST', {
+          requestId: randomUUID(),
+          enabled: true,
+          product,
+        }),
+        201,
+      ),
+    );
+  const inputs = offers.map((offer) => ({
+    profileId: fan.real.id,
+    offerId: offer.id,
+    offerVersion: 1,
+    requestId: randomUUID(),
+  }));
+  const results = await Promise.all(
+    inputs.map((input) =>
+      request('/v1/rewards/purchases', fan.token, 'POST', input),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [201, 409, 409]);
+  const winner = results.findIndex((r) => r.status === 201);
+  const saved = await results[winner].json();
+  const page = await data(
+    await request(`/v1/profiles/${fan.real.id}/points/history`, fan.token),
+  );
+  assert.equal(page.balance, 50);
+  assert.equal(page.entries.length, 2);
+  assert.deepEqual(page.entries[0], saved.entry);
+  assert.equal(
+    (
+      await data(
+        await request(
+          `/v1/profiles/${fan.real.id}/rewards/receipts`,
+          fan.token,
+        ),
+      )
+    ).receipts.length,
+    1,
+  );
+  for (const change of [
+    { offerVersion: 2 },
+    { offerId: offers[(winner + 1) % 3].id },
+    { profileId: fan.demo.id },
+  ])
+    assert.equal(
+      (
+        await request('/v1/rewards/purchases', fan.token, 'POST', {
+          ...inputs[winner],
+          ...change,
+        })
+      ).status,
+      409,
+    );
+  const offer = offers[(winner + 1) % 3];
+  await data(
+    await request('/v1/admin/rewards/offers', admin.token, 'PATCH', {
+      requestId: randomUUID(),
+      offerId: offer.id,
+      expectedVersion: 1,
+      enabled: true,
+      product: { ...offer.product, pointsPrice: 125 },
+    }),
+  );
+  const stale = await request('/v1/rewards/purchases', fan.token, 'POST', {
+    profileId: fan.real.id,
+    offerId: offer.id,
+    offerVersion: 1,
+    requestId: randomUUID(),
+  });
+  assert.equal(stale.status, 409);
+  assert.match((await stale.json()).error, /Offer changed/);
+  assert.equal(
+    (
+      await data(
+        await request(
+          `/v1/profiles/${fan.real.id}/rewards/offers/${offer.id}`,
+          fan.token,
+        ),
+      )
+    ).product.pointsPrice,
+    125,
+  );
+  assert.deepEqual(
+    await data(
+      await request('/v1/rewards/purchases', fan.token, 'POST', inputs[winner]),
+      201,
+    ),
+    saved,
+  );
+});
+
+test('HTTP tree and voucher snapshots remain paid once; receipt-write failure rolls the accounting back', async () => {
+  const admin = await account('snapshot-admin', true);
+  const fan = await account('snapshot-fan');
+  await data(
+    await request('/v1/admin/points/adjustments', admin.token, 'POST', {
+      targetProfileId: fan.real.id,
+      requestId: randomUUID(),
+      delta: 1000,
+      reason: 'Synthetic snapshot fixture',
+    }),
+    201,
+  );
+  for (const product of [
+    {
+      kind: 'tree',
+      title: 'Synthetic programme participation',
+      description: 'Demonstration only.',
+      pointsPrice: 100,
+    },
+    {
+      kind: 'discount',
+      title: 'Synthetic 10% voucher',
+      description: 'Demonstration only.',
+      pointsPrice: 100,
+      percentage: 10,
+    },
+    {
+      kind: 'discount',
+      title: 'Synthetic 60% voucher',
+      description: 'Demonstration only.',
+      pointsPrice: 200,
+      percentage: 60,
+    },
+  ]) {
+    const offer = await data(
+      await request('/v1/admin/rewards/offers', admin.token, 'POST', {
+        requestId: randomUUID(),
+        enabled: true,
+        product,
+      }),
+      201,
+    );
+    const input = {
+      profileId: fan.real.id,
+      offerId: offer.id,
+      offerVersion: 1,
+      requestId: randomUUID(),
+    };
+    const paid = await data(
+      await request('/v1/rewards/purchases', fan.token, 'POST', input),
+      201,
+    );
+    assert.equal(paid.outcome.fulfilment, 'demonstration');
+    assert.equal(paid.outcome.paidPoints, product.pointsPrice);
+    if (product.kind === 'discount')
+      assert.equal(paid.outcome.percentage, product.percentage);
+    await data(
+      await request('/v1/admin/rewards/offers', admin.token, 'PATCH', {
+        requestId: randomUUID(),
+        offerId: offer.id,
+        expectedVersion: 1,
+        enabled: false,
+        product: { ...product, pointsPrice: 250 },
+      }),
+    );
+    assert.deepEqual(
+      await data(
+        await request('/v1/rewards/purchases', fan.token, 'POST', input),
+        201,
+      ),
+      paid,
+    );
+  }
+  const before = await data(
+    await request(`/v1/profiles/${fan.real.id}/points/history`, fan.token),
+  );
+  const receipts = await data(
+    await request(`/v1/profiles/${fan.real.id}/rewards/receipts`, fan.token),
+  );
+  const broken = await data(
+    await request('/v1/admin/rewards/offers', admin.token, 'POST', {
+      requestId: randomUUID(),
+      enabled: true,
+      product: synthetic,
+    }),
+    201,
+  );
+  // Synthetic DB failure at the domain-write boundary, using this disposable namespace only.
+  const connection = await pool.connect();
+  try {
+    await connection.query('BEGIN');
+    await connection.query(
+      'ALTER TABLE app.reward_receipts ADD CONSTRAINT synthetic_reject_receipt CHECK (false) NOT VALID',
+    );
+    await connection.query('COMMIT');
+    assert.equal(
+      (
+        await request('/v1/rewards/purchases', fan.token, 'POST', {
+          profileId: fan.real.id,
+          offerId: broken.id,
+          offerVersion: 1,
+          requestId: randomUUID(),
+        })
+      ).status,
+      500,
+    );
+  } finally {
+    await connection.query('ROLLBACK');
+    await connection.query(
+      'ALTER TABLE app.reward_receipts DROP CONSTRAINT IF EXISTS synthetic_reject_receipt',
+    );
+    connection.release();
+  }
+  assert.deepEqual(
+    await data(
+      await request(`/v1/profiles/${fan.real.id}/points/history`, fan.token),
+    ),
+    before,
+  );
+  assert.deepEqual(
+    await data(
+      await request(`/v1/profiles/${fan.real.id}/rewards/receipts`, fan.token),
+    ),
+    receipts,
+  );
+});

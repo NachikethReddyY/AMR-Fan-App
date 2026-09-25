@@ -36,12 +36,19 @@ async function authorized<T>(
     );
     if (admin && principal.rows[0]?.role !== 'admin')
       throw new ApiError(403, 'Assigned admin access required.');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
     const session = await client.query(
       `SELECT token_hash FROM app.sessions WHERE token_hash=$1 AND principal_id=$2
        AND revoked_at IS NULL AND expires_at > clock_timestamp() FOR SHARE`,
-      [createHash('sha256').update(token).digest('hex'), actor.principalId],
+      [tokenHash, actor.principalId],
     );
     if (!session.rowCount) throw new ApiError(401, 'Sign in again.');
+    // An unchanged row can wait after the locking SELECT evaluated expiry.
+    const unexpired = await client.query(
+      'SELECT 1 FROM app.sessions WHERE token_hash=$1 AND expires_at > clock_timestamp()',
+      [tokenHash],
+    );
+    if (!unexpired.rowCount) throw new ApiError(401, 'Sign in again.');
     return action(client, actor);
   });
 }

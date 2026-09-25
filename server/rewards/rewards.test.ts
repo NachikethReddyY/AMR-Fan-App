@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { after, before, test } from 'node:test';
 import { assignRole, ensureAccount, renameProfile } from '../accounts/store.ts';
 import { createSession, revokeSession } from '../auth/session.ts';
@@ -31,6 +32,70 @@ const pool = createDatabase();
 const issuer = `urn:amr:rewards-test:${randomUUID()}`;
 before(() => migrate(pool));
 after(() => pool.end());
+
+test('catalogue authority rechecks database-clock expiry after waiting on an unchanged session lock', async (t) => {
+  for (const replay of [false, true])
+    await t.test(replay ? 'replay' : 'fresh creation', async () => {
+      const admin = await account(`expiry-${replay}`, true);
+      const input = { requestId: randomUUID(), enabled: true, product: tree };
+      if (replay) await createOffer(pool, admin.token, input);
+      const before = await listAdminOffers(pool, admin.token);
+      const hash = createHash('sha256').update(admin.token).digest('hex');
+      await pool.query(
+        "UPDATE app.sessions SET expires_at=clock_timestamp()+interval '2 seconds' WHERE token_hash=$1",
+        [hash],
+      );
+      const holder = await pool.connect();
+      let pending: Promise<unknown> | undefined;
+      try {
+        await holder.query('BEGIN');
+        const {
+          rows: [{ pid }],
+        } = await holder.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await holder.query(
+          'SELECT token_hash FROM app.sessions WHERE token_hash=$1 FOR UPDATE',
+          [hash],
+        );
+        pending = createOffer(pool, admin.token, input);
+        void pending.catch(() => {});
+        const deadline = Date.now() + 7000;
+        let observed = false;
+        while (Date.now() < deadline) {
+          const wait = await pool.query(
+            "SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=current_user AND wait_event_type='Lock' AND query LIKE '%FROM app.sessions%FOR SHARE%' AND $1::int=ANY(pg_blocking_pids(pid))",
+            [pid],
+          );
+          if (wait.rowCount) {
+            observed = true;
+            break;
+          }
+          await delay(10);
+        }
+        assert.ok(observed, 'Unchanged session-row waiter observed');
+        let valid = true;
+        while (valid && Date.now() < deadline) {
+          valid = (
+            await pool.query<{ valid: boolean }>(
+              'SELECT expires_at>clock_timestamp() AS valid FROM app.sessions WHERE token_hash=$1',
+              [hash],
+            )
+          ).rows[0].valid;
+          if (valid) await delay(10);
+        }
+        assert.equal(valid, false, 'Database clock passed session expiry');
+        await holder.query('ROLLBACK');
+        await assert.rejects(pending, { status: 401 });
+        const resumed = await createSession(pool, admin.id);
+        assert.deepEqual(await listAdminOffers(pool, resumed.token), before);
+      } finally {
+        await holder.query('ROLLBACK');
+        holder.release();
+        await pending?.catch(() => {});
+      }
+    });
+});
 
 async function account(subject: string, admin = false) {
   const value = await ensureAccount(pool, { issuer, subject });
