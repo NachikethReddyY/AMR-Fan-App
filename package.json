@@ -1,0 +1,39 @@
+{
+  "name": "amr-fan-app",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24.13.0 <25",
+    "pnpm": "12.x"
+  },
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+  },
+  "dependencies": {
+    "expo": "~57.0.25",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3",
+    "eslint": "^9.39.0",
+    "eslint-config-expo": "~57.0.2",
+    "prettier": "^3.6.2",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "@types/jest": "^29.5.14"
+  }
+}

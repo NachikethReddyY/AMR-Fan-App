@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+coverage/
+pnpm-lock.yaml
+.scratch/
+.evidence/
+# Preserve existing planning artifacts.
+docs/
+CONTEXT.md
+AGENTS.md
+CLAUDE.md
+TODO.md
+convex/_generated/
