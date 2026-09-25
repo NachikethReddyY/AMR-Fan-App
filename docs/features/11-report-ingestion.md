@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+Status: accepted product behavior. Owned local report modules now retain synthetic PDF sources, source-backed review revisions and assigned-admin approval/replacement with PostgreSQL tests. Shared API/dependency registration, rendered admin verification, representative real-report extraction quality and fan Impact integration remain pending. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
 
 ## Outcome
 

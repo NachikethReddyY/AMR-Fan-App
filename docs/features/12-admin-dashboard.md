@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+Status: accepted product behavior. The points admin foundation exists. Owned report upload/review/decision assets and tested server operations are prepared separately; shared registration and rendered report-admin verification remain pending. Other controls retain their feature owners. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
 
 ## Outcome
 
