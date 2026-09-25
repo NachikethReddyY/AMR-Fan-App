@@ -282,6 +282,7 @@ test('owned admin assets use the established stylesheet and deny arbitrary asset
   assert.match(html, /href="\/admin\/style.css"/);
   assert.match(html, /id="review-form"/);
   assert.match(html, /id="decision-form"/);
+  assert.match(html, /id="attempts"/);
   const blocked = await fetch(base + '/admin/reports/private.pdf');
   assert.equal(blocked.status, 404);
 });

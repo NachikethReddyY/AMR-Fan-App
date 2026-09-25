@@ -36,6 +36,7 @@ function signedOut() {
     'source',
     'official',
     'audit',
+    'attempts',
     'report',
     'candidate',
     'replacement',
@@ -172,7 +173,15 @@ async function openReport(id, candidateId = '') {
   byId('detail').hidden = false;
   byId('report-title').textContent = document.title;
   byId('status').textContent =
-    `${document.sourceKind === 'synthetic' ? 'Synthetic example. ' : ''}${document.status}${document.failure ? `: ${document.failure}` : ''}. ${document.pages.length} retained pages.`;
+    `${document.sourceKind === 'synthetic' ? 'Synthetic example. ' : ''}${document.status}${document.failure ? `: ${document.failure}` : ''}. ${document.pages.length} retained pages. Parser: ${document.parserVersion ?? 'pending'}.`;
+  byId('attempts').replaceChildren();
+  for (const attempt of document.extractions)
+    line(
+      byId('attempts'),
+      `Pages ${attempt.pages.join(', ')}: ${attempt.status}${attempt.failure ? ` (${attempt.failure})` : ''}${attempt.metadata ? `. ${attempt.metadata.model}, ${attempt.metadata.adapterVersion}` : ''}.`,
+    );
+  if (!document.extractions.length)
+    line(byId('attempts'), 'No extraction attempts recorded.');
   byId('page').replaceChildren();
   for (const page of document.pages)
     option(byId('page'), `Page ${page.page}`, String(page.page));
