@@ -81,8 +81,8 @@ a 50 ms grace permits a normal exit notification to arrive before rejection.
 Timeout/output/memory failures reap the child before releasing the slot.
 Unsupported native platforms return 503.
 
-The host CLI path is supported locally on the Docker-equipped macOS host and in
-Linux CI. The ordinary API Docker image does not get a socket or host credentials;
+The host CLI path is verified on the Docker-equipped macOS host. Linux CI is
+configured to run the same offline child; its hosted result is not yet observed. The ordinary API Docker image does not get a socket or host credentials;
 without a separately approved job controller it cannot launch these children.
 Cloud/Azure execution remains unconfigured. Do not infer a deployment architecture
 from the local image or enable privileged container access to make it work.
@@ -226,9 +226,20 @@ The former real `createApi` 404 regression now passes. PostgreSQL/HTTP proof
 includes source persistence/restart, immutable history, unchanged approvals on
 failure, competing approvals, stale/replay decisions, role/session revocation,
 unchanged-row expiry waits and cross-account denial. Source security checks,
-frozen install, full local checks and all-platform exports passed on the
-pre-combination integration commit. Final combined-base checks/DAST and hosted CI
-are recorded separately in the PR handoff; none is implied by module proof.
+frozen install and full local checks passed again after combining the reviewed
+rewards base. Serial regression groups passed: accounts/API 10, points 21,
+submissions 16, rewards 21, journeys 17 and routes 1, in addition to the report
+groups. All-platform exports passed before the combination; report assets and
+parser source are unchanged across that rebase.
+
+One final isolated ZAP scan started at `/admin/reports/` and passed policy with
+zero blocking findings and informational alert 10109 on that page. The generated
+plan still spiders `/`; this is limited unauthenticated page/header coverage,
+not authenticated upload or JavaScript workflow coverage. Raw diagnostics retain
+failed external telemetry/update DNS attempts under the internal network.
+Protected operations are established by the separate HTTP/browser tests. The
+scanner, target, image and network were removed. Hosted CI and independent review
+remain pending at author handoff.
 
 Primary references: [PDF.js Node example](https://github.com/mozilla/pdf.js/blob/master/examples/node/getinfo.mjs),
 [PDF.js API](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html),
