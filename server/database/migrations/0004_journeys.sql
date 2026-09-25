@@ -50,3 +50,16 @@ CREATE TRIGGER immutable_journey_sample BEFORE UPDATE ON app.journey_samples
 FOR EACH ROW EXECUTE FUNCTION app.protect_journey_evidence();
 CREATE TRIGGER immutable_journey_request BEFORE UPDATE ON app.journey_requests
 FOR EACH ROW EXECUTE FUNCTION app.protect_journey_evidence();
+
+-- No coordinates or query text in durable plan receipts. Precise candidates live
+-- exclusively in expiring journey snapshots; replay never reacquires them.
+CREATE TABLE app.journey_plans (
+  principal_id uuid NOT NULL REFERENCES app.principals(id) ON DELETE CASCADE,
+  request_id uuid NOT NULL,
+  profile_id uuid NOT NULL REFERENCES app.profiles(id) ON DELETE CASCADE,
+  fingerprint text NOT NULL,
+  result jsonb NOT NULL,
+  PRIMARY KEY (principal_id, request_id)
+);
+CREATE TRIGGER immutable_journey_plan BEFORE UPDATE ON app.journey_plans
+FOR EACH ROW EXECUTE FUNCTION app.protect_journey_evidence();

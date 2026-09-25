@@ -2,30 +2,61 @@
 
 Issue #8's server module is under `server/journeys/`. It persists preparation,
 Start, original-timestamp evidence, finish and a deterministic assessment in the
-same PostgreSQL service as accounts. API registration is pending a serialized
-handoff. No public journey endpoint, native collector, award or deployment is
-claimed by this document.
+same PostgreSQL service as accounts through the authenticated API. Native
+collection, awards and deployment remain separate work.
 
 ## Authority and retained data
 
-`createJourneyService({pool, env, policy, clock})` supplies `prepare`, `start`,
+`createJourneyService({pool, env, policy, clock, queryRoutes})` supplies `preparePlan`, internal `prepare`, `start`,
 `appendEvidence`, `finish`, `read` and server-only `cleanup`. The optional clock
 exists for controlled tests and is refused in production. Each fan operation
 accepts a session token, validates it against the account session store, holds
 that session against concurrent revocation, locks the owned profile and journey,
-and checks session expiry again before commit. A selected ID grants no access.
+and checks fresh database time after acquiring the session lock, after later
+lock waits and before commit. A locking SELECT can evaluate its expiry predicate
+before waiting on an unchanged row, so its predicate alone is insufficient. A selected ID grants no access.
 An admin role does not grant another user's path access.
 
-`prepare(token, {profileId, requestId}, serverRoute)` is an internal boundary.
-The third argument must come from the route backend's validated server result,
-never a request body. Its immutable snapshot contains route provenance, fetched
-time, query binding, endpoints, decoded geometry, ordered mode/distance/duration
-legs, factor contents/versions, earning-rule values and same-query car-baseline
-distance/duration, or an explicit unavailable calculation basis. Missing geometry or unsupported route data
-fails validation. The HTTP adapter must select by a returned route ID from that
-same response, preserve fixture/factor applicability and reject client-supplied
-geometry, factor, verdict, owner, role or award fields. That adapter remains
-pending until the provider prerequisite and root/API handoff are integrated.
+`POST /v1/journeys/prepare` accepts only `{profileId, requestId, query}`.
+The query is the merged route input: origin, destination, primary modes and
+extra minutes. It uses the same `createRouteQuery` instance as `/v1/routes/query`,
+including its actor limits, provider call/byte/deadline budgets and no retries.
+Current authority and owned real profile are checked before provider spend.
+The response is either `{kind: 'unavailable', reason}` or `{kind: 'prepared',
+candidates}`. A supported candidate contains its route ID and prepared journey;
+an unsupported candidate contains its route ID and explicit reason. Missing
+geometry does not become an empty trace or a startable journey.
+
+The preparation transaction persists every supported candidate from that exact
+server response before returning IDs. Start selects an owner-bound journey ID;
+it does not echo geometry or refetch a changed route. Concurrent/restarted retries
+return the immutable preparation receipt without provider calls. A failed provider
+result also remains the original receipt; a fresh query requires a new request ID.
+The receipt contains no query text or coordinates. The internal `prepare(token,
+{profileId, requestId}, serverRoute)` remains available for controlled domain tests,
+and is not an HTTP input path.
+
+The immutable expiring snapshot retains validated query binding, decoded geometry,
+provider endpoints and ordered legs. Nonprecise summaries retain source,
+primary request mode, factor applicability and geography dataset version, factor
+contents/versions and the fastest same-query conventional-car baseline with its
+ordered legs. Applicability comes only from provider evidence; regionCode and
+client geography claims grant no factor authority. Missing baseline/applicability
+stays explicitly unavailable. No client factor, verdict, owner, role or award is
+accepted. Fixture endpoints are loopback-only, test-only provider configuration;
+no live Google call is part of local proof.
+
+| Operation | Method/path | Strict body |
+| --- | --- | --- |
+| Prepare route candidates | `POST /v1/journeys/prepare` | `profileId`, `requestId`, `query` |
+| Start selected candidate | `POST /v1/journeys/:id/start` | `requestId`, `captureSessionId` |
+| Append evidence | `POST /v1/journeys/:id/evidence` | `requestId`, `captureSessionId`, `samples` |
+| Finish | `POST /v1/journeys/:id/finish` | `requestId`, `captureSessionId`, `endedAtMs`, `reason` |
+| Current state / assessment | `GET /v1/journeys/:id` or `.../:id/assessment` | none |
+
+All routes use existing session, origin, content type and rate controls. General
+bodies stay at 4 KiB; only evidence bodies allow 32 KiB, still bounded before JSON
+parsing. Responses are no-store. Cleanup is server-only and has no fan endpoint.
 
 Start requires a persisted preparation, a stable request UUID and a capture
 session UUID. It records the server start time and retains the configured
@@ -42,8 +73,7 @@ original acquisition time, device receipt time, latitude/longitude, nullable
 accuracy, foreground/background/unknown context and nullable mocked-location
 flag. Times use integer Unix milliseconds. Unknown values stay unknown. The
 server records its own receipt time separately and permits at most 4,096 retained
-samples per journey. The future HTTP
-adapter must also bound bytes before parsing.
+samples per journey. The HTTP adapter also bounds bytes before parsing.
 
 Out-of-order delivery is assessed in acquisition-time order. Identical sample
 IDs are deduplicated; changed evidence for an existing sample ID conflicts.
@@ -102,6 +132,37 @@ Do not substitute route ETA or the fan's extra-time tolerance as an award speed
 or duration cutoff. GPS speed cannot prove bus/train use. Rule satisfaction is
 limited to the configured checks, not blanket real-world eligibility.
 
+## Future settlement interface
+
+`server/journeys/settlement.ts` exports the compile-ready
+`lockJourneyForSettlement(client: PoolClient, principalId, profileId, journeyId)`
+and `JourneySettlementProjection`. The caller must already be inside its current
+authority/request transaction. The function reacquires the owned profile lock,
+then locks the matching journey, using the same client. Order is authority,
+request, owned profile, journey. It starts no nested transaction and performs no
+network call, award or balance change. Future settlement must perform its own
+fresh-session check before effects/replay according to the points boundary.
+
+The projection includes `basis`, `routeEvidence`, `selectedLegs`, `assessedLegs`,
+`earningPolicy`, `policy`, source, state/start/finish and assessment. It never reads
+or returns coordinates, route geometry or query text. `assessmentIdentity` is
+`{journeyId, version, revision}`; finish and new evidence advance assessment
+revision, while duplicate samples and successful retries do not. Evidence revision
+is distinct. Validated start/arrival facts and reasons stay in `assessment`.
+
+Start fixes earning policy `initial-50-cap-2000-v1`: 50 points/kg, cap 2,000 and
+arithmetic version `floor-decimal-v1`. This records policy only. Future #9 computes
+unrounded decimal savings times the retained rate, floors once and applies the
+cap. An unstarted journey has `earningPolicy: null`; no old missing version is
+silently filled. Factor/earning approval and fixture/real separation belong to #9.
+
+`selectedLegs` preserves provider distances. `assessedLegs` is available only for
+a satisfying single-mode trace, with method `gps_single_mode_lower_bound` and
+uncertainty-adjusted observed distance. It is still uncalibrated. A satisfying
+multimodal trace returns `multimodal_distances_unknown`, never GPS-total-based
+allocation among modes. Missing/insufficient assessment remains unavailable.
+All these nonprecise inputs and assessment facts survive precise-data deletion.
+
 ## Retention and cleanup
 
 Precise route snapshot expiry is seven days after provider acquisition
@@ -124,28 +185,34 @@ Native local queue expiry, device backups and server backups require their own
 retention coverage before real data. A dormant device cannot run deletion at an
 exact deadline. This server test does not prove that physical or backup cleanup.
 
-## Local proof and pending integration
+## Local proof and remaining acceptance
 
 Use only the namespace provisioned for the current worktree:
 
 ```sh
-pnpm db:run-test -- node --test server/journeys/store.test.ts
-node --test server/journeys/evidence.test.ts
+pnpm journey:test:database
+pnpm journey:test
 ```
 
-Tests use real sessions and PostgreSQL rows, concurrent operations, reconnects,
-negative authorization, request conflicts, batch rollback, original-time offline
-submission, finish races, candidate thresholds and precise-data expiry. Raw-row
-checks are limited to the explicitly required persistence/immutability/deletion
-claims. Fixtures use synthetic coordinates and do not call providers or models.
-No shared database lifecycle action is needed.
+Tests use actual HTTP, real sessions/PostgreSQL, the merged route parser and a
+loopback synthetic upstream. Separate API processes stop and restart against the
+same database; original receipts and assessments survive. Cases cover ownership,
+revocation, concurrent preparation, replay, bounded upload, evidence/finish races,
+late evidence, retained settlement inputs and precise cleanup. Domain checks cover
+candidate thresholds, malformed/future evidence, unchanged-session-row expiry
+waits and 4,096-sample limits. Raw-row inspection is restricted to persistence,
+immutability and deletion claims. These are synthetic traces, not physical travel.
 
-Migration `0004_journeys.sql` owns journey storage. Migration 0003, the points
-ledger, shared API dispatch/root files and native navigation belong to their
-assigned owners. After those prerequisites integrate, add the granted HTTP
-adapter and run actual authenticated HTTP, repository/security and isolated
-application DAST before presenting a final candidate. Preserve account/points
-regressions. Physical iOS and Android foreground/background/locked-phone,
-permission and Stop collection proof remains required for whole issue #8.
+Migration `0004_journeys.sql` owns this storage and remains unmerged during local
+integration. Only the allocated worktree test database is reset for its changes.
+No shared service lifecycle action is required. The CI database job runs the same
+journey command after account, points and route tests. Source security and isolated
+combined API DAST complement authenticated business tests; unauthenticated passive
+crawling does not establish owned-path authorization.
+
+Physical iOS/Android foreground/background/locked-phone, permissions, Stop
+collection and durable local queues remain required for whole issue #8. Native
+integration, real calibration, approved factor publication, production cleanup
+scheduling and backup retention are not proved by this server candidate.
 
 Written by gpt-6-astra through Codex (T3 Code).

@@ -3,8 +3,8 @@
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
 Status: accepted product behavior. A local server lifecycle and prototype evidence
-assessment are implemented; authenticated HTTP registration and native collection
-remain pending. Physical-platform acceptance below has not been executed.
+assessment are implemented through authenticated HTTP; native collection remains
+pending. Physical-platform acceptance below has not been executed.
 
 The [server journey procedure](../operations/journeys.md) records persisted
 ownership, retry, evidence, retention and test interfaces. Its versioned

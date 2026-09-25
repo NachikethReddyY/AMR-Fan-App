@@ -19,8 +19,16 @@ import {
   startSchema,
   summarySchema,
   type Journey,
+  type RouteSnapshot,
 } from './contracts.ts';
 import { assessJourney } from './evidence.ts';
+import { createRouteQuery } from '../routes/query.ts';
+import {
+  planInput,
+  planSchema,
+  routeSnapshots,
+  type JourneyPlan,
+} from './planning.ts';
 
 function fingerprint(value: unknown) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -31,11 +39,13 @@ export function createJourneyService({
   env = process.env,
   policy = candidatePolicy,
   clock = Date.now,
+  queryRoutes = createRouteQuery({ env }),
 }: {
   pool: Pool;
   env?: Record<string, string | undefined>;
   policy?: unknown;
   clock?: () => number;
+  queryRoutes?: ReturnType<typeof createRouteQuery>;
 }) {
   const requestedPolicy = parse(policySchema, policy);
   const retainedPolicy = {
@@ -64,6 +74,7 @@ export function createJourneyService({
       client: PoolClient,
       principalId: string,
       current: () => Promise<void>,
+      actor: Awaited<ReturnType<typeof authenticateSession>>,
     ) => Promise<T>,
   ) {
     const actor = await authenticateSession(pool, token);
@@ -84,7 +95,7 @@ export function createJourneyService({
       };
       // The locking SELECT may test its predicate before an unchanged-row wait.
       await current();
-      const result = await operation(client, actor.principalId, current);
+      const result = await operation(client, actor.principalId, current, actor);
       await current();
       return result;
     });
@@ -136,6 +147,15 @@ export function createJourneyService({
     requestId: string,
     hash: string,
   ) {
+    const plan = await client.query(
+      'SELECT 1 FROM app.journey_plans WHERE principal_id=$1 AND request_id=$2',
+      [principalId, requestId],
+    );
+    if (plan.rowCount)
+      throw new ApiError(
+        409,
+        'Request ID already has a different journey intent.',
+      );
     const previous = await client.query<{
       fingerprint: string;
       result: unknown;
@@ -215,7 +235,142 @@ export function createJourneyService({
     return result;
   }
 
+  async function persistPrepared(
+    client: PoolClient,
+    profileId: string,
+    route: RouteSnapshot,
+    now: number,
+  ) {
+    const acquired = Date.parse(route.fetchedAt);
+    if (acquired > now || acquired + retentionMs <= now)
+      throw new ApiError(
+        409,
+        'Route plan expired or has an invalid timestamp.',
+      );
+    const result: Journey = {
+      id: randomUUID(),
+      profileId,
+      state: 'prepared',
+      source: route.source,
+      mode: route.mode,
+      basis: route.basis,
+      routeEvidence: route.routeEvidence,
+      selectedLegs: route.legs,
+      assessedLegs: { kind: 'unavailable', reason: 'not_assessed' },
+      earningPolicy: null,
+      policy: retainedPolicy,
+      preparedAtMs: now,
+      startedAtMs: null,
+      finishedAtMs: null,
+      finishReason: null,
+      captureSessionId: null,
+      preciseExpiresAtMs: acquired + retentionMs,
+      evidenceRevision: 0,
+      assessment: {
+        version: retainedPolicy.version,
+        calibration: 'unvalidated',
+        revision: 0,
+        status: 'unfinished',
+        reasons: ['not_started'],
+        startRecorded: false,
+        arrivalRecorded: false,
+        sampleCount: 0,
+        elapsedMs: null,
+        observedDistanceMeters: 0,
+        maxObservedSpeedMps: null,
+        modePlausibility: 'unassessed',
+      },
+    };
+    await client.query(
+      'INSERT INTO app.journeys(id, profile_id, summary, snapshot, precise_expires_at) VALUES ($1,$2,$3,$4,$5)',
+      [
+        result.id,
+        profileId,
+        result,
+        route,
+        new Date(result.preciseExpiresAtMs),
+      ],
+    );
+    return result;
+  }
+
   return {
+    async preparePlan(token: string, raw: unknown): Promise<JourneyPlan> {
+      const input = parse(planInput, raw);
+      return authorized(token, async (client, principalId, current, actor) => {
+        await requestLock(client, principalId, input.requestId);
+        const profile = await lockOwnedProfile(
+          client,
+          principalId,
+          input.profileId,
+        );
+        await current();
+        if (profile.kind !== 'real')
+          throw new ApiError(
+            409,
+            'Real journey recording requires the real profile.',
+          );
+        const hash = fingerprint({ action: 'plan', input });
+        const previous = await client.query<{
+          fingerprint: string;
+          result: unknown;
+        }>(
+          'SELECT fingerprint, result FROM app.journey_plans WHERE principal_id=$1 AND request_id=$2',
+          [principalId, input.requestId],
+        );
+        if (previous.rows[0]) {
+          if (previous.rows[0].fingerprint !== hash)
+            throw new ApiError(
+              409,
+              'Request ID already has a different journey intent.',
+            );
+          return parse(planSchema, previous.rows[0].result);
+        }
+        const used = await client.query(
+          'SELECT 1 FROM app.journey_requests WHERE principal_id=$1 AND request_id=$2',
+          [principalId, input.requestId],
+        );
+        if (used.rowCount)
+          throw new ApiError(
+            409,
+            'Request ID already has a different journey intent.',
+          );
+        const response = await queryRoutes(actor, input.query);
+        await current();
+        if (
+          response.result.kind === 'routes' &&
+          response.result.source.kind === 'fixture' &&
+          !fixturesAllowed
+        )
+          throw new ApiError(403, 'Synthetic journey routes are disabled.');
+        const result: JourneyPlan =
+          response.result.kind === 'unavailable'
+            ? { kind: 'unavailable', reason: response.result.reason }
+            : { kind: 'prepared', candidates: [] };
+        if (result.kind === 'prepared')
+          for (const candidate of routeSnapshots(response)) {
+            result.candidates.push(
+              candidate.kind === 'unavailable'
+                ? candidate
+                : {
+                    kind: 'prepared',
+                    routeId: candidate.routeId,
+                    journey: await persistPrepared(
+                      client,
+                      profile.id,
+                      candidate.snapshot,
+                      clock(),
+                    ),
+                  },
+            );
+          }
+        await client.query(
+          'INSERT INTO app.journey_plans(principal_id,request_id,profile_id,fingerprint,result) VALUES ($1,$2,$3,$4,$5)',
+          [principalId, input.requestId, profile.id, hash, result],
+        );
+        return result;
+      });
+    },
     async cleanup() {
       const now = clock();
       return transaction(pool, async (client) => {
@@ -258,55 +413,11 @@ export function createJourneyService({
           hash,
         );
         if (previous) return previous;
-        const now = clock();
-        const acquired = Date.parse(route.fetchedAt);
-        if (acquired > now || acquired + retentionMs <= now)
-          throw new ApiError(
-            409,
-            'Route plan expired or has an invalid timestamp.',
-          );
-        const result: Journey = {
-          id: randomUUID(),
-          profileId: profile.id,
-          state: 'prepared',
-          source: route.source,
-          mode: route.mode,
-          basis: route.basis,
-          selectedLegs: route.legs,
-          assessedLegs: { kind: 'unavailable', reason: 'not_assessed' },
-          earningPolicy: null,
-          policy: retainedPolicy,
-          preparedAtMs: now,
-          startedAtMs: null,
-          finishedAtMs: null,
-          finishReason: null,
-          captureSessionId: null,
-          preciseExpiresAtMs: acquired + retentionMs,
-          evidenceRevision: 0,
-          assessment: {
-            version: retainedPolicy.version,
-            calibration: 'unvalidated',
-            revision: 0,
-            status: 'unfinished',
-            reasons: ['not_started'],
-            startRecorded: false,
-            arrivalRecorded: false,
-            sampleCount: 0,
-            elapsedMs: null,
-            observedDistanceMeters: 0,
-            maxObservedSpeedMps: null,
-            modePlausibility: 'unassessed',
-          },
-        };
-        await client.query(
-          'INSERT INTO app.journeys(id, profile_id, summary, snapshot, precise_expires_at) VALUES ($1,$2,$3,$4,$5)',
-          [
-            result.id,
-            profile.id,
-            result,
-            route,
-            new Date(result.preciseExpiresAtMs),
-          ],
+        const result = await persistPrepared(
+          client,
+          profile.id,
+          route,
+          clock(),
         );
         return record(client, principalId, input.requestId, hash, result);
       });

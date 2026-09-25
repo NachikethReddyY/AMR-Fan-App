@@ -25,6 +25,7 @@ import {
 } from '../points/index.ts';
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
 import { createRouteQuery } from '../routes/query.ts';
+import { createJourneyService } from '../journeys/store.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -37,14 +38,17 @@ function bearer(req: IncomingMessage) {
     throw new ApiError(401, 'Sign in again.');
   return value.slice(7);
 }
-async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
+async function body(
+  req: IncomingMessage,
+  maxBytes = 4096,
+): Promise<Record<string, unknown>> {
   if (req.headers['content-type'] !== 'application/json')
     throw new ApiError(415, 'Use application/json.');
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of req) {
     bytes += chunk.length;
-    if (bytes > 4096) throw new ApiError(413, 'Request is too large.');
+    if (bytes > maxBytes) throw new ApiError(413, 'Request is too large.');
     chunks.push(Buffer.from(chunk));
   }
   try {
@@ -78,6 +82,7 @@ export function createApi({
   const config = authConfig(env);
   const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
   const queryRoutes = createRouteQuery({ env });
+  const journeys = createJourneyService({ pool, env, queryRoutes });
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -167,6 +172,47 @@ export function createApi({
         );
       }
       const actor = await authenticateSession(pool, token);
+      if (path === '/v1/journeys/prepare' && req.method === 'POST')
+        return send(
+          res,
+          201,
+          await journeys.preparePlan(token, await body(req)),
+        );
+      const journeyMatch =
+        /^\/v1\/journeys\/([^/]+)(?:\/(start|evidence|finish|assessment))?$/.exec(
+          path,
+        );
+      if (journeyMatch) {
+        const [, journeyId, action] = journeyMatch;
+        if (req.method === 'GET' && (!action || action === 'assessment')) {
+          const journey = await journeys.read(token, journeyId);
+          return send(res, 200, action ? journey.assessment : journey);
+        }
+        if (req.method === 'POST') {
+          if (action === 'start')
+            return send(
+              res,
+              200,
+              await journeys.start(token, journeyId, await body(req)),
+            );
+          if (action === 'evidence')
+            return send(
+              res,
+              200,
+              await journeys.appendEvidence(
+                token,
+                journeyId,
+                await body(req, 32768),
+              ),
+            );
+          if (action === 'finish')
+            return send(
+              res,
+              200,
+              await journeys.finish(token, journeyId, await body(req)),
+            );
+        }
+      }
       if (path === '/v1/routes/query' && req.method === 'POST')
         return send(res, 200, await queryRoutes(actor, await body(req)));
       if (path === '/v1/session' && req.method === 'DELETE') {

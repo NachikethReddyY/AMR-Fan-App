@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ApiError } from '../accounts/types.ts';
+import { routeInput } from '../routes/provider.ts';
 
 export const retentionMs = 7 * 24 * 60 * 60 * 1000;
 export const id = z.uuid().transform((value) => value.toLowerCase());
@@ -28,14 +29,21 @@ export const sourceSchema = z.discriminatedUnion('kind', [
     provider: z.string().min(1).max(80),
   }),
 ]);
+const routeEvidenceSchema = z.strictObject({
+  primaryMode: z.enum(['DRIVE', 'TRANSIT', 'WALK', 'BICYCLE']),
+  factorApplicability: z.enum([
+    'singapore_indicative',
+    'geography_unverified',
+    'unsupported_transit_factor',
+  ]),
+  geographyVersion: version,
+});
 export const routeSchema = z.strictObject({
   routeId: z.string().min(1).max(160),
+  routeEvidence: routeEvidenceSchema,
   source: sourceSchema,
   fetchedAt: z.iso.datetime(),
-  query: z.strictObject({
-    origin: z.string().min(1).max(500),
-    destination: z.string().min(1).max(500),
-  }),
+  query: routeInput,
   mode,
   start: coordinate,
   end: coordinate,
@@ -65,6 +73,17 @@ export const routeSchema = z.strictObject({
         kind: z.literal('available'),
         baseline: z.strictObject({
           routeId: version,
+          queryBinding: z.literal('same_server_query'),
+          legs: z
+            .array(
+              z.strictObject({
+                mode,
+                distanceMeters: z.number().nonnegative().max(1_000_000),
+                durationSeconds: z.number().nonnegative().max(604800),
+              }),
+            )
+            .min(1)
+            .max(128),
           distanceMeters: z.number().positive().max(1_000_000),
           durationSeconds: z.number().positive().max(604800),
         }),
@@ -191,6 +210,7 @@ export const summarySchema = z.strictObject({
   source: sourceSchema,
   mode,
   basis: routeSchema.shape.basis,
+  routeEvidence: routeEvidenceSchema,
   selectedLegs: routeSchema.shape.legs,
   assessedLegs: assessedLegsSchema,
   earningPolicy: earningPolicySchema.nullable(),

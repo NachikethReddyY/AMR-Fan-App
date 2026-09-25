@@ -49,6 +49,7 @@ jobs:
       - run: pnpm account:test:database
       - run: pnpm points:test:database
       - run: pnpm route:test:database
+      - run: pnpm journey:test:database
       - name: Stop only this runner's database, preserving its volume until teardown
         if: always()
         run: pnpm db:stop

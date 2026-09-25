@@ -2,9 +2,19 @@
 export function routeFixture(fetchedAtMs = Date.now()) {
   return {
     routeId: 'synthetic-bus',
+    routeEvidence: {
+      primaryMode: 'TRANSIT',
+      factorApplicability: 'singapore_indicative',
+      geographyVersion: 'synthetic-geography-v1',
+    },
     source: { kind: 'fixture', label: 'Synthetic journey test' },
     fetchedAt: new Date(fetchedAtMs).toISOString(),
-    query: { origin: 'Fixture origin', destination: 'Fixture destination' },
+    query: {
+      origin: 'Fixture origin',
+      destination: 'Fixture destination',
+      modes: ['TRANSIT', 'DRIVE'],
+      extraMinutes: 10,
+    },
     mode: 'bus',
     start: { latitude: 1.3, longitude: 103.8 },
     end: { latitude: 1.31, longitude: 103.8 },
@@ -23,6 +33,8 @@ export function routeFixture(fetchedAtMs = Date.now()) {
         kind: 'available',
         baseline: {
           routeId: 'synthetic-car',
+          queryBinding: 'same_server_query',
+          legs: [{ mode: 'car', distanceMeters: 1500, durationSeconds: 200 }],
           distanceMeters: 1500,
           durationSeconds: 200,
         },
