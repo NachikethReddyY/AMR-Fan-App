@@ -34,17 +34,20 @@ _Avoid_: Proof of bus use
 **Points**:
 Recognition for sustainable travel, with lower-carbon route choices intended to earn more. The calculation, comparison basis, and eligibility rules remain to be agreed.
 
+**Provisional journey points**:
+The estimated award for an unfinished journey, adjusted when its assessed impact changes. These points enter the earned balance only on qualifying completion; reductions do not remove previously earned points.
+
 **Fan rewards**:
 Benefits fans can use points toward, including store discounts and driver/team challenges. Availability and fulfilment arrangements are not established.
 
 **Fan challenge**:
-A proposed activity for drivers or the team that requires approval before fans can contribute earned points. Approval, funding, and fulfilment are distinct; contribution rules remain unresolved.
+A proposed activity for drivers or the team that costs 500 points to submit and requires approval before fans can contribute. Accumulated contributions act as votes for selection; approval, selection, and fulfilment are distinct.
 
 **Aston Martin admin**:
 A user authorized to approve fan challenges, including users identified by an Aston Martin admin badge. The badge indicates an assigned role rather than a cosmetic fan reward.
 
 **Challenge contribution**:
-Earned points committed by a fan toward a fan challenge. Deduction timing and refund rules remain unresolved.
+An amount of at least 10 earned points committed by a fan to increase a challenge's ranking for selection, limited by their available balance. Refund rules and the submission fee's relationship to ranking remain unresolved.
 _Avoid_: Cash funding
 
 **Rewards store**:

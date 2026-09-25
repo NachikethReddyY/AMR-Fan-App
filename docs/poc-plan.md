@@ -1,6 +1,6 @@
 # Sustainable fan travel: working POC plan
 
-Status: interview in progress; not an implementation specification.
+Status: local core build requested; design selection and specific product rules remain open. No publication requested.
 
 ## Source and precedence
 
@@ -15,7 +15,7 @@ Within the supplied meeting brief, everyday public transport journeys were centr
 - These examples describe the intended local-travel pattern across race locations. They do not establish a verified current race calendar or an agreed launch catalog.
 - International travel to the host country is outside the described first journey.
 - Compare route options by time and estimated emissions, with more points for lower-carbon travel. Calculation and award rules remain open.
-- Changed or interrupted journeys must be reflected in the app and lead to an appropriate points deduction, as requested by the user. Whether this reduces provisional journey points, removes previously earned points, or applies a penalty remains unresolved; no numeric deduction rule is agreed.
+- Journey points are provisional until completion. Changes reduce the current journey's estimated award rather than subtracting from previously earned points: the user accepted the illustrative 100 existing + 5 final journey points = 105 balance, replacing a 20-point initial estimate. Exact recalculation and evidence thresholds remain open.
 - Transport choices include buses, MRT/rail, walking, cycling, and cabs. Public transport routes may mix modes and walking connections; a cab is a separate route, not a cab-plus-transit combination.
 - Build for both iOS and Android using Expo and React Native, as explicitly selected by the user.
 - Starting a journey must track the fan's actual movement through arrival, including when the phone is locked or the fan switches apps. Foreground-only tracking or a simulated journey alone does not satisfy this requirement. Background feasibility must be verified on both platforms.
@@ -27,12 +27,14 @@ Within the supplied meeting brief, everyday public transport journeys were centr
 - The store offers merchandise discounts ranging from 10% to 60%, as confirmed by the user. Larger discounts should cost substantially more points; earning should be difficult. Exact prices, earning rates, terms, and actual voucher supply remain unresolved.
 - Fans can create driver/team challenges and contribute toward challenges proposed by others; the example given was a driver doing a chicken dance in Singapore before the race. Both creation and contribution are in requested first-build scope.
 - Challenge funding uses earned points, not real money.
-- Challenges require approval before opening for contributions. An admin or a user with the Aston Martin admin badge can approve them. The badge represents an assigned admin role; it is not a self-selected cosmetic badge. Approval interface, target-setting rules, cancellation/refunds, and fulfilment remain undefined. A fan proposal does not establish driver/team agreement to perform it.
-- Challenge creation, contributions, and the store are requested for the first submission. Fulfilment versus disclosed demonstration content remains unresolved; no voucher supply or team partnership is established by the supplied material.
+- Challenges require approval before opening for contributions. An admin or a user with the Aston Martin admin badge can approve them. The badge represents an assigned admin role; it is not a self-selected cosmetic badge. A fan proposal does not establish driver/team agreement to perform it.
+- Challenges accumulate contributed points like votes; higher-point challenges are intended to be selected for the drivers. This supersedes the assistant's earlier fixed-target/deadline proposal, which was not accepted. Selection cadence, cutoff, and fulfilment still need definition.
+- Submitting a new challenge costs 500 earned points. After approval, fans can contribute any amount of at least 10 points, limited by their available balance. Contributions accumulate as votes; the submission fee is not automatically counted as votes because that rule has not been specified.
+- The user accepted clearly labelled sample vouchers and a distinct state awaiting team completion as the POC fulfilment approach. Adapt the state wording to the ranking model; do not imply an agreed funding threshold. No real voucher supply or driver/team partnership has been established.
 
 ## Latest interview answer: 25 September 2026
 
-- Submission is next week; exact date, required artifact, and judging requirements are not supplied.
+- The user explicitly does not want to share or discuss the deadline and requests the core local build without publishing. Deadline and submission format are not prerequisites for local work.
 - Multiple race locations are intended; the exact working demo catalog remains unresolved.
 - Use the fan's current location as the starting point and let them select a race as the destination.
 - Show multiple ways to reach the selected race, including journey time and estimated carbon emissions, and identify the lowest-carbon option among those compared.
@@ -58,7 +60,7 @@ Historical source record; the current feature boundary above takes precedence wh
 
 - Google Maps is the preferred integration discussed; suitable capabilities, coverage, and data availability remain unverified.
 - Comparing recorded route, distance, and duration with transport information is a proposed validation approach. It is not established proof of transport mode.
-- The latest interview requires changed/interrupted journeys to affect displayed points. Recalculation, penalty versus provisional reduction, and insufficient-evidence handling still need precise rules.
+- Changed/interrupted journeys affect provisional journey points; previously earned balance remains intact. Recalculation and insufficient-evidence handling still need precise rules.
 - Harry, 37, is an illustrative fan persona, not a validated research participant.
 
 ## Technical constraints checked against official documentation
@@ -77,19 +79,19 @@ Fan teams, shared goals, profile rewards, exclusive content, tree planting, sust
 
 ## Open decisions
 
-- Delivery constraints: exact deadline next week, judging requirements, and required artifact.
+- Local delivery: source and local development builds only; no publication or deadline dependency.
 - Coverage: which local race destinations must work in the first demo; race catalog and advance-planning behaviour.
 - Tracking experience: background operation on both Expo/React Native platforms, permissions, location gaps, arrival detection, and app termination.
 - Race-weekend eligibility: journeys crossing the agreed window's boundaries, arrival-versus-start qualification, and reward timing. Both outbound and return journeys are included.
 - Carbon model: comparison baseline, calculation method, data sources, and handling of estimates.
 - Points: reconcile lower absolute route emissions with the earlier emissions-reduction rule; conversion, rounding, eligibility, and accumulation rules.
-- Validation: sufficient evidence, route changes, interruptions, incomplete journeys, repeated claims, and whether deductions affect provisional or already-earned points.
-- Rewards: point prices for 10%–60% discounts, earning difficulty, and discount terms; admin approval interface, contribution targets/rules, cancellations/refunds, and fulfilment.
+- Validation: sufficient evidence, route changes, interruptions, incomplete journeys, and repeated claims; deductions reduce provisional journey awards.
+- Rewards: point prices for 10%–60% discounts, earning difficulty, discount terms; admin approval interface, points-based challenge selection, treatment of the submission fee in ranking, cancellations/refunds, and sample fulfilment.
 - Experience and data: identity needs, saved progress, and journey-data retention.
 
 ## Interview dependencies
 
-1. Set delivery constraints, coverage, demonstration expectations, baseline intent, and reward expectations.
+1. Choose the local screen direction and preserve the agreed feature boundary, including the 500-point submission cost and 10-point minimum contribution.
 2. Verify relevant integration and emissions-data facts for the selected scope.
 3. Resolve calculation, points, validation, state, and data rules against concrete journey examples.
 4. Agree the demo's observable acceptance criteria and confirm shared understanding before implementation.
