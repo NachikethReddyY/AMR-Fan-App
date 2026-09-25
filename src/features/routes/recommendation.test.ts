@@ -121,4 +121,16 @@ describe('extra-time recommendation', () => {
       reason: 'missing_baseline',
     });
   });
+
+  it('rejects a driving baseline with finite legs that overflow in aggregate', () => {
+    const car = route('car', 'car', 10, 1000);
+    car.legs = [
+      { ...car.legs[0], distanceMeters: 1e308 },
+      { ...car.legs[0], distanceMeters: 1e308 },
+    ];
+    expect(recommendRoute([car], 0, singaporeFactors)).toEqual({
+      kind: 'unavailable',
+      reason: 'no_routes',
+    });
+  });
 });

@@ -31,6 +31,10 @@ export type Recommendation =
 function validDuration(
   route: RouteOption,
 ): route is RouteOption & { durationSeconds: number; distanceMeters: number } {
+  const legDistanceMeters = route.legs.reduce(
+    (sum, leg) => sum + leg.distanceMeters,
+    0,
+  );
   return (
     route.availability.kind === 'available' &&
     route.durationSeconds !== null &&
@@ -47,7 +51,8 @@ function validDuration(
         Number.isFinite(leg.durationSeconds) &&
         leg.durationSeconds >= 0,
     ) &&
-    route.legs.reduce((sum, leg) => sum + leg.distanceMeters, 0) > 0
+    Number.isFinite(legDistanceMeters) &&
+    legDistanceMeters > 0
   );
 }
 
@@ -65,6 +70,8 @@ export function recommendRoute(
     ...available.map((route) => route.durationSeconds),
   );
   const limitSeconds = fastestSeconds + extraMinutes * 60;
+  if (!Number.isFinite(limitSeconds))
+    return { kind: 'unavailable', reason: 'invalid_tolerance' };
 
   const driving = available
     .filter((route) => route.mode === 'car')
@@ -108,16 +115,28 @@ export function recommendRoute(
       fastestSeconds,
       limitSeconds,
     };
+  const baselineDistanceMeters = baselineRoute.legs.reduce(
+    (sum, leg) => sum + leg.distanceMeters,
+    0,
+  );
+  const avoidedKgCo2e = baseline.kgCo2e - winner.estimate.kgCo2e;
+  if (
+    !Number.isFinite(baselineDistanceMeters) ||
+    !Number.isFinite(avoidedKgCo2e)
+  )
+    return {
+      kind: 'unavailable',
+      reason: 'no_eligible_estimate',
+      fastestSeconds,
+      limitSeconds,
+    };
   return {
     kind: 'recommended',
     ...winner,
     baseline,
-    baselineDistanceMeters: baselineRoute.legs.reduce(
-      (sum, leg) => sum + leg.distanceMeters,
-      0,
-    ),
+    baselineDistanceMeters,
     fastestSeconds,
     limitSeconds,
-    avoidedKgCo2e: baseline.kgCo2e - winner.estimate.kgCo2e,
+    avoidedKgCo2e,
   };
 }

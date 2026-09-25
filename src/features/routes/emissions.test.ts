@@ -93,4 +93,39 @@ describe('Singapore route emissions', () => {
       kgCo2e: 0.01,
     });
   });
+
+  it('rejects finite leg distances whose aggregate overflows', () => {
+    const huge = route('car', [
+      { mode: 'car', meters: 1e308 },
+      { mode: 'car', meters: 1e308 },
+    ]);
+    huge.distanceMeters = 1000;
+    expect(estimateRoute(huge, singaporeFactors)).toEqual({
+      kind: 'unavailable',
+      reason: 'invalid_route',
+    });
+  });
+
+  it('rejects finite factors when a product or the emissions sum overflows', () => {
+    const carFactor = singaporeFactors.find((factor) => factor.mode === 'car');
+    expect(carFactor).toBeDefined();
+    if (!carFactor) return;
+
+    const productOverflow = route('car', [{ mode: 'car', meters: 2000 }]);
+    expect(
+      estimateRoute(productOverflow, [
+        { ...carFactor, kgCo2ePerPassengerKm: Number.MAX_VALUE },
+      ]),
+    ).toEqual({ kind: 'unavailable', reason: 'invalid_route' });
+
+    const sumOverflow = route('car', [
+      { mode: 'car', meters: 1000 },
+      { mode: 'car', meters: 1000 },
+    ]);
+    expect(
+      estimateRoute(sumOverflow, [
+        { ...carFactor, kgCo2ePerPassengerKm: 1e308 },
+      ]),
+    ).toEqual({ kind: 'unavailable', reason: 'invalid_route' });
+  });
 });

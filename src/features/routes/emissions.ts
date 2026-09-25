@@ -84,6 +84,10 @@ export function estimateRoute(
 ): RouteEstimate {
   if (route.availability.kind === 'unavailable')
     return { kind: 'unavailable', reason: 'route_unavailable' };
+  const legDistanceMeters = route.legs.reduce(
+    (sum, leg) => sum + leg.distanceMeters,
+    0,
+  );
   if (
     route.legs.length === 0 ||
     route.distanceMeters === null ||
@@ -99,7 +103,8 @@ export function estimateRoute(
         leg.distanceMeters < 0 ||
         leg.durationSeconds < 0,
     ) ||
-    route.legs.reduce((sum, leg) => sum + leg.distanceMeters, 0) <= 0
+    !Number.isFinite(legDistanceMeters) ||
+    legDistanceMeters <= 0
   ) {
     return { kind: 'unavailable', reason: 'invalid_route' };
   }
@@ -117,7 +122,12 @@ export function estimateRoute(
     ) {
       return { kind: 'unavailable', reason: 'missing_factor', mode: leg.mode };
     }
-    kgCo2e += (leg.distanceMeters / 1000) * factor.kgCo2ePerPassengerKm;
+    const legKgCo2e = (leg.distanceMeters / 1000) * factor.kgCo2ePerPassengerKm;
+    if (!Number.isFinite(legKgCo2e))
+      return { kind: 'unavailable', reason: 'invalid_route' };
+    kgCo2e += legKgCo2e;
+    if (!Number.isFinite(kgCo2e))
+      return { kind: 'unavailable', reason: 'invalid_route' };
     factorIds.push(factor.id);
   }
   return { kind: 'estimated', kgCo2e, factorIds };
