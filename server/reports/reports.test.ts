@@ -1,0 +1,506 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { before, after, test } from 'node:test';
+import { createDatabase } from '../database/index.ts';
+import { migrate } from '../database/migrate.ts';
+import { ensureAccount, assignRole } from '../accounts/store.ts';
+import { createSession, revokeSession } from '../auth/session.ts';
+import { createStorage } from './storage.ts';
+import { createParser } from './parser.ts';
+import { createReports } from './index.ts';
+import { syntheticPdf } from './testing/fixtures.ts';
+
+if (
+  process.env.NODE_ENV !== 'test' ||
+  !/\/amr_[a-f0-9]{12}_test$/.test(
+    new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname,
+  )
+)
+  throw new Error('Use the allocated test database.');
+const storageRoot = process.env.REPORT_TEST_STORAGE;
+if (!storageRoot || !/\/amr_[a-f0-9]{12}\/test$/.test(storageRoot))
+  throw new Error('Use allocated test storage.');
+const pool = createDatabase();
+const issuer = `urn:amr:reports-test:${randomUUID()}`;
+let reports: ReturnType<typeof createReports>;
+let admin: { id: string; token: string };
+let fan: { id: string; token: string };
+async function account(subject: string, role: 'fan' | 'admin') {
+  const account = await ensureAccount(pool, { issuer, subject });
+  if (role === 'admin')
+    await assignRole(pool, account.id, role, 'Synthetic report test');
+  return { id: account.id, ...(await createSession(pool, account.id)) };
+}
+before(async () => {
+  await migrate(pool);
+  admin = await account('admin', 'admin');
+  fan = await account('fan', 'fan');
+  reports = createReports({
+    pool,
+    storage: await createStorage({ root: storageRoot }),
+    parser: createParser(),
+    extractReport: async () => ({
+      kind: 'unavailable',
+      reason: 'disabled',
+      reviewRequired: true,
+    }),
+  });
+});
+after(async () => {
+  await pool.end();
+});
+
+async function upload() {
+  const document = await reports.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic water report',
+    sourceKind: 'synthetic',
+  });
+  return reports.upload(
+    admin.token,
+    document.id,
+    syntheticPdf([['Water result 20 litres in 2025. Method: meters.']]),
+  );
+}
+function candidate(text: string) {
+  return {
+    name: 'Water',
+    value: '20',
+    unit: 'litres',
+    period: '2025',
+    category: null,
+    meaning: 'result',
+    method: 'meters',
+    evidence: { page: 1, start: 0, end: text.length, quote: text },
+  };
+}
+test('upload, correction and assigned-admin approval preserve exact provenance separately from balances', async () => {
+  const doc = await upload();
+  assert.equal(doc.status, 'review');
+  assert.equal(
+    doc.pages[0]?.text,
+    'Water result 20 litres in 2025. Method: meters.',
+  );
+  const original = await reports.addCandidate(admin.token, doc.id, {
+    requestId: randomUUID(),
+    fields: { ...candidate(doc.pages[0].text), unit: null },
+    reason: 'Synthetic incomplete candidate',
+  });
+  await assert.rejects(
+    reports.decide(admin.token, original.candidateId, {
+      requestId: randomUUID(),
+      revisionId: original.id,
+      kind: 'approved',
+      expectedApprovalId: null,
+      reason: 'Review',
+    }),
+    /required fields/,
+  );
+  const revision = await reports.revise(admin.token, original.candidateId, {
+    requestId: randomUUID(),
+    expectedRevisionId: original.id,
+    fields: candidate(doc.pages[0].text),
+    reason: 'Restore supported unit',
+  });
+  const decision = await reports.decide(admin.token, original.candidateId, {
+    requestId: randomUUID(),
+    revisionId: revision.id,
+    kind: 'approved',
+    expectedApprovalId: null,
+    reason: 'Checked synthetic source',
+  });
+  assert.equal(decision.actorId, admin.id);
+  assert.ok(decision.recordedAt);
+  const official = await reports.official(fan.token);
+  const metric = official.find((value) => value.approvalId === decision.id);
+  assert.equal(metric?.fields.value?.text, '20');
+  assert.equal(metric?.sourceKind, 'synthetic');
+  assert.equal(metric?.period, '2025');
+  const detail = await reports.detail(admin.token, doc.id);
+  assert.equal(
+    detail.revisions.find((value) => value.id === original.id)?.fields.fields
+      .unit,
+    null,
+  );
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT balance FROM app.profiles WHERE principal_id = $1',
+        [admin.id],
+      )
+    ).rows.every((row) => row.balance === 0),
+    true,
+  );
+});
+
+async function readyCandidate() {
+  const doc = await upload();
+  const revision = await reports.addCandidate(admin.token, doc.id, {
+    requestId: randomUUID(),
+    fields: candidate(doc.pages[0].text),
+    reason: 'Synthetic source review',
+  });
+  return { doc, revision };
+}
+function approval(
+  revisionId: string,
+  expectedApprovalId: string | null = null,
+) {
+  return {
+    requestId: randomUUID(),
+    revisionId,
+    kind: 'approved',
+    expectedApprovalId,
+    reason: 'Checked synthetic evidence',
+  };
+}
+
+test('concurrent repeated approval publishes once and conflicting replay is rejected', async () => {
+  const { revision } = await readyCandidate();
+  const action = approval(revision.id);
+  const results = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      reports.decide(admin.token, revision.candidateId, action),
+    ),
+  );
+  assert.equal(new Set(results.map((value) => value.id)).size, 1);
+  assert.equal(
+    (await reports.official(fan.token)).filter(
+      (value) => value.candidateId === revision.candidateId,
+    ).length,
+    1,
+  );
+  await assert.rejects(
+    reports.decide(admin.token, revision.candidateId, {
+      ...action,
+      reason: 'Different intent',
+    }),
+    /conflicts/,
+  );
+  const repeat = await reports.decide(admin.token, revision.candidateId, {
+    ...action,
+    requestId: randomUUID(),
+  });
+  assert.equal(repeat.id, results[0].id);
+});
+
+test('two replacements of one current approval commit exactly one successor and retain original evidence', async () => {
+  const original = await readyCandidate();
+  const approved = await reports.decide(
+    admin.token,
+    original.revision.candidateId,
+    approval(original.revision.id),
+  );
+  const a = await readyCandidate(),
+    b = await readyCandidate();
+  const outcomes = await Promise.allSettled([
+    reports.decide(
+      admin.token,
+      a.revision.candidateId,
+      approval(a.revision.id, approved.id),
+    ),
+    reports.decide(
+      admin.token,
+      b.revision.candidateId,
+      approval(b.revision.id, approved.id),
+    ),
+  ]);
+  assert.equal(
+    outcomes.filter((value) => value.status === 'fulfilled').length,
+    1,
+  );
+  assert.equal(
+    outcomes.filter((value) => value.status === 'rejected').length,
+    1,
+  );
+  assert.equal(
+    (await reports.official(fan.token)).some(
+      (value) => value.approvalId === approved.id,
+    ),
+    false,
+  );
+  assert.equal(
+    (await reports.detail(admin.token, original.doc.id)).decisions[0]?.id,
+    approved.id,
+  );
+  await assert.rejects(
+    reports.decide(admin.token, original.revision.candidateId, {
+      ...approval(original.revision.id),
+      kind: 'rejected',
+    }),
+    /different decision/,
+  );
+});
+
+test('rejected, pending and failed processing cannot change existing official data', async () => {
+  const initial = await reports.official(fan.token);
+  const { doc, revision } = await readyCandidate();
+  await reports.decide(admin.token, revision.candidateId, {
+    ...approval(revision.id),
+    kind: 'rejected',
+  });
+  const failure = await reports.extract(admin.token, doc.id, {
+    requestId: randomUUID(),
+    pages: [1],
+  });
+  assert.equal(failure.status, 'unavailable');
+  assert.equal(failure.failure, 'disabled');
+  const broken = await reports.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Malformed synthetic PDF',
+    sourceKind: 'synthetic',
+  });
+  await assert.rejects(
+    reports.upload(admin.token, broken.id, Buffer.from('%PDF-1.7\nmalformed')),
+    /could not be parsed/,
+  );
+  assert.equal((await reports.detail(admin.token, broken.id)).status, 'failed');
+  assert.deepEqual(await reports.official(fan.token), initial);
+});
+
+test('anonymous, fan, foreign reservation and revoked role/session cannot mutate report records', async () => {
+  const { doc, revision } = await readyCandidate();
+  for (const token of ['', fan.token])
+    await assert.rejects(
+      reports.decide(token, revision.candidateId, approval(revision.id)),
+    );
+  const other = await account('other-admin', 'admin');
+  await assert.rejects(
+    reports.upload(
+      other.token,
+      doc.id,
+      syntheticPdf([['Different synthetic source']]),
+    ),
+    /reservation/,
+  );
+  await assert.rejects(reports.source(fan.token, doc.id), /admin access/);
+  await assignRole(pool, other.id, 'fan', 'Synthetic revocation test');
+  await assert.rejects(
+    reports.decide(other.token, revision.candidateId, approval(revision.id)),
+    /admin access/,
+  );
+  const revoked = await account('revoked-admin', 'admin');
+  await revokeSession(pool, revoked.token);
+  await assert.rejects(
+    reports.decide(revoked.token, revision.candidateId, approval(revision.id)),
+    /Sign in/,
+  );
+  await assert.rejects(
+    reports.addCandidate(admin.token, doc.id, {
+      requestId: randomUUID(),
+      fields: candidate(doc.pages[0].text),
+      reason: 'Forged',
+      actorId: fan.id,
+    }),
+    /Unexpected/,
+  );
+});
+
+test('stale revisions conflict; approved snapshots survive later corrections and database reconnect', async () => {
+  const { doc, revision } = await readyCandidate();
+  const approved = await reports.decide(
+    admin.token,
+    revision.candidateId,
+    approval(revision.id),
+  );
+  const next = await reports.revise(admin.token, revision.candidateId, {
+    requestId: randomUUID(),
+    expectedRevisionId: revision.id,
+    fields: { ...candidate(doc.pages[0].text), method: null },
+    reason: 'Review method omission',
+  });
+  await assert.rejects(
+    reports.revise(admin.token, revision.candidateId, {
+      requestId: randomUUID(),
+      expectedRevisionId: revision.id,
+      fields: candidate(doc.pages[0].text),
+      reason: 'Stale edit',
+    }),
+    /Revision changed/,
+  );
+  assert.equal(
+    (await reports.official(fan.token)).find(
+      (value) => value.approvalId === approved.id,
+    )?.fields.method?.text,
+    'meters',
+  );
+  await assert.rejects(
+    reports.decide(admin.token, revision.candidateId, approval(next.id)),
+    /current approval/,
+  );
+  const replacement = await reports.decide(
+    admin.token,
+    revision.candidateId,
+    approval(next.id, approved.id),
+  );
+  const reopenedPool = createDatabase();
+  try {
+    const reopened = createReports({
+      pool: reopenedPool,
+      storage: await createStorage({ root: storageRoot }),
+      parser: createParser(),
+      extractReport: async () => null,
+    });
+    assert.equal(
+      (await reopened.official(fan.token)).find(
+        (value) => value.approvalId === replacement.id,
+      )?.fields.method,
+      null,
+    );
+    assert.deepEqual(
+      await reopened.source(admin.token, doc.id),
+      await reports.source(admin.token, doc.id),
+    );
+  } finally {
+    await reopenedPool.end();
+  }
+  await assert.rejects(
+    pool.query('DELETE FROM app.report_decisions WHERE id=$1', [approved.id]),
+    /immutable/,
+  );
+  await assert.rejects(
+    pool.query('UPDATE app.report_pages SET text=$2 WHERE document_id=$1', [
+      doc.id,
+      'changed',
+    ]),
+    /immutable/,
+  );
+});
+
+test('completed extraction replay does not invoke the extractor again', async () => {
+  const { doc } = await readyCandidate();
+  let calls = 0;
+  const service = createReports({
+    pool,
+    storage: await createStorage({ root: storageRoot }),
+    parser: createParser(),
+    extractReport: async () => {
+      calls++;
+      return { kind: 'unavailable', reason: 'disabled', reviewRequired: true };
+    },
+  });
+  const input = { requestId: randomUUID(), pages: [1] };
+  const first = await service.extract(admin.token, doc.id, input);
+  const second = await service.extract(admin.token, doc.id, input);
+  assert.equal(second.id, first.id);
+  assert.equal(calls, 1);
+});
+
+test('role revocation while approval waits is checked inside the transaction', async () => {
+  const { revision } = await readyCandidate();
+  const changing = await account('changing-admin', 'admin');
+  const blocker = await pool.connect();
+  await blocker.query('BEGIN');
+  await blocker.query('SELECT id FROM app.principals WHERE id=$1 FOR UPDATE', [
+    changing.id,
+  ]);
+  const deciding = reports.decide(
+    changing.token,
+    revision.candidateId,
+    approval(revision.id),
+  );
+  const denied = assert.rejects(deciding, /admin access/);
+  await blocker.query("UPDATE app.principals SET role='fan' WHERE id=$1", [
+    changing.id,
+  ]);
+  await blocker.query('COMMIT');
+  blocker.release();
+  await denied;
+  assert.equal(
+    (await reports.official(fan.token)).some(
+      (value) => value.candidateId === revision.candidateId,
+    ),
+    false,
+  );
+});
+
+test('session revoked during parsing prevents persistence or publication', async () => {
+  const changing = await account('parsing-admin', 'admin');
+  const service = createReports({
+    pool,
+    storage: await createStorage({ root: storageRoot }),
+    parser: {
+      async parse() {
+        await revokeSession(pool, changing.token);
+        return {
+          pages: [{ page: 1, text: 'Synthetic text' }],
+          parserVersion: 'synthetic-fixture',
+        };
+      },
+    },
+    extractReport: async () => null,
+  });
+  const doc = await service.reserve(changing.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic revocation boundary',
+    sourceKind: 'synthetic',
+  });
+  await assert.rejects(
+    service.upload(changing.token, doc.id, syntheticPdf([['Synthetic text']])),
+    /Sign in/,
+  );
+  assert.equal(
+    (await reports.detail(admin.token, doc.id)).status,
+    'awaiting-upload',
+  );
+});
+
+test('approval blocked on an unchanged session row is refused after expiry', async () => {
+  const { createHash } = await import('node:crypto');
+  const { revision } = await readyCandidate();
+  const expiring = await account('expiring-lock-admin', 'admin');
+  const hash = createHash('sha256').update(expiring.token).digest('hex');
+  await pool.query(
+    "UPDATE app.sessions SET expires_at=clock_timestamp()+interval '1 second' WHERE token_hash=$1",
+    [hash],
+  );
+  const blocker = await pool.connect();
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query(
+      'SELECT token_hash FROM app.sessions WHERE token_hash=$1 FOR UPDATE',
+      [hash],
+    );
+    const deciding = reports.decide(
+      expiring.token,
+      revision.candidateId,
+      approval(revision.id),
+    );
+    const denied = assert.rejects(
+      deciding,
+      (error) =>
+        error instanceof Error && 'status' in error && error.status === 401,
+    );
+    let blocked = false;
+    for (let i = 0; i < 50; i++) {
+      const state = await pool.query<{ blocked: boolean }>(
+        "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE 'SELECT token_hash FROM app.sessions%' AND cardinality(pg_blocking_pids(pid))>0) AS blocked",
+      );
+      if (state.rows[0]?.blocked) {
+        blocked = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.equal(
+      blocked,
+      true,
+      'The approval must be observed waiting on the unchanged session lock.',
+    );
+    await blocker.query(
+      'SELECT pg_sleep(GREATEST(0,EXTRACT(EPOCH FROM (expires_at-clock_timestamp())))+0.05) FROM app.sessions WHERE token_hash=$1',
+      [hash],
+    );
+    await blocker.query('COMMIT');
+    await denied;
+    assert.equal(
+      (await reports.official(fan.token)).some(
+        (value) => value.candidateId === revision.candidateId,
+      ),
+      false,
+    );
+  } finally {
+    await blocker.query('ROLLBACK');
+    blocker.release();
+  }
+});
