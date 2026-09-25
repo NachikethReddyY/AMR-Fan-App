@@ -31,7 +31,8 @@ purchased plain-text version and profile-owned access after edits or disablement
 Admin-authored plain text in PostgreSQL with original synthetic local fixtures
 is the approved storage/delivery choice. New-key repeat purchase requests return
 the original receipt with a zero-point acknowledgement, without another right.
-Actual HTTP/admin/browser and phone acceptance remain pending.
+Registered HTTP and admin browser behavior are verified; phone acceptance remains
+pending.
 
 ## Acceptance cases
 

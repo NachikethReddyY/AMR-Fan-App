@@ -28,8 +28,8 @@ Choose the offer/history presentation. Real redemption, expiry and merchant inte
 The shared [rewards domain candidate](../operations/rewards.md) records each
 intentional voucher purchase with immutable paid price and discount percentage.
 Local synthetic 10%/60% offers are approved examples, with independently configured
-point prices and demonstration fulfilment. Actual HTTP/admin/browser and phone
-acceptance remain pending. No retailer code, expiry or fulfilment is invented.
+point prices and demonstration fulfilment. Registered HTTP and admin browser
+behavior are verified; phone acceptance remains pending. No retailer code, expiry or fulfilment is invented.
 
 ## Acceptance cases
 

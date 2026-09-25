@@ -10,13 +10,12 @@ rules remain in feature documents [07](../features/07-tree-dedications.md),
 
 ## Candidate status
 
-The local domain and owned dispatcher candidate has PostgreSQL purchase,
-catalogue and retained-right proof. Isolated admin assets use the existing dark
-points-admin CSS. Actual API registration, admin/browser flow, application DAST
-and phone integration are pending the serialized ownership handoff. Tests against
-the real `createApi` currently fail because registration is absent. Passing module
-tests does not complete the three issues. No real programme allocation, retailer
-redemption, official content or live identity provider is configured.
+The registered API and separate rewards admin page have actual PostgreSQL, HTTP,
+process-restart and browser proof. The page reuses the existing dark points-admin
+CSS. Phone confirmation, entitled viewer and navigation remain pending native
+integration. This candidate does not complete the three issues. No real programme
+allocation, retailer redemption, official content or live identity provider is
+configured.
 
 ## Selected demonstration scope
 
@@ -55,8 +54,10 @@ GET content access creates no History. Even replay requires current authorizatio
 
 Admin edits require a current assigned role and expected version, serialize
 against purchases and retain an immutable actor/time/version record. An admin
-request key binds the full edit; replay preserves the recorded version. A reward
-cannot change product type. Catalogue responses never include locked content text.
+request key binds the full edit; replay preserves the recorded version. The owned
+authority boundary checks the database clock again after the initial session-row
+lock, before fresh operations or replay. A later profile-lock wait retains the
+existing points contract. A reward cannot change product type. Catalogue responses never include locked content text.
 
 Migration `0006_rewards.sql` stores immutable offer versions and immutable
 profile-owned receipts linked to the existing points operation. A content right
@@ -84,7 +85,7 @@ reset replay cannot clear later earnings. Any reset generation check belongs
 inside the existing operation callback after success lookup; coordinate that
 shared integration rather than adding a second accounting interface.
 
-## Local domain verification
+## Local verification
 
 Use only an infrastructure-provisioned worktree database pair. Shared service
 lifecycle belongs to infrastructure. No peer credentials or fixed server port
@@ -92,7 +93,7 @@ are needed for domain tests.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm db:run-test -- node --test server/rewards/*.test.ts
+pnpm rewards:test:database
 pnpm check
 pnpm security:check
 ```
@@ -103,42 +104,30 @@ content/version access, explicit zero-point acknowledgements, tree/voucher
 repeats, price/availability changes, funds, key conflicts, mixed purchases,
 owner/real/demo/admin/session boundaries and immutable stored records. Both
 simultaneous first unlocks and concurrent new-key repeat acknowledgements are
-covered. Connection reopen is tested; actual process restart and registered HTTP
-remain pending. Raw synthetic evidence stays in ignored `.evidence/rewards-14-16/`.
+covered. The database script runs both the top-level rewards tests and
+`server/rewards/testing/registered-api.test.ts` serially. The latter starts the real
+`createApi`, including a child-process restart with the same stored receipt/text.
+The suites need at most two temporary loopback listeners in total. Stop a leased
+fixed API before running them. Raw synthetic evidence stays in ignored
+`.evidence/rewards-14-16/`.
 
-## Serialized registration handoff
+## API registration
 
-The API/root owner must register these imports in `server/api/app.ts` after the
-preceding integration owners release their paths:
-
-```ts
-import { dispatchRewards } from '../rewards/http.ts';
-import { serveRewardsAdmin } from '../rewards/admin.ts';
-```
-
-For GET assets, call `serveRewardsAdmin(path, res)` alongside `serveAdmin` before
-the bearer requirement. After the existing origin/rate guards and bearer parsing:
-
-```ts
-const rewards = await dispatchRewards({
-  pool,
-  token,
-  method: req.method,
-  path,
-  query: Object.fromEntries(new URL(req.url ?? '/', 'http://api.invalid').searchParams),
-  body: () => body(req),
-});
-if (rewards) return send(res, rewards.status, rewards.value);
-```
+`server/api/app.ts` imports `dispatchRewards` from `server/rewards/http.ts` and
+`serveRewardsAdmin` from `server/rewards/admin.ts`. GET assets are served beside
+the existing admin assets before the bearer requirement. The dispatcher runs
+after the existing origin/rate guards and bearer parsing, with the existing
+bounded JSON body callback and query parameters. Accounts, points, routes and
+journeys keep their registration.
 
 The dispatcher owns no listener, origin policy, JSON reader, rate limit or error
 envelope. It uses the existing API's 4,096-byte JSON cap. The plain-text field is
 bounded at 2,000 characters; an encoded request above the byte cap must be shortened.
-Unknown routes return `null`. The root owner should add `rewards:test:database`
-and the matching CI step with **both** suites:
+Unknown routes return `null`. `pnpm check` includes the rewards HTTP unit tests;
+`pnpm rewards:test:database` and its CI step run **both** database suites:
 
 ```sh
-pnpm db:run-test -- node --test server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts
+pnpm db:run-test -- node --test --test-concurrency=1 server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts
 ```
 
 | Route | Method and result |
@@ -165,25 +154,44 @@ required. Credentials stay in page memory; reload requires sign-in. A failed
 unchanged edit retries its existing key, while a version conflict requires loading
 the current offer. Live admin sign-in remains pending provider configuration.
 
-## Pending acceptance, preserved failures and next proof
+## Observed acceptance and remaining proof
 
-`server/rewards/testing/registered-api.test.ts` runs the actual API on ephemeral
-loopback listeners, including a child-process restart. It is intentionally
-separate from the currently passing module suite until the root owner registers
-the handlers. The observed unregistered baseline has four failures: catalogue and
-purchase paths return 404, the admin list returns 404, and the admin asset returns
-401. Evidence: `07-registration-red.txt`. Do not skip these tests or substitute
-a separate rewards-only server. Keep the newest-first History assertion when
-integrating the points owner's sequence-order repair.
+The actual unregistered baseline had four failures: catalogue and purchase paths
+returned 404, the admin list returned 404, and the admin asset returned 401.
+Registration makes those assertions pass without a separate rewards-only server.
+The newest-first History assertions remain intact.
 
-After registration, run both suites, existing points/account regressions and the
-full checks. On an explicitly leased preview, observe assigned-admin create/edit/
-disable, fan refusal, escaped text, price reconfirmation, purchase/History/content
-access and sign-out/revocation. The phone confirmation and entitled viewer still
-depend on the held native integration. Run isolated application DAST only after
-the real API serves these routes/assets; document authenticated coverage separately
-because an unauthenticated passive crawl cannot prove purchases or authorization.
-Full browser/phone, physical fulfilment, live provider and deployment claims stay
-pending. No PR or issue completion is implied by the committed local boundary.
+On a leased loopback API and owned T3 preview, the synthetic admin created tree,
+10%/60% voucher and plain-text content offers, changed price/availability and
+edited content. Literal markup stayed text; the 390-pixel viewport had no
+horizontal overflow. Keyboard Tab moved between price and discount controls.
+A fan was refused admin access. Current role revocation refused an edit and
+cleared the editor. A stale concurrent edit required reload. A deliberately lost
+response after a real successful POST retried to the same catalogue version,
+without another offer. Sign-out cleared the workspace.
+
+Actual HTTP requests against that same process bought the browser-created content,
+then retrieved its original text and receipt after browser edits and disablement.
+Same-key replay preserved the result; a new content key acknowledged zero points.
+The other profile could not read that content or buy the disabled offer. Tree and
+10%/60% voucher receipts retained their paid snapshots and demonstration status.
+These requests are HTTP purchase proof, not a phone purchase interface.
+
+The isolated passive DAST target starts at `/admin/rewards/`. The optional target
+pathname defaults to `/` and accepts only plain bounded path segments, rejecting
+scheme/authority substitution, traversal, encoded ambiguity, query and fragment.
+The origin, internal container network and scan rules stay fixed. An
+unauthenticated crawl cannot prove owned content, catalogue authority or accounting;
+the authenticated HTTP/PostgreSQL tests provide that evidence separately. The
+observed ZAP 2.17.0 report passed the existing policy with one informational
+Modern Web Application alert and eight GET endpoints. Its diagnostic insights
+also reported network failures and logged errors whose causes are not retained
+by the stock report output; this is limited passive coverage, not an error-free
+or authenticated scan claim.
+
+Phone presentation, demo reset, physical fulfilment, live provider and deployment
+acceptance remain open. Future reset integration must run the exact retained-right
+and generation checks described above. Independent exact-candidate review and
+hosted check status belong to the PR handoff, not to these local behavior claims.
 
 Written by gpt-6-astra through Codex (T3 Code).
