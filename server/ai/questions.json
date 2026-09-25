@@ -1,0 +1,35 @@
+{
+  "tag": {
+    "type": "choice",
+    "instructions": "What kind of fan submission is this? Respect negation; choose unclear for ambiguous requests.",
+    "criteria": {
+      "question": "asks driver or team for an answer",
+      "activity": "proposes an activity for driver or team",
+      "other": "neither a question nor an activity",
+      "unclear": "insufficient or conflicting information"
+    }
+  },
+  "moderation": {
+    "type": "choice",
+    "instructions": "Does this request need admin safety attention? Do not interpret quoted or negated harm as a request for harm.",
+    "criteria": {
+      "attention": "requests dangerous acts, harassment, hate or sharing private personal data",
+      "none": "benign content, no safety concern expressed",
+      "unclear": "uncertain meaning or insufficient context"
+    }
+  },
+  "category": {
+    "type": "choice",
+    "instructions": "Classify this report excerpt. Do not discard the excerpt. Use unclear for missing or ambiguous meaning.",
+    "criteria": {
+      "emissions": "greenhouse gases or CO2e",
+      "energy": "electricity or fuel consumption",
+      "water": "water consumption",
+      "waste": "waste disposal or recycling",
+      "biodiversity": "habitat, trees or wildlife",
+      "community": "education or community participation",
+      "other": "another topic",
+      "unclear": "insufficient or ambiguous information"
+    }
+  }
+}

@@ -1,0 +1,3 @@
+laya[serve] @ https://github.com/NandhaKishorM/laya/archive/4066d5d5fbf08b66c6757ddeedbd797bd7655bc0.tar.gz#sha256=388fc3034fb9768dd3b2e899feb8501de418d84bf96d446c2cfbed162a4f826d
+psutil==7.2.2
+httpx==0.28.1
