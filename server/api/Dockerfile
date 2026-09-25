@@ -5,5 +5,6 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 COPY server ./server
+COPY src/features/routes ./src/features/routes
 EXPOSE 3000
 CMD ["node", "server/api/dast-start.ts"]

@@ -33,3 +33,18 @@ Verify provider access, Singapore mode coverage and units. Define how to break e
 | Fan enters an ordinary non-race destination                                            | Route planning accepts it within supported coverage.                                                                    |
 | Fan changes acceptable extra travel time                                               | Recommendation remains within the chosen tolerance and minimizes estimated emissions among qualifying candidates.       |
 | Fastest route is 30 minutes and tolerance is 10; candidates take 35, 40 and 45 minutes | Recommend the lowest-emission eligible candidate taking 35 or 40 minutes; the 45-minute candidate is outside the limit. |
+
+## Server provider candidate
+
+The independent server candidate accepts ordinary address or global-coordinate
+queries for Google DRIVE, TRANSIT, WALK and BICYCLE. Actual returned steps define
+bus/train modes; a preference does not guarantee either. Cab and electric-car
+availability are not invented from DRIVE. Missing credentials, mode coverage,
+geometry and factors remain explicit unavailable outcomes. See [server route
+operations](../operations/routes.md) for authentication, strict schema, spend
+bounds, returned journey evidence and exact reviewed pure-module lineage.
+
+The provider and calculation proof uses labelled synthetic upstream HTTP data.
+Live Google coverage and the held phone UI's platform/accessibility acceptance
+remain pending. No journey, points or issue-completion claim follows from this
+server candidate.

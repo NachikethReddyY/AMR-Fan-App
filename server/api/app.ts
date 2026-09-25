@@ -24,6 +24,7 @@ import {
   listAdminProfiles,
 } from '../points/index.ts';
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
+import { createRouteQuery } from '../routes/query.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -76,6 +77,7 @@ export function createApi({
 }) {
   const config = authConfig(env);
   const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
+  const queryRoutes = createRouteQuery({ env });
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -165,6 +167,8 @@ export function createApi({
         );
       }
       const actor = await authenticateSession(pool, token);
+      if (path === '/v1/routes/query' && req.method === 'POST')
+        return send(res, 200, await queryRoutes(actor, await body(req)));
       if (path === '/v1/session' && req.method === 'DELETE') {
         await revokeSession(pool, token);
         return send(res, 200, { signedOut: true });
