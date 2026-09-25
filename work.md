@@ -342,3 +342,19 @@ nine foundation tests and both unchanged native exports pass. The launcher
 controlled process test and actual API start/owner SIGTERM/closed-port proof pass.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 integrated dependency candidate
+
+Rebased the server branch after PR25 merged and all four postmerge checks passed
+on `0740a3c731c44e74a4f9a1cef122e271bcbaf126`. Resolved package scripts and
+environment examples by retaining both AI and account contracts. The frozen
+lock includes `zod@4.1.12` and `jose@6.2.2`; both AI flags remain false.
+AI source and its reviewed documentation are unchanged. Native source and
+dependencies remain on the held mobile branch, outside this server candidate.
+Frozen install, full checks (including both test suites), security, ten actual
+HTTP/PostgreSQL account cases, nine foundation cases and both native exports
+passed again on the integrated dependency tree. Evidence is kept under
+`.evidence/account-4/integrated-*`; current-head CI and independent review follow
+the authorized push. Issue #4 and the recorded platform/provider gaps stay open.
+
+Edited by gpt-6-astra through Codex (T3 Code).
