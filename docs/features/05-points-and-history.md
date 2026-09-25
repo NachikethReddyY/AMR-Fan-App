@@ -42,8 +42,8 @@ The [awards procedure](../operations/awards.md) records deterministic calculatio
 immutable assessment receipts and difference-only accounting through the existing
 points transaction. Local real-PostgreSQL tests use explicit synthetic server
 fixtures. The public entry retains calculations while production credit remains
-pending trusted factor/calibration validation. API registration, phone UI, future
-admin rules and demo/reset integration remain separately owned. The current
+pending trusted factor/calibration validation. The authenticated API is registered;
+phone UI, future admin rules and demo/reset integration remain separately owned. The current
 configured-rule assessment continues to work and does not imply physical proof.
 
 ## Acceptance cases

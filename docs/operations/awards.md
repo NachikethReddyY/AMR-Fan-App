@@ -1,7 +1,7 @@
 # Journey awards
 
 The owned server modules implement #9/#10 calculation and transactional accounting.
-API registration is a separate integration step. Calculation and accounting are
+The authenticated API registers settlement and owner-read routes. Calculation and accounting are
 locally verified with synthetic server fixtures; production credit is pending
 trusted factor and calibration validation. A working configured-rule assessment
 remains visible and is not a claim of physically verified travel.
@@ -161,14 +161,15 @@ impact stays missing. #22 still owns assigned-admin future rules and effective
 versions. This slice retains the initial Start version, not a configuration UI or
 future rule publication. Neither child is implemented here.
 
-## Exact integration handoff
+## Registered API and checks
 
 Owned runtime files are `server/awards/contracts.ts`, `decimal.ts`, `policy.ts`,
 `operation.ts`, `store.ts` and `http.ts`; test-only files are `policy.test.ts`,
-`awards.test.ts`, `http.test.ts`, `testing/fixtures.ts` and `testing/service.ts`.
+`awards.test.ts`, `http.test.ts`, `testing/fixtures.ts`, `testing/service.ts`,
+`testing/api-process.ts` and `testing/registered-api.test.ts`.
 The only schema addition is `server/database/migrations/0008_journey_awards.sql`.
 
-The API owner adds:
+The shared API registers only the public handler:
 
 ```ts
 import { createAwardsHandler } from '../awards/http.ts';
@@ -188,33 +189,41 @@ This handles `POST /v1/journeys/:journeyId/settlements` and
 `GET /v1/journeys/:journeyId/award`, both status 200, with the existing error mapper.
 Do not expose `executeSettlement` or `testing/service.ts`. Preserve origin/rate
 limits, bearer extraction, no-store/security headers and request timeouts. The
-current shared `createApi` intentionally returns 404. Its owned handoff test must
-be replaced with authenticated integrated 200/denial/replay assertions when the
-API owner registers the routes. Phone ownership remains separate; clients render
-assessment, calculation and readiness distinctly and never infer physical proof.
+retained actual 404 failures now pass through registered `createApi`. Separate
+API process tests prove restart replay, incremental evidence, concurrent requests,
+current-session denial, row-lock waits and transaction rollback. Public outcomes
+remain credit-pending; positive fixture credit uses only the internal test entry.
+Phone ownership remains separate; clients render assessment, calculation and
+readiness distinctly and never infer physical proof.
 
-Root/package/CI owner registers serial commands equivalent to:
+The package and CI register:
 
 ```sh
-node --test server/awards/policy.test.ts
-pnpm db:run-test -- node --test --test-concurrency=1 server/awards/awards.test.ts server/awards/http.test.ts
+pnpm awards:test
+pnpm awards:test:database
 ```
 
 Database tests require the isolated namespace selected by `scripts/local-db.mjs`
 and refuse a non-test or different-worktree database. CI must provision its own
 restricted disposable namespace, apply migrations including 0008, then run these
-groups serially with the existing account/points/journey checks. No root scripts,
-API wiring, CI or shared database lifecycle are changed in this slice.
+groups serially with the existing account/points/journey/submission/reward checks.
+The database command runs the owned domain, HTTP and child API process suites
+with file concurrency one. Local host fixtures use ephemeral loopback ports.
+Process tests record PID/port plus awaited listener/pool shutdown; no persistent
+service or shared database lifecycle is required.
 
-At implementation base `25add9e`, the points immutability test expects SQLSTATE
-`23514` for `TRUNCATE app.points_operations`. With 0008's receipt foreign key,
-PostgreSQL rejects that statement earlier with `0A000`. The actual regression
-failure is retained in private evidence; the FK remains intact. Independently
-reviewed PR35 at `1131fe27539571640782c70f0e49168076bce80e` owns the correction.
-Its merge is authorized separately; postmerge green is not observed here.
-The later serialized base refresh must inherit precise FK/trigger denial,
-rollback-only CASCADE requiring the immutable trigger, and unchanged complete
-History rows. This slice makes no shared-test edit or retry. Its owned test
-already proves both truncate denials and unchanged settlement replay.
+The reviewed integration base includes PR35's precise FK/trigger denial and
+rollback-only CASCADE checks with unchanged complete History rows. The original
+`25add9e` SQLSTATE mismatch remains in private evidence. The receipt FK and shared
+points tests are inherited unchanged; no awards-specific weakening is applied.
+
+The #21 consumer must combine owner/profile kind, latest calculation receipt and
+current assessment identity. A newer assessment than the receipt is pending and
+excluded until settled; GET never writes a settlement. A later revision replaces
+one journey's impact contribution even downward, without points clawback. Real
+live completed assessed journeys remain distinct from synthetic, demo, fallback
+or unavailable calculations. This contract does not implement impact totals or
+add a second ledger; the current owner read returns identity/receipt and the
+profile ID, with profile kind supplied by the account-owned projection.
 
 Implemented by gpt-6-astra through Codex (T3 Code).

@@ -14,7 +14,8 @@ grant awards or establish physically verified travel. The separate
 [awards module](../operations/awards.md) consumes the trusted locked projection
 in the same points transaction and retains nonprecise calculation evidence after
 precise cleanup. Its local synthetic accounting proof does not validate physical
-calibration; production credit and shared API registration remain pending.
+calibration; production credit remains pending. The separate awards routes are
+registered through the shared authenticated API.
 
 ## Outcome
 
