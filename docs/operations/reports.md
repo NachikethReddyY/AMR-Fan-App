@@ -1,295 +1,237 @@
 # Local report review and approval
 
-This owned slice supports [#19](https://github.com/NachikethReddyY/AMR-Fan-App/issues/19)
-and [#20](https://github.com/NachikethReddyY/AMR-Fan-App/issues/20). Product rules
-remain in [report ingestion](../features/11-report-ingestion.md) and
-[Impact](../features/10-impact-dashboard.md). Shared API, root dependency and CI
-registration are pending. The prepared admin page has not been observed in a
-browser. Neither issue is complete.
+The registered API and separate admin page implement the local upload, manual
+review, correction and explicit approval path for [#19](https://github.com/NachikethReddyY/AMR-Fan-App/issues/19)
+and [#20](https://github.com/NachikethReddyY/AMR-Fan-App/issues/20). Neither issue is
+complete: representative extraction quality, production identity/storage policy
+and the phone Impact integration remain with their respective owners. Product
+rules remain in [report ingestion](../features/11-report-ingestion.md) and
+[Impact](../features/10-impact-dashboard.md).
 
 ## Source and approval rules
 
-The local path accepts labelled synthetic text-layer PDFs, at most 10 MiB and
-100 pages. It retains original bytes, SHA-256, parser version and exact page text.
-Scans without usable text, malformed/password-protected PDFs and exceeded bounds
-fail explicitly. There is no OCR, URL fetching or silent report truncation.
-Mixed pages retain empty pages visibly; text extraction cannot prove visual
-completeness or semantic correctness. Review the original source before approval.
+Assigned admins can upload permitted or explicitly labelled synthetic text-layer
+PDFs, at most 10 MiB and 100 pages. The server retains original bytes, SHA-256,
+parser version and exact page text. Malformed/password-protected/image-only PDFs
+and exceeded bounds fail explicitly. There is no OCR, URL fetching or silent
+truncation. Empty pages in a mixed report remain visible. Text extraction cannot
+prove visual completeness or semantic correctness; review the original source.
 
 Candidates retain literal name, value, unit, reporting period, category, meaning,
 method, exact quote/page and UTF-16 offsets. Missing data remains null and listed
 as missing. Approval requires name, value, unit, period and a literal supported
 meaning cue with valid evidence. Category and method may remain explicitly
-missing. The source does not require a closed category set. Values are never
-converted to numbers, rounded or summed across units/periods.
+missing. The specification does not require a closed category set. Values are
+never converted to numbers, rounded or summed across units/periods.
 
-Manual correction appends a reasoned revision; it cannot rewrite an earlier
-revision. Approval/rejection identifies the exact current revision. Current
-assigned-admin role and session are locked in the database. Session expiry is
-checked with a fresh database clock after acquiring the session lock, before
-replay/effects, and again before commit. Client role, actor and approval time
-fields are refused. Approval identity/time come from the actual server action.
+Corrections append reasoned revisions. Approval/rejection identifies the exact
+current revision. Assigned-admin role and session are locked in PostgreSQL;
+expiry is checked with a fresh database clock after the session lock, before
+replay/effects, and again before commit. Actor and approval time come from the
+server. A replacement names the expected current approval. The predecessor
+remains visible until commit and remains in audit history afterwards. Competing
+replacements yield one successor. Stale revisions/targets and conflicting
+request replays fail. Rejection cannot remove an approved fact. Retrying the
+same decision returns its stored outcome without duplicating a figure.
 
-A replacement names the expected current approval. Its predecessor remains
-visible until the transaction commits and remains in audit history afterwards.
-Two competing replacements yield one successor; stale revisions/targets and
-conflicting request replays fail. Rejection cannot remove an approved fact.
-Retries return the stored outcome; repeated approval of an already decided
-revision returns its existing decision without duplicating a figure.
+Official reads expose approved snapshots with original unit/period, evidence,
+source hash/parser version and reviewer/time. They require an authenticated
+fan/admin; originals and unpublished review data require assigned-admin access.
+Synthetic examples stay labelled. Report operations never write points/balances
+or combine official figures with personal/community estimates.
 
-Official reads contain approved snapshots only, with original unit/period,
-evidence, source hash/parser version and reviewer/time. Synthetic examples remain
-labelled and never claim to be Aston Martin facts. Personal/community estimates,
-points and History are not read or changed by report operations.
+## Parser and supported local runtime
 
-## Parser dependency and limits
-
-The reviewed local dependency is `pdfjs-dist@6.3.289`, Apache-2.0, on Node 24.20.0.
-Registry integrity:
+The root dependency is exactly `pdfjs-dist@6.3.289`, Apache-2.0, tested with Node
+24.20.0 and pnpm 12.6.0. Its declared Node range is `>=22.13.0 || >=24`.
+The frozen root lock also pins optional `@napi-rs/canvas@1.0.9`. Integrity:
 
 ```text
 sha512-ZHjSVpDa3D6izMq8/04lvkhkATUmL9px6ChPaXc1k6nU2Mrhlg1/7F0bdUqCwUjw3NsPTfPZsMDUU6ZIcRaeQw==
 ```
 
-It declares Node `>=22.13.0 || >=24` and an optional native canvas dependency;
-the isolated install resolved `@napi-rs/canvas@1.0.9`. Lifecycle scripts were
-disabled. The isolated dependency audit reported no known vulnerabilities.
-Root package/lock changes remain with the shared integration owner. Do not
-commit a second dependency installation or private test loader.
-
-`createParser()` runs one child at a time per process. On this local macOS host,
-`sandbox-exec` denies networking and file writes. The child receives no inherited
-credentials. It reads PDF bytes from stdin and emits only bounded JSON. Limits:
-10 seconds by default, at most 60 seconds configured; 384 MiB V8 old-space;
-768 MiB sampled RSS stop threshold (50 ms checks); 8 MiB combined stdout/stderr;
-1,000,000 parsed characters. RSS sampling is not a hard kernel memory partition
-and may miss short peaks. Timeout/output/memory failures kill and wait for the
-owned child before releasing the parser slot. Source text is not logged.
-An unavailable or invalid RSS measurement fails closed. The parent allows one
-50 ms sample interval for a normal child-exit notification before rejecting a
-still-live child; it clears that timer on close.
-
-The current runner refuses non-macOS hosts. A Linux/Azure network-disabled
-runner and cloud resource limits are an explicit deployment integration gate.
-It does not silently fall back to unsandboxed parsing. The PDF.js binary-data and
-text APIs are documented in the [upstream Node example](https://github.com/mozilla/pdf.js/blob/master/examples/node/getinfo.mjs)
-and [API](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html).
-
-### Locally verified process and Linux boundaries
-
-The focused native run passed 11 tests: six new process-boundary cases and five
-existing parser regressions. Controlled programs replaced only the child input
-program, retaining the actual sandbox, parent watchdog, pipes and termination.
-Output overflow, RSS overflow, timeout and abrupt exit each reaped the child and
-allowed a subsequent real PDF parse. An injected failed RSS command first
-reproduced a timeout instead of a memory-monitor error; the correction now
-rejects it. An unsupported platform refuses before spawning.
-
-Observed output at kill was 8,585,216 combined bytes; observed RSS was 817,808 KiB
-against the 768 MiB threshold. These observations demonstrate enforcement with
-sampling/pipe overshoot, not an exact peak-memory ceiling. Native macOS has no
-tested kernel memory ceiling in this implementation.
-
-A separate offline Linux arm64 container passed seven assertions using Node
-24.20.0 and the unchanged PDF.js worker: resource/network/read-only restrictions,
-real table/multiline/Unicode/two-page extraction, malformed refusal, page-limit
-refusal, default Linux runner refusal, kernel OOM termination and real extraction
-recovery. Base image:
+`REPORT_PARSER_MODE=docker` runs the actual worker in one disposable Linux child
+per API process. `REPORT_PARSER_IMAGE` must be an immutable local `sha256:` image
+ID. The adapter never pulls images. The owned Dockerfile reuses the root frozen
+lock, disables install scripts, and pins this base:
 
 ```text
 node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
 ```
 
-The evidence image used an isolated frozen lockfile with `pdfjs-dist@6.3.289`,
-`@napi-rs/canvas@1.0.9` and pnpm 12.6.0. No root dependency files changed.
-Its actual cgroup v2 values were `memory.max=268435456`, `memory.swap.max=0`,
-`pids.max=64`, and `cpu.max="100000 100000"`. A finite allocator requested at
-most 320 MiB in 16 MiB touched blocks. The kernel sent SIGKILL after 387 ms;
-`oom_kill` increased from 0 to 1 and `memory.peak` equalled 268,435,456 bytes.
-The parent remained alive, then parsed the original fixture again successfully.
-This proves the isolated 256 MiB kernel boundary locally. It does not select a
-production memory budget from one small PDF.
+The host API calls its trusted Docker CLI. Each child receives bounded PDF stdin
+and returns bounded JSON stdout. It has no network, host mounts, published ports,
+credentials or Docker socket. It runs as `node`, with a read-only root, dropped
+capabilities, no-new-privileges, a 16 MiB temporary directory and disabled logs.
+Limits are 256 MiB kernel memory with no swap, one CPU and 64 PIDs. The parent
+limits combined stdout/stderr to 8 MiB, extracted text to 1,000,000 characters,
+and parsing to 10 seconds by default. The configurable Docker parsing deadline
+is at most 45 seconds; bounded readiness/create/cleanup commands keep the whole
+operation within 59 seconds. Containers are created before attach so cleanup can
+identify even an interrupted job. Failure to confirm removal keeps the parser
+slot closed. Missing image/daemon access returns bounded 503; it never falls
+back to unsandboxed parsing. Client input cannot select a runtime or image.
 
-The container had network none, no published ports, a non-root UID, dropped
-capabilities, no-new-privileges and a read-only root. Only original synthetic
-fixtures were mounted read-only, plus an owned output directory. No credentials,
-repository, source storage or Docker socket was mounted. Numeric-UID execution
-without a home directory produced optional canvas/rendering warnings; exact text
-extraction still passed. Rendering/OCR is not supported by this proof.
+The default `native` mode is macOS-only. `sandbox-exec` denies network and file
+writes; the child receives no inherited credentials. It uses 384 MiB V8 old-space,
+a 768 MiB RSS stop threshold sampled every 50 ms, the same 8 MiB output limit,
+and a 10-second default deadline (maximum 60 seconds). Heap plus sampled RSS is
+**not a hard kernel memory ceiling**. A failed RSS measurement fails closed;
+a 50 ms grace permits a normal exit notification to arrive before rejection.
+Timeout/output/memory failures reap the child before releasing the slot.
+Unsupported native platforms return 503.
 
-The reproducible offline invocation, after separately building the pinned image,
-uses these options (paths and image ID come from the scoped private handoff):
+The host CLI path is supported locally on the Docker-equipped macOS host and in
+Linux CI. The ordinary API Docker image does not get a socket or host credentials;
+without a separately approved job controller it cannot launch these children.
+Cloud/Azure execution remains unconfigured. Do not infer a deployment architecture
+from the local image or enable privileged container access to make it work.
 
-```sh
-docker create --name "$report_container" --network none \
-  --memory 256m --memory-swap 256m --cpus 1 --pids-limit 64 \
-  --user "$(id -u):$(id -g)" --read-only --cap-drop ALL \
-  --security-opt no-new-privileges:true --ulimit core=0 --shm-size 16m \
-  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m --log-driver none \
-  --mount "type=bind,src=$report_fixtures,dst=/fixtures,readonly" \
-  --mount "type=bind,src=$report_output,dst=/output" "$report_image"
-docker start --attach "$report_container"
-docker inspect "$report_container"
-docker rm --force "$report_container"
-```
+### Observed boundary evidence
 
-The proof parent imposes a 10-second child deadline and 8 MiB combined output;
-the host wrapper imposes a 30-second container deadline. Exact commands, input
-hashes, resource inspection and results remain private. Only this owned
-container was removed. Docker's [resource-limit documentation](https://docs.docker.com/engine/containers/resource_constraints/)
-defines equal memory and memory-swap values as no swap.
+The current native run passes 11 tests: five PDF regressions and six controlled
+process cases. Timeout, output overflow, RSS overflow and abrupt child exit all
+recover to a subsequent real parse. Unsupported platform and failed RSS
+measurement refuse. Earlier retained observations recorded 8,585,216 output
+bytes at kill and 817,808 KiB RSS against the 768 MiB threshold. Pipe/sampling
+overshoot is expected; these are not exact peak bounds.
+
+The earlier offline Linux proof passed seven assertions, including an allocator
+bounded to 320 MiB, kernel OOM and recovery. Its actual cgroup values were
+`memory.max=268435456`, `memory.swap.max=0`, `pids.max=64` and
+`cpu.max="100000 100000"`. SIGKILL occurred after 387 ms; `oom_kill` rose from 0
+to 1 and `memory.peak` was 268,435,456 bytes. That historical fixture used separate
+read-only synthetic input/output mounts, unlike the current mount-free adapter.
+
+Current container tests inspect an **actual adapter-created parser job** with the
+same kernel limits and no mounts/network. They prove real two-page Unicode
+extraction, deadline termination/recovery, missing-image refusal, bounded
+100-page extraction and removal. Registered HTTP tests and the rendered admin
+also prove missing-image failure/recovery without changing approved figures.
+The old OOM evidence is retained by commit lineage; it is not presented as a new
+OOM invocation through HTTP or evidence that every large PDF fits 256 MiB.
 
 ## Storage and retention
 
-Operations grants an absolute private directory per worktree and environment,
-outside the repository/webroot. `createStorage({root})` requires real directories,
-0700 root permissions and server-generated UUID keys. Files are 0600, exclusively
-created, hash-checked and immutable. Source delivery requires assigned-admin
-access and uses attachment/octet-stream, no-store and nosniff. The client title
-is metadata, never a path. No original PDF is served inline in the admin origin.
+`REPORT_STORAGE_ROOT` must be an operations-granted absolute private directory
+outside the repository/webroot. The server requires real directories and 0700
+root permissions. UUID-keyed files are 0600, exclusively created, immutable and
+hash-checked. Titles are metadata, never paths. Original delivery uses an
+attachment with octet-stream, no-store and nosniff, never inline in the admin
+origin. The local quota is 256 MiB. Exhaustion rejects new uploads without
+deleting provenance. Coordination is per process; multi-process quota control is
+not implemented.
 
-The default local quota is 256 MiB. Quota exhaustion rejects a new source without
-deleting old provenance. Only one writer per storage instance/process is allowed;
-production multi-process quota coordination is not implemented. Incomplete
-`.partial-*` files are removed on normal failure; `cleanupIncomplete()` removes
-abandoned partial files older than one minute and never removes committed PDFs.
-A committed original whose later DB authorization fails can remain unreferenced;
-reconcile it manually, never delete automatically based on a missing DB row.
+Incomplete `.partial-*` files are removed on normal failure. Startup removes
+abandoned partial files older than one minute, never committed PDFs. An original
+whose later authorization/DB step fails may remain unreferenced; reconcile it
+manually rather than delete by absence of a DB row. Retain local synthetic
+originals and approved provenance for the namespace lifetime. Real-report
+retention, backups, account deletion, public source access, pagination and Azure
+object storage require explicit production policy/configuration before deployment.
 
-Retain committed synthetic originals and all approved provenance for this local
-namespace's lifetime. Do not reset development storage or delete approved
-provenance as a routine cleanup. Real-report retention, backups, account deletion,
-public source access and Azure object storage require a separate decision and
-configuration. This report-evidence purpose is distinct from transient AI media.
+## Extraction quality remains pending
 
-## Extraction remains a required pending capability
+The route uses the existing `createAi` adapter. Both
+`LUNA_REPORT_EXTRACTION_ENABLED` and `LAYA_ADVISORY_ENABLED` remain false. No live
+inference, quality rerun, prompt tuning or AI module change belongs to this work.
+[Existing evidence](../ai/evaluation.md) remains: Luna fresh semantic 11/15,
+exact 6/15; Laya 25/36. Human approval is required even after a future quality gate.
 
-Use the existing singleton `createAi` with explicit server configuration.
-`LUNA_REPORT_EXTRACTION_ENABLED` and `LAYA_ADVISORY_ENABLED` remain false. The
-report slice makes no live inference calls or quality evaluations and changes no
-AI module. Existing [quality evidence](../ai/evaluation.md) remains unchanged:
-Luna fresh semantic 11/15, exact 6/15; Laya 25/36. Human approval remains required
-after any future quality gate passes.
+Feature validation retains grounded literal evidence and missing fields; malformed
+adapter results become recoverable failures. Selection is at most eight distinct
+pages, 12,000 total characters and 24 candidates. Unselected/full source pages
+remain available. One extraction is active per process. Completed retries return
+before invoking the adapter; there is no automatic retry/background queue.
+Disabled extraction persists an honest unavailable result. The manual correction
+and approval path remains usable. A crash before the result commits preserves
+review/approved state and requires an explicit retry.
 
-`extractCandidates` validates the existing adapter result again at the feature
-boundary. It retains missing fields, versions and grounded evidence; malformed
-results become a recoverable failure. Selection is at most 8 distinct pages and
-12,000 total characters, with at most 24 candidates. Full source pages remain
-available. A selected batch is not whole-report extraction. Completed retries
-return before invoking the extractor. One feature extraction is active at a
-time; no automatic retries or background queue exists. The default disabled
-adapter persists an honest unavailable result. A process crash before an attempt
-result commits leaves the source/review state intact; it does not create a
-completed extraction record. The admin must retry explicitly.
+Only labelled synthetic test inputs may reach the adapter in this local slice.
+Permitted real documents return unavailable without provider transfer, even if
+an operator changes the AI flag. Provider permission/retention and representative
+quality remain explicit gates; a client source-type field cannot authorize a
+remote transfer. Synthetic injected candidates prove the handoff, not model quality.
 
-Local tests use an explicitly labelled synthetic extractor at the injected test
-boundary. They do not establish real extraction quality. Real-report upload is
-closed by default; real provider transfer remains separately blocked until
-permission/retention and quality are accepted. Never use a client permission
-field to authorize a remote transfer.
+## Registered API and admin
 
-## Shared registration contract
-
-The shared API owner composes:
-
-- `createReports({pool, storage, parser, extractReport})` once per API process.
-- `serveReportsAdmin(path,res)` for the three allowlisted `/admin/reports/`
-  assets. They reuse `/admin/style.css`; no shell/navigation change is needed.
-- `handleReports({req,res,path,token,reports})` after existing origin/rate/bearer
-  checks and before fallback 404. It returns false for unowned paths and throws
-  `ApiError` for controlled failures. Every report operation reauthorizes itself.
+`server/api/app.ts` serves the three allowlisted `/admin/reports/` assets, which
+reuse `/admin/style.css`. No shell/navigation or phone changes are required.
+It lazily composes the report runtime after existing origin/rate/bearer checks.
+An unconfigured report feature returns controlled 503 without breaking unrelated
+routes. Each report operation also reauthorizes inside its own transaction.
 
 | Endpoint | Behavior |
 | --- | --- |
-| `POST /v1/admin/reports` | Reserve immutable source identity with requestId/title/sourceKind |
+| `POST /v1/admin/reports` | Reserve source identity with requestId/title/sourceKind |
 | `GET /v1/admin/reports?after=UUID` | List up to 50 reports |
-| `GET /v1/admin/reports/:id` | Admin source pages, revisions, decisions and extraction status |
-| `PUT /v1/admin/reports/:id/source` | Uploader-owned raw PDF; streamed 10 MiB limit, exact type/signature |
-| `GET /v1/admin/reports/:id/source` | Admin-only original attachment |
-| `POST /v1/admin/reports/:id/extractions` | Bounded page selection and persistent result |
-| `POST /v1/admin/reports/:id/candidates` | Manual source-backed initial revision |
+| `GET /v1/admin/reports/:id` | Private pages, revisions, decisions, extraction status |
+| `PUT /v1/admin/reports/:id/source` | Uploader-owned raw PDF, streamed 10 MiB/type/signature boundary |
+| `GET /v1/admin/reports/:id/source` | Assigned-admin original attachment |
+| `POST /v1/admin/reports/:id/extractions` | Bounded selection and persistent result |
+| `POST /v1/admin/reports/:id/candidates` | Source-backed initial manual revision |
 | `POST /v1/admin/report-candidates/:id/revisions` | Append correction with expectedRevisionId |
-| `POST /v1/admin/report-candidates/:id/decisions` | Exact revision, approved/rejected, expectedApprovalId and reason |
-| `GET /v1/impact/official` | Authenticated fan/admin approved-only read, up to 100 figures |
+| `POST /v1/admin/report-candidates/:id/decisions` | Explicit decision with revision/expectedApprovalId/reason |
+| `GET /v1/impact/official` | Authenticated approved-only read, up to 100 figures |
 
-JSON bodies retain a 4 KiB limit; PDF upload has its separate bounded reader.
-A source quote plus fields must fit that request limit. Larger review payloads
-are refused explicitly. The global API JSON reader is unchanged. The shared
-owner must register parser storage startup/cleanup, dependency/test scripts and
-CI/DAST configuration. Current report detail/history is intended for bounded local
-synthetic use; production pagination/retention needs its deployment review.
+JSON retains the API's 4 KiB cap. Quotes plus review fields must fit it; larger
+payloads fail explicitly. The PDF reader is separate. Migration discovery loads
+`0007_reports.sql`; it adds only report tables/protection functions/triggers.
+The existing API Dockerfile already copies `server`, including report assets.
 
-The prepared admin uses existing synthetic account sign-in and server-assigned
-roles. Tokens remain in memory. Real browser identity setup is still pending.
-The page supports upload, source inspection/download, candidate entry/correction,
-explicit approval/rejection/replacement and labelled approved records. Its visual,
-keyboard and complete interaction acceptance is unverified until the real API
-and a browser lease are provided.
+The admin uses the existing synthetic local sign-in and server-assigned roles;
+tokens remain in memory. Actual browser proof covers upload, grounded page text,
+disabled extraction, incomplete-candidate refusal, correction, explicit approval,
+expected replacement, lost-response retry, stale revision, revoked-role denial,
+escaped markup and a 390px keyboard-operated layout. A lost decision response
+asks the admin to check status; it cannot assert that the server did not commit.
+Production browser identity, screen-reader/device acceptance and complete phone
+Impact presentation remain unverified.
 
-## Verification and open gates
+## Reproduce with granted local resources
 
-Run only with the allocated worktree test database/storage. Private isolated test
-dependency resolution was used while the root lease was held. After integration,
-use normal installed dependencies and the existing `db:run-test` wrapper:
+Build dependencies with network access separately from offline parsing:
 
 ```sh
-node --test server/reports/contracts.test.ts server/reports/extraction.test.ts server/reports/disabled.test.ts
-node --test --test-concurrency=1 server/reports/parser.test.ts server/reports/parser-boundaries.test.ts server/reports/storage.test.ts
-pnpm db:run-test -- node --test --test-concurrency=1 server/reports/reports.test.ts server/reports/http.test.ts
-pnpm db:run-test -- node --test server/reports/registration.test.ts
+pnpm install --frozen-lockfile
+pnpm reports:parser:build
+export REPORT_PARSER_IMAGE="$(docker image inspect amr-report-parser:local --format '{{.Id}}')"
+export REPORT_PARSER_MODE=docker
+# Set REPORT_STORAGE_ROOT and REPORT_TEST_STORAGE to the allocated dev/test paths.
+# Set API_PORT to the leased loopback port; ADMIN_ORIGIN must match it exactly.
+pnpm db:run -- node server/api/start.ts
 ```
 
-Set `REPORT_TEST_STORAGE` to the exact operations-granted test directory, never a
-peer/dev directory. Migration `0007_reports.sql` adds only `app.report_*` tables
-and protection functions/triggers. The existing migration loader discovers it;
-it does not depend on journeys/submissions/rewards migrations.
+Use `API_HOST=127.0.0.1`, `AUTH_DEV_ENABLED=true` only for authorized local synthetic
+sign-in, and the existing role-assignment procedure. Never put DB credentials in
+commands or the repository. Run migrations using the allocated DB wrapper before
+startup. CI builds the same child from the root frozen lock and runs serial tests;
+it does not mount the host socket into an API container.
 
-Observed local proof covers original table/multiline/Unicode/multiple-page PDFs,
-malformed/blank/page/byte/text limits, timeout/busy recovery and actual loopback
-network denial. PostgreSQL and HTTP tests cover exact hashes, corrections,
-missing-field refusal, rejection, idempotency, concurrent replacement, stale
-revisions, role/session revocation, unchanged-row expiry waits, immutable evidence,
-source persistence across an actual API process restart and unchanged balances.
-The combined owned run passed 28 tests. A later HTTP asset case brought the
-distinct passing count to 29; the repeated five-case HTTP run is not five new
-tests. The later parser-only stage adds six distinct tests and reruns five parser
-regressions, for 11/11 in that stage. Its seven Linux assertions are counted
-separately. No cumulative full-suite rerun is claimed. The process and kernel
-memory observations above replace the earlier output/RSS proof gap.
+```sh
+pnpm reports:test
+pnpm reports:test:native # macOS native sandbox only
+pnpm reports:test:container
+pnpm reports:test:database
+pnpm check
+pnpm security:check
+pnpm exec expo export --platform all
+```
 
-Root integration needs the exact PDF.js dependency above in `package.json` and
-`pnpm-lock.yaml`, with the existing supported Node 24 runtime. Add report unit
-and database scripts to the shared check workflow; serialize parser-backed test
-files. `.github/workflows/checks.yml` currently runs on Ubuntu, where this local
-parser intentionally refuses execution. The integration owner must provide a
-network-disabled Linux runner with enforced resource limits, or retain an
-explicit platform gate and run real parser acceptance on macOS. Do not mark
-Linux upload acceptance green by substituting a fake parser. The isolated Linux
-worker is now proved locally; the application runner still refuses Linux until
-its supervised container/job integration is registered. The smallest proposed
-integration retains the existing stdin/JSON worker protocol, adds a dedicated
-parser image target with the pinned dependency, and launches each parser job
-with no network and explicit cgroup limits from a trusted host/job controller.
-The app must not receive a Docker socket mount. Its report adapter retains the
-timeout/output/schema checks and single-job limit. CI can use the same offline
-job command with synthetic fixtures. The root image target, dependency and API
-startup hooks require the serial owner's grant; none was added in this stage.
+Current local counting is 42 distinct tests across four serial groups: 7 pure/AI-off,
+11 native, 3 container and 21 storage/PostgreSQL/registered HTTP. Four independent
+fixture assertions verify original encrypted/image-only PDFs. Historical 29-test
+and seven-assertion Linux evidence are retained, not added again to this total.
+The former real `createApi` 404 regression now passes. PostgreSQL/HTTP proof
+includes source persistence/restart, immutable history, unchanged approvals on
+failure, competing approvals, stale/replay decisions, role/session revocation,
+unchanged-row expiry waits and cross-account denial. Source security checks,
+frozen install, full local checks and all-platform exports passed on the
+pre-combination integration commit. Final combined-base checks/DAST and hosted CI
+are recorded separately in the PR handoff; none is implied by module proof.
 
-`server/api/Dockerfile` already copies `server`, so it includes report assets and
-the migration after integration. Its Linux scanner target still needs explicit
-private storage provisioning, parser availability policy and cleanup in
-`server/api/dast-start.ts`. Migration discovery needs no filename registration.
-The shared API composition in `server/api/app.ts`, storage startup configuration
-in `server/api/start.ts`, and authenticated report coverage for
-`.github/workflows/security.yml`/`security/dast-target.json` remain queued. Source
-and dependency security checks, actual upload DAST and the rendered admin flow
-must be verified after registration; this slice does not change those files.
-
-`registration.test.ts` deliberately requires the real `createApi` report route.
-It currently fails with 404 instead of 200, independently of passing module
-HTTP tests. Do not skip it or claim the feature is integrated. Root full checks,
-application DAST, rendered admin flow, complete fan Impact integration, live
-extraction quality, provider/Azure deployment and phone accessibility remain
-unverified or pending their owners. No PR/merge/deployment completion is claimed.
+Primary references: [PDF.js Node example](https://github.com/mozilla/pdf.js/blob/master/examples/node/getinfo.mjs),
+[PDF.js API](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html),
+[Docker memory/swap limits](https://docs.docker.com/engine/containers/resource_constraints/).
 
 Implemented by gpt-6-astra through Codex (T3 Code).

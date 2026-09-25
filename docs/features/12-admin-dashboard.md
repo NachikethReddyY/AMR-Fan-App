@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior. The points admin foundation exists. Owned report upload/review/decision assets and tested server operations are prepared separately; shared registration and rendered report-admin verification remain pending. Other controls retain their feature owners. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
+Status: accepted product behavior. The report admin is registered and locally browser-verified for upload, grounded review, correction, explicit approval/replacement and approved-only display. Production identity, extraction quality and broader admin controls remain with their owners. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
 
 ## Outcome
 

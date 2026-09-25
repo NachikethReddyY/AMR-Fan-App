@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior. Owned local report modules now retain synthetic PDF sources, source-backed review revisions and assigned-admin approval/replacement with PostgreSQL tests. Shared API/dependency registration, rendered admin verification, representative real-report extraction quality and fan Impact integration remain pending. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
+Status: accepted product behavior. The real API now registers local PDF upload, immutable provenance, manual corrections and assigned-admin approval/replacement. Registered PostgreSQL/parser and browser paths are verified locally. Automatic extraction quality, production identity/retention/provider deployment and fan Impact integration remain pending. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
 
 ## Outcome
 
