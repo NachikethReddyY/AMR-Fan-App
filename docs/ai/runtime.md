@@ -30,6 +30,9 @@ credential in `EXPO_PUBLIC_*`. Configuration errors return a fixed message.
 Unknown keys are rejected, including location/approval fields. Literal source
 spans prove provenance, not the complete semantics of a metric. Even validated
 text can be misleading in context; manual review remains mandatory.
+Numeric fields must preserve complete source tokens, including signs and digit
+grouping. Ambiguous grouping is retained verbatim or rejected, never normalized.
+This check uses the full page even when the evidence quote crops a numeric token.
 
 | Limit | Value |
 | --- | --- |
@@ -127,12 +130,22 @@ node --test server/ai/*.test.ts
   -s scripts/local-ai -p '*_test.py'
 ```
 
-`pnpm ai:evaluate -- <new-evidence-path> fresh` runs only the committed synthetic
-Luna holdout, with `LUNA_API_KEY` injected from the existing secret source by the
-operator. It refuses to overwrite evidence. Never copy the key into a command,
-fixture, work record or model prompt. The default split is the original holdout;
+`pnpm ai:evaluate <new-evidence-path> fresh` runs the 15 committed synthetic
+fresh report cases and no route cases, with `LUNA_API_KEY` injected from the
+existing secret source by the operator. A leading `--` is also accepted. Unknown
+splits and extra arguments fail before inference. The parent directory must
+already exist. The runner exclusively reserves a new mode-600 output file before
+any provider call; existing or unwritable destinations cause zero calls. A failed
+run closes and removes its incomplete reservation. An abrupt process termination
+can leave a reservation; inspect it and select a new path before retrying.
+Never copy the key into a command, fixture, work record or model prompt.
+The default split is `original`, the original 16-case holdout;
 use a new preregistered split for a changed model or prompt, not repeated tuning
 against existing answers.
+
+Adapter `amr-ai-v3` adds the numeric-token correction. The recorded model quality
+scores describe the earlier adapter and remain unchanged; the correction has
+synthetic regression proof only. Both failed-quality defaults remain off.
 
 The local inference utility is not the admin/backend application. The existing
 Docker application DAST target remains unimplemented; no scanner-fixture result

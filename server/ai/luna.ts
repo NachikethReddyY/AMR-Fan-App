@@ -33,6 +33,24 @@ const orderSchema = z
   })
   .refine((v) => new Set(v.order).size === 3);
 
+function cutsNumericToken(text: string, start: number, end: number): boolean {
+  // Keep signs and ambiguous digit grouping intact, without interpreting their value.
+  // Inspect the full page so a cropped evidence quote cannot conceal a prefix.
+  const tokens = text.matchAll(
+    /(?:[+\-−±]\p{Zs}*)?[.,]?\p{Nd}+(?:[.,'’\u066b\u066c\p{Zs}]+\p{Nd}+)*/gu,
+  );
+  for (const token of tokens) {
+    const tokenEnd = token.index + token[0].length;
+    if (
+      token.index < end &&
+      tokenEnd > start &&
+      (start > token.index || end < tokenEnd)
+    )
+      return true;
+  }
+  return false;
+}
+
 // Exact spans prove text provenance, not semantic correctness. Admin review remains required.
 function ground(candidate: Extracted, source: Source): Candidate | null {
   const page = source.pages.find((p) => p.page === candidate.evidence.page);
@@ -63,10 +81,12 @@ function ground(candidate: Extracted, source: Source): Candidate | null {
     if (
       (/[a-zA-Z0-9]/.test(value[0] ?? '') && /[a-zA-Z0-9]/.test(before)) ||
       (/[a-zA-Z0-9]/.test(value.at(-1) ?? '') && /[a-zA-Z0-9]/.test(after)) ||
-      (key === 'value' && /^\d/.test(value) && /[\d.,+\-]/.test(before)) ||
       (key === 'value' &&
-        /\d$/.test(value) &&
-        /^\d|^[.,]\d/.test(quote.slice(offset + value.length)))
+        cutsNumericToken(
+          page.text,
+          start + offset,
+          start + offset + value.length,
+        ))
     )
       return null;
     const span: Span = {
@@ -147,7 +167,7 @@ export function createLuna(config: Config) {
         reviewRequired: true as const,
         documentId: source.data.documentId,
         candidates,
-        metadata: { model: 'gpt-6-luna', adapterVersion: 'amr-ai-v2' },
+        metadata: { model: 'gpt-6-luna', adapterVersion: 'amr-ai-v3' },
       };
     },
     async explainRoute(input: unknown) {
