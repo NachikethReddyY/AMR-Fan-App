@@ -10,10 +10,12 @@ rules remain in feature documents [07](../features/07-tree-dedications.md),
 
 ## Candidate status
 
-The local domain candidate has PostgreSQL purchase, catalogue and retained-right
-proof. Actual API registration, admin/browser flow, application DAST and phone
-integration are pending the serialized ownership handoff. Passing domain tests
-does not complete the three issues. No real programme allocation, retailer
+The local domain and owned dispatcher candidate has PostgreSQL purchase,
+catalogue and retained-right proof. Isolated admin assets use the existing dark
+points-admin CSS. Actual API registration, admin/browser flow, application DAST
+and phone integration are pending the serialized ownership handoff. Tests against
+the real `createApi` currently fail because registration is absent. Passing module
+tests does not complete the three issues. No real programme allocation, retailer
 redemption, official content or live identity provider is configured.
 
 ## Selected demonstration scope
@@ -90,7 +92,7 @@ are needed for domain tests.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm db:run-test -- node --test server/rewards/rewards.test.ts
+pnpm db:run-test -- node --test server/rewards/*.test.ts
 pnpm check
 pnpm security:check
 ```
@@ -99,8 +101,89 @@ The tests observe balance, History and receipts together through authenticated
 operations, with real PostgreSQL concurrency and rollback. They cover retained
 content/version access, explicit zero-point acknowledgements, tree/voucher
 repeats, price/availability changes, funds, key conflicts, mixed purchases,
-owner/real/demo/admin/session boundaries and immutable stored records. Connection
-reopen is tested; actual process restart and registered HTTP remain pending.
-Raw synthetic evidence stays in ignored `.evidence/rewards-14-16/`.
+owner/real/demo/admin/session boundaries and immutable stored records. Both
+simultaneous first unlocks and concurrent new-key repeat acknowledgements are
+covered. Connection reopen is tested; actual process restart and registered HTTP
+remain pending. Raw synthetic evidence stays in ignored `.evidence/rewards-14-16/`.
+
+## Serialized registration handoff
+
+The API/root owner must register these imports in `server/api/app.ts` after the
+preceding integration owners release their paths:
+
+```ts
+import { dispatchRewards } from '../rewards/http.ts';
+import { serveRewardsAdmin } from '../rewards/admin.ts';
+```
+
+For GET assets, call `serveRewardsAdmin(path, res)` alongside `serveAdmin` before
+the bearer requirement. After the existing origin/rate guards and bearer parsing:
+
+```ts
+const rewards = await dispatchRewards({
+  pool,
+  token,
+  method: req.method,
+  path,
+  query: Object.fromEntries(new URL(req.url ?? '/', 'http://api.invalid').searchParams),
+  body: () => body(req),
+});
+if (rewards) return send(res, rewards.status, rewards.value);
+```
+
+The dispatcher owns no listener, origin policy, JSON reader, rate limit or error
+envelope. It uses the existing API's 4,096-byte JSON cap. The plain-text field is
+bounded at 2,000 characters; an encoded request above the byte cap must be shortened.
+Unknown routes return `null`. The root owner should add `rewards:test:database`
+and the matching CI step with **both** suites:
+
+```sh
+pnpm db:run-test -- node --test server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts
+```
+
+| Route | Method and result |
+| --- | --- |
+| `/v1/admin/rewards/offers` | GET paged full offers, POST create, PATCH expected-version edit; assigned admin only |
+| `/v1/profiles/:id/rewards/offers` | GET owned-profile available catalogue without content text |
+| `/v1/profiles/:id/rewards/offers/:offerId` | GET current confirmation price/version/availability without content text |
+| `/v1/rewards/purchases` | POST `profileId`, `offerId`, `offerVersion`, UUID `requestId`; 201 with History entry and original receipt |
+| `/v1/profiles/:id/rewards/receipts` | GET profile-owned retained receipts |
+| `/v1/profiles/:id/rewards/content/:offerId` | GET purchased text version and original receipt, including disabled offers |
+
+Catalogue and receipt lists accept UUID `after` and `limit` 1–100, default 25.
+They page by stable UUID; points History owns chronological ordering. Admin
+create accepts `requestId`, `enabled` and a product discriminated by `kind`.
+All products contain `title`, `description` and positive whole `pointsPrice`;
+content adds `text`, discount adds integer `percentage` 10–60. Edit also requires
+`offerId` and `expectedVersion`. Retired/disabled means `enabled: false`; there is
+no destructive catalogue deletion or purchased-right revocation API.
+
+The static page is `/admin/rewards/`, with `/admin/rewards/app.js`; it reuses
+`/admin/style.css`, `/admin/config` and account session endpoints. Sign-in uses
+the existing explicit local synthetic selector. A server-assigned admin role is
+required. Credentials stay in page memory; reload requires sign-in. A failed
+unchanged edit retries its existing key, while a version conflict requires loading
+the current offer. Live admin sign-in remains pending provider configuration.
+
+## Pending acceptance, preserved failures and next proof
+
+`server/rewards/testing/registered-api.test.ts` runs the actual API on ephemeral
+loopback listeners, including a child-process restart. It is intentionally
+separate from the currently passing module suite until the root owner registers
+the handlers. The observed unregistered baseline has four failures: catalogue and
+purchase paths return 404, the admin list returns 404, and the admin asset returns
+401. Evidence: `07-registration-red.txt`. Do not skip these tests or substitute
+a separate rewards-only server. Keep the newest-first History assertion when
+integrating the points owner's sequence-order repair.
+
+After registration, run both suites, existing points/account regressions and the
+full checks. On an explicitly leased preview, observe assigned-admin create/edit/
+disable, fan refusal, escaped text, price reconfirmation, purchase/History/content
+access and sign-out/revocation. The phone confirmation and entitled viewer still
+depend on the held native integration. Run isolated application DAST only after
+the real API serves these routes/assets; document authenticated coverage separately
+because an unauthenticated passive crawl cannot prove purchases or authorization.
+Full browser/phone, physical fulfilment, live provider and deployment claims stay
+pending. No PR or issue completion is implied by the committed local boundary.
 
 Written by gpt-6-astra through Codex (T3 Code).

@@ -6,6 +6,8 @@ import { createSession, revokeSession } from '../auth/session.ts';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { adjustPoints, readPointsHistory } from '../points/index.ts';
+import { dispatchRewards } from './http.ts';
+import { offer as offerSchema } from './contracts.ts';
 import {
   createOffer,
   editOffer,
@@ -482,4 +484,160 @@ test('confirmation shows server price/version and availability without leaking u
   await assert.rejects(readOffer(pool, fan.token, fan.real.id, randomUUID()), {
     status: 404,
   });
+});
+
+test('the owned HTTP dispatcher composes catalogue, confirmation, purchase and retained access without owning transport guards', async () => {
+  const { admin, fan } = await fixture('dispatcher', 200);
+  const send = (
+    token: string,
+    method: string,
+    path: string,
+    value: Record<string, unknown> = {},
+    query: Record<string, string> = {},
+  ) =>
+    dispatchRewards({
+      pool,
+      token,
+      method,
+      path,
+      query,
+      body: async () => value,
+    });
+  const create = await send(admin.token, 'POST', '/v1/admin/rewards/offers', {
+    requestId: randomUUID(),
+    enabled: true,
+    product: {
+      ...tree,
+      kind: 'content',
+      text: 'Original synthetic demonstration content.',
+    },
+  });
+  assert.equal(create?.status, 201);
+  const created = offerSchema.parse(create?.value);
+  const base = `/v1/profiles/${fan.real.id}/rewards`;
+  assert.equal((await send(fan.token, 'GET', `${base}/offers`))?.status, 200);
+  assert.equal(
+    (await send(fan.token, 'GET', `${base}/offers/${created.id}`))?.status,
+    200,
+  );
+  const purchase = await send(
+    fan.token,
+    'POST',
+    '/v1/rewards/purchases',
+    buyInput(fan.real.id, created),
+  );
+  assert.equal(purchase?.status, 201);
+  assert.equal((await send(fan.token, 'GET', `${base}/receipts`))?.status, 200);
+  assert.equal(
+    (await send(fan.token, 'GET', `${base}/content/${created.id}`))?.status,
+    200,
+  );
+  assert.equal(
+    (await send(admin.token, 'GET', '/v1/admin/rewards/offers'))?.status,
+    200,
+  );
+  assert.equal(
+    (
+      await send(admin.token, 'PATCH', '/v1/admin/rewards/offers', {
+        requestId: randomUUID(),
+        offerId: created.id,
+        expectedVersion: 1,
+        enabled: false,
+        product: created.product,
+      })
+    )?.status,
+    200,
+  );
+  await assert.rejects(send(fan.token, 'GET', '/v1/admin/rewards/offers'), {
+    status: 403,
+  });
+  await assert.rejects(
+    send(fan.token, 'GET', `${base}/offers`, {}, { limit: '101' }),
+    { status: 400 },
+  );
+  assert.equal(
+    await send(fan.token, 'POST', `${base}/content/${created.id}`),
+    null,
+  );
+  assert.equal(
+    await send(fan.token, 'GET', `${base}/receipts/${created.id}`),
+    null,
+  );
+});
+
+test('simultaneous first content purchases with different keys create one paid right and one zero acknowledgement', async () => {
+  const { admin, fan } = await fixture('first-content-race', 100);
+  const offer = await createOffer(pool, admin.token, {
+    requestId: randomUUID(),
+    enabled: true,
+    product: {
+      ...tree,
+      kind: 'content',
+      text: 'Original synthetic race fixture.',
+    },
+  });
+  const inputs = [buyInput(fan.real.id, offer), buyInput(fan.real.id, offer)];
+  const results = await Promise.all(
+    inputs.map((input) => purchaseReward(pool, fan.token, input)),
+  );
+  assert.deepEqual(
+    results.map((result) => result.entry.delta).sort((a, b) => a - b),
+    [-100, 0],
+  );
+  assert.deepEqual(results[0].outcome, results[1].outcome);
+  const history = await readPointsHistory(pool, fan.token, fan.real.id);
+  assert.equal(history.balance, 0);
+  assert.equal(history.entries.length, 3);
+  assert.equal(
+    (await readReceipts(pool, fan.token, fan.real.id)).receipts.length,
+    1,
+  );
+  const replays = await Promise.all(
+    inputs.map((input) => purchaseReward(pool, fan.token, input)),
+  );
+  assert.deepEqual(replays, results);
+  assert.equal(
+    (await readPointsHistory(pool, fan.token, fan.real.id)).entries.length,
+    3,
+  );
+});
+
+test('demo purchases retain profile-owned rights without affecting the real profile or resuming with a new balance', async () => {
+  const { admin, fan } = await fixture('demo', 0);
+  await adjustPoints(pool, admin.token, {
+    targetProfileId: fan.demo.id,
+    requestId: randomUUID(),
+    delta: 100,
+    reason: 'Synthetic demo grant',
+  });
+  const offer = await createOffer(pool, admin.token, {
+    requestId: randomUUID(),
+    enabled: true,
+    product: {
+      ...tree,
+      kind: 'content',
+      text: 'Original synthetic demo-only content.',
+    },
+  });
+  const saved = await purchaseReward(
+    pool,
+    fan.token,
+    buyInput(fan.demo.id, offer),
+  );
+  assert.equal(saved.entry.balanceAfter, 0);
+  assert.equal(
+    (await readPointsHistory(pool, fan.token, fan.real.id)).entries.length,
+    0,
+  );
+  await assert.rejects(readContent(pool, fan.token, fan.real.id, offer.id), {
+    status: 404,
+  });
+  const resumed = await ensureAccount(pool, { issuer, subject: 'demo-fan' });
+  const demo = resumed.profiles.find((profile) => profile.kind === 'demo');
+  assert.equal(demo?.id, fan.demo.id);
+  assert.equal(demo?.balance, 0);
+  assert.deepEqual(
+    (await readContent(pool, fan.token, fan.demo.id, offer.id)).receipt,
+    saved.outcome,
+  );
 });
