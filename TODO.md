@@ -1,5 +1,32 @@
 # Tasks
 
+## SPEC-011: Final specification on Postplan
+
+- [x] Read the accepted 12-feature specification and check Postplan access.
+- [x] Create a standalone HTML with all accepted rules and 82 acceptance cases.
+- [x] Verify source coverage, publish to Postplan and read back the delivered page.
+
+## SPEC-001: Reconcile the new technical draft
+
+- [x] Compare the attachment with product decisions and current code.
+- [x] Adopt compatible calculation, provenance and fallback requirements in the product plan.
+- [x] Record conflicting POC choices and protect existing work.
+- [x] Complete focused document checks and platform research.
+- [x] Record the confirmed phone app, real journeys checked using location and rewards; the later unified submission model supersedes the original separate question/challenge count.
+- [x] Record report upload/extraction, a small missing-GPS fallback (about 50 points tentative), highest-voted driver questions and no extra daily points cap.
+- [x] Record acceptance of the capped 50-point GPS fallback with start/arrival evidence and paid voting for driver questions.
+- [x] Confirm that driver questions and challenges use the same 500-point submission, contributions from 10 and up-to-three selection process.
+- [x] Correct questions and proposed activities to one fan-submission feature, with optional tags and up to three selections total from one ranking.
+- [x] Confirm the single-driver comparison, fastest-route time reference, later-evidence top-up and personal/community lifetime totals.
+- [x] Confirm enough shared product understanding to split the specification; keep technical and design prerequisites explicit.
+- [x] Move accepted rules and acceptance cases into linked feature documents without losing requirements or changing historical sections.
+- [x] Update the plan, glossary and documentation links; verify coverage and record remaining implementation tasks.
+- [x] Draft vertical implementation tickets with acceptance criteria and blocking edges; verify feature coverage and dependency order.
+- [x] Follow the user's subsequent explicit instruction to create linked tracker issues for separate worktrees, superseding the planned pre-publication quiz.
+- [x] Create tracker #3 and 19 implementation sub-issues with native blocking links; read back bodies, labels, parent links and dependencies.
+
+Implementation is outside this documentation/interview step. Location thresholds, factor selection, rounding, route ties, provider contracts and detailed UI remain implementation prerequisites.
+
 ## Skill cleanup and local workflow commit, 25 September 2026
 
 - [x] Read the requested file-pr skill and classify existing skills by project relevance and duplication.
@@ -148,3 +175,8 @@ This deliverable is a team discussion document. It does not close unresolved int
 - [ ] Review the completed core and report local state and remaining unverified checks.
 
 Publishing, deployment, shared tracker writes, commits, and pushes are outside this local-build scope. The user does not want to provide a deadline; do not make it a prerequisite.
+## Native bottom tabs: UI-003
+
+- [x] Confirm Expo structure and preserve existing starter dependencies.
+- [x] Replace the custom dock with standard bottom tabs and wire four destinations.
+- [x] Finish local checks and verify tab interaction on a device.

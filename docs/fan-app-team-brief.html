@@ -242,8 +242,8 @@
     <section id="build-boundary" aria-labelledby="build-heading">
       <span class="section-number">04 / Build boundary and proof</span>
       <h2 id="build-heading">What the core POC must demonstrate</h2>
-      <p><strong>Expo + React Native for iOS and Android, with Convex as the backend direction.</strong> Email accounts and progress shared across devices are agreed. Detailed location traces are private and retained for seven days; summaries and points transactions last longer.</p>
-      <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Authentication and the exact cleanup implementation remain to be chosen.</p></div>
+      <p><strong>Expo + React Native for iOS and Android, with Azure as the backend platform.</strong> Email accounts and progress shared across devices are agreed. Detailed location traces are private and retained for seven days; summaries and points transactions last longer.</p>
+      <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Azure services, authentication and the exact cleanup implementation remain to be chosen.</p></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">Area</th><th scope="col">Required behavior and evidence</th></tr></thead>
@@ -270,8 +270,8 @@
           <p><a href="https://docs.expo.dev/versions/latest/sdk/location/#background-location" target="_blank" rel="noopener noreferrer">Expo Location</a> requires native configuration, permissions, and development builds for the required cross-platform background behavior.</p>
           <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Force-quitting and Android device behavior can stop updates. Locked-screen travel and arrival must be checked on physical iOS and Android devices.</p></div>
           <h4>Accounts, balances, and retention</h4>
-          <p><a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer">Convex’s React Native client</a>, <a href="https://docs.convex.dev/auth/overview" target="_blank" rel="noopener noreferrer">authentication options</a>, <a href="https://docs.convex.dev/functions/mutation-functions" target="_blank" rel="noopener noreferrer">transactional mutations</a>, and <a href="https://docs.convex.dev/scheduling/scheduled-functions" target="_blank" rel="noopener noreferrer">scheduled functions</a> support the planned direction.</p>
-          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Access control, atomic points rules, and trace cleanup still need implementation. Convex Auth is documented as beta. A seven-day application deletion schedule does not itself establish deletion from every backup, log, or device cache.</p></div>
+          <p><a href="https://docs.convex.dev/client/react-native" target="_blank" rel="noopener noreferrer">React Native client</a>, authentication, transactional updates, and scheduled cleanup were previously researched for Convex. Azure is now the selected platform; its service choices and guarantees still need verification.</p>
+          <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p>Access control, atomic points rules, and trace cleanup still need implementation. A seven-day application deletion schedule does not itself establish deletion from every backup, log, or device cache.</p></div>
           <div class="callout warning text-only compact"><span class="callout-label">Needs verification</span><p class="note">Evidence status: documentation reviewed; no live Maps request, deployed backend, calendar feed, or physical-device test is established by this brief.</p></div>
         </div>
       </details>
@@ -359,7 +359,7 @@
         </li>
         <li>
           <h3>Implementation choices and proof</h3>
-          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Select the email authentication method for Convex; verify Maps route coverage, calendar ingestion, and race arrival data. Define and test private data access, seven-day trace cleanup, and background travel on actual iOS and Android devices.</p></div>
+          <div class="callout warning text-only"><span class="callout-label">Open question</span><p>Select Azure services and compatible email authentication; verify Maps route coverage, calendar ingestion, and race arrival data. Define and test private data access, seven-day trace cleanup, and background travel on actual iOS and Android devices.</p></div>
           <div class="callout warning text-only"><span class="callout-label">Needs verification</span><p class="decision-note"><strong>Implementation prerequisite:</strong> documentation supports the intended approach, but live integration and device reliability remain unverified. UI direction selection is a separate step before app screens are built.</p></div>
         </li>
       </ol>

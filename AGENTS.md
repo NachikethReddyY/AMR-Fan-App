@@ -111,6 +111,12 @@ Use local static alternatives when needed; preserve accepted geometry for narrow
 corrections. Do not add decorative branding, copy, menus or continuous repaint animations.
 Match proof to the requested experience while honoring the consent rule above.
 
+For phone UI implementation, use the installed gluestack UI components with
+NativeWind v5 when a shared control is useful. Use Reanimated for custom motion;
+keep motion task-driven and honor reduced-motion settings. The styling stack is
+pre-release, so prove a component on both native platforms before relying on it
+for product screens. Library setup does not select a final visual direction.
+
 The design documents are currently separate, uncommitted work. Read them when
 present. If absent from a checkout, obtain the accepted design inputs before UI
 implementation; do not invent replacements or treat draft directions as approved.

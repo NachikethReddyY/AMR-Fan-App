@@ -15,6 +15,10 @@ empty ADRs or duplicate the specification. New user documentation goes in
 `docs/user/`, architecture in `docs/internals/`, and procedures in
 `docs/operations/`. Existing source/reconciliation documents keep their paths.
 
+The [final-spec HTML](fan-app-final-spec.html) is a reading snapshot dated
+25 September 2026, also [published on Postplan](https://dcv0l5eirsbh.postplan.dev).
+The Markdown specification and feature documents remain the maintained source.
+
 Design work is separate and currently uncommitted. When present, consult root
 `DESIGN.md` and `docs/agents/apple-hig-findings.md` before UI work. Obtain the
 accepted design inputs if they are absent from your checkout.

@@ -1,0 +1,2946 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Accepted product specification for the Aston Martin fan phone app: 12 features, agreed rules, 82 acceptance cases and remaining implementation choices."
+    />
+    <title>Aston Martin fan app specification</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --text: #d4d4d8;
+        --muted: #a1a1aa;
+        --line: #2a2a2a;
+        --accent: #55e3f9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: 28px;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.7 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      a {
+        color: var(--text);
+        text-decoration-color: #777;
+        text-underline-offset: 4px;
+      }
+      a:hover {
+        color: #fff;
+        text-decoration-color: currentColor;
+      }
+      a:focus-visible,
+      summary:focus-visible,
+      .table-wrap:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 5px;
+        border-radius: 3px;
+      }
+      .skip-link {
+        position: absolute;
+        top: -90px;
+        left: 24px;
+        background: #161616;
+        padding: 12px 20px;
+        z-index: 10;
+      }
+      .skip-link:focus {
+        top: 12px;
+      }
+      .shell {
+        width: calc(100% - 64px);
+        max-width: 1760px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 238px minmax(0, 1fr);
+        column-gap: 32px;
+        align-items: start;
+      }
+      aside {
+        position: sticky;
+        top: 28px;
+        margin-top: 54px;
+        min-width: 0;
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+      }
+      main {
+        width: 100%;
+        min-width: 0;
+        max-width: 1000px;
+        justify-self: center;
+        padding: 60px 0 28px;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #fff;
+        line-height: 1.2;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: clamp(30px, 3.25vw, 43px);
+        letter-spacing: -0.035em;
+        margin: 0 0 20px;
+      }
+      h2 {
+        font-size: clamp(22px, 2.2vw, 29px);
+        letter-spacing: -0.025em;
+        margin: 0 0 22px;
+        display: flex;
+        gap: 16px;
+        align-items: baseline;
+      }
+      h3 {
+        font-size: 18px;
+        letter-spacing: -0.01em;
+        margin: 30px 0 12px;
+      }
+      p {
+        margin: 0 0 18px;
+      }
+      strong {
+        color: #eee;
+        font-weight: 600;
+      }
+      ul,
+      ol {
+        padding-left: 24px;
+        margin: 0 0 24px;
+      }
+      li {
+        padding-left: 3px;
+        margin-bottom: 12px;
+      }
+      header p {
+        font-size: 18px;
+        color: #c4c4ca;
+      }
+      .meta {
+        font-size: 15px;
+        color: var(--muted);
+        margin-bottom: 24px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .major {
+        border-top: 1px solid #2a2a2a;
+        padding-top: 52px;
+        margin-top: 52px;
+        scroll-margin-top: 28px;
+      }
+      .section-number {
+        color: var(--muted);
+        font-size: 16px;
+        font-weight: 400;
+        letter-spacing: 0;
+        flex-shrink: 0;
+      }
+      .section-intro {
+        font-size: 18px;
+        color: #eee;
+      }
+      details,
+      details[open] {
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        margin: 16px 0 0;
+        background: #0d0d0d;
+        overflow: hidden;
+      }
+      summary {
+        padding: 18px 20px;
+        font-size: 16px;
+        color: #eee;
+        cursor: pointer;
+        line-height: 1.5;
+      }
+      summary::marker {
+        color: #999;
+      }
+      details[open] > summary {
+        border-bottom: 1px solid #2a2a2a;
+      }
+      .details-body {
+        padding: 8px 22px 22px;
+      }
+      .details-body > :last-child {
+        margin-bottom: 0;
+      }
+      .details-body > p:first-child {
+        margin-top: 16px;
+      }
+      .site-nav,
+      .site-nav[open] {
+        margin-top: 0;
+        background: transparent;
+      }
+      .site-nav > summary {
+        font-size: 15px;
+        padding: 13px 15px;
+      }
+      .site-nav nav {
+        padding: 10px 0;
+      }
+      .site-nav a {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        border-left: 2px solid transparent;
+        padding: 7px 14px;
+        min-height: 38px;
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--muted);
+        text-decoration: none;
+      }
+      .site-nav a span {
+        color: #85858c;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .site-nav a:hover {
+        background: #111;
+        color: #fff;
+      }
+      .site-nav a[aria-current='location'] {
+        border-left-color: var(--accent);
+        color: var(--accent);
+      }
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        margin: 20px 0 24px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+        line-height: 1.65;
+        table-layout: fixed;
+      }
+      th,
+      td {
+        padding: 17px 20px;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+        text-align: left;
+        border-bottom: 1px solid #2a2a2a;
+      }
+      thead th {
+        background: #1a1a1a;
+        color: #eee;
+        font-weight: 600;
+      }
+      tbody th {
+        width: 33%;
+        color: #eee;
+        font-weight: 500;
+        background: #090909;
+      }
+      thead th:first-child {
+        width: 33%;
+      }
+      tbody tr:last-child > * {
+        border-bottom: 0;
+      }
+      .acceptance thead th:first-child {
+        width: 40%;
+      }
+      .acceptance .table-wrap {
+        margin-top: 12px;
+      }
+      .reading-note {
+        padding: 18px 22px;
+        border-radius: 8px;
+        background: #101010;
+        margin: 24px 0;
+      }
+      .reading-note p:last-child {
+        margin-bottom: 0;
+      }
+      .flow li {
+        padding: 0 0 16px 8px;
+        border-bottom: 1px solid #2a2a2a;
+      }
+      .flow li:last-child {
+        border: 0;
+        padding-bottom: 0;
+      }
+      .ref {
+        overflow-wrap: anywhere;
+        color: var(--muted);
+      }
+      #references h2 {
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+      #references ol {
+        margin-bottom: 0;
+      }
+      #references li:last-child {
+        margin-bottom: 0;
+      }
+      footer {
+        padding-top: 28px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      footer p {
+        margin-bottom: 4px;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+      @media (max-width: 980px) {
+        .shell {
+          grid-template-columns: 210px minmax(0, 1fr);
+          gap: 24px;
+        }
+        .site-nav a {
+          padding-inline: 11px;
+        }
+      }
+      @media (max-width: 800px) {
+        .shell {
+          width: calc(100% - 32px);
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+        }
+        aside {
+          position: static;
+          max-height: none;
+          margin-top: 20px;
+          overflow: visible;
+        }
+        main {
+          padding-top: 36px;
+        }
+        .site-nav nav {
+          max-height: 50vh;
+          overflow-y: auto;
+        }
+        .site-nav a {
+          min-height: 44px;
+          padding: 11px 16px;
+        }
+        .site-nav a[aria-current='location'] {
+          border-left-color: transparent;
+          border-bottom: 2px solid var(--accent);
+        }
+        .major {
+          margin-top: 44px;
+          padding-top: 48px;
+        }
+        h2 {
+          gap: 12px;
+        }
+        th,
+        td {
+          padding: 14px;
+        }
+        .details-body {
+          padding: 5px 14px 18px;
+        }
+        summary {
+          padding: 16px;
+        }
+      }
+      @media (max-width: 520px) {
+        body {
+          font-size: 16px;
+        }
+        header p,
+        .section-intro {
+          font-size: 17px;
+        }
+        .table-wrap {
+          border-radius: 8px;
+        }
+        table {
+          min-width: 480px;
+        }
+        .reading-note {
+          padding: 16px;
+        }
+      }
+      @media print {
+        body {
+          background: #fff;
+          color: #111;
+          font-size: 11pt;
+        }
+        aside,
+        .skip-link {
+          display: none;
+        }
+        .shell {
+          display: block;
+          width: 100%;
+          max-width: none;
+        }
+        main {
+          max-width: none;
+          padding-top: 0;
+        }
+        h1,
+        h2,
+        h3,
+        strong,
+        a,
+        summary,
+        .section-intro,
+        header p {
+          color: #111;
+        }
+        .major {
+          break-before: auto;
+        }
+        table {
+          min-width: 0;
+        }
+        thead th,
+        tbody th,
+        .reading-note,
+        details {
+          background: #f7f7f7;
+          color: #111;
+        }
+        details {
+          break-inside: auto;
+        }
+        .table-wrap {
+          overflow: visible;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to specification</a>
+    <div class="shell">
+      <aside>
+        <details class="site-nav" open>
+          <summary>Contents</summary>
+          <nav aria-label="Specification sections">
+            <a href="#overview" aria-current="location"
+              >Overview and agreed rules</a
+            ><a href="#accounts"
+              ><span aria-hidden="true">01</span>Accounts and demo</a
+            ><a href="#routes"
+              ><span aria-hidden="true">02</span>Route planning</a
+            ><a href="#emissions"
+              ><span aria-hidden="true">03</span>Emissions estimates</a
+            ><a href="#tracking"
+              ><span aria-hidden="true">04</span>Real journey tracking</a
+            ><a href="#points"
+              ><span aria-hidden="true">05</span>Points and History</a
+            ><a href="#submissions"
+              ><span aria-hidden="true">06</span>Submissions and voting</a
+            ><a href="#trees"
+              ><span aria-hidden="true">07</span>Tree dedications</a
+            ><a href="#content"
+              ><span aria-hidden="true">08</span>Exclusive content</a
+            ><a href="#discounts"
+              ><span aria-hidden="true">09</span>Merchandise discounts</a
+            ><a href="#impact"
+              ><span aria-hidden="true">10</span>Impact dashboard</a
+            ><a href="#reports"
+              ><span aria-hidden="true">11</span>Report upload and review</a
+            ><a href="#admin"
+              ><span aria-hidden="true">12</span>Admin web dashboard</a
+            ><a href="#architecture">How the features connect</a
+            ><a href="#implementation">Remaining choices and scope</a
+            ><a href="#references">References used</a>
+          </nav>
+        </details>
+      </aside>
+      <main id="main">
+        <header>
+          <p class="meta">
+            Accepted product scope · 12 features · 82 acceptance cases
+          </p>
+          <h1>Aston Martin fan app specification</h1>
+          <p>
+            A phone app for fans to compare everyday journeys, earn points from
+            assessed travel, take part in fan rewards and read sourced team
+            sustainability information.
+          </p>
+          <p class="muted">
+            Reading copy of the final product decisions. Implementation is
+            pending. The acceptance cases describe required behavior; they are
+            not completed app tests.
+          </p>
+        </header>
+        <section id="overview" class="major" aria-labelledby="overview-title">
+          <h2 id="overview-title">Overview and agreed rules</h2>
+          <p>
+            Fans use an iOS or Android app with Home, Travel, Rewards and
+            Impact. Admins use a separate web app. Singapore is the first travel
+            market, including everyday destinations as well as races.
+          </p>
+          <p>
+            The reward ideas are driver questions, proposed driver/team
+            activities, tree dedications, exclusive content and merchandise
+            discounts. Questions and activities use one submission feature with
+            optional tags, one voting process and one ranking.
+          </p>
+          <div
+            class="table-wrap"
+            role="region"
+            aria-label="Agreed product rules"
+            tabindex="0"
+          >
+            <table>
+              <caption class="visually-hidden">
+                Agreed product rules at a glance
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Area</th>
+                  <th scope="col">Agreed rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Phone app and journeys</th>
+                  <td>
+                    Expo/React Native. Check real journeys using location,
+                    including travel with the phone locked or another app open.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Route recommendation</th>
+                  <td>
+                    Choose the lowest-emission option inside the fan's time
+                    limit. The limit is the fastest available route plus the
+                    extra minutes they allow.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Emissions comparison</th>
+                  <td>
+                    Compare against one person driving a conventional car
+                    between the same places. Display estimated CO2e avoided and
+                    its baseline.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Journey points</th>
+                  <td>
+                    Start at 50 points per estimated kilogram reduced, capped at
+                    2,000 per eligible journey. No extra daily points cap or
+                    daily trip-count limit.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Missing GPS</th>
+                  <td>
+                    With recorded start and arrival, award the smaller of 50
+                    points and the expected award. Missing either endpoint means
+                    no fallback. A fallback is not verified travel.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Later GPS evidence</th>
+                  <td>
+                    Use the same journey and add only any extra points owed. A
+                    50-point fallback followed by a supported total of 120 adds
+                    70 once.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Submissions and votes</th>
+                  <td>
+                    Submitting costs 500 non-refundable points. Voting on an
+                    approved submission costs at least 10 points; each point
+                    spent adds one ranking point. Select up to three total when
+                    the admin closes a session.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Accounts and demo</th>
+                  <td>
+                    Real and persistent demo profiles start at 0 points.
+                    Personal balances stay separate. Both contribute to the same
+                    submission ranking.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Impact and reports</th>
+                  <td>
+                    Show personal and community lifetime travel estimates
+                    separately from official team figures. Upload reports,
+                    extract supported details and require admin review before
+                    publication.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">
+            Rewards contains Redemption and History. The feature sections below
+            include reset protections, refunds, repeated requests, source
+            evidence and the exact acceptance cases.
+          </p>
+        </section>
+        <section
+          id="accounts"
+          class="major feature"
+          aria-labelledby="accounts-title"
+        >
+          <h2 id="accounts-title">
+            <span class="section-number">01</span>Accounts and demo mode
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan signs in on the iOS/Android phone app, keeps their progress
+              across devices and can use a clearly labelled demo profile.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Retain Expo/React Native and the existing Home, Travel, Rewards
+              and Impact navigation. Email accounts and shared progress are in
+              scope; the authentication provider is not selected.
+            </li>
+            <li>
+              Every new real account and demo profile starts with 0 points.
+              Prepared catalogues and dashboard examples do not grant points or
+              fabricate personal transactions.
+            </li>
+            <li>
+              Each signed-in user has one persistent demo profile across devices
+              and visits. Resuming it never issues a new starting balance.
+            </li>
+            <li>
+              Demo journeys are simulated and clearly labelled. They can award
+              points only to the demo profile, which can spend them and update
+              its own History and dashboard. Real accounts earn eligible
+              actual-journey awards and can spend authorized admin grants.
+            </li>
+            <li>
+              Personal balances, History and content access remain independent.
+              Demo and real contributions share the fan-submission ranking as
+              specified in <a href="#submissions">fan submissions</a>.
+            </li>
+            <li>
+              Vouchers, tree participation and driver outcomes retain
+              demonstration fulfilment until arrangements exist.
+            </li>
+          </ul>
+          <h3>Demo reset</h3>
+          <p>
+            An assigned admin resets only the selected demo profile. Clear its
+            remaining balance to 0 with a reason-recorded History entry;
+            preserve purchased rewards, unlocked content, submissions, all
+            History, shared contributions and selections. Restart simulated
+            journeys and dashboard examples without changing another
+            account&#x27;s personal state or duplicating/removing shared votes.
+          </p>
+          <p>
+            Cancel unfinished simulated journeys and require fresh confirmation
+            for unfinished purchases and contributions. Late requests from
+            before reset cannot award or spend points. Preserve completed
+            outcomes and return their recorded result on replay. Retrying a
+            completed reset must not clear points earned afterwards. Repeating a
+            reset at 0 creates no points.
+          </p>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                Authentication and persistent account ownership. Point mutations
+                use <a href="#points">points and History</a>; this feature owns
+                demo identity and reset behavior.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Select the authentication provider and Azure persistence, and
+                agree sign-in/demo controls within the accepted visual design.
+                The first account slice can ship before demo reset and reward
+                integrations.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="15">
+            <summary>15 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Accounts and demo mode: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Accounts and demo mode: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Fan uses the iOS or Android app</th>
+                      <td>
+                        The fan experience remains a native Expo/React Native
+                        phone app.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Fan starts a demo journey</th>
+                      <td>
+                        Simulation is clear; no claim of actual GPS-verified
+                        travel is made.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Demo fan completes a simulated journey and spends its
+                        credited points
+                      </th>
+                      <td>
+                        Balance, History and applicable dashboard records update
+                        consistently with demo status retained.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">A completed demo operation is retried</th>
+                      <td>It produces no second award or spend.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">A real user signs in</th>
+                      <td>
+                        Their own account/progress is available; demo records do
+                        not become their real activity.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Real account completes a simulated journey
+                      </th>
+                      <td>Award no simulated points to that account.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Admin resets demo data</th>
+                      <td>
+                        Reset only the selected persistent demo profile;
+                        preserve its rewards, submissions and History, shared
+                        votes/selections and other accounts&#x27; personal
+                        state. Return the balance to 0 with a reset entry;
+                        cancel unfinished journeys and require fresh purchase
+                        confirmation.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Demo user A spends points or resets progress
+                      </th>
+                      <td>
+                        Demo user B&#x27;s personal balance and History remain
+                        unchanged. Submission contributions intentionally affect
+                        the shared ranking; reset preserves those contributions
+                        and grants no starter points.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A new real account signs in without an admin grant
+                      </th>
+                      <td>
+                        It receives no automatic starter points and cannot earn
+                        simulated journey points.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">A new demo profile is created</th>
+                      <td>
+                        Balance starts at 0; populated catalogue/dashboard
+                        examples do not credit the balance.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Demo user returns on another device or after signing in
+                        again
+                      </th>
+                      <td>
+                        Resume the same demo profile and its current balance,
+                        rewards and History; issue no starting points.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Demo earns or receives 1,000 points, buys content for
+                        400, contributes 300, then resets
+                      </th>
+                      <td>
+                        Preserve content access, the 300 shared votes,
+                        selections, submissions and all History. Balance becomes
+                        0 with a reset debit of 300.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        That demo resets again without further activity
+                      </th>
+                      <td>
+                        Preserve rights and shared votes; never create starter
+                        points or duplicate contributions.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Reset occurs while a simulated journey or purchase is
+                        unfinished
+                      </th>
+                      <td>
+                        Cancel the journey; require fresh purchase confirmation;
+                        reject late pre-reset awards/spending. Preserve already
+                        committed outcomes.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A completed reset is retried after a new award
+                      </th>
+                      <td>
+                        Return its recorded outcome; do not clear the new points
+                        or append another reset debit.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="routes"
+          class="major feature"
+          aria-labelledby="routes-title"
+        >
+          <h2 id="routes-title">
+            <span class="section-number">02</span>Route planning and
+            recommendations
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan chooses a start and destination, compares available routes
+              and finds the lowest-emission route within their extra-time limit.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Support Singapore first, including ordinary destinations and race
+              destinations. Ordinary journeys need no race selection or
+              race-weekend window.
+            </li>
+            <li>
+              Obtain candidates from the intended Google Maps integration or
+              explicitly labelled demo fixtures. A model cannot invent routes.
+            </li>
+            <li>
+              Normalize legs, mode, distance, duration and availability. Compare
+              bus, train, conventional car, electric car and cab where
+              available; retain walking/cycling where supported. Keep driving
+              available even when it earns no sustainability points.
+            </li>
+            <li>
+              Compare route duration and the estimates from
+              <a href="#emissions">emissions estimates</a>. Make missing routes
+              or factors visible; do not turn unknown data into zero emissions.
+            </li>
+            <li>
+              The extra-time reference is the fastest available candidate. Add
+              the fan&#x27;s allowed extra minutes to that duration, then
+              recommend the route with the lowest estimated emissions among
+              candidates inside the limit.
+            </li>
+            <li>
+              Example: fastest route 30 minutes plus 10 allowed minutes means
+              candidates must take no more than 40 minutes. A cleaner 45-minute
+              route cannot be recommended under that setting.
+            </li>
+            <li>
+              AI may rank or explain calculated candidates within this policy.
+              It cannot override the time limit or approved emissions
+              calculation. Use calculated values and reason codes in
+              explanations, with a deterministic fallback when the model is
+              unavailable.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                The route-provider contract and
+                <a href="#emissions">emissions estimates</a>. Compare route
+                durations first; add the emissions recommendation when
+                compatible factors are available.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Verify provider access, Singapore mode coverage and units.
+                Define how to break equal-emissions ties and how to present
+                missing estimates without silently changing the confirmed time
+                limit. Agree the AI input/output contract and accepted
+                route-screen design.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="3">
+            <summary>3 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Route planning and recommendations: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Route planning and recommendations: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Fan enters an ordinary non-race destination
+                      </th>
+                      <td>
+                        Route planning accepts it within supported coverage.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan changes acceptable extra travel time
+                      </th>
+                      <td>
+                        Recommendation remains within the chosen tolerance and
+                        minimizes estimated emissions among qualifying
+                        candidates.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fastest route is 30 minutes and tolerance is 10;
+                        candidates take 35, 40 and 45 minutes
+                      </th>
+                      <td>
+                        Recommend the lowest-emission eligible candidate taking
+                        35 or 40 minutes; the 45-minute candidate is outside the
+                        limit.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="emissions"
+          class="major feature"
+          aria-labelledby="emissions-title"
+        >
+          <h2 id="emissions-title">
+            <span class="section-number">03</span>Emissions estimates
+          </h2>
+          <div class="section-intro">
+            <p>
+              Fans see comparable estimated emissions and estimated savings for
+              real route candidates, with a disclosed comparison baseline.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              The confirmed baseline is one person driving a conventional car
+              between the same starting point and destination. Calculate that
+              driving route; do not assume a public-transport route has the same
+              distance.
+            </li>
+            <li>
+              Calculate journey emissions from route-leg distances and sourced,
+              versioned country/mode factors with compatible units. Sum the
+              applicable legs and compare the result with the baseline.
+            </li>
+            <li>
+              Show the baseline beside &quot;estimated CO2e avoided&quot;. These
+              are estimates, not measured savings, verified carbon offsets or
+              proof of a causal reduction. &quot;CO2 cost&quot; means emissions
+              here, not ticket fare.
+            </li>
+            <li>
+              Start with Singapore-specific inputs for bus, train, car, electric
+              car and cab, retaining supported walking/cycling. Record
+              geography, mode, unit, source, reference/effective period, method,
+              assumptions and demo/approved status.
+            </li>
+            <li>
+              Missing factors make the estimate unavailable unless a separate
+              disclosed fallback has been approved. Never invent a zero or a
+              model-generated factor.
+            </li>
+            <li>
+              Retain the factor and earning-rule versions selected at Start
+              journey. Active journeys finish using those versions; later admin
+              edits apply to new journeys and do not recalculate historical
+              awards.
+            </li>
+            <li>
+              Deterministic code owns emissions and accountable totals. AI may
+              extract candidates for review or explain the calculated results;
+              it cannot decide emissions, eligibility, points or balances.
+            </li>
+            <li>
+              Keep planned route estimates, simulated journeys and completed
+              real travel distinct.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                Normalized route candidates from
+                <a href="#routes">route planning</a>.
+                <a href="#points">Points and History</a> applies earning rules
+                to the assessed estimate; this feature does not mutate balances.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Research and verify numerical Singapore factors,
+                passenger/vehicle units, fuel and occupancy assumptions,
+                electricity treatment and compatible CO2/CO2e coverage. No
+                numerical factor is approved by this document. Define
+                calculation precision, display rounding and whole-point rounding
+                before the first calculated award. The baseline itself is
+                settled.
+              </p>
+              <p>
+                The existing feasibility research records methodology and its
+                limits. Choosing a dataset is implementation research, not a
+                request for the user to supply facts.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="4">
+            <summary>4 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Emissions estimates: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Emissions estimates: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Fan compares routes in a supported country
+                      </th>
+                      <td>
+                        Bus, train, car, electric car and cab estimates use that
+                        country&#x27;s applicable data where those options are
+                        available.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A country&#x27;s mode factor is missing
+                      </th>
+                      <td>
+                        The corresponding estimate is unavailable or uses a
+                        separately approved, disclosed fallback. Zero is not
+                        invented.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin changes an emissions factor while a journey is
+                        active
+                      </th>
+                      <td>
+                        Complete the active journey using the factor version
+                        retained at Start journey.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Sourced arithmetic fixture has a 5 kg single-driver
+                        baseline and a 2 kg journey
+                      </th>
+                      <td>
+                        Show 3 kg estimated CO2e avoided and disclose the
+                        same-endpoint baseline; this is a fixture, not a real
+                        route claim.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="tracking"
+          class="major feature"
+          aria-labelledby="tracking-title"
+        >
+          <h2 id="tracking-title">
+            <span class="section-number">04</span>Real journey tracking
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan starts a real journey, travels with the phone locked or
+              another app open, and receives an assessed journey outcome at
+              arrival.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Native location collection and physical iOS/Android proof are
+              required in the POC. Foreground-only tracking or simulated
+              playback cannot satisfy this requirement.
+            </li>
+            <li>
+              Explain location collection, obtain scoped consent, provide Start
+              journey and Stop tracking controls, and collect location only
+              during an active journey.
+            </li>
+            <li>
+              Assess route adherence, recorded start/arrival, distance, duration
+              and reported-mode plausibility. GPS alone cannot prove bus or
+              train use.
+            </li>
+            <li>
+              Preserve sparse collection, private paths, data minimization and a
+              deletion policy. The earlier seven-day raw-trace retention
+              direction remains; define and verify its cleanup timing and
+              coverage before using real traces.
+            </li>
+            <li>
+              Missing evidence remains explicit. The fallback and later-evidence
+              rules are owned by <a href="#points">points and History</a>. A
+              fallback award cannot mark the journey verified.
+            </li>
+            <li>
+              Later evidence must belong to the same journey. An accepted
+              reassessment can support the agreed difference-only top-up while
+              retaining the original fallback record.
+            </li>
+            <li>
+              Preserve the journey&#x27;s starting rule/factor versions. A
+              changing provisional estimate affects that journey&#x27;s
+              estimate, not previously earned points.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>, a selected route and the
+                factor/version record. The first tracking slice can record an
+                outcome before automatic awards are connected.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Measure platform behavior and choose location accuracy,
+                route-match, endpoint and interruption thresholds. Define
+                offline recovery and retention cleanup from observed device
+                behavior. Escalate any product tradeoff exposed by that
+                evidence. Test permission denial, background travel, locked
+                phones, missing samples and stopping collection on both physical
+                platforms.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="3">
+            <summary>3 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Real journey tracking: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Real journey tracking: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Fan starts a real journey, travels with the phone locked
+                        or another app open, and arrives
+                      </th>
+                      <td>
+                        Location evidence supports assessment and a recorded
+                        journey outcome on each supported physical platform. A
+                        simulated replay cannot satisfy this check.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Start or arrival was not recorded</th>
+                      <td>
+                        Do not grant the GPS fallback; the accepted prerequisite
+                        is missing.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        The fan stops tracking or denies required permission
+                      </th>
+                      <td>
+                        Stop or do not begin collection; retain a truthful
+                        incomplete/insufficient-evidence outcome and apply the
+                        documented award eligibility rules.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="points"
+          class="major feature"
+          aria-labelledby="points-title"
+        >
+          <h2 id="points-title">
+            <span class="section-number">05</span>Points, Rewards and History
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan earns or receives points, spends them once and can
+              understand every change in Rewards History.
+            </p>
+          </div>
+          <h3>Journey awards</h3>
+          <ul>
+            <li>
+              Initial settings are 50 points per estimated kilogram reduced and
+              a 2,000-point cap per eligible journey. Admins may change future
+              earning rules.
+            </li>
+            <li>
+              Eligible ordinary travel can cover the supported country. There is
+              no race-destination restriction, race-weekend restriction, daily
+              trip-count limit or additional daily points cap. Duplicate credit
+              for one journey is prohibited.
+            </li>
+            <li>
+              Example arithmetic: 10 kg gives 500 points; 60 kg reaches the
+              2,000-point cap. These are not typical Singapore route estimates.
+              Final rounding and evidence thresholds must be defined before
+              implementation.
+            </li>
+            <li>
+              Qualifying completion settles a real journey under its Start
+              journey rule/factor versions. Provisional changes never remove
+              points earned before that journey. Simulation awards remain
+              confined to demo profiles.
+            </li>
+            <li>
+              With missing intervening GPS, award the smaller of 50 points and
+              the expected journey award only if both start and arrival were
+              recorded. Expected awards of 120 and 20 give fallbacks of 50 and
+              20. Missing either endpoint gives no fallback.
+            </li>
+            <li>
+              Retain the fallback reason and evidence status in History. The
+              award does not establish verified travel or verified avoided
+              emissions.
+            </li>
+            <li>
+              If later evidence supports a higher award, credit only the
+              difference for the same journey. A fallback of 50 followed by an
+              assessed total of 120 adds 70. Append the top-up and retain the
+              original record; repeated evidence or settlement must not add the
+              difference again.
+            </li>
+            <li>
+              An admin rule/factor edit cannot change a journey&#x27;s retained
+              basis. Evidence-based top-ups are explicit additional records, not
+              retroactive edits to the original transaction. Automatic downward
+              recovery is not approved; existing reason-recorded admin
+              adjustments remain available.
+            </li>
+          </ul>
+          <h3>Spending and records</h3>
+          <ul>
+            <li>
+              Rewards has exactly two tabs: Redemption and History. Redemption
+              contains fan submissions, tree dedications, exclusive content and
+              merchandise discounts. The unified submission feature supersedes
+              the earlier separate question/challenge count.
+            </li>
+            <li>
+              History shows every point change, its reason and resulting balance
+              alongside reward statuses. Prepared illustrative history remains
+              labelled and cannot create spendable points or purchased rights.
+            </li>
+            <li>
+              Keep authorization, the non-negative balance, current
+              price/eligibility, debit or credit, History and the reward outcome
+              consistent in one operation. A repeated successful request returns
+              its original outcome without another charge or award.
+            </li>
+            <li>
+              A changed offer price before confirmation requires fresh
+              confirmation. Completed purchases retain their accepted price. A
+              disabled offer rejects new purchases without charge and preserves
+              previous redemptions and access.
+            </li>
+            <li>
+              Intentional repeat tree participations, vouchers and paid fan
+              submissions are new purchases. Previously unlocked exclusive
+              content is not charged again.
+            </li>
+            <li>
+              An authorized admin can add/remove points with a recorded reason.
+              Corrections append a new record, preserve the original transaction
+              and reward, and cannot make the balance negative. Removing points
+              does not automatically revoke rewards.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>. Spending can be built with
+                admin-granted points while
+                <a href="#tracking">journey tracking</a> and
+                <a href="#emissions">emissions estimates</a> are prepared.
+                Demo-reset behavior belongs to the account feature.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Prove concurrency and replay protection through the
+                authenticated points/rewards interface. Select whole-point
+                rounding and verified evidence thresholds before calculated
+                awards. The <a href="#architecture">module design</a> records
+                the agreed implementation responsibility; it does not require
+                another deployment or a service per feature.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="20">
+            <summary>20 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Points, Rewards and History: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Points, Rewards and History: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Real account completes an eligible journey with
+                        sufficient location evidence
+                      </th>
+                      <td>
+                        Settle the calculated award once; update balance,
+                        History and personal impact consistently under the
+                        journey&#x27;s retained rule/factor versions.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        GPS evidence is missing but the app recorded start and
+                        arrival; expected award is 120
+                      </th>
+                      <td>
+                        Credit a 50-point fallback once, show its reason and
+                        retain the evidence status; do not mark the journey
+                        verified or remove earlier earned points.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        GPS evidence is missing but the app recorded start and
+                        arrival; expected award is 20
+                      </th>
+                      <td>
+                        Credit a 20-point fallback once. GPS failure cannot
+                        increase the award above the expected amount.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A fallback of 50 points later receives evidence
+                        supporting 120 points
+                      </th>
+                      <td>
+                        Append a 70-point top-up for the same journey, retain
+                        both records and update the evidence status. Replaying
+                        the evidence or request adds nothing further.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Fan opens Rewards</th>
+                      <td>Redemption and History are the two tabs.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Fan opens Redemption</th>
+                      <td>
+                        Fan submissions support both questions and proposed
+                        activities; tree dedications, exclusive content and
+                        merchandise discounts remain available.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Fan opens History</th>
+                      <td>
+                        Personal transactions and reward statuses are consistent
+                        with the account balance; prepared illustrative records
+                        are labelled separately and do not create spendable
+                        points or purchased rights.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan earns points from multiple qualifying journeys in
+                        one day
+                      </th>
+                      <td>
+                        Apply each journey&#x27;s configured cap without an
+                        additional daily points cap; retries still cannot award
+                        twice.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Eligible journey has 10 kg estimated reduction under
+                        initial earning settings
+                      </th>
+                      <td>
+                        Credit 500 points once under the final eligibility
+                        policy.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Eligible journey has 60 kg estimated reduction under
+                        initial earning settings
+                      </th>
+                      <td>Credit no more than 2,000 points once.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Admin adjusts a balance</th>
+                      <td>
+                        Record the authorized change and its reason; preserve
+                        transaction history and the non-negative balance
+                        invariant.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin changes the rate from 50 to 25 points/kg while a
+                        journey is active
+                      </th>
+                      <td>
+                        That journey completes with its start version of 50; a
+                        new journey uses 25. Historical awards remain unchanged.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin grants a real account points and the fan redeems a
+                        reward
+                      </th>
+                      <td>
+                        Deduct points once; record History; disclose
+                        demonstration fulfilment for vouchers, trees and driver
+                        outcomes.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin changes an offer from 100 to 150 points before
+                        confirmation
+                      </th>
+                      <td>
+                        Display 150 and require fresh confirmation; make no
+                        debit or redemption from the stale confirmation.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin changes an offer after completed redemption
+                      </th>
+                      <td>
+                        Preserve the completed redemption&#x27;s accepted price
+                        and history.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan opens History after a journey award, purchase and
+                        admin adjustment
+                      </th>
+                      <td>
+                        Show each point change, reason and resulting balance
+                        alongside reward statuses.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan intentionally buys a second tree participation or
+                        store voucher, or submits another paid question
+                      </th>
+                      <td>
+                        Create a separate charged purchase, distinct from a
+                        retry.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        An offer is disabled before purchase confirmation
+                      </th>
+                      <td>
+                        Refuse without charge; preserve prior redemptions and
+                        content access.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin corrects an erroneous point transaction
+                      </th>
+                      <td>
+                        Append a reason-recorded adjustment; keep the original
+                        and existing reward; refuse a deduction that would make
+                        balance negative.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Two purchases or two copies of a top-up arrive
+                        concurrently
+                      </th>
+                      <td>
+                        Keep one consistent balance and outcome; no double
+                        spend, duplicate top-up or negative balance.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="submissions"
+          class="major feature"
+          aria-labelledby="submissions-title"
+        >
+          <h2 id="submissions-title">
+            <span class="section-number">06</span>Fan submissions and voting
+          </h2>
+          <div class="section-intro">
+            <p>
+              Fans submit questions or proposed driver/team activities and spend
+              points to choose what is selected for a fan interaction.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Questions and proposed activities are one feature. Optional
+              content tags may describe a submission. Tags share the same fee,
+              moderation, ranking and selection places.
+            </li>
+            <li>
+              Creating a submission costs 500 non-refundable points and enters
+              admin moderation. A rejection or unanswered submission does not
+              refund the fee.
+            </li>
+            <li>
+              Approval is required before voting. Contributions cost at least 10
+              available points, may use the fan&#x27;s available balance and add
+              one ranking point per point spent. The submission fee adds nothing
+              to ranking.
+            </li>
+            <li>
+              An assigned admin closes the interaction session. Select up to
+              three approved, unfinished submissions total with positive
+              contributions, ranked by contributed points and then earlier
+              approval. Exclude zero-vote submissions; fewer than three eligible
+              submissions means fewer selections.
+            </li>
+            <li>
+              Unselected submissions keep their contributions and History in the
+              backlog for later sessions, without refunds.
+            </li>
+            <li>
+              Selection freezes contributions and further selection. The admin
+              can mark a question answered or an activity performed, or release
+              an unfinished selection back to the backlog with contributions
+              retained. Fulfilled submissions stay out of future selection.
+              Selection does not guarantee fulfilment.
+            </li>
+            <li>
+              A rejected submission can be submitted again only as a new paid
+              submission. Show its new 500-point charge before confirmation and
+              retain the original rejection and fee.
+            </li>
+            <li>
+              Demo and real profiles share this one ranking. Their balances
+              remain separate and demo reset preserves shared contributions and
+              selections.
+            </li>
+            <li>
+              Show moderation, selection and fulfilment status in History. Use
+              the atomic debit, retry and price-confirmation protections in
+              <a href="#points">points and History</a>.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>,
+                <a href="#points">points and History</a>, and assigned-admin
+                moderation controls. Deliver submission/moderation before paid
+                voting and selection.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Choose the submission form and optional tag presentation within
+                the accepted design. These are content labels, not new product
+                types or category tabs. Driver/team fulfilment remains labelled
+                demonstration until arranged.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="17">
+            <summary>17 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Fan submissions and voting: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Fan submissions and voting: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Fan with 600 points submits a driver question through
+                        Rewards
+                      </th>
+                      <td>
+                        Deduct 500 once, leave 100, enter admin moderation and
+                        show History; ranking starts at zero and an answer is
+                        not guaranteed.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan spends 10 points to vote on an approved driver
+                        question
+                      </th>
+                      <td>
+                        Deduct 10 and increase that question&#x27;s ranking by
+                        10 together, once.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan tries to vote with fewer than 10 points or on an
+                        unapproved/selected submission
+                      </th>
+                      <td>Reject without a debit or ranking change.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A paid question vote is retried, or would exceed the
+                        available balance
+                      </th>
+                      <td>
+                        Return the recorded outcome on replay; reject an
+                        unaffordable new vote without a debit or ranking change.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin closes a session with eligible questions and
+                        proposed activities
+                      </th>
+                      <td>
+                        Select up to three total from one ranking by contributed
+                        points, with earlier approval breaking ties; content
+                        labels do not reserve extra places.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Optional tags are added to otherwise identical
+                        submissions
+                      </th>
+                      <td>
+                        Their fee, voting weight, eligibility and selection
+                        remain the same.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A driver question is rejected, unselected or selected
+                        but not yet answered
+                      </th>
+                      <td>
+                        Apply the shared no-refund, backlog, paid-resubmission
+                        and contribution-freezing rules for its state; preserve
+                        its History.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Submitted driver question is rejected or remains
+                        unanswered
+                      </th>
+                      <td>
+                        Keep the fee deducted and show the corresponding status.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin closes a session with two approved unfinished
+                        positive-contribution challenges and a zero-vote
+                        challenge
+                      </th>
+                      <td>
+                        Select the two qualifying challenges; exclude the
+                        zero-vote challenge.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Two qualifying challenges tie on contributed points
+                      </th>
+                      <td>Rank the earlier-approved challenge first.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">An approved challenge is not selected</th>
+                      <td>
+                        Preserve its contributions in the backlog for later
+                        sessions without refunds.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan resubmits a rejected challenge with 600 points
+                      </th>
+                      <td>
+                        Show the 500-point charge, then create a new submission
+                        with 100 points remaining after confirmation; retain the
+                        original rejection and fee.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan attempts to contribute to a selected challenge
+                      </th>
+                      <td>
+                        Reject without changing balance or challenge total.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A selected challenge is considered for another session
+                      </th>
+                      <td>
+                        Exclude it until the admin resolves its current
+                        selection.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin marks a selected challenge performed
+                      </th>
+                      <td>
+                        Keep its history and exclude it from later selections.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Admin releases a selected unfinished challenge to the
+                        backlog
+                      </th>
+                      <td>
+                        Restore contribution/selection eligibility and retain
+                        its contributed points and history.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">A demo fan contributes to a challenge</th>
+                      <td>
+                        Deduct from that demo balance and increase the same
+                        shared ranking used by real accounts.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section id="trees" class="major feature" aria-labelledby="trees-title">
+          <h2 id="trees-title">
+            <span class="section-number">07</span>Tree dedications
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan spends points on participation in an existing tree programme
+              and sees the dedication under their account name.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              An admin sets the price in points. Record participation under the
+              purchasing account name.
+            </li>
+            <li>
+              Retain demonstration status until actual programme allocation is
+              arranged. A seeded record or point redemption does not prove an
+              extra tree was planted or establish verified carbon removal.
+            </li>
+            <li>
+              The demo has no optional quote or country-reassignment controls.
+              Earlier new-planting/reassignment proposals are historical.
+            </li>
+            <li>
+              A fan can intentionally buy another participation. Distinguish a
+              new purchase from retrying the first one.
+            </li>
+            <li>
+              Apply <a href="#points">points and History</a> rules for price
+              changes, disabled offers, insufficient points and one-time debits.
+              Keep the dedication and its status in History.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>, points and History, and an
+                admin-priced programme offer.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Choose the offer and confirmation presentation. Real allocation
+                requires an actual programme arrangement; do not invent a
+                planting partner or fulfilment integration.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="3">
+            <summary>3 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Tree dedications: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Tree dedications: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Fan views a demo tree record</th>
+                      <td>
+                        It describes programme participation and remains a
+                        demonstration pending actual allocation.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Fan redeems tree participation</th>
+                      <td>
+                        Display the admin price and record participation under
+                        the account name, without quote or country-reassignment
+                        controls.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A completed tree purchase is replayed, then the fan
+                        deliberately makes a second purchase
+                      </th>
+                      <td>
+                        Replay preserves the original record without another
+                        charge; the intentional purchase produces a separate
+                        paid participation.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="content"
+          class="major feature"
+          aria-labelledby="content-title"
+        >
+          <h2 id="content-title">
+            <span class="section-number">08</span>Exclusive content
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan spends points to unlock admin-provided content and keeps
+              access on later visits.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Admins manage content and set its points price, including
+              off-season content.
+            </li>
+            <li>
+              Successful redemption permanently unlocks that content for the
+              purchasing account.
+            </li>
+            <li>
+              Another request for already unlocked content must not charge
+              again. Disabling an offer does not remove earlier access.
+            </li>
+            <li>
+              Apply <a href="#points">points and History</a> rules for
+              ownership, funds, price reconfirmation, disabled offers and
+              retry-safe purchases.
+            </li>
+            <li>
+              Demo reset preserves content access; another account does not
+              inherit it.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>, points and History, and admin
+                content/price controls.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Select actual permitted content and storage/delivery. Avoid
+                assuming a format, rights agreement or external content service
+                that has not been selected.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="3">
+            <summary>3 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Exclusive content: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Exclusive content: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Fan returns to previously redeemed exclusive content
+                      </th>
+                      <td>Content remains unlocked for that account.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan requests exclusive content already unlocked
+                      </th>
+                      <td>Preserve access without another charge.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        An admin disables content after the fan unlocked it
+                      </th>
+                      <td>
+                        Preserve the fan&#x27;s access; new unentitled purchases
+                        fail without a charge.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="discounts"
+          class="major feature"
+          aria-labelledby="discounts-title"
+        >
+          <h2 id="discounts-title">
+            <span class="section-number">09</span>Merchandise discounts
+          </h2>
+          <div class="section-intro">
+            <p>
+              A fan redeems points for an admin-priced merchandise discount and
+              can see its status in History.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Preserve discounts ranging from 10% to 60%, with point prices set
+              by an admin. Larger discounts are intended to cost substantially
+              more points; no price schedule is invented here.
+            </li>
+            <li>
+              Fans can intentionally buy more than one voucher. A retry of one
+              purchase does not charge twice or create another redemption.
+            </li>
+            <li>
+              Apply <a href="#points">points and History</a> rules for
+              insufficient points, changed prices, disabled offers, ownership
+              and retained purchase history.
+            </li>
+            <li>
+              Voucher fulfilment remains explicitly a demonstration until real
+              merchant arrangements exist. A demo voucher must not be presented
+              as a working external discount code.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a>, points and History, and admin
+                offer/pricing controls.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Choose the offer/history presentation. Real redemption, expiry
+                and merchant integration require a separate fulfilment
+                agreement; the POC does not invent them.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="3">
+            <summary>3 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Merchandise discounts: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Merchandise discounts: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Admin configures 10% and 60% offers with point prices
+                      </th>
+                      <td>
+                        Fan can see the configured discounts and prices; no
+                        invented fixed price schedule appears.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A fan deliberately buys two vouchers, then retries the
+                        second request
+                      </th>
+                      <td>
+                        Record two purchases and exactly two debits; the retry
+                        returns the second result.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">A voucher is a demo redemption</th>
+                      <td>
+                        Show demonstration fulfilment in the offer and History;
+                        do not claim a working merchant code.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="impact"
+          class="major feature"
+          aria-labelledby="impact-title"
+        >
+          <h2 id="impact-title">
+            <span class="section-number">10</span>Personal, community and team
+            impact
+          </h2>
+          <div class="section-intro">
+            <p>
+              Impact shows the fan&#x27;s lifetime estimated savings, all
+              fans&#x27; combined lifetime estimated savings, and official team
+              figures separately.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Personal and community travel totals use qualifying real journeys
+              over recorded lifetime activity and the confirmed single-driver
+              baseline. Show them as estimated CO2e savings, with the
+              calculation method and period.
+            </li>
+            <li>
+              Keep real activity, labelled demo examples and official team
+              results distinguishable. Simulated travel, fallback points without
+              sufficient evidence, admin point grants and reward spending do not
+              establish real avoided emissions. Do not convert points or tree
+              dedications into extra savings.
+            </li>
+            <li>
+              Include an eligible journey once. Later accepted location evidence
+              updates the same journey&#x27;s contribution; its point top-up is
+              not a second journey. Keep insufficient-evidence journeys separate
+              until they qualify for the real-journey total.
+            </li>
+            <li>
+              Official team metrics come only from approved sourced records.
+              Preserve source document/evidence location, unit, reporting
+              period, method, result/target/cumulative/estimate meaning,
+              reviewer and approval time.
+            </li>
+            <li>
+              Official figures retain their own report periods; do not combine
+              them with lifetime app estimates. Pending or rejected extraction
+              never appears as an official fact.
+            </li>
+            <li>
+              If report extraction fails, keep previously approved records
+              visible. A seeded personal example does not claim inclusion in the
+              team&#x27;s annual report.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#tracking">Journey tracking</a>,
+                <a href="#emissions">emissions estimates</a>, and
+                <a href="#reports">report ingestion</a> for official figures.
+                The app totals and official-report views can be delivered
+                separately.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Agree the metric layout using report-supported fields and the
+                accepted visual direction. Define supported metric categories
+                and compatible aggregate units with the first report. The
+                personal/community scope and lifetime period are settled; report
+                gaps remain visible rather than invented.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="5">
+            <summary>5 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Personal, community and team impact: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Personal, community and team impact: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        Team updates populated dashboard records
+                      </th>
+                      <td>
+                        Dashboard displays the applicable stored records after
+                        authorized admin edits.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A fan sees a personal travel estimate beside a team ESG
+                        figure
+                      </th>
+                      <td>
+                        Labels preserve the distinction between personal demo
+                        activity and team-reported outcomes.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Fan A has qualifying journeys estimated at 2 and 3 kg
+                        saved; fan B has 4 kg
+                      </th>
+                      <td>
+                        Show 5 kg personal lifetime savings for A and 9 kg
+                        community lifetime savings, with official team figures
+                        separate.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A qualifying journey request is replayed or receives a
+                        points top-up
+                      </th>
+                      <td>
+                        Include its assessed emissions contribution once in the
+                        lifetime total; do not add points as emissions.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Demo activity, admin points or an unverified fallback
+                        exists
+                      </th>
+                      <td>
+                        Keep demonstration or insufficient-evidence activity
+                        separate; it cannot inflate real-journey lifetime
+                        savings.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="reports"
+          class="major feature"
+          aria-labelledby="reports-title"
+        >
+          <h2 id="reports-title">
+            <span class="section-number">11</span>Report upload, extraction and
+            review
+          </h2>
+          <div class="section-intro">
+            <p>
+              An admin uploads a sustainability report, gets its supported
+              details prefilled and approves accurate records for the fan
+              dashboard.
+            </p>
+          </div>
+          <h3>Accepted behavior</h3>
+          <ul>
+            <li>
+              Report upload and extraction are required in the POC. Replace the
+              earlier manual-only plan while retaining human review.
+            </li>
+            <li>
+              Extract all supported structured details: category/name, value,
+              unit, reporting period, source document/page, evidence text and
+              whether a figure is a target, result, annual total, cumulative
+              value or estimate.
+            </li>
+            <li>
+              Retain extraction/model version metadata. Missing or unsupported
+              fields stay missing and are flagged for review. Do not invent
+              numbers, provenance, reviewers or approval times.
+            </li>
+            <li>
+              An assigned admin reviews and can correct candidates before
+              approving them. Approval identity and time come from that action.
+            </li>
+            <li>
+              Pending/rejected candidates cannot appear as official dashboard
+              facts. Failed extraction preserves previously approved data and
+              exposes the failure for admin follow-up.
+            </li>
+            <li>
+              Treat report text and model output as untrusted input. Apply the
+              existing
+              <a href="#security">security and privacy requirements</a> to
+              authorized uploads, validated results and provider use.
+            </li>
+          </ul>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                <a href="#accounts">Accounts</a> with assigned-admin
+                authorization and persistent report/metric records.
+                <a href="#impact">Impact</a> consumes approved records; approval
+                must be verifiable in the admin view before the fan view is
+                built.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Choose supported report formats, upload limits, extraction
+                schema/provider and storage/retention against a representative
+                report. Use authorized source material and confirm any real
+                provider data transfer before processing. These decisions do not
+                remove the accepted review step.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="4">
+            <summary>4 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Report upload, extraction and review: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Report upload, extraction and review: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Admin uploads a sustainability report</th>
+                      <td>
+                        Extract and prefill supported metric values, units,
+                        periods and source evidence into reviewable records.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A report does not contain a required value or source
+                        detail
+                      </th>
+                      <td>
+                        Leave that field missing and flag it for review; invent
+                        no value.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        Extracted report records await approval
+                      </th>
+                      <td>
+                        Keep them out of the official dashboard until an
+                        authorized admin approves them.
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Report extraction fails</th>
+                      <td>
+                        Preserve the previously approved dashboard data and
+                        expose the failed extraction for admin follow-up.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section id="admin" class="major feature" aria-labelledby="admin-title">
+          <h2 id="admin-title">
+            <span class="section-number">12</span>Admin web dashboard
+          </h2>
+          <div class="section-intro">
+            <p>
+              Assigned admins use a separate web app to operate the accepted fan
+              features.
+            </p>
+          </div>
+          <h3>Accepted controls</h3>
+          <div
+            class="table-wrap"
+            role="region"
+            aria-label="Admin web dashboard: Accepted controls"
+            tabindex="0"
+          >
+            <table>
+              <caption class="visually-hidden">
+                Admin web dashboard: Accepted controls
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Control</th>
+                  <th scope="col">Rule owner</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">
+                    Manage reward offers, content and point prices
+                  </th>
+                  <td>
+                    <a href="#points">Points and History</a>,
+                    <a href="#trees">trees</a>, <a href="#content">content</a>,
+                    <a href="#discounts">discounts</a>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    Update earning rules and emissions factors
+                  </th>
+                  <td>
+                    <a href="#points">Points</a> and
+                    <a href="#emissions">emissions</a>, preserving journey start
+                    versions
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Add/remove points with a recorded reason</th>
+                  <td><a href="#points">Points and History</a></td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    Moderate submissions, close voting and record fulfilment or
+                    release
+                  </th>
+                  <td><a href="#submissions">Fan submissions</a></td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    Upload reports, correct extracted records and approve team
+                    ESG figures
+                  </th>
+                  <td><a href="#reports">Report ingestion</a></td>
+                </tr>
+                <tr>
+                  <th scope="row">Reset a selected persistent demo profile</th>
+                  <td><a href="#accounts">Accounts and demo mode</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Authorization and records</h3>
+          <p>
+            Server-verified assigned roles govern access. A visible Aston Martin
+            admin badge represents the role and does not grant it. Ordinary fans
+            and demo profiles do not acquire admin privileges from client
+            fields. Validate the operation and target ownership at the backend,
+            keep record changes auditable and apply the existing
+            <a href="#security">security requirements</a>.
+          </p>
+          <p>
+            Admin edits must preserve completed purchases, original point
+            records and historical calculation versions. The feature documents
+            above own the detailed behavior; implement each admin control
+            alongside its corresponding fan flow.
+          </p>
+          <details>
+            <summary>Dependencies and implementation choices</summary>
+            <div class="details-body">
+              <h3>Depends on</h3>
+              <p>
+                Account authorization and persistent data. Start with the
+                smallest admin view needed for point grants, then add controls
+                with their feature slices. Do not make every fan feature wait
+                for a complete admin application.
+              </p>
+              <h3>Before implementation</h3>
+              <p>
+                Select the admin frontend, Azure services and accepted web
+                design. Feature separation does not select separate packages,
+                services or deployments for each feature. Admin credentials and
+                role assignment must come from an authorized setup.
+              </p>
+            </div>
+          </details>
+          <details class="acceptance" data-count="2">
+            <summary>2 acceptance cases</summary>
+            <div class="details-body">
+              <p class="muted">
+                Required observations for future implementation.
+              </p>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="Admin web dashboard: acceptance cases"
+                tabindex="0"
+              >
+                <table>
+                  <caption class="visually-hidden">
+                    Admin web dashboard: acceptance cases
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scenario</th>
+                      <th scope="col">Expected observation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        An ordinary fan accesses administration
+                      </th>
+                      <td>Protected admin operations remain unavailable.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        A fan changes a client badge or supplies another
+                        account&#x27;s record ID
+                      </th>
+                      <td>
+                        Refuse unauthorized operations without changing records.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+        <section
+          id="architecture"
+          class="major"
+          aria-labelledby="architecture-title"
+        >
+          <h2 id="architecture-title">How the features connect</h2>
+          <p>
+            Use an Expo/React Native fan app, a separate admin web app and an
+            Azure backend. Exact Azure services, the authentication provider and
+            the admin frontend remain to be selected. The feature split does not
+            require a service, package or deployment for every feature.
+          </p>
+          <ol class="flow">
+            <li>
+              <strong>Plan and compare.</strong> Obtain available routes,
+              calculate emissions with sourced factors and recommend within the
+              fan's time limit.
+            </li>
+            <li>
+              <strong>Record and assess.</strong> Retain the journey's starting
+              rule and factor versions. Assess recorded location evidence and
+              keep any evidence gaps explicit.
+            </li>
+            <li>
+              <strong>Credit and redeem.</strong> The backend records an
+              eligible award or fallback. Fans can spend their available points
+              on rewards and votes.
+            </li>
+            <li>
+              <strong>Show impact.</strong> Count qualifying real journeys once.
+              Show approved official report figures separately, with their own
+              sources and reporting periods.
+            </li>
+          </ol>
+          <h3>One place owns points and reward outcomes</h3>
+          <p>
+            The shared points and rewards module handles authorization,
+            available balance, accepted prices, repeated requests, History and
+            the associated reward outcome in one consistent operation. Fan
+            screens and admin controls use the same rules.
+          </p>
+          <p>
+            It accepts an action such as redeeming an offer, contributing points
+            or settling an assessed journey. It returns the recorded result, or
+            refuses the action without partial changes. A client cannot supply
+            its own credit amount or change a balance separately from the
+            recorded outcome.
+          </p>
+          <p>
+            Calculated emissions and points belong to deterministic code. AI can
+            explain calculated route choices or extract report candidates for
+            review. Routing and model calls stay outside the atomic point
+            change.
+          </p>
+          <h3>Build complete feature slices</h3>
+          <ul>
+            <li>
+              Accounts establish identity and ownership. Route comparison can
+              progress alongside account work.
+            </li>
+            <li>
+              Reward spending can use authorized admin-granted points before
+              automatic journey awards are ready.
+            </li>
+            <li>
+              Add each admin control with the fan feature it operates. A
+              complete admin app does not block every fan flow.
+            </li>
+            <li>
+              Deliver report review and approved team figures independently of
+              travel totals. Only the approved records feed the official
+              dashboard.
+            </li>
+          </ul>
+          <h3 id="security">Access, data and evidence</h3>
+          <ul>
+            <li>
+              Verify account identity and assigned roles on the server. Check
+              ownership on every operation; badges and client fields cannot
+              grant authority.
+            </li>
+            <li>
+              Keep balances non-negative and prove that retries, concurrent
+              spending and demo resets cannot duplicate or lose committed
+              outcomes.
+            </li>
+            <li>
+              Collect location only for an active, consented journey. Keep
+              traces private and minimize collection. Define and test the
+              seven-day cleanup policy before real use.
+            </li>
+            <li>
+              Authorize report uploads, bound their size and processing cost,
+              and validate extracted fields. Treat report text and model output
+              as untrusted data.
+            </li>
+            <li>
+              Verify both physical phone platforms for background and
+              locked-phone travel. Simulated playback cannot establish real
+              location behavior.
+            </li>
+          </ul>
+        </section>
+        <section
+          id="implementation"
+          class="major"
+          aria-labelledby="implementation-title"
+        >
+          <h2 id="implementation-title">Remaining choices and scope</h2>
+          <p>
+            The product rules above are settled. Resolve these implementation
+            choices before building the affected behavior.
+          </p>
+          <div
+            class="table-wrap"
+            role="region"
+            aria-label="Remaining implementation choices"
+            tabindex="0"
+          >
+            <table>
+              <caption class="visually-hidden">
+                Remaining implementation choices
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Area</th>
+                  <th scope="col">Work still needed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Accounts and admin</th>
+                  <td>
+                    Select authentication, Azure services and the admin
+                    frontend. Obtain actual service access and accepted screen
+                    designs.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Routes and emissions</th>
+                  <td>
+                    Verify provider contracts, Singapore datasets and compatible
+                    units. Define precision, display and whole-point rounding,
+                    and equal-emissions tie handling. No numerical emissions
+                    factor is approved yet.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Location and points</th>
+                  <td>
+                    Measure route and endpoint thresholds, permission and
+                    interruption behavior, and offline recovery on physical iOS
+                    and Android phones. Define seven-day trace cleanup. Only
+                    upward late-evidence top-ups are agreed.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">AI and report review</th>
+                  <td>
+                    Select a permitted report, supported formats, bounded
+                    uploads, extraction schema/provider and retention. Agree the
+                    model input/output contract and any real provider data
+                    transfer.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Rewards and screens</th>
+                  <td>
+                    Choose detailed presentation, permitted content and
+                    demonstration offers. Real merchant, tree-programme and
+                    driver fulfilment requires actual arrangements.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Outside this proof of concept</h3>
+          <p>
+            AI scoring of actions from photos, text, video or voice; campaigns;
+            leaderboards; and a chatbot or voice assistant remain future
+            proposals. Real merchant discounts, tree allocation and driver
+            fulfilment remain later work. Demonstration redemptions must keep
+            their status clear.
+          </p>
+          <h3>Implementation status</h3>
+          <p>
+            The committed app is an Expo starter. Separate local work adds Home
+            and navigation tabs. Travel, points, rewards, impact, report
+            extraction and admin workflows described here remain planned.
+          </p>
+          <p>
+            The 82 acceptance cases are copied from the 12 accepted feature
+            specifications. They preserve the agreed outcomes and exceptions for
+            implementation and review. They do not claim that the app has passed
+            those checks.
+          </p>
+        </section>
+        <section
+          id="references"
+          class="major"
+          aria-labelledby="references-title"
+        >
+          <h2 id="references-title">References used</h2>
+          <ol>
+            <li class="ref">
+              AMR Fan App project (2026). Product specification, accepted
+              sections. [Project document; read 25 September 2026.]
+            </li>
+            <li class="ref">
+              AMR Fan App project (2026). Feature specifications 01 to 12 and
+              feature index. [Project documents; read 25 September 2026.] All
+              feature rules and acceptance cases are reproduced in this reading
+              copy.
+            </li>
+            <li class="ref">
+              AMR Fan App project (2026). Points and rewards module discussion.
+              [Project document; read 25 September 2026.]
+            </li>
+            <li class="ref">
+              AMR Fan App project (2026). Security, privacy and AI requirements.
+              [Project document; read 25 September 2026.] Only requirements
+              relevant to the accepted scope are summarized.
+            </li>
+          </ol>
+        </section>
+        <footer>
+          <p>25 September 2026. Snapshot of the accepted specification.</p>
+          <p>Generated by gpt-6-astra through T3 Code Codex harness.</p>
+        </footer>
+      </main>
+    </div>
+    <script>
+      (() => {
+        const menu = document.querySelector('.site-nav');
+        const narrow = window.matchMedia('(max-width: 800px)');
+        const navLinks = [...document.querySelectorAll('.site-nav a')];
+        const sections = navLinks.map((link) =>
+          document.getElementById(link.hash.slice(1)),
+        );
+        const setCurrent = (id) =>
+          navLinks.forEach((link) => {
+            if (link.hash === '#' + id)
+              link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+        const adaptMenu = () => {
+          menu.open = !narrow.matches;
+        };
+        adaptMenu();
+        narrow.addEventListener('change', adaptMenu);
+        navLinks.forEach((link) =>
+          link.addEventListener('click', () => {
+            setCurrent(link.hash.slice(1));
+            if (narrow.matches) menu.open = false;
+          }),
+        );
+        const syncCurrent = () => {
+          let current = sections[0];
+          sections.forEach((section) => {
+            if (section.getBoundingClientRect().top <= 120) current = section;
+          });
+          if (
+            window.innerHeight + window.scrollY >=
+            document.documentElement.scrollHeight - 4
+          ) {
+            current = sections[sections.length - 1];
+          }
+          setCurrent(current.id);
+        };
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver(syncCurrent, {
+            rootMargin: '0px 0px -65% 0px',
+            threshold: 0,
+          });
+          sections.forEach((section) => observer.observe(section));
+        }
+        let scheduled = false;
+        window.addEventListener(
+          'scroll',
+          () => {
+            if (scheduled) return;
+            scheduled = true;
+            window.requestAnimationFrame(() => {
+              syncCurrent();
+              scheduled = false;
+            });
+          },
+          { passive: true },
+        );
+        window.addEventListener('hashchange', syncCurrent);
+        let printState = [];
+        window.addEventListener('beforeprint', () => {
+          printState = [...document.querySelectorAll('main details')].map(
+            (detail) => [detail, detail.open],
+          );
+          printState.forEach(([detail]) => {
+            detail.open = true;
+          });
+        });
+        window.addEventListener('afterprint', () =>
+          printState.forEach(([detail, wasOpen]) => {
+            detail.open = wasOpen;
+          }),
+        );
+        syncCurrent();
+      })();
+    </script>
+  </body>
+</html>

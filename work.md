@@ -1,5 +1,24 @@
 # Work record
 
+## 2026-09-25: prepare final specification for main
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-012; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
+- The user authorized committing and pushing the final-spec HTML to the existing private repository's main branch. Scope: the HTML snapshot, its documentation link and this task's steering/work records. Unrelated app, dependency, design, instruction and local planning changes are excluded.
+- Verification: pending checks of the exact staged documentation and preserved worktree changes. The previously published Postplan page matches the HTML snapshot; rendered layout and interactions remain unverified.
+- Delivery: preparing the authorized commit and push; no PR or application deployment requested.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: final specification HTML on Postplan
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-011; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
+- Created [the HTML reading copy](docs/fan-app-final-spec.html) from the accepted specification, all 12 feature documents and the shared points/rewards design. Added a plain-language overview, contents navigation, expandable dependencies and all 82 acceptance cases. The Markdown feature specifications remain the maintained source; the HTML is a dated snapshot.
+- Preserved the phone app, actual location assessment, capped 50-point fallback, difference-only later awards, shared submission model, paid voting and report extraction/review. Kept implementation choices and unimplemented status explicit. App code and the separate team brief remain untouched by this task.
+- Proof: checked 320 source statements/table cells and 55 internal links; parsed HTML without errors; JavaScript syntax and Postplan validation passed. The local curl readback matched the 115,792-byte file. `pnpm agents:check` passed. Evidence is local in `.evidence/spec-html/`. Rendered layout, responsive behavior and interaction execution remain unverified because browser testing was not requested.
+- External action: published [the final specification](https://dcv0l5eirsbh.postplan.dev) as public Postplan version 1. Both the public page and raw HTML returned HTTP 200 and matched the verified local file byte for byte. Excluded private repository links, identifiers and local paths from the document; process-scoped Git discovery isolation prevented repository metadata attachment, confirmed by reading back the draft metadata. No commit, GitHub push or application deployment was performed in this task.
+
+Published by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: publish feature specifications
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-010; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
@@ -86,6 +105,76 @@ outcome, proof, limits and external actions. Do not paste transcripts, credentia
 raw research or detailed implementation plans. Update after a material change
 and before handoff.
 
+## 2026-09-25: native bottom tabs
+
+- Owner: gpt-6-sol through Codex (T3 Code). Tracking: UI-003; unlinked.
+- The user corrected the navigation choice to standard bottom tabs. Replaced
+  the custom dock with React Navigation tabs for Home, Travel, Rewards and
+  Impact. The latter three show explicit placeholders because their product
+  screens are not built. Kept Lucide icons and Home content.
+- Added `@react-navigation/native`, `@react-navigation/bottom-tabs`,
+  `react-native-screens` and `lucide-react-native`. Removed the custom dock
+  and its `expo-blur` dependency. NativeWind v5 and TypeScript remain.
+- Proof: `pnpm check` and iOS/Android Expo exports passed. On an iPhone 17
+  Pro Max simulator in Expo Go, Home rendered and taps opened Travel, Rewards,
+  Impact and returned Home. Screenshot:
+  `.evidence/native-tabs/iphone-17-pro-max.png`. An older Metro process briefly
+  displayed a stale module-resolution error; the current app loaded on the
+  active project server.
+- External action: no commit, push, PR or deployment.
+
+Edited by gpt-6-sol through Codex (T3 Code).
+
+## 2026-09-25: tab bar color and selection
+
+- Owner: gpt-6-sol through Codex (T3 Code). Tracking: UI-004; unlinked.
+- Changed the standard tab bar to AM green `#04524B` and placed a gray circle
+  behind the selected icon. Icons and labels remain visible and tabs still
+  switch views. This is a one-off visual correction to the supplied screenshot.
+- Proof: inspected Home and Rewards selected states on the iPhone 17 Pro Max
+  simulator. TypeScript, ESLint and formatting checks passed.
+- External action: no commit, push, PR or deployment.
+
+Edited by gpt-6-sol through Codex (T3 Code).
+
+## 2026-09-25: home and tabs visualization
+
+- Owner: gpt-6-sol through Codex (T3 Code). Tracking: UI-002; unlinked.
+- Initial home concepts failed the user's content and dock-style criteria.
+  This is a one-off correction. Revised three options at
+  `/tmp/amr-home-tabs/revision.html`, each with fan/race updates,
+  points/rewards and team impact. They vary only navigation style and keep
+  ordinary travel reachable, zero starting points and Rewards' confirmed tabs.
+- Inspected relevant Mobbin screens for sports and loyalty navigation patterns.
+  A further revision at `/tmp/amr-home-tabs/mobbin-inspired.html` uses the
+  Formula 1 lead-story layout, Qantas points hierarchy and NBA section rhythm
+  as visual references. It links each source screen and keeps placeholder
+  content distinct from actual published updates and sourced ESG figures.
+  The user then supplied a floating translucent navigation reference. A focused
+  revision at `/tmp/amr-home-tabs/glass-navigation.html` applies its capsule,
+  icon-and-label destinations and lighter selected inset to the story-led Home.
+  Proof: read the local HTML and checked headings, tabs and placeholder labels
+  against `DESIGN.md` and the specification. Browser rendering and native
+  interaction remain unverified. Selection is pending; the Expo app is unchanged.
+- External action: no publication, commit, push, PR or deployment.
+
+Edited by gpt-6-sol through Codex (T3 Code).
+
+## 2026-09-25: phone UI library setup
+
+- Owner: gpt-6-sol through Codex (T3 Code). Tracking: UI-001; unlinked.
+- Added gluestack UI with NativeWind v5 and Expo-compatible Reanimated/Worklets.
+  Kept the starter content and unselected design direction. Documented library
+  usage in `AGENTS.md`.
+- Proof: frozen install, `pnpm check`, and iOS/Android Expo exports passed.
+  The supplied Expo Go crash report predates the library install and does not
+  show its JavaScript error. The later device request verified the dark starter
+  screen on an iPhone 17 Pro Max simulator through a fresh Metro session.
+  Screenshot: `.evidence/ui-library-device/iphone-17-pro-max.png`.
+- External action: no commit, push, PR or deployment.
+
+Edited by gpt-6-sol through Codex (T3 Code).
+
 ## 2026-09-25: portable agent workflow and security setup
 
 - Owner: gpt-6-astra through Codex (T3 Code). Maintainer request: Nachiketh.
@@ -126,6 +215,15 @@ and before handoff.
   `.evidence/agent-workflow/results.json`; raw scanner reports remain ignored.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: Azure direction and current device state
+
+- Owner: gpt-6-sol through Codex (T3 Code). Tracking: BACKEND-001 and DEVICE-001; unlinked because no issue creation was requested.
+- Changed locally: the active specification and architecture now select Azure for the backend. The old Convex placeholder is marked superseded. Specific Azure services, authentication and transaction design remain open. No backend code or deployment was added.
+- Device proof: launched the Expo starter in Expo Go on an iPhone 17 Pro simulator. Its visible screen shows "AMR Fan App" and "Development starter" on a dark background. Product workflows remain unimplemented.
+- External action: no commit, push, issue, PR or deployment. The device session and local Metro server were started for inspection.
+
+Edited by gpt-6-sol through Codex (T3 Code).
 
 ## 2026-09-25: focused skills and authorized local delivery
 
