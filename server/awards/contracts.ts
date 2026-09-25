@@ -65,6 +65,8 @@ export const receiptSchema = z.strictObject({
   assessment: assessmentSchema,
   startedAtMs: summarySchema.shape.startedAtMs,
   finishedAtMs: summarySchema.shape.finishedAtMs,
+  finishReason: summarySchema.shape.finishReason,
+  mode: summarySchema.shape.mode,
   policy: summarySchema.shape.policy,
   result: policyResultSchema,
 });
