@@ -65,3 +65,22 @@ Recheck when dependencies or callers change. High/critical advisories fail the
 automated gate; lower severities need exposure-based triage, not blind upgrades.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## ACCOUNT-004: persistent sign-in and authorized account API
+
+Tracker [#4](https://github.com/NachikethReddyY/AMR-Fan-App/issues/4), under #3.
+Implement server-derived identity, one real and one demo profile per signed-in
+user, zero initial balances, resume/logout and assigned-admin authorization.
+Preserve four tabs and route ownership. Use isolated PostgreSQL and a production
+OIDC verification boundary, with explicitly separated synthetic local sign-in.
+Live provider provisioning remains pending. No points business or admin web scope.
+Status: acceptance tests and coordinated implementation in progress.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Provider contract accepted for ACCOUNT-004: configurable OIDC access-token
+verification and native code/PKCE, with deployment values explicitly unselected.
+Synthetic local identities must pass the same account authorization and may never
+be enabled in production. The manager schedules independent Astra review; no
+new helper threads or reviewer worktree reuse. Root changes are serialized after
+the AI owner's released lease and preserve its patch on subsequent rebases.

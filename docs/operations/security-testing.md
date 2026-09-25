@@ -29,8 +29,11 @@ a clean working-tree scan says nothing about earlier commits.
 
 ## DAST target and isolation
 
-`security/dast-target.json` currently records `not-implemented` because no
-HTTP application exists. Do not replace it with Metro or the scanner fixture.
+`security/dast-target.json` selects the account API in `server/api/Dockerfile`.
+Its isolated container runs real PostgreSQL and the actual API with production
+auth guards and no enabled synthetic sign-in. The unauthenticated scan does not
+exercise provider login or owned records; real HTTP/PostgreSQL tests cover those
+boundaries separately. Do not substitute Metro or the scanner fixture.
 
 When an accepted admin/API implementation is ready, set `status` to
 `implemented` and `target` to its repository-relative `dockerfile` and

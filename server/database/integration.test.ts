@@ -47,7 +47,7 @@ test('real PostgreSQL migrations and synthetic seed are repeatable', async () =>
   assert.equal(
     (
       await pool.query(
-        "SELECT count(*)::int AS count FROM pg_tables WHERE schemaname = 'app'",
+        "SELECT count(*)::int AS count FROM pg_tables WHERE schemaname = 'app' AND tablename = 'probes'",
       )
     ).rows[0].count,
     0,

@@ -46,3 +46,5 @@ source-backed decisions into maintained docs. Historical `docs/research/` and
 | Maintainer-only | A local or restricted operation without a public untrusted-user entry point. |
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+Account identity, local API commands and live setup gates: [account operations](operations/accounts.md).

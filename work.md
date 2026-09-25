@@ -297,3 +297,32 @@ Edited by gpt-6-astra through Codex (T3 Code).
   repository visibility change or browser/device verification was requested.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-25: account #4 identity and API foundation
+
+- Tracking: [#4](https://github.com/NachikethReddyY/AMR-Fan-App/issues/4), under #3.
+  Base `050d5035bd69f476cbcc51d252d1456df58ed947`, owned account worktree.
+- Implemented configurable OIDC access-token verification, server-owned real/demo
+  profiles with zero initial balances, hashed revocable sessions, assigned roles,
+  owner-only profile reads/renames and the transaction/row-lock interface for #5.
+  Native account/session code uses SecureStore and code/PKCE, with a separate
+  labelled development fixture selector. No points operations or admin web added.
+- Observed proof: four token/config tests, five native session tests, ten real
+  HTTP/PostgreSQL account tests and nine foundation PostgreSQL tests pass.
+  Cross-account reads/writes, forged role/owner fields, invalid token claims,
+  concurrent creation, role revocation, restart/resume and logout are exercised.
+  Full local checks, source/dependency security checks and both native exports
+  passed before final UI observation. Isolated application DAST passed with
+  zero alerts on the public unauthenticated API; authenticated boundaries have
+  separate HTTP tests.
+- Local performance sample: three sequential requests, sign-in 41.04 ms/360 bytes,
+  resume 2.67 ms/255 bytes, logout 4.09 ms/18 bytes. Synthetic loopback sample of
+  one per operation; no deployment or comparative latency claim.
+- Remaining verification: actual leased Android/iOS interaction, required largest
+  Dynamic Type/accessibility evidence, live provider provisioning, hosted checks and manager-scheduled independent exact-commit Astra review.
+  No external tenant, admin identity, cloud resource or deployment was invented.
+- Evidence: ignored `.evidence/account-4/`; sanitized setup and API contract in
+  [account operations](docs/operations/accounts.md). Database and API leases are
+  isolated; shared PostgreSQL lifecycle remains with infrastructure.
+
+Edited by gpt-6-astra through Codex (T3 Code).
