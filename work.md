@@ -1,5 +1,17 @@
 # Work record
 
+## 2026-09-25: local PostgreSQL and foundation checks
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: INFRA-001; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3), supporting roots #4/#6 without closing them. Base: `e87268368bc12d4909293228df7b311213a3ea6e`.
+- Added one pinned PostgreSQL 17.11 Compose service, private local credentials, per-worktree development/test databases and restricted roles. Added TypeScript pool/transaction helpers, SQL migration checksums/locking, synthetic fixtures, safe own-test reset and reproducible lifecycle/proof commands. Root Expo layout and phone navigation are unchanged; no business tables, account/auth adapter, API or admin implementation.
+- Repaired the baseline formatting failure and replaced web theme inline HTML with direct layout-effect initialization. System mode reads the current preference and cleans up its listener when mode changes. Original security rules remain enabled.
+- Proof: `pnpm db:verify` passed real restart persistence, bidirectional namespace denial, preservation of peer/development data during own reset, repeatable migration/seed, exact single loopback binding and credential permissions. Seven database tests passed, including rollback, twelve concurrent increments, migration drift/missing migration and restricted privileges. `pnpm check`, frozen install, `pnpm security:check` and iOS/Android exports passed. Browser fixture of the actual web provider passed initial system mode and Light/Dark/System changes with zero inline scripts.
+- Security scorecard: source secrets pass (one full repository snapshot); SAST pass (25 source targets, four unchanged rules); scanner acceptance/rejection fixtures pass; database isolation/rollback/concurrency pass (two namespaces and twelve writes); production local-seed/configuration denial pass. Confidence is high for these executed local boundaries; no claim of product authorization or cloud deployment proof. One pre-existing moderate UUID tooling advisory remains visible as SEC-001; no high/critical audit findings.
+- Evidence: ignored `.evidence/local-infrastructure/`, including `db-verify.txt`, `security.txt`, `check-current.txt`, native export logs, theme screenshot and browser results. Commands and Azure setup gates: [local development](docs/operations/local-development.md). Shared PostgreSQL intentionally remains running on leased `127.0.0.1:55432`; owner is this infrastructure worktree, Compose project `amr-local-postgres`. Stop with `pnpm db:stop` only after consumers release it. Temporary theme server stopped; preview proof complete.
+- Limits: Azure credentials/services, cloud transaction/deployment checks, production authentication and all product behavior remain pending their owners. Hosted PR checks and independent review follow delivery; no merge or cloud action authorized here. Operations serializes this branch's record integration.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: prepare final specification for main
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-012; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).

@@ -4,7 +4,7 @@
 | --- | --- |
 | Users | [Fan and admin experience](user/README.md) |
 | Internals | [Architecture and status](internals/architecture.md), [security and privacy](internals/security.md) |
-| Operations | [Setup and maintenance](operations/README.md), [verification](operations/verification.md), [security testing](operations/security-testing.md), [performance](operations/performance.md), [release](operations/release.md) |
+| Operations | [Setup and maintenance](operations/README.md), [local PostgreSQL](operations/local-development.md), [verification](operations/verification.md), [security testing](operations/security-testing.md), [performance](operations/performance.md), [release](operations/release.md) |
 | Contributors and agents | [Contributing](../CONTRIBUTING.md), [AGENTS.md](../AGENTS.md), [compatibility](agents/compatibility.md), [collaboration](agents/collaboration.md) |
 | Product | [Roadmap](../ROADMAP.md), [specification](fan-app-specification.md), [feature breakdown](features/README.md), [glossary](../CONTEXT.md) |
 | Work | [Steering and bugs](../bug.md), [work record](../work.md), [GitHub Issues](https://github.com/NachikethReddyY/AMR-Fan-App/issues), [Ideas](https://github.com/NachikethReddyY/AMR-Fan-App/discussions/categories/ideas) |

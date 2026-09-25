@@ -6,22 +6,24 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Phone app | `index.ts` registers `src/App.tsx`; committed Expo starter. Separate uncommitted UI work adds Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
+| Phone app | `index.ts` registers `src/App.tsx`; Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
 | Admin web | Absent | Authorized content, price, rule, moderation and demo administration |
-| Backend | No backend dependency, schema or deployment; `convex/README.md` is a historical placeholder superseded by the Azure decision | Authenticated application operations and persistence on Azure |
+| Backend | `server/database/` contains a PostgreSQL pool, transactions and SQL migration scaffolding; local Docker setup is available; no API or deployment | Authenticated application operations and persistence on Azure |
 | Authentication | Absent; provider not selected | Server-verified identity and assigned admin role |
 | Maps and tracking | Absent | POC route comparison, real location collection and journey assessment; physical-device proof required |
 | AI media pipeline | Absent; future proposal | Bounded transient processing and validated results |
 | ESG integration | Source documents and proposals only | POC report upload, extraction, admin review and approved metrics with source evidence |
-| Operations | Local Expo commands and repository checks | Release environment remains a maintainer decision |
+| Operations | Local Expo commands, repository checks and isolated worktree PostgreSQL tooling | Release environment remains a maintainer decision |
 
 No admin endpoint, upload URL or deployed application service exists to audit
 dynamically. The DAST fixture validates the scanner, not future product behavior.
 
 ## Design defaults
 
-Keep one package until a concrete web/backend requirement justifies another
-layout. Do not introduce a monorepo, service layer or event system speculatively.
+Keep the existing root Expo package. Database-only TypeScript modules live in
+`server/database/`; its private module marker supports Node ESM without moving
+the phone app. See [local development](../operations/local-development.md) for
+service ownership, per-worktree databases, commands and cloud setup gates. Do not introduce a monorepo, service layer or event system speculatively.
 Azure is the selected backend platform. No Azure service, deployment or auth provider
 has been selected or provisioned. Earlier Convex plans are superseded.
 

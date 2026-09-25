@@ -21,14 +21,7 @@ export function GluestackUIProvider({
   }, []);
 
   useSafeLayoutEffect(() => {
-    if (mode !== 'system') {
-      const documentElement = document.documentElement;
-      if (documentElement) {
-        documentElement.classList.add(mode);
-        documentElement.classList.remove(mode === 'light' ? 'dark' : 'light');
-        documentElement.style.colorScheme = mode;
-      }
-    }
+    script(mode);
   }, [mode]);
 
   useSafeLayoutEffect(() => {
@@ -38,19 +31,11 @@ export function GluestackUIProvider({
     media.addListener(handleMediaQuery);
 
     return () => media.removeListener(handleMediaQuery);
-  }, [handleMediaQuery]);
+  }, [handleMediaQuery, mode]);
 
   return (
-    <>
-      <script
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{
-          __html: `(${script.toString()})('${mode}')`,
-        }}
-      />
-      <OverlayProvider>
-        <ToastProvider>{props.children}</ToastProvider>
-      </OverlayProvider>
-    </>
+    <OverlayProvider>
+      <ToastProvider>{props.children}</ToastProvider>
+    </OverlayProvider>
   );
 }
