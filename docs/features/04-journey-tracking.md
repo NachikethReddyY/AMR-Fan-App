@@ -2,7 +2,15 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+Status: accepted product behavior. A local server lifecycle and prototype evidence
+assessment are implemented; authenticated HTTP registration and native collection
+remain pending. Physical-platform acceptance below has not been executed.
+
+The [server journey procedure](../operations/journeys.md) records persisted
+ownership, retry, evidence, retention and test interfaces. Its versioned
+prototype rules can return positive or negative assessments independently of
+their explicit unvalidated calibration and fixture/live provenance. They do not
+grant awards or establish physically verified travel.
 
 ## Outcome
 
@@ -24,7 +32,19 @@ A fan starts a real journey, travels with the phone locked or another app open, 
 
 ## Before implementation
 
-Measure platform behavior and choose location accuracy, route-match, endpoint and interruption thresholds. Define offline recovery and retention cleanup from observed device behavior. Escalate any product tradeoff exposed by that evidence. Test permission denial, background travel, locked phones, missing samples and stopping collection on both physical platforms.
+The local server prototype uses explicitly unvalidated manager-approved candidates:
+50 m maximum accuracy uncertainty, 100 m endpoint containment and route corridor,
+30 s endpoint freshness and a 120 s continuity gap. It requires server-acknowledged
+Start and retains original acquisition/finish times for offline delivery. Precise
+data expires no later than seven days after acquisition; retries do not extend it.
+These are configurable retained rules, not physical calibration results. The
+operations procedure states current interruption and cleanup coverage/limits.
+
+Measure platform behavior before accepting these thresholds for actual travel.
+Test permission denial, background travel, locked phones, missing samples and
+stopping collection on both physical platforms. Native queues, backup cleanup
+and numerical mode-plausibility calibration remain pending. Later #9 owns award
+authority and acceptance of rule versions; #8 does not calculate or grant points.
 
 ## Acceptance cases
 

@@ -19,6 +19,32 @@ export function routeFixture(fetchedAtMs = Date.now()) {
       factorVersions: ['synthetic-factor-v1'],
       factorStatus: 'indicative_demo',
       earningRuleVersion: 'initial-50-cap-2000-v1',
+      calculation: {
+        kind: 'available',
+        baseline: {
+          routeId: 'synthetic-car',
+          distanceMeters: 1500,
+          durationSeconds: 200,
+        },
+        factors: [
+          {
+            id: 'synthetic-factor-v1',
+            mode: 'bus',
+            kgCo2ePerPassengerKm: 0.07,
+            geography: 'Singapore',
+            period: 'synthetic',
+            source: 'https://example.test/factor',
+            method: 'Synthetic arithmetic fixture',
+            assumptions: 'No real travel claim',
+            status: 'indicative_demo',
+          },
+        ],
+        earningRule: {
+          version: 'initial-50-cap-2000-v1',
+          pointsPerKg: 50,
+          journeyCap: 2000,
+        },
+      },
     },
   };
 }

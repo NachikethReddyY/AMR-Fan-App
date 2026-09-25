@@ -56,6 +56,41 @@ export const routeSchema = z.strictObject({
     factorVersions: z.array(version).max(128),
     factorStatus: z.enum(['indicative_demo', 'approved', 'unavailable']),
     earningRuleVersion: version,
+    calculation: z.discriminatedUnion('kind', [
+      z.strictObject({
+        kind: z.literal('unavailable'),
+        reason: z.string().min(1).max(160),
+      }),
+      z.strictObject({
+        kind: z.literal('available'),
+        baseline: z.strictObject({
+          routeId: version,
+          distanceMeters: z.number().positive().max(1_000_000),
+          durationSeconds: z.number().positive().max(604800),
+        }),
+        factors: z
+          .array(
+            z.strictObject({
+              id: version,
+              mode,
+              kgCo2ePerPassengerKm: z.number().nonnegative().max(100),
+              geography: z.literal('Singapore'),
+              period: z.string().min(1).max(160),
+              source: z.url().max(2048),
+              method: z.string().min(1).max(2000),
+              assumptions: z.string().max(2000),
+              status: z.enum(['indicative_demo', 'approved']),
+            }),
+          )
+          .min(1)
+          .max(16),
+        earningRule: z.strictObject({
+          version,
+          pointsPerKg: z.number().nonnegative().max(1000000),
+          journeyCap: z.number().int().nonnegative().max(2147483647),
+        }),
+      }),
+    ]),
   }),
 });
 export type RouteSnapshot = z.infer<typeof routeSchema>;
@@ -67,6 +102,9 @@ export const policySchema = z.strictObject({
   endpointFreshnessMs: z.number().int().positive().max(30000),
   corridorMeters: z.number().positive().max(100),
   continuityGapMs: z.number().int().positive().max(120000),
+  maxSpeedMpsByMode: z
+    .partialRecord(mode, z.number().positive().max(1000))
+    .default({}),
 });
 export const candidatePolicy: z.infer<typeof policySchema> = {
   version: 'journey-calibration-v1',
@@ -76,6 +114,7 @@ export const candidatePolicy: z.infer<typeof policySchema> = {
   endpointFreshnessMs: 30000,
   corridorMeters: 100,
   continuityGapMs: 120000,
+  maxSpeedMpsByMode: {},
 };
 export type EvidencePolicy = z.infer<typeof policySchema>;
 export const sampleSchema = z.strictObject({
@@ -89,6 +128,10 @@ export const sampleSchema = z.strictObject({
   mocked: z.boolean().nullable(),
 });
 export type LocationSample = z.infer<typeof sampleSchema>;
+export const storedSampleSchema = z.strictObject({
+  evidence: sampleSchema,
+  serverReceivedAtMs: timestamp,
+});
 export const assessmentSchema = z.strictObject({
   version,
   calibration: z.literal('unvalidated'),
@@ -96,8 +139,8 @@ export const assessmentSchema = z.strictObject({
   status: z.enum([
     'unfinished',
     'insufficient_evidence',
-    'contradictory_evidence',
-    'candidate_supported',
+    'ineligible',
+    'satisfies_configured_rules',
     'expired',
   ]),
   reasons: z.array(z.string()),
@@ -106,6 +149,12 @@ export const assessmentSchema = z.strictObject({
   sampleCount: z.number().int().nonnegative(),
   elapsedMs: z.number().nonnegative().nullable(),
   observedDistanceMeters: z.number().nonnegative(),
+  maxObservedSpeedMps: z.number().nonnegative().nullable(),
+  modePlausibility: z.enum([
+    'unassessed',
+    'consistent_with_configured_speed',
+    'inconsistent_with_configured_speed',
+  ]),
 });
 export type Assessment = z.infer<typeof assessmentSchema>;
 export const summarySchema = z.strictObject({
