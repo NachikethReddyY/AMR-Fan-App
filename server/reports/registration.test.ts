@@ -7,7 +7,7 @@ import { createDatabase } from '../database/index.ts';
 import { ensureAccount, assignRole } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
 
-// Deliberately failing acceptance gate until the shared API owner registers reports.
+// This acceptance gate must use the actual application composition.
 if (
   process.env.NODE_ENV !== 'test' ||
   !/\/amr_[a-f0-9]{12}_test$/.test(
@@ -19,7 +19,14 @@ test('real createApi registers the authenticated report listing', async () => {
   const pool = createDatabase();
   const server = createApi({
     pool,
-    env: { NODE_ENV: 'test', AUTH_DEV_ENABLED: 'true', API_HOST: '127.0.0.1' },
+    env: {
+      NODE_ENV: 'test',
+      AUTH_DEV_ENABLED: 'true',
+      API_HOST: '127.0.0.1',
+      REPORT_STORAGE_ROOT: process.env.REPORT_TEST_STORAGE,
+      REPORT_PARSER_MODE: process.env.REPORT_PARSER_IMAGE ? 'docker' : 'native',
+      REPORT_PARSER_IMAGE: process.env.REPORT_PARSER_IMAGE,
+    },
   });
   try {
     const account = await ensureAccount(pool, {

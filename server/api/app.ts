@@ -30,6 +30,9 @@ import { handleSubmissionRequest } from '../submissions/http.ts';
 import { serveSubmissionAdmin } from '../submissions/admin.ts';
 import { dispatchRewards } from '../rewards/http.ts';
 import { serveRewardsAdmin } from '../rewards/admin.ts';
+import { reportRuntime, isReportPath } from '../reports/runtime.ts';
+import { handleReports } from '../reports/http.ts';
+import { serveReportsAdmin } from '../reports/admin.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -87,6 +90,7 @@ export function createApi({
   const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
   const queryRoutes = createRouteQuery({ env });
   const journeys = createJourneyService({ pool, env, queryRoutes });
+  const reports = reportRuntime(pool, env);
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -111,6 +115,7 @@ export function createApi({
       if (req.method === 'GET' && (await serveSubmissionAdmin(path, res)))
         return;
       if (req.method === 'GET' && (await serveRewardsAdmin(path, res))) return;
+      if (req.method === 'GET' && (await serveReportsAdmin(path, res))) return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
       if (Date.now() - windowStart >= 60000) {
@@ -146,6 +151,21 @@ export function createApi({
         });
       }
       const token = bearer(req);
+      if (isReportPath(path)) {
+        const actor = await authenticateSession(pool, token);
+        if (path !== '/v1/impact/official' && actor.role !== 'admin')
+          throw new ApiError(403, 'Assigned admin access required.');
+        if (
+          await handleReports({
+            req,
+            res,
+            path,
+            token,
+            reports: await reports(),
+          })
+        )
+          return;
+      }
       const submissionResult = await handleSubmissionRequest({
         pool,
         token,

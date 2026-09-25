@@ -38,7 +38,7 @@ before(async () => {
   reports = createReports({
     pool,
     storage: await createStorage({ root: storageRoot }),
-    parser: createParser(),
+    parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
     extractReport: async () => ({
       kind: 'unavailable',
       reason: 'disabled',
@@ -338,7 +338,7 @@ test('stale revisions conflict; approved snapshots survive later corrections and
     const reopened = createReports({
       pool: reopenedPool,
       storage: await createStorage({ root: storageRoot }),
-      parser: createParser(),
+      parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
       extractReport: async () => null,
     });
     assert.equal(
@@ -373,7 +373,7 @@ test('completed extraction replay does not invoke the extractor again', async ()
   const service = createReports({
     pool,
     storage: await createStorage({ root: storageRoot }),
-    parser: createParser(),
+    parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
     extractReport: async () => {
       calls++;
       return { kind: 'unavailable', reason: 'disabled', reviewRequired: true };

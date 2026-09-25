@@ -1,4 +1,5 @@
 // Original controlled process fixtures. Never selected by the production parser.
+import { Buffer } from 'node:buffer';
 import { once } from 'node:events';
 const mode = process.argv[2];
 const keepAlive = setTimeout(() => process.exit(9), 5000);

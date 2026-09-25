@@ -79,7 +79,7 @@ async function work(action) {
   try {
     await action();
   } catch (error) {
-    message(`${error.message} No approval is changed by a failed request.`);
+    message(`${error.message} Check report status before retrying a decision.`);
   } finally {
     busy = false;
     for (const control of window.document.querySelectorAll(
@@ -245,10 +245,11 @@ byId('upload-form').addEventListener('submit', (event) => {
       (byte) => byte.toString(16).padStart(2, '0'),
     ).join('');
     const title = byId('title').value;
+    const sourceKind = byId('source-kind').value;
     const reserved = await api('/v1/admin/reports', 'POST', {
-      requestId: requestId(['upload', title, hash]),
+      requestId: requestId(['upload', title, hash, sourceKind]),
       title,
-      sourceKind: 'synthetic',
+      sourceKind,
     });
     await api(`/v1/admin/reports/${reserved.id}/source`, 'PUT', bytes, true);
     await refreshReports();

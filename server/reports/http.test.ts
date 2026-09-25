@@ -7,12 +7,7 @@ import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount, assignRole } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
-import { ApiError } from '../accounts/types.ts';
-import { createReports } from './index.ts';
-import { createParser } from './parser.ts';
-import { createStorage } from './storage.ts';
-import { handleReports } from './http.ts';
-import { serveReportsAdmin } from './admin.ts';
+import { createApi } from '../api/app.ts';
 import { syntheticPdf } from './testing/fixtures.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -37,41 +32,16 @@ before(async () => {
   token = (await createSession(pool, admin.id)).token;
   const account = await ensureAccount(pool, { issuer, subject: 'fan' });
   fan = (await createSession(pool, account.id)).token;
-  const reports = createReports({
+  server = createApi({
     pool,
-    storage: await createStorage({ root }),
-    parser: createParser(),
-    extractReport: async () => ({
-      kind: 'unavailable',
-      reason: 'disabled',
-      reviewRequired: true,
-    }),
-  });
-  server = createServer(async (req, res) => {
-    try {
-      const path = new URL(req.url ?? '/', 'http://test').pathname;
-      if (req.method === 'GET' && (await serveReportsAdmin(path, res))) return;
-      const handled = await handleReports({
-        req,
-        res,
-        path: new URL(req.url ?? '/', 'http://test').pathname,
-        token: req.headers.authorization?.slice(7) ?? '',
-        reports,
-      });
-      if (!handled) {
-        res.writeHead(404);
-        res.end();
-      }
-    } catch (error) {
-      res.writeHead(error instanceof ApiError ? error.status : 500, {
-        'Content-Type': 'application/json',
-      });
-      res.end(
-        JSON.stringify({
-          error: error instanceof ApiError ? error.message : 'Failed',
-        }),
-      );
-    }
+    env: {
+      NODE_ENV: 'test',
+      AUTH_DEV_ENABLED: 'true',
+      API_HOST: '127.0.0.1',
+      REPORT_STORAGE_ROOT: root,
+      REPORT_PARSER_MODE: process.env.REPORT_PARSER_IMAGE ? 'docker' : 'native',
+      REPORT_PARSER_IMAGE: process.env.REPORT_PARSER_IMAGE,
+    },
   });
   server.requestTimeout = 10000;
   server.listen(0, '127.0.0.1');
@@ -284,5 +254,5 @@ test('owned admin assets use the established stylesheet and deny arbitrary asset
   assert.match(html, /id="decision-form"/);
   assert.match(html, /id="attempts"/);
   const blocked = await fetch(base + '/admin/reports/private.pdf');
-  assert.equal(blocked.status, 404);
+  assert.equal(blocked.status, 401);
 });

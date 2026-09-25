@@ -570,14 +570,12 @@ export function createReports({
       if (extracting)
         throw new ApiError(503, 'Another report extraction is active.');
       // Feature-level transfer authority is separate from a client permission field.
-      if (source.permission !== 'synthetic')
-        throw new ApiError(
-          503,
-          'Real report provider transfer requires a separate grant.',
-        );
       extracting = true;
       try {
-        const result = await extractCandidates({ source, extractReport });
+        const result =
+          source.permission !== 'synthetic'
+            ? { kind: 'unavailable' as const, reason: 'disabled' as const }
+            : await extractCandidates({ source, extractReport });
         return await authorized(token, async (db, actorId) => {
           await serialize(db, actorId, requestId);
           const previous = await db.query<{

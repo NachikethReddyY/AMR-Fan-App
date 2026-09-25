@@ -1,46 +1,19 @@
-/** Test-only owned HTTP composition. This does not register routes in createApi. */
-import { createServer } from 'node:http';
-import { ApiError } from '../../accounts/types.ts';
+/** Actual API process for report restart acceptance. */
+import { createApi } from '../../api/app.ts';
 import { createDatabase } from '../../database/index.ts';
-import { createAi } from '../../ai/index.ts';
-import { createReports } from '../index.ts';
-import { createStorage } from '../storage.ts';
-import { createParser } from '../parser.ts';
-import { handleReports } from '../http.ts';
 if (process.env.NODE_ENV !== 'test' || !process.env.REPORT_TEST_STORAGE)
   throw new Error('Allocated test configuration required.');
 const pool = createDatabase();
-const ai = createAi({});
-const reports = createReports({
+const server = createApi({
   pool,
-  storage: await createStorage({ root: process.env.REPORT_TEST_STORAGE }),
-  parser: createParser(),
-  extractReport: ai.extractReport,
-});
-const server = createServer(async (req, res) => {
-  try {
-    if (
-      !(await handleReports({
-        req,
-        res,
-        path: new URL(req.url ?? '/', 'http://test').pathname,
-        token: req.headers.authorization?.slice(7) ?? '',
-        reports,
-      }))
-    ) {
-      res.writeHead(404);
-      res.end();
-    }
-  } catch (error) {
-    res.writeHead(error instanceof ApiError ? error.status : 500, {
-      'Content-Type': 'application/json',
-    });
-    res.end(
-      JSON.stringify({
-        error: error instanceof ApiError ? error.message : 'Request failed.',
-      }),
-    );
-  }
+  env: {
+    NODE_ENV: 'test',
+    AUTH_DEV_ENABLED: 'true',
+    API_HOST: '127.0.0.1',
+    REPORT_STORAGE_ROOT: process.env.REPORT_TEST_STORAGE,
+    REPORT_PARSER_MODE: process.env.REPORT_PARSER_IMAGE ? 'docker' : 'native',
+    REPORT_PARSER_IMAGE: process.env.REPORT_PARSER_IMAGE,
+  },
 });
 server.requestTimeout = 10000;
 server.listen(0, '127.0.0.1', () => {

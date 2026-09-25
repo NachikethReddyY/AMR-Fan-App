@@ -92,7 +92,7 @@ test('the parser sandbox denies a real loopback network connection', async () =>
         '-e',
         `const s=require('node:net').connect(${address.port},'127.0.0.1');s.on('connect',()=>process.exit(2));s.on('error',e=>process.exit(e.code==='EPERM'?0:3));setTimeout(()=>process.exit(4),1000);`,
       ],
-      { stdio: 'ignore', env: { PATH: '/usr/bin:/bin' } },
+      { stdio: 'ignore', env: { PATH: '/usr/bin:/bin', NODE_ENV: 'test' } },
     );
     const [code] = await once(child, 'close');
     assert.equal(code, 0);

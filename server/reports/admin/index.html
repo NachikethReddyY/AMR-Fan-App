@@ -30,11 +30,16 @@
         <form id="upload-form">
           <h2>Upload report</h2>
           <p>
-            Local synthetic reports only. Text-layer PDF, up to 10 MiB and 100
-            pages.
+            Text-layer PDF, up to 10 MiB and 100 pages. Original source
+            documents are retained for review.
           </p>
           <label for="title">Report title</label
           ><input id="title" maxlength="160" required />
+          <label for="source-kind">Source type</label
+          ><select id="source-kind">
+            <option value="permitted">Report I am permitted to retain</option>
+            <option value="synthetic">Synthetic example</option>
+          </select>
           <label for="file">PDF document</label
           ><input
             id="file"
@@ -81,9 +86,8 @@
               exact page evidence.
             </p>
             <label for="name">Name</label><input id="name" maxlength="160" />
-            <label for="value">Value</label
-            ><input id="value" maxlength="160" /> <label for="unit">Unit</label
-            ><input id="unit" maxlength="160" />
+            <label for="value">Value</label><input id="value" maxlength="160" />
+            <label for="unit">Unit</label><input id="unit" maxlength="160" />
             <label for="period">Reporting period</label
             ><input id="period" maxlength="160" />
             <label for="category">Category, if reported</label

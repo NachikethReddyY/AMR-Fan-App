@@ -27,7 +27,7 @@
     "security:check": "pnpm security:secrets && pnpm security:sast && pnpm security:audit && pnpm security:self-test",
     "security:dast": "node scripts/security.mjs dast",
     "security:dast:self-test": "node scripts/security.mjs dast-self-test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test && pnpm reports:test",
     "test:web": "jest --config jest.web.config.js --runInBand",
     "test:database:unit": "node --test server/database/config.test.ts",
     "db:up": "node scripts/local-db.mjs up",
@@ -55,7 +55,12 @@
     "rewards:test": "node --test server/rewards/http.test.ts",
     "rewards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts",
     "submissions:test": "node --test server/submissions/http.test.ts",
-    "submissions:test:database": "pnpm db:run-test -- node --test server/submissions/submissions.test.ts"
+    "submissions:test:database": "pnpm db:run-test -- node --test server/submissions/submissions.test.ts",
+    "reports:test": "node --test --test-concurrency=1 server/reports/contracts.test.ts server/reports/extraction.test.ts server/reports/disabled.test.ts",
+    "reports:test:native": "node --test --test-concurrency=1 server/reports/parser.test.ts server/reports/parser-boundaries.test.ts",
+    "reports:test:container": "node --test --test-concurrency=1 server/reports/parser-container.test.ts",
+    "reports:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/reports/reports.test.ts server/reports/http.test.ts server/reports/registration.test.ts server/reports/integration.test.ts server/reports/storage.test.ts",
+    "reports:parser:build": "docker build --tag amr-report-parser:local -f server/reports/Dockerfile ."
   },
   "dependencies": {
     "@expo/html-elements": "^57.0.0",
@@ -69,6 +74,7 @@
     "jose": "6.2.2",
     "lucide-react-native": "^1.48.0",
     "nativewind": "5.0.0-rc.0",
+    "pdfjs-dist": "6.3.289",
     "pg": "8.23.0",
     "react": "19.2.3",
     "react-aria": "^3.52.1",

@@ -28,9 +28,11 @@ export async function createStorage({
     try {
       await mkdir(cursor, { mode: 0o700 });
     } catch (error) {
-      if (
-        !(error instanceof Error && 'code' in error && error.code === 'EEXIST')
-      )
+      if (!(
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'EEXIST'
+      ))
         throw error;
     }
     const entry = await lstat(cursor);
@@ -74,13 +76,11 @@ export async function createStorage({
         await get(id, sha256);
         return { sha256, bytes: bytes.length };
       } catch (error) {
-        if (
-          !(
-            error instanceof Error &&
-            'code' in error &&
-            error.code === 'ENOENT'
-          )
-        ) {
+        if (!(
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'ENOENT'
+        )) {
           if (error instanceof ApiError && error.status === 409)
             throw new ApiError(409, 'Report source is immutable.');
           throw error;
@@ -110,13 +110,11 @@ export async function createStorage({
         try {
           await link(temp, final);
         } catch (error) {
-          if (
-            !(
-              error instanceof Error &&
-              'code' in error &&
-              error.code === 'EEXIST'
-            )
-          )
+          if (!(
+            error instanceof Error &&
+            'code' in error &&
+            error.code === 'EEXIST'
+          ))
             throw error;
           try {
             await get(id, sha256);
