@@ -185,9 +185,13 @@ unauthenticated crawl cannot prove owned content, catalogue authority or account
 the authenticated HTTP/PostgreSQL tests provide that evidence separately. The
 observed ZAP 2.17.0 report passed the existing policy with one informational
 Modern Web Application alert and eight GET endpoints. Its diagnostic insights
-also reported network failures and logged errors whose causes are not retained
-by the stock report output; this is limited passive coverage, not an error-free
-or authenticated scan claim.
+reported 11 errors and 54% network failures. A task-local capture of the final
+scanner log contained 18 ERROR records: 12 failed update-service DNS lookups,
+four failed telemetry-service DNS lookups and two failed-update messages. These
+requests were blocked by network isolation; no telemetry or remote access was
+enabled. Earlier safe/unsafe reports each counted five errors, but their raw
+logs were not retained, so an exact baseline comparison remains unverified.
+This is limited passive coverage, not an error-free or authenticated scan claim.
 
 Phone presentation, demo reset, physical fulfilment, live provider and deployment
 acceptance remain open. Future reset integration must run the exact retained-right
