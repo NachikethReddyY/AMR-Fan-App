@@ -54,6 +54,7 @@ export function createParser({
           let output = Buffer.alloc(0);
           let combined = 0;
           let failure: ApiError | null = null;
+          let measurementFailure: ReturnType<typeof setTimeout> | undefined;
           const fail = (error: ApiError) => {
             failure ??= error;
             child.kill('SIGKILL');
@@ -77,7 +78,23 @@ export function createParser({
             ps.on('error', () =>
               fail(new ApiError(503, 'Parser memory measurement unavailable.')),
             );
-            ps.on('close', () => {
+            ps.on('close', (code) => {
+              // A departed parser needs no measurement. A live one must not lose its guard.
+              if (child.exitCode !== null || child.signalCode !== null) return;
+              if (code !== 0 || !/^\s*\d+\s*$/.test(rss) || Number(rss) <= 0) {
+                // ps can observe exit before Node receives it. Allow one sample interval
+                // for that notification, then fail closed if the parser is still live.
+                measurementFailure ??= setTimeout(() => {
+                  if (child.exitCode === null && child.signalCode === null)
+                    fail(
+                      new ApiError(
+                        503,
+                        'Parser memory measurement unavailable.',
+                      ),
+                    );
+                }, 50);
+                return;
+              }
               if (Number(rss.trim()) > 768 * 1024)
                 fail(new ApiError(422, 'PDF parsing memory limit exceeded.'));
             });
@@ -96,6 +113,7 @@ export function createParser({
           });
           child.on('close', (code) => {
             clearTimeout(timer);
+            clearTimeout(measurementFailure);
             clearInterval(memory);
             if (failure) {
               reject(failure);
