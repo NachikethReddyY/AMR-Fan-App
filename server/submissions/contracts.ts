@@ -16,6 +16,42 @@ const submissionInput = z.strictObject({
   resubmissionOf: uuid.nullable().default(null),
 });
 
+const submissionFields = {
+  id: uuid,
+  sequence: z.string().regex(/^[1-9]\d*$/),
+  ownerProfileId: uuid,
+  profileKind: z.enum(['real', 'demo']),
+  pointsOperationId: uuid,
+  text: z.string(),
+  tag: submissionInput.shape.tag.removeDefault(),
+  fee: z.literal(SUBMISSION_FEE),
+  rankingPoints: z.literal(0),
+  resubmissionOf: uuid.nullable(),
+  createdAt: z.iso.datetime(),
+};
+export const submission = z.discriminatedUnion('status', [
+  z.strictObject({
+    ...submissionFields,
+    status: z.literal('pending'),
+    moderatedBy: z.null(),
+    moderatedAt: z.null(),
+  }),
+  z.strictObject({
+    ...submissionFields,
+    status: z.enum(['approved', 'rejected']),
+    moderatedBy: uuid,
+    moderatedAt: z.iso.datetime(),
+  }),
+]);
+export type Submission = z.infer<typeof submission>;
+export const pageInput = z.strictObject({
+  before: z
+    .string()
+    .regex(/^[1-9]\d{0,18}$/)
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+
 export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) throw new ApiError(400, 'Invalid submission request.');
