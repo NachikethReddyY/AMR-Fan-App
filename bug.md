@@ -46,6 +46,12 @@ migration/seed and safe reset; theme browser/regression proof; repository and
 security checks; native exports. Hosted CI and independent review are pending.
 No security rule is disabled.
 
+Independent review R1 found casing-alias CLI invocations silently returning no
+status on candidate fd5b453. Both entry-guard paths now use native canonical
+paths. A real PostgreSQL subprocess regression proves nonempty status JSON and
+the expected database/role through both aliases; local checks and security pass.
+Replacement hosted CI and exact-head review remain required.
+
 Edited by gpt-6-astra through Codex (T3 Code).
 
 ## SEC-001: UUID in Xcode tooling

@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { after, before, test } from 'node:test';
 import { createDatabase, transaction } from './index.ts';
 import { migrate } from './migrate.ts';
@@ -159,4 +162,43 @@ test('a checkout missing an applied migration refuses to continue', async () => 
       "DELETE FROM public.schema_migrations WHERE name = '9999_peer_fixture.sql'",
     );
   }
+});
+
+test('CLI status executes through absolute paths and same-inode casing aliases', async (t) => {
+  const script = fileURLToPath(
+    new URL('../../scripts/local-db.mjs', import.meta.url),
+  );
+  function status(path: string) {
+    const result = spawnSync(process.execPath, [path, 'status', '--test'], {
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.notEqual(
+      result.stdout.trim(),
+      '',
+      'CLI must execute and return status JSON, not silently exit.',
+    );
+    const value: unknown = JSON.parse(result.stdout);
+    assert.ok(value && typeof value === 'object');
+    assert.equal(
+      Reflect.get(value, 'database'),
+      new URL(process.env.DATABASE_URL ?? '').pathname.slice(1),
+    );
+    assert.equal(
+      Reflect.get(value, 'role'),
+      new URL(process.env.DATABASE_URL ?? '').username,
+    );
+    assert.match(String(Reflect.get(value, 'version')), /^PostgreSQL /);
+    return value;
+  }
+  const expected = status(script);
+  await t.test('casing alias executes the real status command', (t) => {
+    const alias = fileURLToPath(
+      new URL('../../SCRIPTS/local-db.mjs', import.meta.url),
+    );
+    if (!existsSync(alias)) return t.skip('Filesystem is case-sensitive.');
+    assert.equal(statSync(script).ino, statSync(alias).ino);
+    assert.deepEqual(status(alias), expected);
+  });
 });

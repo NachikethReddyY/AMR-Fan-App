@@ -503,7 +503,8 @@ async function main([action, ...args]) {
 if (
   process.argv[1] &&
   existsSync(process.argv[1]) &&
-  realpathSync.native(process.argv[1]) === fileURLToPath(import.meta.url)
+  realpathSync.native(process.argv[1]) ===
+    realpathSync.native(fileURLToPath(import.meta.url))
 ) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(

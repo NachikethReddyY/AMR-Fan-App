@@ -1,5 +1,14 @@
 # Work record
 
+## 2026-09-25: execute the database CLI through casing aliases
+
+- Tracking: INFRA-001, PR #23, independent review R1. The prior correction failed the actual CLI execution criterion: the entry guard canonicalized argv but compared it with an unnormalized module path, so an uppercase absolute script alias exited successfully without running the command. Namespace helper tests did not prove CLI execution.
+- Reproduced the empty output with a real PostgreSQL-backed subprocess test, then canonicalized both entry-guard paths. The regression checks nonempty status JSON and matching database, role and PostgreSQL version through the normal path and a same-inode casing alias. It runs the normal path on every platform and skips only the casing subtest on case-sensitive filesystems.
+- Verification: nine PostgreSQL tests passed with no local skips, including actual alias CLI execution; pnpm check and pnpm security:check passed. Replacement hosted CI and independent review remain required.
+- Classification: project implementation defect and insufficient end-to-end proof; no reusable guidance edited. Preserved stdin import guards, connection-target/TLS fixes and all existing data. No shared service restart or reset.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: worktree namespace and database configuration corrections
 
 - Tracking: INFRA-001, PR #23. Reviewer provisioning exposed a failed acceptance criterion: case aliases of the same macOS directory produced different namespace hashes, so credentials provisioned through T3's uppercase path were unavailable to Node's lowercase runtime path. No incorrect reviewer database was provisioned.
