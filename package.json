@@ -67,6 +67,7 @@
     "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts"
   },
   "dependencies": {
+    "@expo-google-fonts/geist": "^0.4.2",
     "@expo/html-elements": "^57.0.0",
     "@gluestack-ui/core": "^5.0.15",
     "@gluestack-ui/utils": "^5.0.6",
@@ -74,7 +75,12 @@
     "@react-navigation/bottom-tabs": "^7.19.2",
     "@react-navigation/native": "^7.4.1",
     "expo": "~57.0.25",
+    "expo-auth-session": "~57.0.13",
+    "expo-crypto": "~57.0.3",
+    "expo-font": "~57.0.4",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.3",
     "jose": "6.2.2",
     "lucide-react-native": "^1.48.0",
     "nativewind": "5.0.0-rc.0",
