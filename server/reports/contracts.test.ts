@@ -30,7 +30,7 @@ test('review preserves literal value and exact source evidence without inventing
 });
 
 test('missing required fields remain review-needed; method/category gaps stay explicit', () => {
-  for (const field of ['name', 'value', 'unit', 'period', 'meaning']) {
+  for (const field of ['name', 'value', 'unit', 'period', 'meaning'] as const) {
     const candidate = validateCandidate({ ...input, [field]: null }, [
       { page: 1, text },
     ]);
