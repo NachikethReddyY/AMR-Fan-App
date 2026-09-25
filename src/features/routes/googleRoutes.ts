@@ -28,11 +28,21 @@ function transitMode(step: Record<string, unknown>): LegMode | null {
   const details = record(step.transitDetails);
   const line = record(details?.transitLine);
   const vehicle = record(line?.vehicle);
-  if (vehicle?.type === 'BUS') return 'bus';
+  const type = vehicle?.type;
+  if (typeof type !== 'string') return null;
+  if (['BUS', 'INTERCITY_BUS', 'TROLLEYBUS'].includes(type)) return 'bus';
   if (
-    ['SUBWAY', 'TRAIN', 'RAIL', 'LIGHT_RAIL', 'METRO_RAIL', 'TRAM'].includes(
-      String(vehicle?.type),
-    )
+    [
+      'SUBWAY',
+      'RAIL',
+      'METRO_RAIL',
+      'TRAM',
+      'HEAVY_RAIL',
+      'COMMUTER_TRAIN',
+      'HIGH_SPEED_TRAIN',
+      'LONG_DISTANCE_TRAIN',
+      'MONORAIL',
+    ].includes(type)
   )
     return 'train';
   return null;
@@ -41,13 +51,17 @@ function stepMode(
   step: Record<string, unknown>,
   requested: GoogleRequestMode,
 ): LegMode | null {
-  if (step.travelMode === 'WALK') return 'walk';
-  if (step.travelMode === 'BICYCLE') return 'cycle';
-  if (step.travelMode === 'TRANSIT') return transitMode(step);
-  if (step.travelMode === 'DRIVE' && requested === 'electric_car')
-    return 'electric_car';
-  if (step.travelMode === 'DRIVE') return 'car';
-  return null;
+  const actual = step.travelMode;
+  if (requested === 'bus' || requested === 'train') {
+    if (actual === 'WALK') return 'walk';
+    if (actual === 'TRANSIT') return transitMode(step);
+    return null;
+  }
+  if (requested === 'walk') return actual === 'WALK' ? 'walk' : null;
+  if (requested === 'cycle') return actual === 'BICYCLE' ? 'cycle' : null;
+  if (requested === 'electric_car')
+    return actual === 'DRIVE' ? 'electric_car' : null;
+  return actual === 'DRIVE' ? 'car' : null;
 }
 function routeMode(
   legs: RouteLeg[],
