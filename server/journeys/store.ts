@@ -6,6 +6,7 @@ import { ApiError } from '../accounts/types.ts';
 import { authenticateSession } from '../auth/session.ts';
 import {
   candidatePolicy,
+  earningPolicy,
   batchSchema,
   finishSchema,
   id,
@@ -176,19 +177,36 @@ export function createJourneyService({
     );
     if (journey.startedAtMs === null)
       throw new ApiError(409, 'Journey has not started.');
-    const result = {
+    const assessment = assessJourney({
+      route,
+      policy: journey.policy,
+      startedAtMs: journey.startedAtMs,
+      finishedAtMs: journey.finishedAtMs,
+      finishReason: journey.finishReason,
+      revision: journey.assessment.revision + 1,
+      samples: stored.rows.map(
+        (row) => parse(storedSampleSchema, row.sample).evidence,
+      ),
+    });
+    const result: Journey = {
       ...journey,
-      assessment: assessJourney({
-        route,
-        policy: journey.policy,
-        startedAtMs: journey.startedAtMs,
-        finishedAtMs: journey.finishedAtMs,
-        finishReason: journey.finishReason,
-        revision: journey.evidenceRevision,
-        samples: stored.rows.map(
-          (row) => parse(storedSampleSchema, row.sample).evidence,
-        ),
-      }),
+      assessment,
+      assessedLegs:
+        assessment.status !== 'satisfies_configured_rules'
+          ? { kind: 'unavailable', reason: 'insufficient_evidence' }
+          : new Set(journey.selectedLegs.map((leg) => leg.mode)).size !== 1
+            ? { kind: 'unavailable', reason: 'multimodal_distances_unknown' }
+            : {
+                kind: 'available',
+                method: 'gps_single_mode_lower_bound',
+                legs: [
+                  {
+                    mode: journey.selectedLegs[0].mode,
+                    distanceMeters: assessment.observedDistanceMeters,
+                    durationSeconds: (assessment.elapsedMs ?? 0) / 1000,
+                  },
+                ],
+              },
     };
     await client.query('UPDATE app.journeys SET summary = $2 WHERE id = $1', [
       journey.id,
@@ -254,6 +272,9 @@ export function createJourneyService({
           source: route.source,
           mode: route.mode,
           basis: route.basis,
+          selectedLegs: route.legs,
+          assessedLegs: { kind: 'unavailable', reason: 'not_assessed' },
+          earningPolicy: null,
           policy: retainedPolicy,
           preparedAtMs: now,
           startedAtMs: null,
@@ -311,11 +332,13 @@ export function createJourneyService({
         const result: Journey = {
           ...journey,
           state: 'active',
+          earningPolicy,
           policy: retainedPolicy,
           startedAtMs: now,
           captureSessionId: input.captureSessionId,
           assessment: {
             ...journey.assessment,
+            revision: journey.assessment.revision + 1,
             version: retainedPolicy.version,
             reasons: ['missing_start', 'missing_arrival'],
           },
@@ -407,6 +430,8 @@ export function createJourneyService({
               })),
             ],
           );
+        if (!newSamples.length)
+          return record(client, principalId, input.requestId, hash, journey);
         const result = await assess(client, {
           ...journey,
           evidenceRevision:

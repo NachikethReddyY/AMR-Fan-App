@@ -734,3 +734,140 @@ test('session expiry is checked after an unchanged session-row wait, before a co
     lock.release();
   }
 });
+
+test('settlement projection uses the caller transaction, keeps nonprecise inputs after expiry, and separates assessment revisions', async () => {
+  const { lockJourneyForSettlement } = await import('./settlement.ts');
+  const account = await ensureAccount(pool, { issuer, subject: 'a' });
+  let now = Date.now();
+  const service = createJourneyService({ pool, env, clock: () => now });
+  const route = routeFixture(now);
+  const prepared = await service.prepare(
+    token,
+    { profileId, requestId: randomUUID() },
+    route,
+  );
+  const captureSessionId = randomUUID();
+  const active = await service.start(token, prepared.id, {
+    requestId: randomUUID(),
+    captureSessionId,
+  });
+  const startTime = now;
+  now += 60000;
+  const recorded = await service.appendEvidence(token, active.id, {
+    requestId: randomUUID(),
+    captureSessionId,
+    samples: [route.start, route.end].map((point, index) => ({
+      ...point,
+      id: randomUUID(),
+      acquiredAtMs: startTime + index * 60000,
+      receivedAtMs: now,
+      accuracyMeters: 1,
+      context: 'foreground',
+      mocked: false,
+    })),
+  });
+  const finished = await service.finish(token, active.id, {
+    requestId: randomUUID(),
+    captureSessionId,
+    endedAtMs: now,
+    reason: 'arrival',
+  });
+  assert.equal(finished.assessment.status, 'satisfies_configured_rules');
+  assert.ok(finished.assessment.revision > recorded.assessment.revision);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const projection = await lockJourneyForSettlement(
+      client,
+      account.id,
+      profileId,
+      active.id,
+    );
+    assert.equal(
+      projection.earningPolicy?.arithmeticVersion,
+      'floor-decimal-v1',
+    );
+    assert.equal(projection.earningPolicy?.pointsPerKg, 50);
+    assert.equal(projection.earningPolicy?.journeyCap, 2000);
+    assert.deepEqual(projection.selectedLegs, [
+      { mode: 'bus', distanceMeters: 1112, durationSeconds: 300 },
+    ]);
+    assert.equal(projection.assessedLegs.kind, 'available');
+    assert.equal(
+      projection.assessmentIdentity.revision,
+      finished.assessment.revision,
+    );
+    assert.equal(projection.assessment.calibration, 'unvalidated');
+    assert.ok(
+      !/latitude|longitude|points"|geometry/.test(JSON.stringify(projection)),
+    );
+    await client.query('COMMIT');
+    now = prepared.preciseExpiresAtMs;
+    await service.cleanup();
+    await client.query('BEGIN');
+    assert.deepEqual(
+      await lockJourneyForSettlement(client, account.id, profileId, active.id),
+      projection,
+    );
+    await assert.rejects(
+      lockJourneyForSettlement(client, randomUUID(), profileId, active.id),
+      { status: 404 },
+    );
+    await client.query('ROLLBACK');
+  } finally {
+    await client.query('ROLLBACK');
+    client.release();
+  }
+});
+
+test('multimodal evidence cannot fabricate assessed leg distances and duplicate samples preserve assessment identity', async () => {
+  let now = Date.now();
+  const service = createJourneyService({ pool, env, clock: () => now });
+  const route = routeFixture(now);
+  route.legs = [
+    { mode: 'walk', distanceMeters: 100, durationSeconds: 100 },
+    { mode: 'bus', distanceMeters: 1012, durationSeconds: 200 },
+  ];
+  const prepared = await service.prepare(
+    token,
+    { profileId, requestId: randomUUID() },
+    route,
+  );
+  const captureSessionId = randomUUID();
+  await service.start(token, prepared.id, {
+    requestId: randomUUID(),
+    captureSessionId,
+  });
+  const startTime = now;
+  now += 60000;
+  const batch = {
+    requestId: randomUUID(),
+    captureSessionId,
+    samples: [route.start, route.end].map((point, index) => ({
+      ...point,
+      id: randomUUID(),
+      acquiredAtMs: startTime + index * 60000,
+      receivedAtMs: now,
+      accuracyMeters: 1,
+      context: 'foreground',
+      mocked: false,
+    })),
+  };
+  await service.appendEvidence(token, prepared.id, batch);
+  const finished = await service.finish(token, prepared.id, {
+    requestId: randomUUID(),
+    captureSessionId,
+    endedAtMs: now,
+    reason: 'arrival',
+  });
+  assert.equal(finished.assessment.status, 'satisfies_configured_rules');
+  assert.deepEqual(finished.assessedLegs, {
+    kind: 'unavailable',
+    reason: 'multimodal_distances_unknown',
+  });
+  const repeated = await service.appendEvidence(token, prepared.id, {
+    ...batch,
+    requestId: randomUUID(),
+  });
+  assert.deepEqual(repeated.assessment, finished.assessment);
+});

@@ -157,6 +157,33 @@ export const assessmentSchema = z.strictObject({
   ]),
 });
 export type Assessment = z.infer<typeof assessmentSchema>;
+export const earningPolicy = {
+  version: 'initial-50-cap-2000-v1',
+  pointsPerKg: 50,
+  journeyCap: 2000,
+  arithmeticVersion: 'floor-decimal-v1',
+} as const;
+const earningPolicySchema = z.strictObject({
+  version: z.literal(earningPolicy.version),
+  pointsPerKg: z.literal(50),
+  journeyCap: z.literal(2000),
+  arithmeticVersion: z.literal('floor-decimal-v1'),
+});
+export const assessedLegsSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('available'),
+    method: z.literal('gps_single_mode_lower_bound'),
+    legs: routeSchema.shape.legs,
+  }),
+  z.strictObject({
+    kind: z.literal('unavailable'),
+    reason: z.enum([
+      'not_assessed',
+      'insufficient_evidence',
+      'multimodal_distances_unknown',
+    ]),
+  }),
+]);
 export const summarySchema = z.strictObject({
   id,
   profileId: id,
@@ -164,6 +191,9 @@ export const summarySchema = z.strictObject({
   source: sourceSchema,
   mode,
   basis: routeSchema.shape.basis,
+  selectedLegs: routeSchema.shape.legs,
+  assessedLegs: assessedLegsSchema,
+  earningPolicy: earningPolicySchema.nullable(),
   policy: policySchema,
   preparedAtMs: timestamp,
   startedAtMs: timestamp.nullable(),
