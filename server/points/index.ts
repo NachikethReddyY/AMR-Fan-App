@@ -219,7 +219,7 @@ export async function readPointsHistory(
     const result = await client.query<Record<string, unknown>>(
       `SELECT ${entryColumns} FROM app.points_operations
        WHERE profile_id = $1 AND ($2::numeric IS NULL OR sequence < $2::numeric)
-       ORDER BY sequence DESC LIMIT $3`,
+       ORDER BY points_operations.sequence DESC LIMIT $3`,
       [id, page.before ?? null, page.limit + 1],
     );
     const entries = result.rows
