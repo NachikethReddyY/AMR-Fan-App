@@ -443,3 +443,159 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
     await pool.end();
   }
 });
+
+test('R34-1: provider-prepared closed WALK loop finishes through registered HTTP without false reversal', async (t) => {
+  const points = [
+    { latitude: 1.29, longitude: 103.85 },
+    { latitude: 1.295, longitude: 103.85 },
+    { latitude: 1.295, longitude: 103.855 },
+    { latitude: 1.29, longitude: 103.855 },
+    { latitude: 1.29, longitude: 103.85 },
+  ];
+  const { createApi } = await import('../api/app.ts');
+  const pool = createDatabase();
+  const issuer = `urn:amr:r34-loop:${randomUUID()}`;
+  let api: Server | undefined;
+  let providerCalls = 0;
+  const upstream = createServer(async (req, res) => {
+    providerCalls++;
+    const chunks: Buffer[] = [];
+    for await (const part of req) chunks.push(Buffer.from(part));
+    const query = JSON.parse(Buffer.concat(chunks).toString());
+    assert.equal(query.travelMode, 'WALK');
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        routes: [
+          {
+            distanceMeters: 2224,
+            duration: '240s',
+            polyline: { encodedPolyline: 'o}zFoezxRg^??g^f^??f^' },
+            legs: [
+              {
+                startLocation: { latLng: points[0] },
+                endLocation: { latLng: points[4] },
+                steps: [
+                  {
+                    travelMode: 'WALK',
+                    distanceMeters: 2224,
+                    staticDuration: '240s',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+  try {
+    await migrate(pool);
+    const account = await ensureAccount(pool, { issuer, subject: 'loop' });
+    const profile = account.profiles.find((p) => p.kind === 'real');
+    assert.ok(profile);
+    const token = (await createSession(pool, account.id)).token;
+    const upstreamBase = await listen(upstream);
+    t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+    api = createApi({
+      pool,
+      env: {
+        NODE_ENV: 'test',
+        API_HOST: '127.0.0.1',
+        AUTH_DEV_ENABLED: 'true',
+        JOURNEY_FIXTURES_ENABLED: 'true',
+        AMR_ROUTES_SYNTHETIC: 'true',
+        AMR_GOOGLE_ROUTES_ENDPOINT: `${upstreamBase}/directions/v2:computeRoutes`,
+      },
+    });
+    const base = await listen(api);
+    const post = async (path: string, body: unknown) => {
+      const response = await fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      assert.ok(response.ok, `HTTP ${response.status}`);
+      return response.json();
+    };
+    const plan = planSchema.parse(
+      await post('/v1/journeys/prepare', {
+        profileId: profile.id,
+        requestId: randomUUID(),
+        query: {
+          origin: points[0],
+          destination: points[4],
+          modes: ['WALK'],
+          extraMinutes: 0,
+        },
+      }),
+    );
+    assert.equal(plan.kind, 'prepared');
+    assert.ok(
+      plan.kind === 'prepared' && plan.candidates[0].kind === 'prepared',
+    );
+    const journeyId = plan.candidates[0].journey.id;
+    const captureSessionId = randomUUID();
+    const active = summarySchema.parse(
+      await post(`/v1/journeys/${journeyId}/start`, {
+        requestId: randomUUID(),
+        captureSessionId,
+      }),
+    );
+    assert.ok(active.startedAtMs !== null);
+    const startTime = active.startedAtMs;
+    t.mock.timers.tick(240000);
+    await post(`/v1/journeys/${journeyId}/evidence`, {
+      requestId: randomUUID(),
+      captureSessionId,
+      samples: points.map((point, index) => ({
+        ...point,
+        id: randomUUID(),
+        acquiredAtMs: startTime + index * 60000,
+        receivedAtMs: Date.now(),
+        accuracyMeters: 2,
+        mocked: false,
+        context: 'foreground',
+      })),
+    });
+    const finished = summarySchema.parse(
+      await post(`/v1/journeys/${journeyId}/finish`, {
+        requestId: randomUUID(),
+        captureSessionId,
+        endedAtMs: Date.now(),
+        reason: 'arrival',
+      }),
+    );
+    const fetched = await fetch(`${base}/v1/journeys/${journeyId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(fetched.status, 200);
+    const persisted = summarySchema.parse(await fetched.json());
+    assert.deepEqual(persisted.assessment, finished.assessment);
+    t.diagnostic(
+      JSON.stringify({ providerCalls, assessment: persisted.assessment }),
+    );
+    assert.equal(providerCalls, 1);
+    assert.equal(persisted.assessment.startRecorded, true);
+    assert.equal(persisted.assessment.arrivalRecorded, true);
+    assert.equal(persisted.assessment.status, 'satisfies_configured_rules');
+    assert.deepEqual(persisted.assessment.reasons, []);
+    assert.equal(persisted.assessment.calibration, 'unvalidated');
+  } finally {
+    if (api?.listening) await close(api);
+    if (upstream.listening) await close(upstream);
+    t.mock.timers.reset();
+    await pool.query('DELETE FROM app.principals WHERE issuer=$1', [issuer]);
+    await pool.end();
+    t.diagnostic(
+      JSON.stringify({
+        apiListening: api?.listening ?? false,
+        upstreamListening: upstream.listening,
+        poolEnded: true,
+      }),
+    );
+  }
+});

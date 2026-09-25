@@ -132,6 +132,22 @@ Do not substitute route ETA or the fan's extra-time tolerance as an award speed
 or duration cutoff. GPS speed cannot prove bus/train use. Rule satisfaction is
 limited to the configured checks, not blanket real-world eligibility.
 
+Repeated coordinates and shared segments can represent more than one ordered
+route position. The assessor retains positions within the sample's existing
+accuracy uncertainty of the nearest spatial match, then selects the closest
+progression from the preceding sample. It uses one consistent segment length
+along the route, including at a loop's repeated origin. Duplicate vertices remain
+valid; they do not create extra progression.
+
+Distinct route positions equally plausible within consecutive samples' accuracy
+uncertainty produce `ambiguous_progression` and insufficient evidence. The
+assessor resumes direction checks only after position is unambiguous again;
+it does not assume the greatest forward progress. For example, an overlapping
+out-and-back trace may not distinguish intended forward traversal from reversal.
+An unambiguous backwards step or definite off-route sample remains ineligible.
+This resolves an existing ordered-adherence ambiguity without changing numeric
+calibration thresholds or claiming physically verified travel.
+
 ## Future settlement interface
 
 `server/journeys/settlement.ts` exports the compile-ready

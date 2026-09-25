@@ -22,7 +22,7 @@ export function distanceMeters(a: Point, b: Point) {
 // Local tangent-plane projection is used only for the Singapore route corridor.
 function routeDistance(point: Point, points: readonly Point[]) {
   let nearest = Infinity;
-  let progress = 0;
+  const positions: { offset: number; progress: number }[] = [];
   let traversed = 0;
   const scale = Math.cos(point.latitude * radians);
   for (let i = 1; i < points.length; i++) {
@@ -40,14 +40,52 @@ function routeDistance(point: Point, points: readonly Point[]) {
         ? 0
         : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared));
     const offset = Math.hypot(ax + fraction * dx, ay + fraction * dy);
-    const length = Math.sqrt(lengthSquared);
-    if (offset < nearest) {
-      nearest = offset;
-      progress = traversed + fraction * length;
-    }
+    const length = distanceMeters(a, b);
+    nearest = Math.min(nearest, offset);
+    positions.push({ offset, progress: traversed + fraction * length });
     traversed += length;
   }
-  return { offset: nearest, progress };
+  return { offset: nearest, positions };
+}
+
+function matchProgress(
+  projected: ReturnType<typeof routeDistance>,
+  accuracy: number,
+  previous: { meters: number; accuracy: number } | null,
+  firstSample: boolean,
+) {
+  // Preserve spatially indistinguishable occurrences, including shared segments.
+  // Accuracy is the existing sample uncertainty, not a new adherence threshold.
+  const positions = projected.positions
+    .filter((position) => position.offset <= projected.offset + accuracy)
+    .map((position) => position.progress);
+  if (!previous)
+    return {
+      meters: Math.min(...positions),
+      ambiguous:
+        !firstSample &&
+        Math.max(...positions) - Math.min(...positions) > accuracy,
+    };
+  const nearest = Math.min(
+    ...positions.map((position) => Math.abs(position - previous.meters)),
+  );
+  const uncertainty = accuracy + previous.accuracy;
+  const plausible = positions.filter(
+    (position) => Math.abs(position - previous.meters) <= nearest + uncertainty,
+  );
+  // Adjacent/duplicate segments at one route position are the same occurrence.
+  // Distinct equally plausible positions cannot establish direction. Resume from
+  // a later sample instead of inventing forward progress or a reverse verdict.
+  if (Math.max(...plausible) - Math.min(...plausible) > uncertainty)
+    return { meters: previous.meters, ambiguous: true };
+  return {
+    meters: positions.reduce((best, position) =>
+      Math.abs(position - previous.meters) < Math.abs(best - previous.meters)
+        ? position
+        : best,
+    ),
+    ambiguous: false,
+  };
 }
 
 export function assessJourney({
@@ -102,18 +140,29 @@ export function assessJourney({
     } else if (offRoute + sample.accuracyMeters > policy.corridorMeters) {
       reasons.add('uncertain_corridor');
     }
-    if (
-      lastProgress &&
-      projected.progress + sample.accuracyMeters <
-        lastProgress.meters - lastProgress.accuracy
-    ) {
-      contradiction = true;
-      reasons.add('reverse_progression');
+    const matched = matchProgress(
+      projected,
+      sample.accuracyMeters,
+      lastProgress,
+      usable.length === 0,
+    );
+    if (matched.ambiguous) {
+      reasons.add('ambiguous_progression');
+      lastProgress = null;
+    } else {
+      if (
+        lastProgress &&
+        matched.meters + sample.accuracyMeters <
+          lastProgress.meters - lastProgress.accuracy
+      ) {
+        contradiction = true;
+        reasons.add('reverse_progression');
+      }
+      lastProgress = {
+        meters: matched.meters,
+        accuracy: sample.accuracyMeters,
+      };
     }
-    lastProgress = {
-      meters: projected.progress,
-      accuracy: sample.accuracyMeters,
-    };
     usable.push(sample);
   }
   const contains = (sample: LocationSample, point: Point) =>

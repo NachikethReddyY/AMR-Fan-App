@@ -223,3 +223,156 @@ test('an explicit retained mode-speed candidate detects teleport without borrowi
   assert.equal(plausible.modePlausibility, 'consistent_with_configured_speed');
   assert.equal(plausible.calibration, 'unvalidated');
 });
+
+const loopPoints = [
+  { latitude: 1.29, longitude: 103.85 },
+  { latitude: 1.295, longitude: 103.85 },
+  { latitude: 1.295, longitude: 103.855 },
+  { latitude: 1.29, longitude: 103.855 },
+  { latitude: 1.29, longitude: 103.85 },
+];
+function geometryAssessment(points: typeof loopPoints, visited = points) {
+  return assessJourney({
+    ...input,
+    route: {
+      ...route,
+      mode: 'walk',
+      start: points[0],
+      end: points[points.length - 1],
+      points,
+    },
+    finishedAtMs: startedAtMs + (visited.length - 1) * 60000,
+    samples: visited.map((point, index) => ({
+      ...sample(point.latitude, index * 60),
+      ...point,
+      accuracyMeters: 2,
+      mocked: false,
+    })),
+  });
+}
+
+test('R34-1: forward closed WALK loop resolves the final origin to its later route occurrence', () => {
+  const assessed = geometryAssessment(loopPoints);
+  assert.equal(assessed.status, 'satisfies_configured_rules');
+  assert.deepEqual(assessed.reasons, []);
+  assert.equal(assessed.startRecorded, true);
+  assert.equal(assessed.arrivalRecorded, true);
+  assert.equal(assessed.calibration, 'unvalidated');
+});
+
+test('R34-1: duplicate vertices retain useful loop geometry and spatially near closure selects the later occurrence', () => {
+  const duplicates = loopPoints.flatMap((point) => [point, point]);
+  assert.equal(
+    geometryAssessment(duplicates, loopPoints).status,
+    'satisfies_configured_rules',
+  );
+  const nearClosure = [
+    ...loopPoints.slice(0, -1),
+    { latitude: 1.290005, longitude: 103.85 },
+  ];
+  assert.equal(
+    geometryAssessment(loopPoints, nearClosure).status,
+    'satisfies_configured_rules',
+  );
+});
+
+test('R34-1: backwards loops, reversal before closure and definite off-route samples remain ineligible', () => {
+  const reversedLoop = geometryAssessment(
+    loopPoints,
+    [...loopPoints].reverse(),
+  );
+  assert.equal(reversedLoop.status, 'ineligible');
+  assert.ok(reversedLoop.reasons.includes('reverse_progression'));
+  const reversedEdge = geometryAssessment(loopPoints, [
+    loopPoints[0],
+    loopPoints[1],
+    { latitude: 1.292, longitude: 103.85 },
+    ...loopPoints.slice(2),
+  ]);
+  assert.equal(reversedEdge.status, 'ineligible');
+  assert.ok(reversedEdge.reasons.includes('reverse_progression'));
+  const offRoute = geometryAssessment(loopPoints, [
+    loopPoints[0],
+    { latitude: 1.31, longitude: 103.87 },
+    ...loopPoints.slice(1),
+  ]);
+  assert.equal(offRoute.status, 'ineligible');
+  assert.ok(offRoute.reasons.includes('off_route'));
+});
+
+test('R34-1: shared forward segments retain traversal position and cannot conceal a reversal on the later pass', () => {
+  const a = loopPoints[0],
+    b = loopPoints[1],
+    c = loopPoints[2],
+    d = loopPoints[3];
+  const end = { latitude: 1.3, longitude: 103.85 };
+  const shared = [a, b, c, d, a, b, end];
+  const forward = geometryAssessment(shared);
+  assert.equal(forward.status, 'satisfies_configured_rules');
+  const backward = geometryAssessment(shared, [
+    a,
+    b,
+    c,
+    d,
+    a,
+    b,
+    { latitude: 1.292, longitude: 103.85 },
+    b,
+    end,
+  ]);
+  assert.equal(backward.status, 'ineligible');
+  assert.ok(backward.reasons.includes('reverse_progression'));
+});
+
+test('R34-1: a figure-eight crossing is ordered by its earlier traversal, not the greatest available progress', () => {
+  const center = { latitude: 1.2925, longitude: 103.8525 };
+  const crossing = [
+    center,
+    loopPoints[0],
+    loopPoints[1],
+    center,
+    loopPoints[3],
+    loopPoints[2],
+    center,
+  ];
+  assert.equal(
+    geometryAssessment(crossing).status,
+    'satisfies_configured_rules',
+  );
+  const reverse = geometryAssessment(crossing, [
+    center,
+    loopPoints[0],
+    loopPoints[1],
+    center,
+    loopPoints[2],
+    loopPoints[3],
+    center,
+  ]);
+  assert.equal(reverse.status, 'ineligible');
+  assert.ok(reverse.reasons.includes('reverse_progression'));
+});
+
+test('R34-1: indistinguishable forward/backward shared-segment occurrences report insufficient progression', () => {
+  const a = loopPoints[0],
+    b = loopPoints[1];
+  const middle = { latitude: 1.2925, longitude: 103.85 };
+  const outAndBack = geometryAssessment([a, b, a], [a, middle, b, middle, a]);
+  assert.equal(outAndBack.status, 'insufficient_evidence');
+  assert.ok(outAndBack.reasons.includes('ambiguous_progression'));
+  assert.ok(!outAndBack.reasons.includes('reverse_progression'));
+});
+
+test('R34-1: unresolved shared travel does not disable subsequent unambiguous reversal checks', () => {
+  const a = loopPoints[0],
+    b = loopPoints[1];
+  const c = { latitude: 1.29, longitude: 103.86 };
+  const end = { latitude: 1.295, longitude: 103.86 };
+  const backward = { latitude: 1.29, longitude: 103.857 };
+  const assessed = geometryAssessment(
+    [a, b, a, c, end],
+    [a, b, a, c, backward, c, end],
+  );
+  assert.equal(assessed.status, 'ineligible');
+  assert.ok(assessed.reasons.includes('ambiguous_progression'));
+  assert.ok(assessed.reasons.includes('reverse_progression'));
+});
