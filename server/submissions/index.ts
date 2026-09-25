@@ -7,6 +7,8 @@ import { transaction } from '../database/index.ts';
 import { runPointsOperation } from '../points/index.ts';
 import {
   SUBMISSION_FEE,
+  adminPageInput,
+  decisionInput,
   pageInput,
   parse,
   parseSubmissionInput,
@@ -129,5 +131,80 @@ export async function listOwnSubmissions(
       nextCursor:
         result.rows.length > page.limit ? submissions.at(-1)?.sequence : null,
     };
+  });
+}
+
+export async function listAdminSubmissions(
+  pool: Pool,
+  token: string,
+  query: unknown = {},
+) {
+  const page = parse(adminPageInput, query);
+  const actor = await authenticateSession(pool, token);
+  return transaction(pool, async (client) => {
+    await authorize(client, actor.principalId, token, true);
+    const result = await client.query<Record<string, unknown>>(
+      `SELECT ${columns} FROM ${source}
+      WHERE COALESCE(d.status, 'pending') = $1 AND ($2::numeric IS NULL OR s.sequence < $2::numeric)
+      ORDER BY s.sequence DESC LIMIT $3`,
+      [page.status, page.before ?? null, page.limit + 1],
+    );
+    const submissions = result.rows
+      .slice(0, page.limit)
+      .map((row) => submission.parse(row));
+    return {
+      submissions,
+      nextCursor:
+        result.rows.length > page.limit ? submissions.at(-1)?.sequence : null,
+    };
+  });
+}
+
+export async function moderateSubmission(
+  pool: Pool,
+  token: string,
+  submissionId: string,
+  value: unknown,
+) {
+  const id = parse(uuid, submissionId);
+  const input = parse(decisionInput, value);
+  const actor = await authenticateSession(pool, token);
+  return transaction(pool, async (client) => {
+    await authorize(client, actor.principalId, token, true);
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [`submission-decision:${actor.principalId}:${input.requestId}`],
+    );
+    const replay = await client.query<{
+      submission_id: string;
+      status: string;
+    }>(
+      'SELECT submission_id, status FROM app.fan_submission_decisions WHERE admin_id = $1 AND request_id = $2',
+      [actor.principalId, input.requestId],
+    );
+    if (replay.rows[0]) {
+      if (
+        replay.rows[0].submission_id !== id ||
+        replay.rows[0].status !== input.status
+      )
+        throw new ApiError(
+          409,
+          'Request key was already used for a different decision.',
+        );
+      return readSubmission(client, id);
+    }
+    const target = await client.query(
+      'SELECT id FROM app.fan_submissions WHERE id = $1 FOR UPDATE',
+      [id],
+    );
+    if (!target.rowCount) throw new ApiError(404, 'Submission not found.');
+    const previous = await readSubmission(client, id);
+    if (previous.status !== 'pending')
+      throw new ApiError(409, 'This submission has already been reviewed.');
+    await client.query(
+      'INSERT INTO app.fan_submission_decisions(submission_id, admin_id, request_id, status) VALUES ($1,$2,$3,$4)',
+      [id, actor.principalId, input.requestId, input.status],
+    );
+    return readSubmission(client, id);
   });
 }

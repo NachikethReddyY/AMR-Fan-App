@@ -51,6 +51,13 @@ export const pageInput = z.strictObject({
     .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
+export const adminPageInput = pageInput.extend({
+  status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
+});
+export const decisionInput = z.strictObject({
+  requestId: uuid,
+  status: z.enum(['approved', 'rejected']),
+});
 
 export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
