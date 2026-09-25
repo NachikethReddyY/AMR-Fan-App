@@ -10,7 +10,7 @@ import { assignRole, ensureAccount } from '../accounts/store.ts';
 import { createSession, revokeSession } from '../auth/session.ts';
 import { createApi } from '../api/app.ts';
 import { runPointsOperation, readPointsHistory } from './index.ts';
-import { MAX_POINTS } from './contracts.ts';
+import { MAX_POINTS, historyEntry } from './contracts.ts';
 import { z } from 'zod';
 
 if (
@@ -73,6 +73,77 @@ after(async () => {
   }
   // Immutable accounting fixtures remain in this disposable test namespace.
   await pool.end();
+});
+
+test('History orders numeric sequences across a digit boundary and paginates only the owned profile', async () => {
+  const admin = await account('numeric-history-admin', true);
+  const fan = await account('numeric-history-fan');
+  const other = await account('numeric-history-other');
+  // Advance only the disposable test sequence so repeat runs also cross a digit boundary.
+  const sequence = await pool.query<{ last_value: string }>(
+    'SELECT last_value::text FROM app.points_operations_sequence_seq',
+  );
+  let boundary = 10n;
+  while (boundary - 3n <= BigInt(sequence.rows[0].last_value)) boundary *= 10n;
+  await pool.query(
+    "SELECT setval(pg_get_serial_sequence('app.points_operations', 'sequence'), $1::bigint, false)",
+    [(boundary - 3n).toString()],
+  );
+  async function record(profileId: string, delta: number) {
+    const response = await adjust(admin.token, profileId, delta);
+    assert.equal(response.status, 201);
+    return historyEntry.parse(await response.json());
+  }
+  const first = await record(fan.real.id, 10);
+  const second = await record(fan.real.id, -10);
+  const grant = await record(fan.real.id, 600);
+  const debit = await record(fan.real.id, -500);
+  assert.equal(grant.sequence, (boundary - 1n).toString());
+  assert.equal(debit.sequence, boundary.toString());
+  const atBoundary = await history(fan.token, fan.real.id);
+  assert.equal(atBoundary.balance, 100);
+  assert.deepEqual(atBoundary.entries, [debit, grant, second, first]);
+
+  const demo = await record(fan.demo.id, 77);
+  const foreign = await record(other.real.id, 88);
+  const fifth = await record(fan.real.id, 20);
+  const sixth = await record(fan.real.id, -20);
+  async function page(before?: string) {
+    const response = await request(
+      `/v1/profiles/${fan.real.id}/points/history?limit=2${before ? `&before=${before}` : ''}`,
+      fan.token,
+    );
+    assert.equal(response.status, 200);
+    return z
+      .object({
+        balance: z.number(),
+        entries: z.array(historyEntry),
+        nextCursor: z.string().nullable(),
+      })
+      .parse(await response.json());
+  }
+  const newest = await page();
+  assert.equal(newest.nextCursor, fifth.sequence);
+  const middle = await page(newest.nextCursor);
+  assert.equal(middle.nextCursor, grant.sequence);
+  const oldest = await page(middle.nextCursor);
+  assert.equal(oldest.nextCursor, null);
+  assert.deepEqual(
+    [newest.balance, middle.balance, oldest.balance],
+    [100, 100, 100],
+  );
+  const entries = [...newest.entries, ...middle.entries, ...oldest.entries];
+  assert.deepEqual(entries, [sixth, fifth, debit, grant, second, first]);
+  assert.equal(new Set(entries.map((entry) => entry.id)).size, 6);
+  assert.deepEqual((await history(fan.token, fan.demo.id)).entries, [demo]);
+  assert.deepEqual((await history(other.token, other.real.id)).entries, [
+    foreign,
+  ]);
+  const denied = await request(
+    `/v1/profiles/${fan.real.id}/points/history?limit=2&before=${fifth.sequence}`,
+    other.token,
+  );
+  assert.equal(denied.status, 404);
 });
 
 test('assigned admin grants points and the intended fan reads the recorded History', async () => {
