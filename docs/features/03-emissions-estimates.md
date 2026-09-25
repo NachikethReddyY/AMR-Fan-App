@@ -37,3 +37,22 @@ The existing [feasibility research](../research/spec-feasibility.md) records met
 | A country's mode factor is missing                                              | The corresponding estimate is unavailable or uses a separately approved, disclosed fallback. Zero is not invented.    |
 | Admin changes an emissions factor while a journey is active                     | Complete the active journey using the factor version retained at Start journey.                                       |
 | Sourced arithmetic fixture has a 5 kg single-driver baseline and a 2 kg journey | Show 3 kg estimated CO2e avoided and disclose the same-endpoint baseline; this is a fixture, not a real route claim.  |
+
+## Server calculation candidate
+
+The server reuses the exact reviewed PR26 calculation modules and tests, including
+finite aggregate checks. Factor IDs, source URLs, periods, passenger-kilometre
+units and assumptions remain in the result. CAG FY2024/25 car/bus/MRT factors
+are indicative demo estimates, not approved real-journey award factors. The
+walking/cycling factors cover operational travel only. Cab/EV factors remain
+unselected. The [server source record](../operations/routes.md) pins module
+lineage and the official planning-area dataset used for conservative Singapore
+applicability. Unsupported geography or transit factor categories remain
+unavailable even when a route can be shown.
+
+The fastest valid available route sets the time reference. Exact seconds and
+unrounded emissions determine eligibility. Equal emissions use shorter duration,
+then stable route ID. The conventional-car baseline uses its own summed leg
+distance for the same requested endpoints. Missing geography or a baseline
+withholds the recommendation without changing route availability. No AI, points
+rounding, persistence or journey award is introduced by this candidate.
