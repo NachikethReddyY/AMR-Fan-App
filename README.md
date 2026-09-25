@@ -87,19 +87,18 @@ not tested; they are outside this foundation issue.
 - `index.ts`: Expo entry point.
 - `src/App.tsx`: neutral starter screen; future app code belongs under `src/`.
 - `app.json`: local Expo app metadata and supported platforms.
-- `convex/README.md`: reserved backend location and future integration-test approach.
+- `convex/README.md`: superseded backend placeholder; Azure is the selected platform.
 - `.env.example`: optional future configuration names, with placeholders only.
 - `docs/`, `CONTEXT.md`, `.scratch/`: preserved planning and screen proposals.
 
-No variables are read by the starter. A later Convex integration may use
-`EXPO_PUBLIC_CONVEX_URL` for its public endpoint and `CONVEX_DEPLOYMENT` for local
-Convex tooling. Do not run Convex setup yet: no service is provisioned, and no
-Convex dependency, schema, authentication, or client is installed.
+No variables are read by the starter. Azure services and their configuration
+remain unselected. No backend service is provisioned, and no backend dependency,
+schema, authentication, or client is installed.
 `EXPO_PUBLIC_*` values are public in app bundles; never put secrets in them. Local
 `.env` files, signing keys, dependency folders, generated native projects and
 build output are ignored. Only `.env.example` is intended for version control.
 
-Future fan/admin tests should exercise an authenticated Convex application
+Future fan/admin tests should exercise an authenticated backend application
 boundary with controlled time, Maps responses, and location samples. Background
 tracking and arrival also require physical iOS and Android verification. Starter
 launch checks do not establish any of these product behaviors.

@@ -1,0 +1,39 @@
+# Emissions estimates
+
+Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
+
+Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+
+## Outcome
+
+Fans see comparable estimated emissions and estimated savings for real route candidates, with a disclosed comparison baseline.
+
+## Accepted behavior
+
+- The confirmed baseline is one person driving a conventional car between the same starting point and destination. Calculate that driving route; do not assume a public-transport route has the same distance.
+- Calculate journey emissions from route-leg distances and sourced, versioned country/mode factors with compatible units. Sum the applicable legs and compare the result with the baseline.
+- Show the baseline beside "estimated CO2e avoided". These are estimates, not measured savings, verified carbon offsets or proof of a causal reduction. "CO2 cost" means emissions here, not ticket fare.
+- Start with Singapore-specific inputs for bus, train, car, electric car and cab, retaining supported walking/cycling. Record geography, mode, unit, source, reference/effective period, method, assumptions and demo/approved status.
+- Missing factors make the estimate unavailable unless a separate disclosed fallback has been approved. Never invent a zero or a model-generated factor.
+- Retain the factor and earning-rule versions selected at Start journey. Active journeys finish using those versions; later admin edits apply to new journeys and do not recalculate historical awards.
+- Deterministic code owns emissions and accountable totals. AI may extract candidates for review or explain the calculated results; it cannot decide emissions, eligibility, points or balances.
+- Keep planned route estimates, simulated journeys and completed real travel distinct.
+
+## Depends on
+
+Normalized route candidates from [route planning](02-route-planning.md). [Points and History](05-points-and-history.md) applies earning rules to the assessed estimate; this feature does not mutate balances.
+
+## Before implementation
+
+Research and verify numerical Singapore factors, passenger/vehicle units, fuel and occupancy assumptions, electricity treatment and compatible CO2/CO2e coverage. No numerical factor is approved by this document. Define calculation precision, display rounding and whole-point rounding before the first calculated award. The baseline itself is settled.
+
+The existing [feasibility research](../research/spec-feasibility.md) records methodology and its limits. Choosing a dataset is implementation research, not a request for the user to supply facts.
+
+## Acceptance cases
+
+| Scenario                                                                        | Expected observation                                                                                                  |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Fan compares routes in a supported country                                      | Bus, train, car, electric car and cab estimates use that country's applicable data where those options are available. |
+| A country's mode factor is missing                                              | The corresponding estimate is unavailable or uses a separately approved, disclosed fallback. Zero is not invented.    |
+| Admin changes an emissions factor while a journey is active                     | Complete the active journey using the factor version retained at Start journey.                                       |
+| Sourced arithmetic fixture has a 5 kg single-driver baseline and a 2 kg journey | Show 3 kg estimated CO2e avoided and disclose the same-endpoint baseline; this is a fixture, not a real route claim.  |

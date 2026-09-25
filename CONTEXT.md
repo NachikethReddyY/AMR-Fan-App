@@ -27,11 +27,11 @@ An estimate of a journey's carbon impact, rather than a direct measurement of em
 _Avoid_: Measured emissions
 
 **Estimated emissions reduction**:
-The estimated difference between a journey's emissions and a comparison baseline. The current proposed baseline is one person driving between the same endpoints, pending final confirmation.
-_Avoid_: Verified carbon savings, carbon offsets
+The estimated CO2e difference between a journey and one person driving between the same endpoints, using compatible factor units. This comparison baseline is confirmed.
+_Avoid_: Measured savings, verified carbon savings, carbon offsets
 
 **Journey validation**:
-Assessment of a fan's reported transport mode against the recorded route, distance, and duration. This plausibility assessment does not establish the transport mode used.
+Assessment of a real journey's completion and route adherence using recorded location, distance and duration. It can assess whether the reported transport mode is plausible, but cannot establish that mode from GPS alone.
 _Avoid_: Proof of bus use
 
 **Points**:
@@ -40,57 +40,93 @@ Units earned through eligible sustainable travel or explicitly granted by an adm
 **Provisional journey points**:
 The estimated award for an unfinished journey, adjusted when its assessed impact changes. These points enter the earned balance only on qualifying completion; reductions do not remove previously earned points.
 
+**GPS fallback award**:
+A reduced award for a journey whose start and arrival were recorded but whose intervening location evidence is missing. It does not establish a verified journey or verified emissions reduction.
+
+**Journey award top-up**:
+Additional points for the same journey when later location evidence supports a higher total award. It covers only the difference from points already credited for that journey.
+
 **Fan rewards**:
-Benefits fans can use points toward, including tree-programme participation, driver questions, exclusive content, driver/team challenges and store discounts.
+The benefits fans can use points toward: fan submissions, tree dedications through programme participation, exclusive content and store discounts. Questions and proposed activities belong to the same fan-submission feature.
 
 **Rewards history**:
 A fan's record of all point changes with their reasons and resulting balances, alongside reward statuses.
 
+**Fan submission**:
+A fan's question or proposed driver/team activity entered into one moderation, paid-voting and selection process. All eligible submissions compete in one ranking.
+
+**Submission tag**:
+An optional descriptive label for a fan submission's content, such as a question or proposed activity. It does not determine fees, voting rights or selection places.
+
 **Driver question**:
-A question submitted through Rewards for admin review, with its status recorded in Rewards History. Submission does not guarantee a driver answer and is distinct from a driver/team activity challenge.
+A description of fan-submission content asking a driver or team member for an answer. It is not a separate reward or voting process, and selection does not guarantee an answer.
+
+**Question vote**:
+A submission contribution made toward a fan submission containing a question. The voting and ranking rules are the same for all fan submissions.
 
 **Exclusive content**:
 Admin-priced fan content, including off-season content, that remains unlocked for the account after redemption.
 
 **Demo account**:
-An interactive fan experience with one persistent profile per signed-in user, reused across devices and visits and initially holding 0 points. Its personal balance and progress are independent, while its challenge contributions affect the shared rankings used by all accounts.
+An interactive fan experience with one persistent profile per signed-in user, reused across devices and visits and initially holding 0 points. Its personal balance and progress are independent, while its submission contributions affect the shared ranking used by all accounts.
 
 **Simulated journey**:
 A demonstration of a journey's progress and completion without tracking actual travel.
 
 **Acceptable extra travel time**:
-The additional journey duration a fan is willing to accept to reduce estimated emissions. Its comparison reference must be defined in the specification.
+The extra minutes a fan is willing to accept beyond the fastest available route to reduce estimated emissions.
 
 **Country transport emissions factor**:
 A country's estimate of emissions per unit of travel for a particular transport mode, with its stated source, units and assumptions.
 
 **ESG dashboard**:
-A fan-facing view of the team's ESG activity and the fan's own contribution record. Team-reported outcomes and illustrative personal activity remain distinct.
+A fan-facing view of personal lifetime estimated travel savings, the fan community's lifetime estimated savings and separately presented official team figures. Demo activity remains distinguishable from real activity.
+
+**Official reported metric**:
+A value attributed to an Aston Martin source for a stated reporting period, with evidence and an approved interpretation. It is separate from estimates produced by the fan app.
+
+**Extracted metric candidate**:
+A report-supported value with its unit, period and source evidence prepared for admin review. It becomes an official dashboard record only after approval.
+
+**App-community estimate**:
+An aggregate of fan-app activity calculated under a stated method and period. It is not an Aston Martin corporate ESG result.
+
+**Lifetime estimated savings**:
+The cumulative estimated emissions reduction from qualifying real journeys over an account's recorded history, or all fans' recorded histories for the community total. It is a travel estimate, separate from points, tree participation and official team figures.
 
 **Admin dashboard**:
-The web interface for authorized reward, earning-rule, balance, question/challenge, ESG, emissions-factor and demo-data administration. It is separate from the fan-facing ESG dashboard.
+The web interface for authorized reward, earning-rule, balance, fan-submission, ESG, emissions-factor and demo-data administration. It is separate from the fan-facing ESG dashboard.
 
 **Fan challenge**:
-A proposed activity for drivers or the team that costs 500 points to submit and requires approval before fans can contribute. Contributed points act as votes; approved unfinished challenges remain in the backlog without refunds.
+A description of fan-submission content proposing an activity for drivers or the team. The name does not create a separate reward, ranking or selection quota.
 
 **Aston Martin admin**:
-A user authorized to approve fan challenges, including users identified by an Aston Martin admin badge. The badge indicates an assigned role rather than a cosmetic fan reward.
+A user authorized to approve fan submissions, including users identified by an Aston Martin admin badge. The badge indicates an assigned role rather than a cosmetic fan reward.
 
 **Challenge contribution**:
-An amount of at least 10 available points spent to increase an approved challenge's ranking. Available points may be eligible journey awards or admin grants; contributions are not refunded when a challenge carries into the backlog.
+The earlier name for a submission contribution; it has no separate voting rules.
+
+**Submission contribution**:
+An amount of at least 10 available points spent to increase an approved fan submission's ranking. Available points may be journey awards or admin grants; contributions are retained without refunds in the backlog.
 _Avoid_: Cash funding
 
 **Challenge submission fee**:
-The non-refundable 500 available points spent to submit a new fan challenge for admin approval. This fee is not returned if the submission is rejected and does not count toward ranking; resubmission has its own fee.
+The earlier name for the fan submission fee.
+
+**Fan submission fee**:
+The non-refundable 500 available points spent to submit a question or proposed activity for admin approval. The fee never counts toward ranking, and a rejected resubmission has its own fee.
 
 **Challenge backlog**:
-Approved challenges awaiting performance, including those not selected for the current fan interaction. Their contributed point totals and histories are retained without refunds.
+The earlier name for the submission backlog.
+
+**Submission backlog**:
+Approved fan submissions awaiting fulfilment, including those not selected for the current interaction. Their contributed point totals and histories are retained without refunds.
 
 **Rewards store**:
 A place to redeem accumulated points for merchandise discounts ranging from 10% to 60%, each priced in points by an admin. Larger discounts are intended to require substantially more points.
 
 **Fan interaction session**:
-A driver/fan interaction for which an admin closes challenge selection. Up to three approved unfinished challenges with positive contributions are selected by points, with earlier approval breaking ties.
+A driver/fan interaction for which an admin closes voting and selects up to three eligible fan submissions total. All content labels share those places and the points-ranking rules.
 
 **Tree redemption**:
 Admin-priced participation in an existing tree programme recorded under the account name. It remains a demonstration until actual allocation is arranged and does not establish an additional planted tree or verified carbon removal.
@@ -104,14 +140,23 @@ Transfer of an unfulfilled planting request to another project, distinct from mo
 **Points adjustment**:
 An authorized manual addition to or removal from an account balance, accompanied by a recorded reason. A correction is a new entry that preserves the original transaction and does not automatically revoke a reward.
 
+**Selected submission**:
+An approved fan submission chosen for a fan-interaction session, closed to contributions and further selection until an admin resolves it. It can be marked fulfilled or released back to the backlog.
+
 **Selected challenge**:
-An approved challenge chosen for a fan-interaction session, closed to contributions and further selection until an admin resolves it. It can be marked performed or released back to the backlog.
+The earlier name for a selected submission containing a proposed activity.
+
+**Fulfilled submission**:
+A fan submission recorded as answered or completed by the driver or team, no longer eligible for selection. A demo fulfilment record remains demonstration content.
 
 **Performed challenge**:
-A challenge recorded as completed by the driver or team, no longer eligible for selection. A demo performance record remains demonstration content.
+A fulfilled submission containing a proposed activity.
 
 **Shared challenge ranking**:
-The ordering of eligible challenges by contributions from both demo and real accounts. Personal point balances remain separate even though those contributions influence the same ranking.
+The earlier name for the shared submission ranking.
+
+**Shared submission ranking**:
+The single ordering of eligible fan submissions by contributions from demo and real accounts. Personal balances remain separate; content tags do not split the ranking.
 
 **Demo reset**:
-A restart of simulated journeys and dashboard examples for a persistent demo profile, preserving purchased rewards, content access, challenge submissions, point History and shared contributions. It clears remaining demo points to 0, records the reset in History, cancels unfinished simulated journeys and requires fresh confirmation for unfinished purchases.
+A restart of simulated journeys and dashboard examples for a persistent demo profile, preserving purchased rewards, content access, fan submissions, point History and shared contributions. It clears remaining demo points to 0, records the reset in History, cancels unfinished simulated journeys and requires fresh confirmation for unfinished purchases.
