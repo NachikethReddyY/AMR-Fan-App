@@ -42,7 +42,7 @@ belong to #8. This boundary establishes no adherence threshold or award.
 | --- | --- |
 | `AMR_GOOGLE_ROUTES_KEY` | Server-only existing Google credential. Absent means `live_not_configured`. Never use an `EXPO_PUBLIC_` variable. |
 | `AMR_GOOGLE_ROUTES_ENDPOINT` | Defaults to `https://routes.googleapis.com/directions/v2:computeRoutes`. Live configuration accepts exactly that HTTPS endpoint, with no userinfo, query, fragment or redirect. |
-| `AMR_ROUTES_TIMEOUT_MS` | Decimal integer 25 to 5000, default 3000, per mode including response-body reading. |
+| `AMR_ROUTES_TIMEOUT_MS` | Decimal integer 25 to 5000, default 3000, per mode including response-body reading and geometry validation. |
 | `AMR_ROUTES_SYNTHETIC` | Default false. True requires `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>/directions/v2:computeRoutes` endpoint and no Google key. Sends only a fixed synthetic key and labels results as fixtures. |
 
 Changing the endpoint is an explicit server configuration operation, never
@@ -65,11 +65,29 @@ distance/duration/mode/transit vehicle, returned leg endpoints and one route
 polyline. `HIGH_QUALITY` requests usable geometry. A mode response is limited to
 128 KiB, three routes, one leg per route (no intermediate waypoints), 128 steps
 and 2048 decoded geometry points per route. Excessive or missing required data
-is unavailable, never truncated into apparently complete evidence. Distances
+is unavailable, never truncated into apparently complete evidence. Supplied
+geometry must contain at least two distinct coordinates. Repeated
+consecutive points remain valid within a usable path, as do closed loops with
+distinct intermediate points; all-identical paths fail closed. Distances
 are bounded to 20,000 km and durations to seven days. Step totals allow at most
 one rounding unit per step; transit may include waiting time. Non-transit
 duration must agree with its steps. Endpoint agreement permits two polyline5
 quantization units, a parser consistency tolerance, not a journey threshold.
+
+Containment cooperatively yields to the event loop at checkpoints after a 4 ms
+work slice. Checks remain complete: no geometry sampling, simplification or
+truncation. Point/segment checks and batches of at most 256 nearby edges have
+checkpoints; each individual ring scan remains bounded by the pinned dataset.
+At most two mode normalizations share the existing provider request slots. The
+same abort deadline covers network and CPU work, with no background queue or
+worker pool.
+
+The R30-2 local regression accepts four modes, three routes per mode, 2048 points
+and 128 steps per route. Its newly agreed target is at most 50 ms maximum delay
+for a 10 ms heartbeat, plus a concurrent independent-client health response
+during normalization. This is a synthetic local acceptance test, not a production
+SLA. Authenticated measurements and host-load observations remain in private
+evidence; the focused route suite retains the full-shape heartbeat regression.
 
 The [Compute Routes contract](https://developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes)
 defines these primary modes, units and selected fields. Transit requests have

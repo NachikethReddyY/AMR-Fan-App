@@ -34,7 +34,7 @@ test('query requires server-authenticated actor and rejects client ownership fie
 
 test('authenticated query calculates only supported returned geography through real upstream HTTP', async () => {
   let calls = 0;
-  let omitGeometry = false;
+  let geometry: 'valid' | 'missing' | 'degenerate' = 'valid';
   const server = createServer(async (req, res) => {
     calls++;
     const chunks: Buffer[] = [];
@@ -49,15 +49,27 @@ test('authenticated query calculates only supported returned geography through r
           {
             distanceMeters: 10000,
             duration: `${minutes * 60}s`,
-            ...(omitGeometry
+            ...(geometry === 'missing'
               ? {}
-              : { polyline: { encodedPolyline: 'o}zFoezxRo}@?' } }),
+              : {
+                  polyline: {
+                    encodedPolyline:
+                      geometry === 'degenerate'
+                        ? 'o}zFoezxR??'
+                        : 'o}zFoezxRo}@?',
+                  },
+                }),
             legs: [
               {
                 startLocation: {
                   latLng: { latitude: 1.29, longitude: 103.85 },
                 },
-                endLocation: { latLng: { latitude: 1.3, longitude: 103.85 } },
+                endLocation: {
+                  latLng: {
+                    latitude: geometry === 'degenerate' ? 1.29 : 1.3,
+                    longitude: 103.85,
+                  },
+                },
                 steps: [
                   {
                     travelMode,
@@ -117,7 +129,7 @@ test('authenticated query calculates only supported returned geography through r
     }
     assert.equal(result.calculationStatus, 'indicative_demo');
     assert.deepEqual(result.unsupportedModes, ['cab', 'electric_car']);
-    omitGeometry = true;
+    geometry = 'missing';
     const unknown = await query(
       { principalId: 'account-b', role: 'fan' },
       input,
@@ -131,6 +143,23 @@ test('authenticated query calculates only supported returned geography through r
       reason: 'factor_applicability_unverified',
     });
     assert.equal(unknown.result.kind, 'routes');
+    geometry = 'degenerate';
+    const invalid = await query(
+      { principalId: 'account-b', role: 'fan' },
+      input,
+    );
+    assert.deepEqual(invalid.result, {
+      kind: 'unavailable',
+      reason: 'provider_error',
+      outcomes: [
+        { mode: 'DRIVE', kind: 'unavailable', reason: 'missing_data' },
+      ],
+    });
+    assert.deepEqual(invalid.estimates, []);
+    assert.deepEqual(invalid.recommendation, {
+      kind: 'unavailable',
+      reason: 'no_routes',
+    });
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) =>

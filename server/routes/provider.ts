@@ -143,7 +143,8 @@ export function createRouteProvider(env: Record<string, string | undefined>) {
           await reader.cancel().catch(() => {});
         }
         const raw: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-        return normalizeResponse(mode, raw);
+        // Keep the same deadline and active-request slot through CPU validation.
+        return await normalizeResponse(mode, raw, controller.signal);
       } finally {
         await response.body?.cancel().catch(() => {});
       }

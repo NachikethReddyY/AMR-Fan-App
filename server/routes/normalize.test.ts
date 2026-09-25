@@ -28,8 +28,8 @@ function route(polyline = encoded) {
     ],
   };
 }
-test('geometry binds exact route ID, provider endpoints and ordered coordinates to indicative applicability', () => {
-  const result = normalizeResponse('DRIVE', route());
+test('geometry binds exact route ID, provider endpoints and ordered coordinates to indicative applicability', async () => {
+  const result = await normalizeResponse('DRIVE', route());
   assert.equal(result.kind, 'routes');
   if (result.kind !== 'routes') return;
   assert.equal(result.evidence[0].routeId, result.routes[0].id);
@@ -42,10 +42,10 @@ test('geometry binds exact route ID, provider endpoints and ordered coordinates 
     assert.ok(Math.abs(geometry.points[1].latitude - 1.3) < 1e-10);
   }
 });
-test('missing geometry is explicit; malformed encoding, excessive vertices and endpoint mismatch fail closed', () => {
+test('missing geometry is explicit; malformed encoding, excessive vertices and endpoint mismatch fail closed', async () => {
   const missing = route();
   const { polyline: _omitted, ...without } = missing.routes[0];
-  const result = normalizeResponse('DRIVE', { routes: [without] });
+  const result = await normalizeResponse('DRIVE', { routes: [without] });
   assert.equal(result.kind, 'routes');
   if (result.kind === 'routes')
     assert.deepEqual(result.evidence[0].geometry, {
@@ -59,24 +59,56 @@ test('missing geometry is explicit; malformed encoding, excessive vertices and e
     '??'.repeat(2049),
     'invalid unicode ✕',
   ]) {
-    assert.deepEqual(normalizeResponse('DRIVE', route(text)), {
+    assert.deepEqual(await normalizeResponse('DRIVE', route(text)), {
       kind: 'unavailable',
       reason: 'missing_data',
     });
   }
   const mismatched = route();
   mismatched.routes[0].legs[0].endLocation.latLng.latitude = 1.4;
-  assert.deepEqual(normalizeResponse('DRIVE', mismatched), {
+  assert.deepEqual(await normalizeResponse('DRIVE', mismatched), {
     kind: 'unavailable',
     reason: 'missing_data',
   });
 });
 
-test('non-transit duration contradictions cannot inflate the fastest-route limit', () => {
+test('non-transit duration contradictions cannot inflate the fastest-route limit', async () => {
   const raw = route();
   raw.routes[0].duration = '6000s';
-  assert.deepEqual(normalizeResponse('DRIVE', raw), {
+  assert.deepEqual(await normalizeResponse('DRIVE', raw), {
     kind: 'unavailable',
     reason: 'missing_data',
   });
+});
+
+test('positive-distance routes reject supplied all-identical geometry', async () => {
+  for (const polyline of ['o}zFoezxR??', 'o}zFoezxR????']) {
+    const raw = route(polyline);
+    raw.routes[0].legs[0].endLocation.latLng.latitude = 1.29;
+    assert.deepEqual(await normalizeResponse('DRIVE', raw), {
+      kind: 'unavailable',
+      reason: 'missing_data',
+    });
+  }
+});
+
+test('usable geometry preserves consecutive duplicates and closed loops with distinct intermediate points', async () => {
+  for (const fixture of [
+    { polyline: 'o}zFoezxR??o}@???', endLatitude: 1.3, count: 4 },
+    { polyline: 'o}zFoezxRo}@?n}@?', endLatitude: 1.29, count: 3 },
+  ]) {
+    const raw = route(fixture.polyline);
+    raw.routes[0].legs[0].endLocation.latLng.latitude = fixture.endLatitude;
+    const result = await normalizeResponse('DRIVE', raw);
+    assert.equal(result.kind, 'routes');
+    if (result.kind !== 'routes') continue;
+    assert.equal(
+      result.evidence[0].factorApplicability,
+      'singapore_indicative',
+    );
+    const geometry = result.evidence[0].geometry;
+    assert.equal(geometry.kind, 'provider');
+    if (geometry.kind === 'provider')
+      assert.equal(geometry.points.length, fixture.count);
+  }
 });

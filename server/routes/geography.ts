@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
+import { setImmediate } from 'node:timers/promises';
 import { z } from 'zod';
 
 export const coordinate = z.strictObject({
@@ -8,6 +9,17 @@ export const coordinate = z.strictObject({
   longitude: z.number().min(-180).max(180),
 });
 export type Coordinate = z.infer<typeof coordinate>;
+export function hasDistinctPoints(points: readonly Coordinate[]): boolean {
+  const first = points[0];
+  return (
+    first !== undefined &&
+    points.some(
+      (point) =>
+        point.latitude !== first.latitude ||
+        point.longitude !== first.longitude,
+    )
+  );
+}
 export const boundarySource = {
   id: 'ura-mp2019-regions-no-sea-2025-12-03',
   url: 'https://data.gov.sg/datasets/d_bf4d24df9129d5a8ff8cf82e20959ee0/view',
@@ -105,12 +117,26 @@ function interpolate(a: Point, b: Point, t: number): Point {
 
 // Check the supplied geometry only. Internal region borders are allowed; outer
 // boundaries, missing geometry and segments leaving the polygon union fail closed.
-export function singaporeRouteGeography(
+export async function singaporeRouteGeography(
   coordinates: readonly Coordinate[],
-): 'Singapore' | null {
-  if (coordinates.length < 2 || coordinates.length > 2050) return null;
+  signal?: AbortSignal,
+): Promise<'Singapore' | null> {
+  if (coordinates.length > 2050 || !hasDistinctPoints(coordinates)) return null;
+  // Two provider requests can normalize concurrently. Yield between bounded
+  // scans instead of blocking the API for an entire route or mode batch.
+  await setImmediate(undefined, { signal });
+  let yieldAt = performance.now() + 4;
+  async function checkpoint() {
+    signal?.throwIfAborted();
+    if (performance.now() < yieldAt) return;
+    await setImmediate(undefined, { signal });
+    yieldAt = performance.now() + 4;
+  }
   const points: Point[] = coordinates.map((p) => [p.longitude, p.latitude]);
-  if (points.some((p) => !contains(p))) return null;
+  for (const p of points) {
+    await checkpoint();
+    if (!contains(p)) return null;
+  }
   const box = bounds(points);
   const nearbyEdges = edges.filter(
     (edge) =>
@@ -120,11 +146,14 @@ export function singaporeRouteGeography(
       Math.min(edge.a[1], edge.b[1]) <= box.maxY,
   );
   for (let i = 1; i < points.length; i++) {
+    await checkpoint();
     const a = points[i - 1],
       b = points[i],
       ab = subtract(b, a);
+    if (ab[0] === 0 && ab[1] === 0) continue;
     const cuts = [0, 1];
-    for (const edge of nearbyEdges) {
+    for (const [index, edge] of nearbyEdges.entries()) {
+      if (index % 256 === 0) await checkpoint();
       if (
         Math.max(a[0], b[0]) < Math.min(edge.a[0], edge.b[0]) ||
         Math.min(a[0], b[0]) > Math.max(edge.a[0], edge.b[0]) ||
@@ -145,6 +174,7 @@ export function singaporeRouteGeography(
     }
     cuts.sort((x, y) => x - y);
     for (let c = 1; c < cuts.length; c++) {
+      await checkpoint();
       if (
         cuts[c] - cuts[c - 1] > 1e-10 &&
         !contains(interpolate(a, b, (cuts[c] + cuts[c - 1]) / 2))

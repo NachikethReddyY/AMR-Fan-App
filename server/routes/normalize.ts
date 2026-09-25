@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { normalizeGoogleRoutes } from '../../src/features/routes/googleRoutes.ts';
 import {
   coordinate,
+  hasDistinctPoints,
   singaporeRouteGeography,
   type Coordinate,
 } from './geography.ts';
@@ -109,7 +110,7 @@ function decodePolyline(encoded: string): Coordinate[] | null {
     if (!parsed.success) return null;
     points.push(parsed.data);
   }
-  return points;
+  return hasDistinctPoints(points) ? points : null;
 }
 function sameEndpoint(a: Coordinate, b: Coordinate) {
   // Two polyline5 quantization units; this is parser consistency, not journey adherence.
@@ -119,7 +120,12 @@ function sameEndpoint(a: Coordinate, b: Coordinate) {
   );
 }
 
-export function normalizeResponse(mode: PrimaryMode, raw: unknown) {
+export async function normalizeResponse(
+  mode: PrimaryMode,
+  raw: unknown,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
   const parsed = response.safeParse(raw);
   if (!parsed.success)
     return { kind: 'unavailable', reason: 'missing_data' } as const;
@@ -167,11 +173,10 @@ export function normalizeResponse(mode: PrimaryMode, raw: unknown) {
         : { kind: 'unavailable', reason: 'missing_geometry' };
     const geography =
       geometry.kind === 'provider'
-        ? singaporeRouteGeography([
-            geometry.start,
-            ...geometry.points,
-            geometry.end,
-          ])
+        ? await singaporeRouteGeography(
+            [geometry.start, ...geometry.points, geometry.end],
+            signal,
+          )
         : null;
     const compatibleTransit = steps.every(
       (item) =>
