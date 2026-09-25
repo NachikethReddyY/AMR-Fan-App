@@ -1,5 +1,23 @@
 # Tasks
 
+## Issue #1 — Expo setup (t3code/implement-issue-one)
+
+Full issue #1 setup verification completed locally at the user's request.
+
+- [x] Add a neutral Expo TypeScript starter and pnpm lockfile; preserve existing planning material.
+- [x] Configure and pass type checking, linting, formatting, and test tooling (no feature tests yet).
+- [x] Document prerequisites and link the original specification restored unchanged from the main worktree; no backend provisioned.
+- [x] Verify frozen-lockfile installation and all documented checks in a fresh source copy without existing dependencies or private environment files.
+- [x] Verify production bundle exports for iOS and Android (`pnpm exec expo export --platform all`).
+- [x] Launch the starter on iOS and Android through T3 devices and save screenshots and content-check evidence.
+- [x] Verify the Jest Expo preset loads TypeScript and React Native imports with a temporary test in the isolated copy; remove that test after the check.
+- [x] Review ignore rules, documentation links, and preservation of planning material.
+- [x] Update setup verification evidence and README with observed results.
+
+Evidence: [.evidence/issue-1/verification.md](.evidence/issue-1/verification.md).
+Native binary compilation and physical-device behavior are outside this setup issue and remain unverified.
+Setup verification is complete; delivery is recorded in the branch and PR history. No deployment or live backend provisioning was performed.
+
 ## Team discussion HTML — 25 September 2026
 
 - [x] Record the non-refundable 500-point submission fee and accepted daily outbound/return reward limit.

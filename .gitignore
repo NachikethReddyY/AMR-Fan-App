@@ -1,3 +1,25 @@
 .agents/
 skills-lock.json
 
+# Dependencies and generated application output
+node_modules/
+.expo/
+dist/
+coverage/
+*.tsbuildinfo
+ios/
+android/
+
+# Local configuration and signing secrets
+.env*
+!.env.example
+*.local
+*.log
+.DS_Store
+*.pem
+*.key
+*.p12
+*.p8
+*.mobileprovision
+*.jks
+*.keystore
