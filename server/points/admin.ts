@@ -13,11 +13,12 @@ export function adminOrigin(value: string | undefined) {
   const url = new URL(value);
   if (
     url.origin !== value ||
+    url.hostname.includes('*') ||
     (url.protocol !== 'https:' &&
       !(url.protocol === 'http:' && url.hostname === '127.0.0.1'))
   )
     throw new Error(
-      'ADMIN_ORIGIN must be an exact HTTPS origin or loopback HTTP origin.',
+      'Admin origins must be exact HTTPS origins or loopback HTTP origins.',
     );
   return value;
 }

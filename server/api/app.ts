@@ -100,7 +100,10 @@ export function createApi({
     config.kind === 'supabase'
       ? supabaseBrowserConfig(env.SUPABASE_PUBLISHABLE_KEY)
       : { mode: 'unavailable' };
-  const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
+  const browserOrigins = new Set([
+    adminOrigin(env.ADMIN_ORIGIN),
+    adminOrigin(env.ADMIN_ADDITIONAL_ORIGIN),
+  ]);
   const queryRoutes = createRouteQuery({ env });
   const journeys = createJourneyService({ pool, env, queryRoutes });
   const reports = reportRuntime(pool, env);
@@ -174,7 +177,7 @@ export function createApi({
         requests = 0;
       }
       if (++requests > 300) throw new ApiError(429, 'Try again shortly.');
-      if (req.headers.origin && req.headers.origin !== browserOrigin)
+      if (req.headers.origin && !browserOrigins.has(req.headers.origin))
         throw new ApiError(403, 'Browser access is not configured.');
       if (path === '/admin/config' && req.method === 'GET')
         return send(res, 200, {

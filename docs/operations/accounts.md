@@ -44,8 +44,12 @@ redirect URI.
 
 API replies are JSON with `no-store`; writes accept bounded JSON bodies. Native
 clients send `Authorization: Bearer <credential>`. Requests with an `Origin` header
-require an exact configured `ADMIN_ORIGIN`, using HTTPS or loopback HTTP at `127.0.0.1`.
-Other origins are rejected; omitting the setting retains browser-origin rejection.
+require an exact configured `ADMIN_ORIGIN` or optional `ADMIN_ADDITIONAL_ORIGIN`,
+using HTTPS or loopback HTTP at `127.0.0.1`. The second setting preserves the
+existing Render origin when adding the [Vercel admin](admin-web.md). Wildcards,
+paths, credentials and unrelated preview origins are rejected. Omitting both
+settings retains browser-origin rejection; native requests without Origin still
+require normal session and role authorization.
 The separate [points admin page](points.md) uses same-origin requests and keeps
 its bearer session in memory. No cookie session, cross-origin credential policy
 or public role-assignment endpoint exists.

@@ -10,6 +10,13 @@
   </head>
   <body>
     <main>
+      <nav aria-label="Administration">
+        <a href="/admin/">Points</a>
+        <a href="/admin/rewards/">Rewards</a>
+        <a href="/admin/submissions/">Submissions</a>
+        <a href="/admin/reports/">Reports</a>
+        <a href="/admin/participation/" aria-current="page">Sessions</a>
+      </nav>
       <header>
         <h1>Submission sessions</h1>
         <button id="logout" hidden>Sign out</button>
@@ -17,11 +24,10 @@
       <section id="signin" aria-labelledby="signin-title">
         <h2 id="signin-title">Sign in</h2>
         <p id="setup">Checking sign-in availability…</p>
-        <form id="password-signin" hidden>
+        <form id="password-signin" method="post" hidden>
           <label for="email">Email</label>
           <input
             id="email"
-            name="email"
             type="email"
             autocomplete="username"
             maxlength="254"
@@ -30,7 +36,6 @@
           <label for="password">Password</label>
           <input
             id="password"
-            name="password"
             type="password"
             autocomplete="current-password"
             maxlength="1024"

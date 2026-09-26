@@ -27,3 +27,5 @@ reproduction, distinguish app failures from tool/environment failures, and colle
 only sanitized evidence under ignored `.evidence/<task>/`.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+Admin web build, Vercel delivery and exact-origin setup: [Admin web](admin-web.md).

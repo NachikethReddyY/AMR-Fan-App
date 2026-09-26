@@ -86,6 +86,8 @@ test('hosted sign-in registers the shared helper and current admin authority on 
       AUTH_PROVIDER: 'supabase',
       AUTH_DEV_ENABLED: 'false',
       SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_' + 'fixture'.repeat(3),
+      ADMIN_ORIGIN: 'https://render.example.test',
+      ADMIN_ADDITIONAL_ORIGIN: 'https://admin.example.test',
     },
     verifyIdentity: createSupabaseVerifier(
       createLocalJWKSet({
@@ -167,6 +169,19 @@ test('hosted sign-in registers the shared helper and current admin authority on 
         body: JSON.stringify({ requestId }),
       });
     assert.equal((await create()).status, 403);
+    for (const origin of [
+      'https://render.example.test',
+      'https://admin.example.test',
+    ]) {
+      const denied = await fetch(base + '/v1/admin/session', {
+        headers: { ...headers, Origin: origin },
+      });
+      assert.equal(denied.status, 403);
+      assert.equal(
+        (await denied.json()).error,
+        'Assigned admin access required.',
+      );
+    }
     const account = await (await fetch(base + '/v1/me', { headers })).json();
     await assignRole(
       pool,
@@ -174,6 +189,19 @@ test('hosted sign-in registers the shared helper and current admin authority on 
       'admin',
       'Owned hosted participation fixture',
     );
+    for (const origin of [
+      'https://render.example.test',
+      'https://admin.example.test',
+    ]) {
+      assert.equal(
+        (
+          await fetch(base + '/v1/admin/session', {
+            headers: { ...headers, Origin: origin },
+          })
+        ).status,
+        200,
+      );
+    }
     const original = await create();
     assert.equal(original.status, 201);
     const receipt = await original.json();
@@ -185,6 +213,19 @@ test('hosted sign-in registers the shared helper and current admin authority on 
       'Owned hosted participation role revocation',
     );
     assert.equal((await create()).status, 403);
+    for (const origin of [
+      'https://render.example.test',
+      'https://admin.example.test',
+    ]) {
+      const denied = await fetch(base + '/v1/admin/session', {
+        headers: { ...headers, Origin: origin },
+      });
+      assert.equal(denied.status, 403);
+      assert.equal(
+        (await denied.json()).error,
+        'Assigned admin access required.',
+      );
+    }
     await fetch(base + '/v1/session', { method: 'DELETE', headers });
     assert.equal((await create()).status, 401);
   } finally {
