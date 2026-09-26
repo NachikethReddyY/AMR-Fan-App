@@ -1,3 +1,4 @@
+import { createOneMapProvider } from './onemap.ts';
 import { routeConfig } from './config.ts';
 import { z } from 'zod';
 import type {
@@ -78,7 +79,9 @@ function waypoint(value: RouteInput['origin']) {
 }
 
 export function createRouteProvider(env: Record<string, string | undefined>) {
-  const config = routeConfig(env);
+  const selected = routeConfig(env);
+  if (selected.kind === 'onemap') return createOneMapProvider(selected);
+  const config = selected;
   let active = false;
   let totalCalls = 0;
   let windowStart = Date.now();

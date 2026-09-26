@@ -1,8 +1,10 @@
 # Server route queries
 
-The server-only Google Routes boundary lives in `server/routes/`. It uses the
-existing fetch, Zod and native TypeScript tooling. No Google key, query, provider
-body or geometry is logged. No route query is persisted or sent to AI.
+The server route boundary in `server/routes/` supports the user-selected
+Singapore-first OneMap provider and the preserved Google adapter. Both use
+existing fetch, Zod and native TypeScript tooling. Credentials, queries, provider
+bodies and geometry are not logged or sent to AI. The existing prepared-journey
+flow consumes the returned snapshot without a second provider query.
 
 ## Entry point and authentication
 
@@ -36,7 +38,135 @@ Consumers must preserve source, normalized legs and geometry together in the
 selected server-returned snapshot. Future journey persistence and assessment
 belong to #8. This boundary establishes no adherence threshold or award.
 
-## Configuration
+## OneMap configuration and limits
+
+The user selected OneMap instead of enabling billable Google. The environment
+example selects `AMR_ROUTES_PROVIDER=onemap` with no credentials, so live queries
+remain unavailable. `google` retains the original adapter; `disabled` prevents
+all provider calls. An omitted selector preserves legacy Google configuration,
+which is disabled without its existing key. There is no cross-provider fallback.
+
+| Variable | Behavior |
+| --- | --- |
+| `AMR_ONEMAP_CREDENTIALS_FILE` | Assigned absolute path outside this worktree to JSON containing only `email` and `password`. The regular file must belong to the server user, have mode 600, one link, and at most 16 KiB. Symlinks and repository files are rejected. No file path is supplied or discovered automatically. |
+| `AMR_ONEMAP_BASE_URL` | Exactly `https://www.onemap.gov.sg` for live use. Redirects are rejected. |
+| `AMR_ROUTES_TIMEOUT_MS` | Existing 25–5000 ms bound, default 3000. Each auth/search/route request includes bounded body reading; route validation and geography use the same deadline. |
+| `AMR_ROUTES_SYNTHETIC` | Test-only OneMap fixtures require `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>` base, no credential file and no Google key. Only fixed synthetic credentials are sent. |
+
+Credentials are read only when a query needs a token. The server caches tokens
+in memory until 60 seconds before their supplied expiry, capped at three days.
+One active query owns authentication before mode fan-out, so refreshes cannot
+race. Every refresh attempt starts a 60-second cooldown. A 401/403 clears the
+cache and starts the same cooldown. Failed requests are not retried; an invalid
+credential cannot cause an immediate login loop. Tokens and account passwords
+never appear in route results. No account was created or authenticated for this
+implementation. Supply a secure file only after the owner assigns it.
+
+The same 60-call/minute and 1000-call/provider-lifetime ceilings include OneMap
+authentication and address requests. Each query conservatively reserves one auth
+call, up to two address searches, and one call per selected mode, even if a token
+is cached or both address strings match. Identical address strings are resolved
+once. Maximum fan-out remains two; a concurrent query returns `busy`. Every
+response has the existing 128 KiB limit. No pagination or automatic retry occurs.
+
+Coordinate inputs must lie inside the existing pinned Singapore land polygons.
+Address search requests page 1 with coordinates/address details and accepts only
+one match within those polygons. No match, ambiguity, malformed/error payloads
+or out-of-coverage matches remain unavailable. The client can supply a more
+specific address or coordinates; this PR adds no address-selection UI. The land
+boundary is conservative and can exclude coastal/offshore routes. It is not an
+authoritative OneMap coverage guarantee.
+
+OneMap requests `drive`, `walk`, `cycle`, or `pt`. Public transport uses `TRANSIT`,
+up to three itineraries, and the current Singapore date/time (`MM-DD-YYYY`,
+`HH:mm:ss`). It does not promise bus-only and train-only alternatives. Each
+returned itinerary retains actual ordered WALK/BUS/SUBWAY legs, fractional
+metres and seconds. Total itinerary time includes waiting; waiting is not
+fabricated as a travel leg or emissions. Unknown transit modes, contradictory
+timestamps and malformed/missing leg geometry fail closed. Documented stop/shape
+offsets or discontinuous leg polylines preserve validated leg metrics but return
+`missing_geometry` and `geography_unverified` in existing evidence. Every leg
+still passes Singapore containment. No connecting segment is invented, and such
+an itinerary cannot produce an emissions recommendation or prepared journey
+under the current contract. Supporting multipart geometry belongs to a future
+coordinated route/journey/map change; the official transit sample exposes this
+limitation.
+Road modes use the provider's total distance/time and returned encoded polyline.
+Every instruction must identify the requested mode at the documented instruction
+mode position: `walking`, `driving` or `cycling`. Empty, missing, unknown or
+contradictory instruction modes are unavailable. In particular, a walking response
+to `cycle` is never relabelled as cycling. Mixed walking/cycling instructions
+remain unavailable until their separate metrics can be represented honestly.
+The published road example demonstrates walking; drive/cycle response vocabulary
+still needs the authorized live check. Instruction prose is not an emissions input. No route is relabelled as a
+cab or electric car, and OneMap does not supply the emissions calculation.
+
+Geometry uses the documented polyline5 encoding. `google-polyline5` in existing
+evidence names the encoding, not the data provider. Returned points are neither
+invented nor simplified. Each route permits 2048 points and 128 legs/instructions;
+transit permits three itineraries. The existing complete Singapore segment
+containment check also applies. Bad/excessive evidence rejects the mode response
+instead of presenting a truncated route. Distances remain bounded to 20,000 km,
+durations to seven days. The existing journey validator can impose tighter
+snapshot bounds; unsupported snapshots remain unavailable.
+
+Live source is `OneMap / Singapore Land Authority`; synthetic source explicitly
+says it is a OneMap HTTP fixture. `fetchedAt`, source, legs and evidence retain
+the existing query/journey shape. Emissions remain the existing indicative
+Singapore factors, and fastest-plus-extra calculations are unchanged.
+
+## OneMap sources and release gates
+
+The implementation uses the official [routing documentation](https://www.onemap.gov.sg/apidocs/routing),
+[authentication documentation](https://www.onemap.gov.sg/apidocs/authentication),
+[address search documentation](https://www.onemap.gov.sg/apidocs/search) and
+[documentation root](https://www.onemap.gov.sg/apidocs/), inspected 26 September
+2026. Tests contain synthetic values in the documented response fields, not
+captured personal trips or a claim that live schedules were checked.
+
+### Minimal path to live routing
+
+The account owner must [register for OneMap API access](https://www.onemap.gov.sg/apidocs/register)
+and [confirm the account](https://www.onemap.gov.sg/apidocs/registerconfirm) using
+the confirmation code sent by email, then set the account password. The
+[authentication service](https://www.onemap.gov.sg/apidocs/authentication) accepts
+that registered email/password at `POST /api/auth/post/getToken` and returns
+`access_token` plus `expiry_timestamp`. This is a OneMap account, not a Google
+project, Google key or billing setup.
+
+The infrastructure owner then assigns an external file containing only those
+`email` and `password` fields, owned by the server user with mode 600, and sets
+`AMR_ROUTES_PROVIDER=onemap` and `AMR_ONEMAP_CREDENTIALS_FILE` to its absolute path.
+Keep the official base URL and synthetic mode off. Do not put credentials in
+source, chat, shell history or phone configuration. No account, file location or
+credential was assigned or used in this task.
+
+After explicit authorization, the live check must cover token exchange, one
+unambiguous address, and drive/walk/cycle/transit responses, including mode fields,
+units and actual geometry. Deployment and phone attribution belong to their
+separate owners. Local fixtures cannot establish live availability.
+
+The supported transit solution within the current contract is to accept only
+provider-returned continuous leg geometry for journey selection. The official
+transit API supplies `legGeometry` for each leg; its documented request options
+do not promise a continuous replacement shape. The earlier fully expanded sample and the currently printed first itinerary
+have stop/shape offsets or gaps. The current page abbreviates the remaining
+itineraries, so they were not reconstructed or counted as fresh proof. Connecting them with straight lines,
+relabelling a walking request, or silently snapping stops would invent evidence.
+Supporting those disconnected itineraries needs a coordinated multipart geometry
+contract across route, journey and phone owners. No such change is included here.
+
+Review the [SLA API terms](https://www.onemap.gov.sg/legal/apitermsofservice.html)
+and [Singapore Open Data Licence](https://www.onemap.gov.sg/legal/opendatalicence.html)
+before use. Dataset reuse requires visible source acknowledgement and a licence
+link; access is conditional and availability is not guaranteed. The separate
+phone/map owner must display the source, access date and licence link before
+live release. The server source field alone is not visible attribution proof.
+Do not suggest SLA endorsement. Map tiles, map SDK/native display, account
+provisioning, provider quota approval and live mode/address/geometry proof are
+separate pending work. No paid service or deployment is enabled here.
+
+## Preserved Google configuration
 
 | Variable | Behavior |
 | --- | --- |
@@ -50,7 +180,7 @@ client input. The loopback exception is test-only and cannot carry a real key.
 The live transport rejects redirects, preventing credential forwarding to a
 second host. Invalid configuration fails startup with a generic message.
 
-One query requests each selected primary mode once, with at most two requests
+For Google, one query requests each selected primary mode once, with at most two requests
 in flight. A second concurrent query fails `busy` without queueing or spending.
 There are no retries or alternative-route requests. The server reserves the
 whole query's call budget before sending: at most 60 mode calls per minute and

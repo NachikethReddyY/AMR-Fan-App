@@ -11,7 +11,7 @@ A fan chooses a start and destination, compares available routes and finds the l
 ## Accepted behavior
 
 - Support Singapore first, including ordinary destinations and race destinations. Ordinary journeys need no race selection or race-weekend window.
-- Obtain candidates from the intended Google Maps integration or explicitly labelled demo fixtures. A model cannot invent routes.
+- Obtain candidates from the selected Singapore-first OneMap integration, the preserved Google adapter when configured, or explicitly labelled demo fixtures. A model cannot invent routes.
 - Normalize legs, mode, distance, duration and availability. Compare bus, train, conventional car, electric car and cab where available; retain walking/cycling where supported. Keep driving available even when it earns no sustainability points.
 - Compare route duration and the estimates from [emissions estimates](03-emissions-estimates.md). Make missing routes or factors visible; do not turn unknown data into zero emissions.
 - The extra-time reference is the fastest available candidate. Add the fan's allowed extra minutes to that duration, then recommend the route with the lowest estimated emissions among candidates inside the limit.
@@ -37,7 +37,10 @@ Verify provider access, Singapore mode coverage and units. Define how to break e
 ## Server provider candidate
 
 The independent server candidate accepts ordinary address or global-coordinate
-queries for Google DRIVE, TRANSIT, WALK and BICYCLE. Actual returned steps define
+queries for DRIVE, TRANSIT, WALK and BICYCLE through the configured adapter.
+OneMap requires Singapore endpoints and an assigned registered account; no
+credentials means live routing remains unavailable. Walking responses never
+become cycling, and disconnected transit geometry cannot support journey selection. Actual returned steps define
 bus/train modes; a preference does not guarantee either. Cab and electric-car
 availability are not invented from DRIVE. Missing credentials, mode coverage,
 geometry and factors remain explicit unavailable outcomes. See [server route
@@ -45,6 +48,6 @@ operations](../operations/routes.md) for authentication, strict schema, spend
 bounds, returned journey evidence and exact reviewed pure-module lineage.
 
 The provider and calculation proof uses labelled synthetic upstream HTTP data.
-Live Google coverage and the held phone UI's platform/accessibility acceptance
+Live provider coverage and the held phone UI's platform/accessibility acceptance
 remain pending. No journey, points or issue-completion claim follows from this
 server candidate.

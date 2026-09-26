@@ -115,6 +115,10 @@ function interpolate(a: Point, b: Point, t: number): Point {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
+export function isSingaporeCoordinate(value: Coordinate): boolean {
+  return contains([value.longitude, value.latitude]);
+}
+
 // Check the supplied geometry only. Internal region borders are allowed; outer
 // boundaries, missing geometry and segments leaving the polygon union fail closed.
 export async function singaporeRouteGeography(
@@ -133,9 +137,18 @@ export async function singaporeRouteGeography(
     yieldAt = performance.now() + 4;
   }
   const points: Point[] = coordinates.map((p) => [p.longitude, p.latitude]);
+  // These caches live for one bounded geometry check. Exact repeated coordinates
+  // and directed segments reuse only successful checks; the supplied path stays
+  // intact, including loops, duplicates and every traversal.
+  const contained = new Set<string>();
+  const checkedSegments = new Set<string>();
+  const key = (p: Point) => `${p[0]},${p[1]}`;
   for (const p of points) {
     await checkpoint();
+    const pointKey = key(p);
+    if (contained.has(pointKey)) continue;
     if (!contains(p)) return null;
+    contained.add(pointKey);
   }
   const box = bounds(points);
   const nearbyEdges = edges.filter(
@@ -151,6 +164,8 @@ export async function singaporeRouteGeography(
       b = points[i],
       ab = subtract(b, a);
     if (ab[0] === 0 && ab[1] === 0) continue;
+    const segmentKey = `${key(a)};${key(b)}`;
+    if (checkedSegments.has(segmentKey)) continue;
     const cuts = [0, 1];
     for (const [index, edge] of nearbyEdges.entries()) {
       if (index % 256 === 0) await checkpoint();
@@ -181,6 +196,8 @@ export async function singaporeRouteGeography(
       )
         return null;
     }
+    checkedSegments.add(segmentKey);
   }
+  signal?.throwIfAborted();
   return 'Singapore';
 }

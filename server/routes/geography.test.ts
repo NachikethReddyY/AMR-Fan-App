@@ -64,11 +64,10 @@ test('containment observes cancellation while processing a maximum-size path', a
   try {
     await assert.rejects(
       singaporeRouteGeography(
-        Array.from({ length: 2048 }, (_, i) =>
-          i % 2
-            ? { latitude: 1.34, longitude: 103.85 }
-            : { latitude: 1.29, longitude: 103.8 },
-        ),
+        Array.from({ length: 2048 }, (_, i) => ({
+          latitude: 1.29 + i / 1_000_000,
+          longitude: 103.85 + i / 1_000_000,
+        })),
         controller.signal,
       ),
       { name: 'AbortError' },
