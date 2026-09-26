@@ -80,6 +80,7 @@ no live Google call is part of local proof.
 | Start selected candidate | `POST /v1/journeys/:id/start` | `requestId`, `captureSessionId` |
 | Append evidence | `POST /v1/journeys/:id/evidence` | `requestId`, `captureSessionId`, `samples` |
 | Finish | `POST /v1/journeys/:id/finish` | `requestId`, `captureSessionId`, `endedAtMs`, `reason` |
+| Discover active/recent journeys | `GET /v1/profiles/:profileId/journeys` | no body; optional `state=active`, `limit`, `before` query |
 | Current state / assessment | `GET /v1/journeys/:id` or `.../:id/assessment` | none |
 
 All routes use existing session, origin, content type and rate controls. General
@@ -94,7 +95,7 @@ route switch `JOURNEY_FIXTURES_ENABLED=true` is allowed only in explicit test or
 development environments and is rejected in production. Fixture route provenance
 remains visible on every summary. Synthetic traces do not prove real travel.
 
-## Phone restart discovery (service ready, GET registration pending)
+## Phone restart discovery
 
 `listOwned(token, profileId, query = {})` reads current owner-scoped summaries.
 The strict query accepts only `state: 'active'` or omitted (recent), `limit`
@@ -116,21 +117,22 @@ The new discovery read uses the existing journey `authorized` helper unchanged.
 After that helper acquires and validates the session row, `listOwned` locks the
 owned profile and calls its supplied `current()` guard before reading summaries;
 the helper retains its existing final check. This defines the new read boundary
-only. Existing journey methods and points authorization semantics are unchanged. Anonymous/expired/revoked sessions
-receive 401; foreign or missing profiles receive 404, including for admins;
+only. Existing journey methods and points authorization semantics are unchanged.
+Anonymous/expired/revoked sessions receive 401; foreign or missing profiles receive 404, including for admins;
 invalid input or a mismatched cursor receives 400. An empty owned view succeeds.
 The query selects no snapshots or raw samples and performs no application writes,
 cleanup or retention extension. Expired active rows retain their state and original
 expiry; discovery does not make them recordable again.
 
-Shared API owner handoff: register exactly one authenticated
-`GET /v1/profiles/:profileId/journeys`, under the existing origin, rate, error and
-no-store controls. Reject duplicate search keys, then pass bearer token, path ID
-and the search-parameter object to `journeys.listOwned`. Unknown query keys are
-rejected by the service. Existing known-ID GET and prepare dispatch are unchanged.
-The actual API currently returns 404 for this collection path. Service tests and
-fresh-process recovery prove the owned implementation; they do not replace the
-pending registered HTTP authorization matrix, combined DAST or phone proof.
+The authenticated `GET /v1/profiles/:profileId/journeys` is registered under the
+existing origin, rate, error and no-store controls. It rejects duplicate search
+keys, then passes bearer token, path ID and the search-parameter object to
+`journeys.listOwned`. The service rejects unknown keys. Existing known-ID GET and
+prepare dispatch are unchanged. Registered HTTP tests cover recovery after an API
+process restart, multiple active records, pagination, ownership, current authority
+and no read-side cleanup. Passive DAST covers reachable public/diagnostic routes;
+it does not authenticate as a fan or replace these authorization tests. Phone
+integration and physical platform proof remain pending.
 
 ## Evidence and retry contract
 

@@ -231,6 +231,25 @@ export function createApi({
         );
       }
       const actor = await authenticateSession(pool, token);
+      const journeyCollection = /^\/v1\/profiles\/([^/]+)\/journeys$/.exec(
+        path,
+      );
+      if (journeyCollection && req.method === 'GET') {
+        const query = new URL(req.url ?? '/', 'http://api.invalid')
+          .searchParams;
+        const keys = [...query.keys()];
+        if (new Set(keys).size !== keys.length)
+          throw new ApiError(400, 'Duplicate journey query parameter.');
+        return send(
+          res,
+          200,
+          await journeys.listOwned(
+            token,
+            journeyCollection[1],
+            Object.fromEntries(query),
+          ),
+        );
+      }
       if (path === '/v1/journeys/prepare' && req.method === 'POST')
         return send(
           res,
