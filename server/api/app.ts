@@ -41,6 +41,7 @@ import { reportRuntime, isReportPath } from '../reports/runtime.ts';
 import { handleReports } from '../reports/http.ts';
 import { serveReportsAdmin } from '../reports/admin.ts';
 import { createAwardsHandler } from '../awards/http.ts';
+import { createPhotoHandler } from '../activity/http.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -104,6 +105,7 @@ export function createApi({
   const journeys = createJourneyService({ pool, env, queryRoutes });
   const reports = reportRuntime(pool, env);
   const awards = createAwardsHandler({ pool });
+  const photoActivity = createPhotoHandler(pool);
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -212,6 +214,9 @@ export function createApi({
         return send(res, catalogue.status, catalogue.value);
       }
       const token = bearer(req);
+      const photoResponse = await photoActivity(req, path);
+      if (photoResponse)
+        return send(res, photoResponse.status, photoResponse.body);
       if (isReportPath(path)) {
         const actor = await authenticateSession(pool, token);
         if (path !== '/v1/impact/official' && actor.role !== 'admin')

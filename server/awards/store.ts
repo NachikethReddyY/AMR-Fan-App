@@ -8,6 +8,7 @@ import { lockJourneyForSettlement } from '../journeys/settlement.ts';
 import { parseInput, points } from '../points/contracts.ts';
 import { receiptSchema } from './contracts.ts';
 import { executeSettlement, type SettlementArgs } from './operation.ts';
+import { readPhotoPreliminary } from '../activity/claims.ts';
 
 export function settleJourneyAward(args: SettlementArgs) {
   return executeSettlement(args, 'production_unavailable');
@@ -63,7 +64,10 @@ export async function readJourneyAward({
       profileId: journey.profileId,
       currentAssessmentIdentity: journey.assessmentIdentity,
       cumulativeAutomaticCredit: points.parse(
-        state.rows[0]?.cumulative_automatic_credit ?? 0,
+        Math.max(
+          state.rows[0]?.cumulative_automatic_credit ?? 0,
+          await readPhotoPreliminary(client, journey.profileId, selectedId),
+        ),
       ),
       latestReceipt: state.rows[0]
         ? receiptSchema.parse(state.rows[0].receipt)
