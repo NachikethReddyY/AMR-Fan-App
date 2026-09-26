@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import {
   AccessibilityInfo,
   Modal,
@@ -31,7 +38,7 @@ import { Balance } from '../points/Balance';
 import { useHistory } from '../points/provider';
 
 const BoldText = createContext(false);
-function Text(props: TextProps) {
+function Text(props: TextProps & { ref?: Ref<NativeText> }) {
   const bold = useContext(BoldText);
   const { fontScale } = useWindowDimensions();
   return (
@@ -86,6 +93,14 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
+  const authHeading = useRef<NativeText>(null);
+  const focusAuthHeading = useRef(false);
+  useEffect(() => {
+    if (!focusAuthHeading.current) return;
+    focusAuthHeading.current = false;
+    if (authHeading.current)
+      AccessibilityInfo.sendAccessibilityEvent(authHeading.current, 'focus');
+  }, [authMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -191,8 +206,17 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
             automaticallyAdjustKeyboardInsets
           >
             <View style={styles.headingRow}>
-              <Text accessibilityRole="header" style={styles.title}>
-                Your account
+              <Text
+                ref={authHeading}
+                accessible
+                accessibilityRole="header"
+                style={styles.title}
+              >
+                {state.kind === 'signedOut'
+                  ? authMode === 'signUp'
+                    ? 'Create account'
+                    : 'Sign in'
+                  : 'Your account'}
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -227,7 +251,9 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
             {state.kind === 'signedOut' && (
               <>
                 <Text style={styles.body}>
-                  Sign in to keep your profile across devices.
+                  {authMode === 'signUp'
+                    ? 'Choose an email and password for your new account. Check your email for a confirmation link before signing in.'
+                    : 'Enter your email and password to sign in to your account.'}
                 </Text>
                 {state.error && (
                   <Text accessibilityLiveRegion="polite" style={styles.body}>
@@ -296,6 +322,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                       : 'Create an account'
                   }
                   onPress={() => {
+                    focusAuthHeading.current = true;
                     setAuthMode(authMode === 'signUp' ? 'signIn' : 'signUp');
                     setPassword('');
                     setAuthError('');
