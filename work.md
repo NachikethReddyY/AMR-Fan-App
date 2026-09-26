@@ -946,3 +946,47 @@ runtime grants are unchanged. Final-head P2 re-review and any root merge turn
 remain pending; no provider, cloud, shared database or CI action occurred.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## Admin Vercel delivery candidate, 2026-09-26
+
+Reuse the five existing admin pages with consistent navigation and the selected
+admin palette. A public-only build copies 14 browser assets plus fixed Vercel
+routing/security configuration. The verified Hobby team has a new `amr-admin`
+project with assigned `https://amr-admin.vercel.app`; no deployment, paid addon,
+function, Render setting or native app change has been made.
+
+The existing `ADMIN_ORIGIN` remains supported, and optional
+`ADMIN_ADDITIONAL_ORIGIN` permits one more exact origin. Both reject wildcards,
+credentials and non-origin configuration. Ordinary session and assigned-role
+checks remain authoritative. Login forms use POST and omit native email/password
+control names, so failed JavaScript cannot serialize credentials. The original
+shared helper still uses the fixed Supabase endpoint and memory-only sessions.
+
+Observed proof: seven focused build/auth/origin tests; nine disposable-database
+HTTP tests, followed by the updated two-case registration suite with both-origin
+fan/admin/revoked-role checks; full `pnpm check` passed on final source. A concurrent
+route heartbeat check failed at56.95ms while scanners ran; the unchanged23-case
+route suite and subsequent full check passed serially. Browser proof reached all
+five real local API screens, denied a synthetic fan, allowed a synthetic assigned
+admin, and cleared the workspace on logout. Desktop880px main, narrow390/640px
+layouts and CSS200% zoom had no horizontal overflow. Keyboard Enter works;
+listener-free native POST has zero successful credential controls and is rejected.
+This is synthetic identity and CSS zoom proof, not hosted admin or browser zoom.
+
+Final isolated DAST has59 rule passes and blocks on10202, missing anti-CSRF token
+heuristics on three login forms. These forms have no native credential controls,
+no native login endpoint and no cookie authority; independent disposition is
+pending. Informational10031 matches a static points-input attribute. No scanner
+rule was suppressed, and DAST is not reported green. Earlier sensitive-URL alert
+is absent after the form correction. Final security checks passed: no detected secrets, zero source SAST findings
+and no high/critical dependency advisories; the previously triaged moderate
+dependency advisory remains.
+
+Private proof: `.evidence/admin-vercel/` and `.evidence/security/application/`.
+The final CLI dry run lists exactly15 public files,77,977 bytes, with no secret,
+`.env`, `.vercel`, evidence or test file. Source hashes are frozen for independent
+review. Live assigned-admin reads require legitimate supplied access; the Render
+candidate/additional origin must be deployed by the infrastructure owner. PR and
+production publication remain pending independent review and delivery gates.
+
+Edited by gpt-6-astra through Codex (T3 Code).

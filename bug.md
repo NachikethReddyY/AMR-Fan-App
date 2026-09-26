@@ -342,3 +342,16 @@ cases passed with byte-identical adapter, SQL and tests. Earlier red evidence is
 retained. Exact P2 re-review and root merge disposition remain pending.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## ADMIN-VERCEL: show and deploy the existing admin web screens
+
+User requests a coherent admin dashboard on their logged-in Vercel Hobby team.
+Reuse points, rewards, submissions, reports and participation screens; retain
+Render admin access and server-assigned roles. Add only public browser assets,
+fixed Render API routes and one optional exact added browser origin. No native
+app, real data mutation, role grant, paid resource or Render setting changes.
+Tracker: unlinked; related admin scope #12 and #13. Live assigned-admin proof
+requires legitimate access and remains blocked. Local implementation and browser/auth proof complete. Independent review of
+DAST10202 and exact-source candidate is pending; no production deployment.
+
+Edited by gpt-6-astra through Codex (T3 Code).
