@@ -571,3 +571,17 @@ no actionable issues in the preceding password-only slice. This correction will
 receive follow-up review and native proof before delivery.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+### Native dock background correction, 2026-09-26
+
+Pixel installation of internal APK b119106 exposed a white root background around
+the accepted floating dock. Applied the existing screen background to the root
+provider without changing dock geometry. Direct native development observation
+shows the dark margins, all four tabs and successful synthetic password signup,
+automatic name setup, saved name and zero server balance. Hosted guest catalogue
+still returns 401; the installed release correctly reports offers unavailable.
+The exact backend change remains 405739286063f77fdd50def2e02ddfb9da914239.
+This is a bounded visual correction. Final user APK waits for the separately
+owned, frozen photo-entry integration and remaining acceptance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

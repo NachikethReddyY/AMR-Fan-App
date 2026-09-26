@@ -339,7 +339,7 @@ function AccountNavigation() {
 
 export default function App() {
   return (
-    <GluestackUIProvider mode="dark">
+    <GluestackUIProvider mode="dark" style={styles.screen}>
       <SafeAreaProvider>
         <AccountNavigation />
       </SafeAreaProvider>
