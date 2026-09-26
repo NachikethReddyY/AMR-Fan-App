@@ -25,7 +25,14 @@ const accountingSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 const callRow = z.object({
-  state: z.enum(['reserved', 'started', 'held', 'reported', 'cancelled']),
+  state: z.enum([
+    'reserved',
+    'started',
+    'held',
+    'reported',
+    'disputed',
+    'cancelled',
+  ]),
   reserved_nano_usd: z.coerce.bigint(),
   accounted_nano_usd: z.coerce.bigint(),
   bound_exceeded: z.boolean(),
@@ -150,7 +157,7 @@ export function createPostgresAiCostStore(pool: Pool): AiCostStore & {
         const { accounting: raw, ...rawIdentity } = input;
         const identity = identitySchema.parse(rawIdentity);
         const accounting = accountingSchema.parse(raw);
-        await transaction(pool, async (client) => {
+        const conflict = await transaction(pool, async (client) => {
           await budget(client);
           const call = await loadCall(client, identity);
           if (!call || call.state === 'reserved' || call.state === 'cancelled')
@@ -165,6 +172,7 @@ export function createPostgresAiCostStore(pool: Pool): AiCostStore & {
             (accounting.kind === 'held' && next !== call.reserved_nano_usd)
           )
             throw new Error('Invalid accounting');
+          if (call.state === 'disputed') return true;
           // Bound violations dominate earlier reports and permanently stop admission.
           const exceeded =
             accounting.kind === 'held' &&
@@ -179,8 +187,22 @@ export function createPostgresAiCostStore(pool: Pool): AiCostStore & {
             if (
               accounting.kind === 'reported' &&
               next !== call.accounted_nano_usd
-            )
-              throw new Error('Conflicting receipt');
+            ) {
+              // Preserve the original receipt; the disputed state retains its
+              // full reservation as exposure until a reviewed operator recovery.
+              await client.query(
+                'UPDATE app.ai_cost_budget SET committed_nano_usd = committed_nano_usd + $1, suspended = true WHERE scope = $2',
+                [
+                  (call.reserved_nano_usd - call.accounted_nano_usd).toString(),
+                  scope,
+                ],
+              );
+              await client.query(
+                "UPDATE app.ai_cost_calls SET state = 'disputed' WHERE operation_id = $1 AND call_id = $2",
+                [identity.operationId, identity.callId],
+              );
+              return true;
+            }
             return;
           }
           // A late violation restores the full hold even above the admission cap.
@@ -202,6 +224,8 @@ export function createPostgresAiCostStore(pool: Pool): AiCostStore & {
             ],
           );
         });
+        // Throw only after the conservative hold and suspension have committed.
+        if (conflict) throw new Error('Conflicting receipt');
       });
     },
     cancelCall(input) {

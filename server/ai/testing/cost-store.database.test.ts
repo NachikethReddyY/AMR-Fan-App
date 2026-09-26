@@ -264,12 +264,6 @@ test('partial two-stage completion and unknown recovery retain precise spend', a
   } as const;
   await store.reconcile(reported);
   await store.reconcile(reported);
-  await assert.rejects(
-    store.reconcile({
-      ...reported,
-      accounting: { kind: 'reported', chargedNanoUsd: 0 },
-    }),
-  );
   assert.equal(await store.claimCall(identity(r, 'decide')), true);
   const held = {
     ...identity(r, 'decide'),
@@ -289,6 +283,113 @@ test('partial two-stage completion and unknown recovery retain precise spend', a
   assert.equal(
     await store.reserve(reservation('remaining', 7_000_000_000)),
     'reserved',
+  );
+});
+
+for (const conflictingCharge of [0, 4_000_000_000]) {
+  test(`contradictory receipt ${conflictingCharge} restores a sticky full hold and suspends admission`, async () => {
+    const r = reservation('conflicting_receipt');
+    await store.reserve(r);
+    const pending = reservation('pending_stage', 1_000_000_000);
+    await store.reserve(pending);
+    await store.claimCall(identity(r));
+    await store.reconcile({
+      ...identity(r),
+      accounting: { kind: 'reported', chargedNanoUsd: 1_000_000_000 },
+    });
+    const conflict = {
+      ...identity(r),
+      accounting: { kind: 'reported', chargedNanoUsd: conflictingCharge },
+    } as const;
+    await assert.rejects(store.reconcile(conflict));
+    const other = createDatabase();
+    try {
+      const restarted = createPostgresAiCostStore(other);
+      await assert.rejects(restarted.reconcile(conflict));
+      await assert.rejects(
+        restarted.reconcile({
+          ...identity(r),
+          accounting: { kind: 'reported', chargedNanoUsd: 1_000_000_000 },
+        }),
+      );
+      await assert.rejects(
+        restarted.reconcile({
+          ...identity(r),
+          accounting: {
+            kind: 'held',
+            heldNanoUsd: 6_000_000_000,
+            reason: 'usage-unknown',
+          },
+        }),
+      );
+      await assert.rejects(
+        restarted.reconcile({
+          ...identity(r),
+          accounting: {
+            kind: 'held',
+            heldNanoUsd: 6_000_000_000,
+            reason: 'bound-exceeded',
+          },
+        }),
+      );
+      assert.deepEqual(
+        (
+          await other.query(
+            'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget',
+          )
+        ).rows,
+        [{ committed_nano_usd: '7000000000', suspended: true }],
+      );
+      assert.deepEqual(
+        (
+          await other.query(
+            'SELECT state, accounted_nano_usd FROM app.ai_cost_calls WHERE operation_id = $1',
+            [r.operationId],
+          )
+        ).rows,
+        [{ state: 'disputed', accounted_nano_usd: '1000000000' }],
+      );
+      assert.equal(
+        await restarted.reserve(reservation('nine_more', 9_000_000_000)),
+        'exhausted',
+      );
+      assert.equal(
+        await restarted.reserve(reservation('zero_more', 0)),
+        'exhausted',
+      );
+      assert.equal(await restarted.claimCall(identity(pending)), false);
+      assert.equal(await restarted.cancelCall(identity(r)), false);
+    } finally {
+      await other.end();
+    }
+  });
+}
+
+test('conflicting receipt after released funds are reused retains full exposure above cap', async () => {
+  const r = reservation('conflict_after_reuse');
+  await store.reserve(r);
+  await store.claimCall(identity(r));
+  await store.reconcile({
+    ...identity(r),
+    accounting: { kind: 'reported', chargedNanoUsd: 1_000_000_000 },
+  });
+  assert.equal(
+    await store.reserve(reservation('nine', 9_000_000_000)),
+    'reserved',
+  );
+  await assert.rejects(
+    store.reconcile({
+      ...identity(r),
+      accounting: { kind: 'reported', chargedNanoUsd: 4_000_000_000 },
+    }),
+  );
+  assert.deepEqual(
+    (
+      await pool.query(
+        'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget',
+      )
+    ).rows,
+    [{ committed_nano_usd: '15000000000', suspended: true }],
   );
 });
 

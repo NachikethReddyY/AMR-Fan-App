@@ -902,3 +902,31 @@ changes across shared stash ordering. Proposed project guidance: use captured
 stash object IDs only. No global guidance was edited.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+### PR48 P2: conflicting receipts, 2026-09-26
+
+Independent final-head review found that an in-bound contradictory receipt
+threw within the transaction, retaining an earlier lower charge without
+suspending admission. The prior test checked rejection but then permitted the
+next stage; it did not prove conservative exposure. This failed the accounting
+criterion. Classification: project correction; no shared guidance was edited.
+
+Three new PostgreSQL cases failed against exact original `4f83e244` adapter and
+SQL while the eleven earlier cases passed. With the fix, all fourteen pass in
+2.09 seconds on migrations 0001–0011. A contradiction preserves the original
+receipt, marks the call disputed, restores its full reservation and suspends the
+budget atomically. Conflict is returned only after commit. Reconnect, repeated,
+different and original-receipt replays cannot shed the hold; admission and claims
+remain blocked. Late correction after released funds are reused records all
+conservative exposure even above $10. There is no new grant or column; migration
+0011 adds the disputed state to its constraints. Its old checksum is obsolete.
+
+The granted serial proof used disposable PostgreSQL 17 with generated credentials,
+an owned internal network and no host ports/mounts. Red and green fixtures each
+cleaned their container/network/image. Prior evidence remains untouched; new
+proof is `p2-red.log` and `p2-green.log` under the existing local evidence path.
+Activation explicitly requires no prior provider spend/in-flight calls or a
+separately reviewed import of liabilities. Main refresh after the route fix,
+integrated gates and exact-head re-review remain pending. No merge is granted.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

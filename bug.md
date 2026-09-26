@@ -277,7 +277,7 @@ photo work owns `0010`. Acceptance covers concurrent admission, restart/replay,
 immutable fingerprints/rates, per-stage claims, partial completion, unknown-spend
 holds and persistent suspension after bound violations. Isolated PostgreSQL and
 heavy gates used the coordinator's explicit slot grant, now released. Eleven
-full-chain PostgreSQL cases and security pass. Full repository checks retain an
+full-chain PostgreSQL cases and security pass. Full repository checks retain a
 route responsiveness deadline failure; its isolated rerun passes in 4.6 seconds.
 Full check is RED and the cause is unproven. The coordinator authorized one real
 inactive PR for review with that limit explicit; no merge turn is granted.
@@ -323,3 +323,14 @@ regression now uses distinct coordinates because repeated geometry can finish
 before its 25 ms deadline. Native journey work and its unselected UI remain separate.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+PR48 review correction: a later contradictory receipt within the original
+reservation throws inside reconciliation, leaving the earlier lower charge and
+admission active. Add a persistent disputed-call hold and suspend admission in
+the same transaction, preserve the original receipt, then report conflict after
+commit. Three new cases failed against original `4f83e244`; all fourteen passed
+with the correction on isolated PostgreSQL 17. Owned resources were cleaned.
+Initialization still requires verified no prior provider spend or
+in-flight calls, or separately reviewed import of existing liabilities.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

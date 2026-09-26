@@ -23,8 +23,13 @@ claim and cancellation serialize on the same lock. Cancellation is irreversible.
 
 `reconcile` accepts only server-computed `accountAiUsage` accounting. The model
 and client must never supply amounts. Reported charges within the reservation
-release only the unused difference; exact repeats do nothing and conflicting
-receipts fail. Unknown usage keeps the full stage hold. A later trusted receipt
+release only the unused difference; exact repeats do nothing. A conflicting
+receipt marks the call `disputed`, preserves its original reported amount,
+restores its entire reservation to the budget and suspends admission in one
+transaction. Only after that commit does reconciliation return a conflict.
+All subsequent accounting for that disputed call returns conflict without
+changing its receipt or hold, including the original amount or unknown usage.
+Unknown usage keeps the full stage hold. A later trusted receipt
 can resolve an unknown hold. A delayed unknown result cannot overwrite a receipt.
 Timeout, cancellation, HTTP failure and product rejection do not prove no bill.
 
@@ -32,7 +37,9 @@ A bound violation restores the full hold and persistently suspends reservations
 and claims, even if it arrives after a receipt. Exposure can consequently exceed
 $10; the admission ceiling remains $10. The store cannot prevent a provider from
 breaking its promised billing bound. It never hides this exposure by clamping it.
-Neither receipts nor process restarts clear suspension or a bound-violation hold.
+Neither receipts nor process restarts clear suspension, a disputed hold or a
+bound-violation hold. For a disputed call, `accounted_nano_usd` retains the original
+receipt while its full `reserved_nano_usd` contributes to the budget exposure.
 There is deliberately no reset/resume API. Recovery requires a separately
 reviewed operator procedure that verifies actual billing, provider bounds and
 all in-flight calls before adjusting the database. Do not clear rows to recover.
@@ -53,6 +60,9 @@ reach the same database. Before activation the deployment owner must verify that
 fact, provision the migration and runtime grants, preserve existing spend and
 unknown holds, and supply separately verified rates, billing ceilings and
 gateway/account safeguards described in [integration](integration.md).
+The migration's zero initialization is valid only after verifying no prior
+provider spend or in-flight calls. Otherwise, a separately reviewed import of
+existing actual and uncertain liabilities is required before any activation.
 Missing configuration or database failure must deny dispatch. Store errors are
 generic and contain no connection details or input payloads.
 
@@ -82,11 +92,13 @@ dependencies may use network access; the running database cannot reach providers
 The test guard requires its exact test database and loopback connection.
 
 The fixture applies the available migration chain, including independent `0011`.
-All eleven tests passed on the complete `0001` through `0011` chain after the
-photo migration landed in main `726efbb`. Tests exercise independent processes,
+All fourteen tests passed on the complete `0001` through `0011` chain after the
+photo migration landed in main `726efbb`. The three contradictory-receipt cases
+failed against the original PR head before passing with the correction.
+Tests exercise independent processes,
 concurrent cap admission, reconnect/replay,
 claim/cancel rules, partial two-stage settlement, unknown recovery, lock-wait
-expiry, persistent suspension, rollback and the exact runtime grants above.
+expiry, persistent suspension, disputed receipts, rollback and the exact runtime grants above.
 No real provider, hosted database, fan data or paid request is used.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
