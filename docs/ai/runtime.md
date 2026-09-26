@@ -94,13 +94,23 @@ alone does not prove source meaning; report grounding and admin approval remain
 required. `store:false` does not establish provider retention guarantees.
 
 The [official TokenRouter setup](https://www.tokenrouter.com/docs/openclaw-setup/)
-confirms the base and OpenAI-compatible chat path. Its public
-[model page](https://www.tokenrouter.com/models/) did not expose either exact
-model during this inspection. Their availability, supported output options,
-prices and usage accounting remain unverified. No account/key was inspected and
-no live provider request was made.
+confirms the base and OpenAI-compatible chat path. On 26 September, direct access
+to the public [catalog](https://www.tokenrouter.com/models/) showed zero models
+and the exact Luna page returned 404, while an indexed copy listed text support
+and $0.10 input/$0.50 output per million tokens. This conflict does not verify
+current price, account availability, image support or enforced token limits.
+TokenRouter's [cost guide](https://www.tokenrouter.com/blog/can-tokenrouter-reduce-llm-api-costs/)
+documents `/v1/models`. The manager authorized one bounded authenticated
+`GET https://api.tokenrouter.com/v1/models`: 10 seconds, at most 1 MiB, no redirect
+or retry, sanitized records for only the two allowed model IDs. The expected
+OpenAI-compatible envelope is `object: "list", data: [{id,...}]`; extended price
+and capability fields must be observed, not assumed. No official account-budget
+endpoint was found, so none is guessed. Infra reports no effective key in the
+named Render service after its direct/env-group checks; no local key or catalog
+request exists in this slice. The parent can resume this lookup after key handoff.
 
-Project role correction: Luna is for report extraction, not routine decisions.
+Project role correction: Luna is for report extraction and camera-photo
+observations, not routine decisions.
 Jev is preferred for state-aware route recommendations and existing short
 advisory tasks. [TypeSafe's introduction](https://docs.typesafe.ai/introduction)
 and [HTTP API](https://docs.typesafe.ai/api) document text state plus typed
@@ -115,9 +125,11 @@ verification. No new classification policy is introduced.
 concentration, not route utility or the probability an answer is correct.
 [Jev limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13) call for
 arithmetic/date ordering in code and warn about noisy and adversarial state.
-The existing route rule remains lowest emissions within fastest duration plus
-extra minutes, with duration then ID ties. Whether Jev changes or works within
-that ordering is a pending product decision. No ranking code changes here.
+The accepted route direction is relative Jev preference over code-calculated
+time, emissions and points, with the strongest recommendation first, inside a
+hard fastest-duration-plus-extra-minutes limit. No numerical weights are invented.
+The current lowest-emissions rule, with duration then ID ties, remains the
+deterministic fallback until the route owner integrates and verifies that change.
 
 The user confirmed **US$10 total** as a hard ceiling shared by development and
 the deployed demo, not a spending target. A per-process usage counter cannot
@@ -142,6 +154,86 @@ Exact peer handoff, not edits in this slice:
 - Root config owner: future server-only names are `TOKENROUTER_BASE_URL`,
   `TOKENROUTER_API_KEY`, `TOKENROUTER_ENABLED=false`. No root patch or dependency
   is needed for this preparation. The other AI flags remain unchanged/off.
+
+## Route and activity integration contracts
+
+These are internal normalized contracts with synthetic proof, not TokenRouter
+wire parsers or live model-quality evidence. No product caller is wired here.
+
+`validateRoutePreference(snapshot, response)` accepts a server-created snapshot
+with `snapshotId`, integer `extraMinutes` in 0..1440, and 1..12 routes containing
+only opaque `id`, `durationSeconds`, `kgCo2e` and `points`. Missing calculated
+metrics are null and force deterministic fallback, never a fabricated zero.
+The code computes the hard limit using every valid duration before filtering.
+The response must contain the same snapshot ID and a complete, unique
+`orderedRouteIds` permutation of eligible routes, plus nullable [0,1] confidence.
+Returned metrics come from the snapshot; extra geometry, amount or tool fields
+are rejected. Confidence is metadata and does not determine the order.
+The route owner creates a fresh snapshot, provides all candidates, rechecks its
+identity/time bound when consuming results, and uses `recommendRoute` on failure.
+Do not send locations, geometry, account IDs or live traces to a model.
+
+`createActivityAssessment({provider?, timeoutMs?}).assess(input, signal?)` accepts
+server-owned mutable input: `photo: Uint8Array` (1..2,000,000 bytes), JPEG/PNG
+`mime`, `capture: "camera"`, a 1..1600-character `description`, opaque
+`fingerprint`, and server-calculated `eligibility` booleans `eligible`,
+`duplicate`, `actionAlreadyRewarded`, `tripAlreadyRewarded`. These booleans are
+not client attestations. The caller must decode/validate the actual image,
+dimensions and camera origin before entry; MIME and byte checks cannot do that.
+The module rejects unsupported fields and requires all eligibility checks before
+provider work. It has no daily counter or location requirement.
+
+The injected provider interface is `observe({photo,mime,description}, signal)`
+then `decide({observations}, signal)`. There is at most one call to each, in that
+order, no retry, and one active assessment per constructed instance. A shared
+15-second deadline defaults to at most 20 seconds. An abort-ignoring provider
+keeps the concurrency slot occupied until it exits; a late result cannot become
+a candidate. Default construction has no provider and returns unavailable without
+traffic. Only a reviewed server mapper may inject a real provider, after budget
+admission. Tests inject in-process functions; they do not verify multimodal APIs.
+
+Observations contain 1..8 nonempty strings of at most 400 characters. The decision
+contains only `verdict: supported | not-supported | uncertain`,
+`activity: bus-trip | other`, and nullable confidence in [0,1]. A candidate
+requires supported and strictly greater than 0.5; exactly 0.5, null, uncertainty
+or a negative verdict cannot qualify. This encodes the accepted activity >50
+threshold, not a measured correctness probability. A future mapper must verify
+the gateway field/scale; a Noul value is not Choice/Score confidence. The result
+contains no photo, description, observation, free-text reason, point amount,
+balance or approval. Candidates require transactional eligibility recheck.
+
+The owner supplies a buffer whose ownership is transferred for this assessment.
+On success, invalid input/output, disabled/provider failure, busy, timeout and
+cancellation, the module overwrites that supplied buffer and clears its mutable
+description/observation references. JavaScript strings are immutable: reference
+release is not proof of heap-byte zeroization. No filesystem, database or logging
+I/O occurs here. Caller/provider copies, logs, transport buffers, process recovery
+and provider retention require separate end-to-end proof; no provider deletion
+claim is made. Retain only the decision, ledger and duplicate fingerprint after
+assessment, not the original photo or description.
+
+Accepted award handoff: an eligible bus photo earns preliminary 50 points now;
+only the difference may be paid later after verification of the same journey.
+An eligible no-location photo earns 50. There is no daily award cap. Duplicate
+photos/actions and trip double payment are denied. Amounts for other activities
+remain unsettled. These modules do not calculate or award points. The owner must
+atomically recheck eligibility, deduplication and existing payment before one
+ledger change and link any later journey difference to the preliminary payment.
+
+The shared US$10 development/deployment ceiling still needs enforceable admission.
+Reserve both activity stages before starting; retain uncertain billed usage after
+timeouts/failures and reconcile once. An in-memory per-instance counter is not a
+durable shared cap. The proposed synthetic conformance allocation is at most
+US$0.10 only after the manager verifies rates, cap and maximum billable request;
+it is not live activation. No billable calls were made by this preparation.
+
+Consumer seams: the route owner supplies this snapshot from `createRouteQuery`
+after deterministic metrics; an activity owner supplies authenticated decoded
+camera input and server eligibility. No activity API exists in the inspected
+base. Report integration remains the grounded wrapper handoff above. Exact
+request/response fixtures are in `route-preference.test.ts` and
+`activity-assessment.test.ts`. Actual semantic evaluation, transaction/retention
+integration and authenticated gateway conformance remain separate pending gates.
 
 ## Jev submission moderation preparation
 
