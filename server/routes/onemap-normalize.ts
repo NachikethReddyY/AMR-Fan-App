@@ -35,7 +35,7 @@ const at = (p: z.infer<typeof place>): Coordinate => ({
 const roadResponse = z.object({
   error: z.never().optional(),
   status: z.literal(0),
-  route_instructions: z.array(z.array(z.unknown()).max(12)).max(128),
+  route_instructions: z.array(z.array(z.unknown()).max(12)).min(1).max(128),
   route_geometry: polyline,
   route_summary: z.object({
     total_time: seconds.positive(),
@@ -173,6 +173,16 @@ export async function normalizeOneMap(
   } else {
     const parsed = roadResponse.safeParse(raw);
     if (!parsed.success) return missing;
+    const instructionMode =
+      mode === 'DRIVE' ? 'driving' : mode === 'BICYCLE' ? 'cycling' : 'walking';
+    // The requested mode cannot override contradictory returned instructions.
+    // Mixed walking/cycling paths need per-leg metrics before we can retain them.
+    if (
+      parsed.data.route_instructions.some(
+        (instruction) => instruction[8] !== instructionMode,
+      )
+    )
+      return missing;
     const points = decodePolyline(parsed.data.route_geometry);
     if (!points) return missing;
     const legMode =

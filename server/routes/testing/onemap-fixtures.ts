@@ -76,6 +76,18 @@ export function transit() {
     },
   };
 }
+export function roadFor(mode: 'DRIVE' | 'WALK' | 'BICYCLE') {
+  const instructionMode =
+    mode === 'DRIVE' ? 'driving' : mode === 'BICYCLE' ? 'cycling' : 'walking';
+  return {
+    ...road,
+    route_instructions: road.route_instructions.map((instruction) =>
+      instruction.map((value, index) =>
+        index === 8 ? instructionMode : value,
+      ),
+    ),
+  };
+}
 export function address() {
   return {
     found: 1,

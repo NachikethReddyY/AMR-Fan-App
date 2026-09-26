@@ -266,3 +266,23 @@ no HTTP body decoding, inference or live credit. Infrastructure retains the
 merge is a separate manager-owned turn. No CI queries or device/provider actions.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+## ONEMAP-001: finish the Singapore routing adapter
+
+Related [#6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6) and #7;
+OneMap-specific steering is unlinked. User selected OneMap, then requested the
+unfinished routing work through current-main integration and one real PR.
+This conversation owns implementation directly; no delegated implementation
+writer remains. Camera and mobile evidence stay with their separate owners.
+
+The inherited adapter accepted walking road instructions as cycling based only
+on the request mode. A failing regression reproduced this; returned instruction
+modes now must agree with the requested mode. Continuous transit remains
+supported. Disconnected transit retains metrics but cannot become a prepared
+journey or obtain a recommendation under the current contract.
+
+Live blocker: the manager/infra owner must assign a confirmed OneMap account's
+email/password through the existing private-file configuration, then authorize
+live validation and deployment. No account or credentials were invented or used.
+Google billing, phone changes and cloud/database mutation remain outside scope.
+
+Edited by gpt-6-astra through Codex (T3 Code).

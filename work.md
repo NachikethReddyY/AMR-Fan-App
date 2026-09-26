@@ -779,3 +779,52 @@ DB/scanner resources are removed. No shared services, devices, providers, cloud
 resources or CI APIs were used. Review and merge remain coordinator-owned.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+## 2026-09-26: OneMap routing completion candidate
+
+Related [#6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6) and #7;
+OneMap-specific steering unlinked. Rebased the inherited provider commit onto
+current main `09b61e9` and preserved the prior dirty TODO exactly before adding
+this task's local checklist. The corrected task ownership has one implementation
+writer in this checkout. No phone, infra, package, lockfile or CI files changed.
+
+The OneMap adapter uses registered-account token exchange, bounded address
+resolution and two concurrent mode requests. Credentials remain in an assigned
+external private file; there is no cross-provider fallback. Normalized road and
+transit data retain source, metrics and geometry evidence in the existing query
+and prepared-journey contracts.
+
+A new failing regression proved walking instructions were relabelled as cycling.
+The fix requires returned road instruction modes to agree with the request;
+missing, unknown or mixed instruction modes are unavailable. Synthetic HTTP
+proof checks actual `cycle` requests and confirms disconnected transit cannot
+be selected for journey verification. Continuous transit remains supported.
+
+| Proof                            | Observed result                                                                                          | Limits                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Route boundary                   | 37/37 node tests pass, including maximum-shape heartbeat, mode honesty and transit-to-journey projection | Loopback fixtures only; at most two temporary listeners                                          |
+| Journey evidence/planning        | 15/15 pass                                                                                               | No database integration or phone proof                                                           |
+| Time/emissions arithmetic        | 32/32 in four Jest suites pass                                                                           | Existing indicative factors, not live emissions measurements                                     |
+| Typecheck/lint/format/agent docs | Pass; 15 skills and 37 maintained docs                                                                   | Static/structure proof only                                                                      |
+| Secret/SAST checks               | No leaks; zero findings across 171 source targets under four rules                                       | Focused scanner coverage, not a full security audit                                              |
+| Dependency/scanner checks        | Gate passes; one unchanged moderate advisory; positive/negative fixtures pass                            | Existing advisory retained                                                                       |
+| Current official transit excerpt | One fully printed itinerary, three legs, 1027 seconds, continuous geometry unavailable                   | Page abbreviates other itineraries; only the printed itinerary was parsed, without invented legs |
+
+Private evidence: `.evidence/onemap/completion-*`. The first documentation parse
+failed on its explicit ellipsis. The corrected probe parsed only the fully printed
+itinerary after removing the omission marker; no omitted data was reconstructed.
+Earlier evidence for three expanded itineraries remains historical.
+
+The complete `pnpm check` aggregate, database tests, DAST, native/browser tests
+and hosted Actions were excluded by this task's explicit scope. Camera evidence
+is separately owned. Review and PR delivery follow this verified candidate; no
+merge, deployment, live auth/search/route call, Google billing or shared database
+operation occurred.
+
+Path to live: the manager/infra owner assigns a registered and email-confirmed
+OneMap account's email/password through `AMR_ONEMAP_CREDENTIALS_FILE`, authorizes
+a bounded live mode/address/geometry check, and owns deployment. Phone ownership
+includes visible source/licence attribution. Disconnected transit support beyond
+this contract requires coordinated multipart geometry work; no fake connecting
+path is supplied. This server PR does not close #6 or claim live product completion.
+
+Implemented by gpt-6-astra through Codex (T3 Code).

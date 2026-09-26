@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizeOneMap, resolveOneMapAddress } from './onemap-normalize.ts';
-import { road, transit, address } from './testing/onemap-fixtures.ts';
+import { road, roadFor, transit, address } from './testing/onemap-fixtures.ts';
 
 test('road summary and returned polyline become OneMap evidence without invented geometry', async () => {
   for (const mode of ['DRIVE', 'WALK', 'BICYCLE'] as const) {
-    const result = await normalizeOneMap(mode, road);
+    const result = await normalizeOneMap(mode, roadFor(mode));
     assert.equal(result.kind, 'routes');
     if (result.kind !== 'routes') continue;
     assert.equal(result.routes[0].id, `onemap-${mode.toLowerCase()}-0`);
@@ -17,6 +17,28 @@ test('road summary and returned polyline become OneMap evidence without invented
     );
     assert.equal(result.evidence[0].geometry.kind, 'provider');
   }
+});
+test('walking instructions cannot masquerade as cycling or driving', async () => {
+  for (const mode of ['BICYCLE', 'DRIVE'] as const)
+    assert.deepEqual(await normalizeOneMap(mode, road), {
+      kind: 'unavailable',
+      reason: 'missing_data',
+    });
+  for (const instructions of [
+    [],
+    [['Head']],
+    road.route_instructions.map((instruction) =>
+      instruction.map((value, index) => (index === 8 ? 'unknown' : value)),
+    ),
+    [roadFor('BICYCLE').route_instructions[0], road.route_instructions[1]],
+  ])
+    assert.deepEqual(
+      await normalizeOneMap('BICYCLE', {
+        ...road,
+        route_instructions: instructions,
+      }),
+      { kind: 'unavailable', reason: 'missing_data' },
+    );
 });
 test('PT retains ordered walk/bus or subway legs, fractional metres and waiting time', async () => {
   for (const mode of ['BUS', 'SUBWAY']) {

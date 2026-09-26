@@ -92,7 +92,13 @@ under the current contract. Supporting multipart geometry belongs to a future
 coordinated route/journey/map change; the official transit sample exposes this
 limitation.
 Road modes use the provider's total distance/time and returned encoded polyline.
-Instruction text is not used as an emissions input. No route is relabelled as a
+Every instruction must identify the requested mode at the documented instruction
+mode position: `walking`, `driving` or `cycling`. Empty, missing, unknown or
+contradictory instruction modes are unavailable. In particular, a walking response
+to `cycle` is never relabelled as cycling. Mixed walking/cycling instructions
+remain unavailable until their separate metrics can be represented honestly.
+The published road example demonstrates walking; drive/cycle response vocabulary
+still needs the authorized live check. Instruction prose is not an emissions input. No route is relabelled as a
 cab or electric car, and OneMap does not supply the emissions calculation.
 
 Geometry uses the documented polyline5 encoding. `google-polyline5` in existing
@@ -117,6 +123,38 @@ The implementation uses the official [routing documentation](https://www.onemap.
 [documentation root](https://www.onemap.gov.sg/apidocs/), inspected 26 September
 2026. Tests contain synthetic values in the documented response fields, not
 captured personal trips or a claim that live schedules were checked.
+
+### Minimal path to live routing
+
+The account owner must [register for OneMap API access](https://www.onemap.gov.sg/apidocs/register)
+and [confirm the account](https://www.onemap.gov.sg/apidocs/registerconfirm) using
+the confirmation code sent by email, then set the account password. The
+[authentication service](https://www.onemap.gov.sg/apidocs/authentication) accepts
+that registered email/password at `POST /api/auth/post/getToken` and returns
+`access_token` plus `expiry_timestamp`. This is a OneMap account, not a Google
+project, Google key or billing setup.
+
+The infrastructure owner then assigns an external file containing only those
+`email` and `password` fields, owned by the server user with mode 600, and sets
+`AMR_ROUTES_PROVIDER=onemap` and `AMR_ONEMAP_CREDENTIALS_FILE` to its absolute path.
+Keep the official base URL and synthetic mode off. Do not put credentials in
+source, chat, shell history or phone configuration. No account, file location or
+credential was assigned or used in this task.
+
+After explicit authorization, the live check must cover token exchange, one
+unambiguous address, and drive/walk/cycle/transit responses, including mode fields,
+units and actual geometry. Deployment and phone attribution belong to their
+separate owners. Local fixtures cannot establish live availability.
+
+The supported transit solution within the current contract is to accept only
+provider-returned continuous leg geometry for journey selection. The official
+transit API supplies `legGeometry` for each leg; its documented request options
+do not promise a continuous replacement shape. The earlier fully expanded sample and the currently printed first itinerary
+have stop/shape offsets or gaps. The current page abbreviates the remaining
+itineraries, so they were not reconstructed or counted as fresh proof. Connecting them with straight lines,
+relabelling a walking request, or silently snapping stops would invent evidence.
+Supporting those disconnected itineraries needs a coordinated multipart geometry
+contract across route, journey and phone owners. No such change is included here.
 
 Review the [SLA API terms](https://www.onemap.gov.sg/legal/apitermsofservice.html)
 and [Singapore Open Data Licence](https://www.onemap.gov.sg/legal/opendatalicence.html)

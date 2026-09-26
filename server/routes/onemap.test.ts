@@ -6,6 +6,7 @@ import { createRouteProvider } from './provider.ts';
 import { createRouteQuery } from './query.ts';
 import {
   road,
+  roadFor,
   transit,
   address,
   start,
@@ -117,7 +118,13 @@ test('real HTTP OneMap query resolves addresses once, caches token, preserves ca
           type === 'pt'
             ? transit()
             : {
-                ...road,
+                ...roadFor(
+                  type === 'walk'
+                    ? 'WALK'
+                    : type === 'cycle'
+                      ? 'BICYCLE'
+                      : 'DRIVE',
+                ),
                 route_summary: {
                   ...road.route_summary,
                   total_time:
@@ -331,7 +338,7 @@ test('token renews near expiry and all address/auth/mode work fits minute and li
           }),
         );
       }
-      res.end(JSON.stringify(road));
+      res.end(JSON.stringify(roadFor('DRIVE')));
     },
     async (env) => {
       const provider = createRouteProvider(env);
@@ -375,7 +382,7 @@ test('OneMap evidence fits existing prepared journey projection without another 
                 access_token: 'synthetic-token',
                 expiry_timestamp: String(Math.floor(Date.now() / 1000) + 3600),
               }
-            : road,
+            : roadFor('DRIVE'),
         ),
       );
     },
@@ -395,6 +402,94 @@ test('OneMap evidence fits existing prepared journey projection without another 
         assert.equal(snapshots[0].snapshot.source.kind, 'fixture');
       assert.equal(snapshots[0].routeId, 'onemap-drive-0');
       assert.equal(JSON.stringify(result), before);
+    },
+  );
+});
+
+test('query keeps genuine modes and disconnected transit honest through journey selection', async () => {
+  const { routeSnapshots } = await import('../journeys/planning.ts');
+  let disconnected = false;
+  const requested: string[] = [];
+  await fixture(
+    (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      if (req.url === '/api/auth/post/getToken')
+        return res.end(
+          JSON.stringify({
+            access_token: 'synthetic-token',
+            expiry_timestamp: String(Math.floor(Date.now() / 1000) + 3600),
+          }),
+        );
+      const type = new URL(req.url ?? '', 'http://127.0.0.1').searchParams.get(
+        'routeType',
+      );
+      assert.ok(type);
+      requested.push(type);
+      const pt = transit();
+      if (disconnected) {
+        // Actual returned polylines have a gap. No endpoint-only fixture shortcut.
+        pt.plan.itineraries[0].legs[1].legGeometry.points = 'oa|FoezxRoX?';
+        pt.plan.itineraries[0].legs[1].from.lat = 1.296;
+      }
+      res.end(
+        JSON.stringify(
+          type === 'pt' ? pt : type === 'drive' ? roadFor('DRIVE') : road,
+        ),
+      );
+    },
+    async (env) => {
+      const query = createRouteQuery({ env });
+      const request = {
+        ...input,
+        modes: ['DRIVE', 'WALK', 'BICYCLE', 'TRANSIT'],
+      };
+      const actor = { principalId: 'a', role: 'fan' } as const;
+      const first = await query(actor, request);
+      assert.equal(first.result.kind, 'routes');
+      if (first.result.kind !== 'routes') return;
+      assert.deepEqual(
+        first.result.routes.map((r) => r.mode),
+        ['car', 'walk', 'bus'],
+      );
+      assert.deepEqual(
+        first.result.outcomes.find((o) => o.mode === 'BICYCLE'),
+        {
+          mode: 'BICYCLE',
+          kind: 'unavailable',
+          reason: 'missing_data',
+        },
+      );
+      assert.equal(
+        routeSnapshots(first).find((r) => r.routeId === 'onemap-transit-0')
+          ?.kind,
+        'available',
+      );
+      disconnected = true;
+      const second = await query(actor, request);
+      assert.equal(second.result.kind, 'routes');
+      if (second.result.kind !== 'routes') return;
+      assert.deepEqual(second.recommendation, {
+        kind: 'unavailable',
+        reason: 'factor_applicability_unverified',
+      });
+      assert.deepEqual(
+        routeSnapshots(second).find((r) => r.routeId === 'onemap-transit-0'),
+        {
+          kind: 'unavailable',
+          routeId: 'onemap-transit-0',
+          reason: 'missing_geometry',
+        },
+      );
+      assert.deepEqual(requested, [
+        'drive',
+        'walk',
+        'cycle',
+        'pt',
+        'drive',
+        'walk',
+        'cycle',
+        'pt',
+      ]);
     },
   );
 });
