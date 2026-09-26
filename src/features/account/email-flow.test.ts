@@ -16,6 +16,7 @@ const session: Session = {
   account: { id: 'fan', role: 'fan', profiles: [] },
 };
 function setup(value: unknown = providerResponse, status = 200) {
+  let now = 0;
   const request = jest.fn<typeof fetch>(
     async () => new Response(JSON.stringify(value), { status }),
   );
@@ -30,7 +31,14 @@ function setup(value: unknown = providerResponse, status = 200) {
     request,
   });
   const api = { signIn: jest.fn(async () => session) };
-  return { flow: createEmailFlow(auth, api), api, request };
+  return {
+    flow: createEmailFlow(auth, api, () => now),
+    api,
+    request,
+    advance: () => {
+      now += 60_000;
+    },
+  };
 }
 test('verification exchanges only validated provider access token for an app session', async () => {
   const { flow, api } = setup();
@@ -70,6 +78,7 @@ test('resend and pending signup create no app session, existing confirmed accoun
       'fixture-password',
     ),
   ).toEqual({ kind: 'confirmation', email: 'fan@example.test' });
+  pending.advance();
   expect(await pending.flow.resend('fan@example.test')).toEqual({
     kind: 'confirmation',
     email: 'fan@example.test',
@@ -86,4 +95,20 @@ test('resend and pending signup create no app session, existing confirmed accoun
   expect(confirmed.request.mock.calls[0][0]).toBe(
     `${supabaseOrigin}/auth/v1/token?grant_type=password`,
   );
+});
+
+test('signup cooldown rejects immediate resend locally and allows it after sixty seconds', async () => {
+  const { flow, request, advance } = setup({ id: providerResponse.user.id });
+  await flow.authenticate('signUp', 'fan@example.test', 'fixture-password');
+  await expect(flow.resend('fan@example.test')).rejects.toThrow(
+    'Wait 60 seconds',
+  );
+  expect(request).toHaveBeenCalledTimes(1);
+  advance();
+  await flow.resend('fan@example.test');
+  expect(request).toHaveBeenCalledTimes(2);
+  await expect(flow.resend('fan@example.test')).rejects.toThrow(
+    'Wait 60 seconds',
+  );
+  expect(request).toHaveBeenCalledTimes(2);
 });

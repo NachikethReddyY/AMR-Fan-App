@@ -85,3 +85,5 @@ const emailFlow = createEmailFlow(emailAuth, api);
 export const authenticateEmail = emailFlow.authenticate;
 export const verifyEmailCode = emailFlow.verify;
 export const resendEmailCode = emailFlow.resend;
+
+export const emailCodeWait = emailFlow.resendWait;

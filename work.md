@@ -513,3 +513,14 @@ large-text layout and installed-build interaction remain unverified for this
 new slice. Earlier native receipts describe earlier code only.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Confirmation resend cooldown, 2026-09-26
+
+Added a per-flow send reservation before signup/resend I/O and a disabled
+countdown control. Immediate repeated requests stop locally; requests after
+60 seconds reach the provider. Failing-first regression and 39 focused
+auth/session tests pass, plus typecheck, lint and format. No SMTP setting,
+account or provider rate limit changed. Native display and inbox delivery
+remain separate acceptance checks.
+
+Edited by gpt-6-astra through Codex (T3 Code).

@@ -33,6 +33,7 @@ import {
   authenticateEmail,
   verifyEmailCode,
   resendEmailCode,
+  emailCodeWait,
   syntheticEmailAuth,
 } from './native-auth';
 import { validateCredentials, validateConfirmation } from './supabase';
@@ -104,6 +105,14 @@ export function AccountPanel({
   const confirmationEmail =
     state.kind === 'signedOut' ? state.confirmationEmail : undefined;
   const [code, setCode] = useState('');
+  const [resendWait, setResendWait] = useState(0);
+  useEffect(() => {
+    if (!confirmationEmail) return;
+    const update = () => setResendWait(emailCodeWait(confirmationEmail));
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [confirmationEmail]);
   const authHeading = useRef<NativeText>(null);
   const focusAuthHeading = useRef(false);
   useEffect(() => {
@@ -320,7 +329,10 @@ export function AccountPanel({
                 />
                 <Action
                   secondary
-                  label="Resend code"
+                  label={
+                    resendWait > 0 ? `Resend in ${resendWait}s` : 'Resend code'
+                  }
+                  disabled={resendWait > 0}
                   onPress={() => {
                     setCode('');
                     setAuthError('');
