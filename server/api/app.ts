@@ -35,7 +35,7 @@ import { handleSubmissionRequest } from '../submissions/http.ts';
 import { serveSubmissionAdmin } from '../submissions/admin.ts';
 import { handleParticipationRequest } from '../submissions/participation-http.ts';
 import { serveParticipationAdmin } from '../submissions/participation-admin.ts';
-import { dispatchRewards } from '../rewards/http.ts';
+import { dispatchRewards, publicRewardsCatalogue } from '../rewards/http.ts';
 import { serveRewardsAdmin } from '../rewards/admin.ts';
 import { reportRuntime, isReportPath } from '../reports/runtime.ts';
 import { handleReports } from '../reports/http.ts';
@@ -201,6 +201,15 @@ export function createApi({
           ...(await createSession(pool, account.id)),
           account,
         });
+      }
+      if (path === '/v1/rewards/offers' && req.method === 'GET') {
+        const catalogue = await publicRewardsCatalogue(
+          pool,
+          Object.fromEntries(
+            new URL(req.url ?? '/', 'http://api.invalid').searchParams,
+          ),
+        );
+        return send(res, catalogue.status, catalogue.value);
       }
       const token = bearer(req);
       if (isReportPath(path)) {

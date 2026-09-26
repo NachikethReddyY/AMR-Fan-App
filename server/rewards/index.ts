@@ -186,20 +186,33 @@ export async function listOffers(
   const page = parse(pageInput, query);
   return authorized(pool, token, false, async (client, actor) => {
     await lockOwnedProfile(client, actor.principalId, id);
-    const rows = await client.query<Record<string, unknown>>(
-      `SELECT ${offerColumns} FROM app.reward_offers o JOIN app.reward_offer_versions v
+    return enabledCatalogue(client, page);
+  });
+}
+
+// Public catalogue has no profile or principal authority and never exposes paid text.
+export async function listPublicOffers(pool: Pool, query: unknown = {}) {
+  const page = parse(pageInput, query);
+  if (page.limit > 25) throw new ApiError(400, 'Invalid rewards request.');
+  return enabledCatalogue(pool, page);
+}
+async function enabledCatalogue(
+  client: Pick<Pool, 'query'> | Pick<PoolClient, 'query'>,
+  page: ReturnType<typeof pageInput.parse>,
+) {
+  const rows = await client.query<Record<string, unknown>>(
+    `SELECT ${offerColumns} FROM app.reward_offers o JOIN app.reward_offer_versions v
        ON v.offer_id=o.id AND v.version=o.current_version
        WHERE v.enabled AND ($1::uuid IS NULL OR o.id > $1) ORDER BY o.id LIMIT $2`,
-      [page.after ?? null, page.limit + 1],
-    );
-    const offers = rows.rows
-      .slice(0, page.limit)
-      .map((row) => publicOffer(offer.parse(row)));
-    return {
-      offers,
-      nextCursor: rows.rows.length > page.limit ? offers.at(-1)?.id : null,
-    };
-  });
+    [page.after ?? null, page.limit + 1],
+  );
+  const offers = rows.rows
+    .slice(0, page.limit)
+    .map((row) => publicOffer(offer.parse(row)));
+  return {
+    offers,
+    nextCursor: rows.rows.length > page.limit ? offers.at(-1)?.id : null,
+  };
 }
 
 export async function readOffer(

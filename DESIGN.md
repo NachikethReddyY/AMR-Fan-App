@@ -1,6 +1,26 @@
-# Aston Martin fan app design direction (draft)
+# Aston Martin fan app design
 
-Status: **design proposal for selection**, revised 25 September 2026. The three linked screens are static concepts. The Expo starter remains unchanged.
+Status: **C Balanced green selected by the user**, 26 September 2026, for both native Home and Travel. This supersedes the older A/B/C proposals below. The selection artifact remains private historical evidence; [the selected design record](DESIGN.html) describes its native application. Fans use iOS/Android; web is for the separate admin dashboard.
+
+## Selected C native direction
+
+Keep the near-black canvas, 20 pt gutters, Geist, green four-tab bar and Home/Travel/Rewards/Impact order. Home has a compact Aston Martin / Fan app header with a labelled circular account action, followed by a full-width green server-balance panel. The current real/demo profile remains explicit. Personal impact, community impact and approved team figures remain semantically separate from spendable points. Unavailable impact stays unavailable.
+
+Travel uses manual From/To fields, the existing extra-time input and server comparison. A full-width green recommendation panel gives mode and duration the strongest hierarchy; all estimates, baseline, provenance and route alternatives remain accessible below. Selecting another route must not relabel it as the recommendation. Selected rows retain a lime edge and explicit selected state. Missing factors, unavailable modes and journey recording limits remain visible.
+
+The selected map is still OPEN. There is no fake map or decorative chart in the product. The smallest proposed native integration is Expo-compatible react-native-maps with validated server route geometry; dependency, provider/privacy and build contracts require a separate grant. Keep the map/list hierarchy from C when that integration is implemented. Manual origin/destination remains usable meanwhile. Optional explicit current-location entry, verified race/calendar content and official news integration are also open. Do not add sample balances, countdowns, headlines or nonfunctional controls to fill their space.
+
+Primary actions retain restrained 0–2 pt corners. Secondary actions may use the selected neutral capsule treatment, and familiar icon-only actions use 48 pt circles with accessible names. These are specific C exceptions to the older all-square proposal. Normal tab geometry and measured multiline large-text labels remain unchanged. No screen/controller remount may reset a session, route draft, name edit or paid intent when text size changes.
+
+Balance display uses 60/68 pt and recommendation duration 44/52 pt at normal text size. At accessibility sizes the balance returns to a 24/32 pt role, with system scaling still enabled, to keep the value readable. Both scale and wrap; accessibility proof must inspect the actual largest-size output. Normal app body/actions retain 17/25 pt Geist. The native leaf-measurement correction remains required for live iOS Dynamic Type.
+
+Implementation status: the independent C presentation is verified locally on Pixel and iPhone 17 Pro. Its map and data integrations remain incomplete. Static exports are not device proof; small-iPhone largest Dynamic Type and actual VoiceOver are still mandatory and unverified.
+
+Design references: [Grab map](https://mobbin.com/screens/f02e47fa-b90e-4d2a-8229-b902ec316e74), [Grab route summary](https://mobbin.com/screens/c3a1d992-eea7-4d31-939e-ad3528fbe6e7), [Box Box hierarchy](https://mobbin.com/screens/69373cc2-c0b6-4da1-b3aa-da61cb6d1212), [Apple News familiar actions](https://mobbin.com/screens/852fbeb3-ae2e-4e04-87f4-e3266a52df33), [CAVA balance and price](https://mobbin.com/screens/48e0e359-5704-4b72-8f48-e4a6457d25bc), [Jomo statistic grouping](https://mobbin.com/screens/7bb03b7d-f7f8-4671-b5a9-aa8fcb79b6f9). Reuse hierarchy, not their branding, extra tabs, ads or product rules.
+
+## Historical draft review
+
+The following review records the earlier draft, not the current native proof. Its accessibility requirements remain applicable unless explicitly superseded above.
 
 ## Purpose
 
@@ -100,7 +120,7 @@ For location refusal, provide manual origin entry where routes can be obtained. 
 
 Request location when the selected action needs it and explain what recording will use it for. Route planning can use a manually chosen origin if available; denial must leave that path open. Add visible loading, unavailable data, denied permission and tracking recovery states before implementation. Keep the same terms from button to result and put recovery controls beside the affected task. [Apple privacy](https://developer.apple.com/design/human-interface-guidelines/privacy), [Apple loading](https://developer.apple.com/design/human-interface-guidelines/loading), [Apple writing](https://developer.apple.com/design/human-interface-guidelines/writing)
 
-## Compare the three layouts
+## Historical alternatives
 
 [Open the revised phone concepts and state specimens](prototypes/brand-directions.html). All route data, balances and circuit geometry are illustrative. The three concepts hold content and selected route constant.
 
@@ -110,4 +130,4 @@ Request location when the selected action needs it and explain what recording wi
 | B: Trackside utility | Compact identity and immediate neutral comparison list | Is the race context still recognisable? |
 | C: Grand touring | Focused selected-route statistic on a light inset; alternatives below | Does the featured route keep alternatives equally understandable? |
 
-Choose A, B, C or a specific combination before implementing a final UI. Licensed imagery and logo placement remain unresolved. The older [layout proposals](.scratch/fan-app-design/screen-directions.html) are prior exploration, not the selected system.
+These older alternatives are superseded by the user-selected C Balanced green Home and Travel described above. Licensed imagery and logo placement remain unresolved. The older [layout proposals](.scratch/fan-app-design/screen-directions.html) are prior exploration, not the selected system.

@@ -6,7 +6,7 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Phone app | `index.ts` registers `src/App.tsx`; Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
+| Phone app | `src/App.tsx` retains four tabs; held account UI and server balance/History consumer in `src/features/account/` and `src/features/points/`; Travel/Impact placeholders and unavailable Redemption | Native verification, journeys, fan submissions and other accepted rewards, plus ESG views |
 | Admin web | Separate `/admin/` points adjustment and History page with synthetic local sign-in; live browser sign-in remains pending | Authorized content, price, rule, moderation and demo administration |
 | Backend | `server/api/` account HTTP API, `server/accounts/` PostgreSQL ownership and independent real/demo profiles, and `server/points/` integer adjustments with immutable History and stored outcomes; no deployment | Feature operations and persistence on Azure |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
@@ -17,8 +17,9 @@ owns product behavior.
 
 The account API has an isolated application DAST target and authenticated HTTP
 boundary tests. The points admin flow has local browser and PostgreSQL-backed
-HTTP proof; phone History acceptance remains pending the held account UI and
-native verification. No upload URL or deployed service exists. Passive DAST
+HTTP proof. The held phone History consumer has state and actual HTTP/PostgreSQL
+proof; its new UI has no native observation yet. Required small-iPhone largest
+Dynamic Type and actual VoiceOver proof remain pending. No upload URL or deployed service exists. Passive DAST
 covers public HTTP only; authenticated tests prove points authorization,
 atomicity, replay, concurrency and isolation. See [points operations](../operations/points.md).
 
@@ -58,3 +59,20 @@ Update this map when adding an entry point or integration. Record hard-to-revers
 accepted tradeoffs in `docs/adr/` and link them here.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+## Disabled photo client
+
+Home offers Photo activity to a signed-in real profile. The system camera opens
+before description entry. Capture bytes and draft text stay on the phone and are
+cleared after checks, retake, close, Home navigation blur, or identity invalidation.
+Same-account foreground refresh keeps the flow mounted and blocks checks while
+loading. Explicit logout, replacement sign-in, profile switching and confirmed
+expiry notify draft owners before the controller publishes loading.
+
+The client can only GET authenticated activity availability. It cannot upload
+photos, call an AI provider or award points. The photo backend, API registration
+and accounting migration are not included in PR28's client integration. A missing
+endpoint remains an honest failure; local availability fixtures do not establish
+hosted readiness. Expo camera access excludes microphone and photo-library access.
+
+Implemented by gpt-6-astra through Codex (T3 Code).

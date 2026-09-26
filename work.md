@@ -406,3 +406,288 @@ Verified by gpt-6-astra through Codex (T3 Code).
 - No cloud/config/auth/SMTP mutation, source publication, production migration, deployment or Actions call. Exact integrated guest catalogue and admin-origin candidates remain pending. Evidence: `.evidence/participation-deployment-readiness/`. Full local gate result is recorded in the handoff; an initial unrelated AI40ms timeout test failure is retained honestly.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+### Account #4 held mobile stack and tab correction
+
+The phone stack now follows server PR27's frozen `77776c0` candidate. It retains
+all prepared account source, public native configuration and SecureStore/PKCE/
+Geist dependencies. The server PR has none of those additions. Five native
+session tests cover persisted sign-in/demo selection, restart, expiry, offline
+resume and durable logout intent. Prior synthetic A/B Android identity, profile
+persistence and logout evidence is preserved.
+
+The observed largest-text navigation defect is corrected with wrapped labels,
+measured bar height and explicit accessible tab names. On leased Pixel Android
+16 at font scale 3.2, all four labels are fully visible; tab selection reaches
+the expected screen and exposes selected state. Scale 1.0 retains the normal
+bar geometry. Frozen install, full checks, security and both native production
+exports pass on the integrated stack. The original font scale 1.0 was restored,
+both device sessions closed, and owned Metro stopped with a fresh port bind
+confirming release. No iPhone was used.
+
+This is partial #4 delivery. Live OIDC issuer/client/scope/redirect setup and
+required small-iPhone Dynamic Type/VoiceOver proof remain pending. API ownership
+comes only from verified server sessions; native public identifiers grant no
+authority. Evidence remains local under `.evidence/account-4/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Account phone continuation on repaired main
+
+PR28's three mobile-only commits were replayed onto reviewed main
+`8e346aff606771662312697effe8fbff1742f131`. The only conflict joined the current
+server route environment examples with the already prepared public native auth
+entries; both were retained. The six native dependencies, app scheme/plugins and
+lock changes are unchanged in scope. No server, route source, CI or script was
+copied from the old API ancestry. Original head `8d9e2e5`, TODO and raw evidence
+remain preserved in the owned checkout's ignored evidence and Git history.
+Frozen install, full checks, security and both native exports pass. Root/native
+configuration is frozen for lease release before the balance/History UI work.
+Devices remain inactive pending an explicit resolved app-session lease. Required
+small-iPhone/VoiceOver and live provider evidence remain unavailable.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Phone current balance and History candidate, #4/#5
+
+Home, the account sheet and Rewards now share the current selected-profile
+balance from the existing authenticated History endpoint. Rewards retains the
+accepted Redemption/History sections; Redemption reports unavailable. The phone
+validates pages, preserves server order and opaque cursors, and displays changes,
+reasons, resulting balances and times without calculating a balance. It clears
+state on profile/session changes, logout or expiry and ignores stale responses.
+Refresh, outage and pagination retry states are scoped to the active profile.
+No server, route, root dependency/config, CI or script changes follow the root
+freeze. No reward purchase, vote, reset or journey behavior is claimed.
+
+Thirteen focused account/History state cases pass. The new phone adapter proof
+runs against real HTTP/PostgreSQL with unique controlled identities and legitimate
+assigned-admin adjustments. Five nested cases pass: zero-state/ownership,
+31 entries over 25+6 pages and maximum balance, server/pool/controller restart,
+outage recovery/offline logout, and expiry with unchanged History. In-memory
+storage stands in for SecureStore in this proof; native restart is not established.
+Full checks pass, including 45 native Jest cases. Frozen install, security checks
+and both native production exports pass. Security scanning reports no source
+findings; audit retains one moderate transitive uuid advisory and no high/critical
+findings. No dependency upgrade was attempted under the released root lease.
+
+One local first-page sample used one request, 25 entries, 7,993 decoded JSON bytes
+and 4.9 ms. This is not a device or production latency benchmark. Hermes artifacts
+grew from 6,014,003 to 6,471,787 bytes on iOS and 6,016,723 to 6,475,259 on Android
+against the root integration export. Rendering, memory and device latency remain
+unmeasured. API55436 was closed and passed a fresh bind/close check; no Metro or
+device session was started. Only the owned disposable test namespace received
+migrations and synthetic fixtures; shared database lifecycle was untouched.
+
+Mandatory UI HOLD: new balance/History interaction and normal/largest-text Android
+proof are unverified because supported app-session ownership is unresolved.
+Historical Pixel account/tab evidence remains only for unchanged lineage; the
+four-label wrapping/height/normal geometry implementation is preserved. Small
+iPhone largest Dynamic Type, actual VoiceOver and live OIDC remain pending.
+PR28 is partial #4/#5 delivery, with exact-head independent review and CI/bot
+monitoring handed to the manager. No merge or whole-issue completion is claimed.
+Commands and raw evidence remain under ignored `.evidence/account-4/continuation-*`
+and `history-*`; reproducible commands are in `docs/operations/points.md`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### PR28 phone foundation refresh, 2026-09-26
+
+Related to #3, #4 and #5. Replayed only the six owned mobile commits after
+8e346aff onto manager-selected f51a25ca. Preserved original 0b24ce7 and local
+TODO/evidence. No server, scripts or CI changes. Frozen install, full check,
+security check and Android/iOS static exports pass. Root reconciliation keeps
+only the six prepared native dependencies, auth scheme/plugins and public
+configuration; all main scripts and PDF dependency remain intact. Root is frozen
+and released at this commit. Native interaction remains held.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Selected walkthrough and floating dock, 2026-09-26
+
+Implemented the selected short introduction, account/name setup and top completion
+line, with reduced-motion support. Keeps completed navigation mounted during
+session refresh; guest sign-in still requests a name. Applied the accepted
+#081310 background, #004A4D controls/cards and dark inset four-tab dock.
+Four component regressions and the full pnpm check pass. Native animation,
+large-text layout and installed-build interaction remain unverified for this
+new slice. Earlier native receipts describe earlier code only.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Confirmation resend cooldown, 2026-09-26
+
+Added a per-flow send reservation before signup/resend I/O and a disabled
+countdown control. Immediate repeated requests stop locally; requests after
+60 seconds reach the provider. Failing-first regression and 39 focused
+auth/session tests pass, plus typecheck, lint and format. No SMTP setting,
+account or provider rate limit changed. Native display and inbox delivery
+remain separate acceptance checks.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Onboarding draft review correction, 2026-09-26
+
+Independent standards and specification reviews found the same defect: a
+foreground session refresh cleared an unfinished name. Reproduced with a
+failing component test, then retained the draft for its account while clearing
+it on an actual account change. Five onboarding component cases and typecheck
+pass. Native proof remains pending.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### Password-only account flow, 2026-09-26
+
+PR28 now removes confirmation-code/resend controls, exports and session state.
+Signup requires an immediate validated provider session before the AMR exchange;
+a provider still requiring confirmation returns an error without local authority.
+Existing password sign-in, cancellation, stale completion revocation, private
+session persistence and account/profile ownership remain unchanged. No hosted
+configuration or existing account was modified by this implementation.
+
+The inherited failing-first signup test reproduced the old confirmation result.
+Focused auth/session checks and an integrated signup-to-name component case pass.
+The latter runs the email flow and session controller, stubs provider I/O and
+secure storage, and observes name setup before app entry. It does not establish
+hosted signup. Full checks and exact installed-native proof follow separately.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Full serial `pnpm check` and `pnpm security:check` passed for this slice. Secret
+and source scans reported no findings; dependency audit retained one moderate
+advisory and no high/critical findings. Hosted CI remains paused and was not
+queried. Installed-native acceptance follows this source checkpoint.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Automatic signup handoff correction, 2026-09-26
+
+The independent requirements review found that successful signup kept the
+Account sheet open and delayed name setup. A failing test with the actual panel
+reproduced its missing close notification. The panel now closes after its current
+password authentication succeeds; cancellation, mode changes and unmount invalidate
+the local attempt. A late cancelled result cannot close a reopened sheet.
+Seven focused panel/onboarding tests and typecheck pass. Standards review found
+no actionable issues in the preceding password-only slice. This correction will
+receive follow-up review and native proof before delivery.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### Native dock background correction, 2026-09-26
+
+Pixel installation of internal APK b119106 exposed a white root background around
+the accepted floating dock. Applied the existing screen background to the root
+provider without changing dock geometry. Direct native development observation
+shows the dark margins, all four tabs and successful synthetic password signup,
+automatic name setup, saved name and zero server balance. Hosted guest catalogue
+still returns 401; the installed release correctly reports offers unavailable.
+The exact backend change remains 405739286063f77fdd50def2e02ddfb9da914239.
+This is a bounded visual correction. Final user APK waits for the separately
+owned, frozen photo-entry integration and remaining acceptance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+## PR28 main refresh, 2026-09-26
+
+Resolved current `origin/main` against PR #28's published head in this thread checkout.
+The three conflicts were `.env.example`, `bug.md` and `work.md`. The environment
+example retains native public OIDC identifiers and the server-only Supabase and
+report storage settings. Both branches' records remain. No product source needed
+a manual conflict resolution. The separate account worktree and its unpublished
+commits and edits were not changed.
+
+While local verification ran, another writer published merge `955b9a1` with the
+same two parents. GitHub then reported PR #28 mergeable. Its product tree matches
+the locally verified resolution; only record text and spacing differ. This checkout
+was aligned to the published merge without replacing its history.
+
+Frozen install, full `pnpm check`, `pnpm security:check` and production Expo
+export for iOS and Android passed. Security scanning found no source issues;
+the dependency audit retains one moderate advisory and no high or critical
+findings. No device or browser was used, so native interaction remains unverified
+in this refresh. Existing PR28 acceptance holds remain open.
+
+Verified by gpt-6-sol through Codex (T3 Code).
+
+### PR28 password-only native proof, 2026-09-26
+
+Source f3acfab passed sequential Pixel Android 16 and iPhone 17 Pro iOS 26.5
+observation. Synthetic signup immediately exchanged provider and app sessions,
+closed Account, requested a name, and entered Home at zero server points. Both
+platforms passed sheet close/reopen, all four destinations and largest supported
+text. iPhone draft text survived live Dynamic Type changes. Pixel cold restart
+restored the synthetic session. Logout removed both synthetic accounts' access;
+guest catalogue displayed existing stored test offers through the actual local
+API. These fixtures are not live email, Maps, AI, fulfilment or real journey proof.
+
+The b119106 internal ARM64 APK was signed, installed without data reset, and shown
+in the Pixel panel with walkthrough and hosted unavailable states. Its observed
+white dock margin prompted f3acfab, proved on both native development platforms.
+A separate f3acfab internal APK was built with embedded hosted configuration,
+verified signature and 16 KiB alignment. Final user APK remains held for the
+separately reviewed photo integration. No photo source, package or lock changes
+were copied from its unfrozen candidate.
+
+Two independent review axes cleared b119106 and the one-line f3acfab correction.
+Full repository and security checks passed on the corrected authentication slice;
+62 focused state/auth/catalogue cases passed afterward. Local evidence under
+`.evidence/password-only/` includes real MP4s, screenshots, build receipts and
+cleanup. The synthetic service reports two signups, two exchanges, two logouts,
+all owned sessions revoked, pool closed and all four ports released. Android
+scale 1.0 and iPhone large restored; no iPad or real-account credentials used.
+Small-iPhone/VoiceOver and live signup remain unverified.
+
+Before push, remote PR28 had advanced to 25a79f7 with main integration and records.
+Merged it without rewriting history; conflicts were only the two append-only
+records, both preserved. Product tree remains identical to reviewed f3acfab.
+Hosted CI remains paused, with no Actions query, rerun or merge.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+The f3acfab internal APK was subsequently installed on Pixel without uninstall
+or data reset. Its embedded release bundle opens Home and all four tabs with the
+corrected dark dock margins; new screenshots and a recording confirm this exact
+artifact. It remains an internal checkpoint, not the final photo-enabled APK.
+Both device sessions are now closed and available for coordinated photo proof.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: PR28 reviewed photo client integration
+
+- Imported only the reviewed photo client and tests from `ca71166bce7d576f943af36e67a5cc2551c848ae`, plus Expo SDK 57 image-picker/file-system dependencies. No server award hook, migration, sharp dependency or API registration is included.
+- Home now opens the system camera and review flow. Its captured identity survives ordinary session refresh; session-controller intent notifications close private drafts before logout, replacement sign-in, profile switch or confirmed expiry. Actual Home blur closes the flow. Availability 401 uses the existing matching-token expiry guard.
+- Camera/library/audio configuration is camera-only. Checks can only GET availability with current authority; no photo or description is transmitted, and no live AI or credit is enabled.
+- Focused proof: six failing-first identity cases now pass, 50 session/camera unit tests and 14 photo component tests pass. These use controlled adapters and do not establish native camera behavior. Full local checks, security checks, frozen install and iOS/Android exports passed. The first full run hit the existing 40 ms AI transport fixture deadline under simultaneous native compilation; the complete rerun after compilation passed without source changes. Native evidence pending. Node 24.20.0 is available and used.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Photo integration delivery proof and main refresh
+
+PR28 rebased onto merged main `3d48287b25d2ac058d0408f973b133c8041e2d37` after
+PR44 and PR45. Historical environment/import/document conflicts preserve both
+intents; mobile source/configuration/dependencies remain byte-identical to
+`46de016`. Inherited TODO was restored byte-for-byte. No further feature branch
+work was copied. Both independent source reviews cleared `4634c574`; exact final
+records review follows.
+
+Full serial checks and security passed on the PR44-integrated tree. After PR45's
+server-only AI additions, typecheck passed and the mobile-tree equality check
+requires no new native rebuild. Previous iOS/Android exports, frozen install,
+50 focused session/camera unit tests and 14 component tests remain applicable.
+Native evidence and explicit iPhone capture limits are recorded in
+`docs/operations/native-acceptance.md`. Exact internal APK was installed/shown on
+Pixel; camera proof used synthetic scenery/accounts in Expo Go. No photo upload,
+AI inference or award occurred. All owned device/settings/services are cleaned.
+
+Guest rewards still needs deployment of PR28's public catalogue change, originally
+`405739286063f77fdd50def2e02ddfb9da914239` (rebased equivalent in this PR).
+Photo backend registration, live AI and final user APK acceptance remain separate.
+No Actions/checks API query, cloud mutation or merge has occurred in this proof
+stage. Delivery awaits final-head review and the coordinator's serialized squash
+turn; branch protection must pass without bypass.
+
+Verified by gpt-6-astra through Codex (T3 Code).

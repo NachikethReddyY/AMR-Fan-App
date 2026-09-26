@@ -1,8 +1,32 @@
+import { PhotoActivitySession } from './features/activity/PhotoActivitySession';
+import { usePhotoActivity } from './features/activity/usePhotoActivity';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Onboarding } from './features/onboarding/Onboarding';
+import { useCallback, useState } from 'react';
+import {
+  NavigationContainer,
+  DarkTheme,
+  useFocusEffect,
+} from '@react-navigation/native';
+import {
+  createBottomTabNavigator,
+  type BottomTabScreenProps,
+} from '@react-navigation/bottom-tabs';
+import {
+  ArrowRight,
+  Gift,
+  House,
+  Leaf,
+  Route,
+  ChevronRight,
+  type LucideIcon,
+} from 'lucide-react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -10,11 +34,21 @@ import {
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '../global.css';
+import { AccountProvider, useAccount } from './features/account/provider';
+import { AccountPanel } from './features/account/AccountPanel';
+import { PointsProvider, useHistory } from './features/points/provider';
+import { Balance } from './features/points/Balance';
+import { Action, Text } from './features/points/controls';
+import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
+
+import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
+import { ImpactScreen as OfficialImpact } from './features/impact/ImpactScreen';
+import { useProfileContext } from './features/account/useResource';
 
 type Tabs = {
   Home: undefined;
   Travel: undefined;
-  Rewards: undefined;
+  Rewards: { section?: 'History' | 'Redemption' } | undefined;
   Impact: undefined;
 };
 const Tab = createBottomTabNavigator<Tabs>();
@@ -22,140 +56,312 @@ const Tab = createBottomTabNavigator<Tabs>();
 function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   return (
     <View style={[styles.tabIcon, focused && styles.selectedTabIcon]}>
-      <Icon color={focused ? '#04524B' : '#E0E0DC'} size={22} strokeWidth={2} />
+      <Icon color={focused ? '#CEDC00' : '#ADBDB3'} size={22} strokeWidth={2} />
     </View>
   );
 }
 
-function Home() {
+function Home({
+  onTravel,
+  onRewards,
+  onImpact,
+}: {
+  onTravel: () => void;
+  onRewards: () => void;
+  onImpact: () => void;
+}) {
+  const { controller: accountController } = useAccount();
+  const photo = usePhotoActivity(accountController);
+  const { controller } = useHistory();
+  useFocusEffect(
+    useCallback(() => {
+      void controller.refresh();
+    }, [controller]),
+  );
+  if (photo.owner) {
+    return (
+      <PhotoActivitySession
+        owner={photo.owner}
+        session={accountController}
+        onClose={photo.close}
+        check={photo.check}
+      />
+    );
+  }
   return (
     <>
-      <View style={styles.hero}>
-        <Text style={styles.heroLabel}>Fan and race updates</Text>
-        <Text style={styles.heroTitle}>{'Latest from\nthe team'}</Text>
-        <Text style={styles.heroDetail}>Published updates appear here</Text>
+      <View style={styles.balancePanel}>
+        <Text style={styles.balanceLabel}>Points balance</Text>
+        <Balance prominent />
+        <Action quiet label="History" icon={ChevronRight} onPress={onRewards} />
       </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Points and rewards</Text>
-        <Text style={styles.points}>
-          0 <Text style={styles.muted}>available points</Text>
-        </Text>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Team impact</Text>
-        <Text style={styles.muted}>
-          Sourced team activity and your contribution record appear here.
-        </Text>
+      <View style={styles.homeContent}>
+        <Action
+          label="Photo activity"
+          disabled={!photo.canOpen}
+          onPress={photo.open}
+        />
+        {photo.cleanupError ? <Text>{photo.cleanupError}</Text> : null}
+        <View style={styles.travelEntry}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>
+            Your next journey
+          </Text>
+          <Text style={styles.muted}>Compare time and emissions.</Text>
+          <Action
+            accent
+            label="Plan a journey"
+            icon={ArrowRight}
+            onPress={onTravel}
+          />
+        </View>
+        <View style={styles.impactGroup}>
+          <View style={styles.impactItem}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              Your impact
+            </Text>
+            <Text style={styles.muted}>Impact unavailable</Text>
+          </View>
+          <View style={styles.impactItem}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              Community impact
+            </Text>
+            <Text style={styles.muted}>Impact unavailable</Text>
+          </View>
+        </View>
+        <Action
+          quiet
+          label="View impact"
+          icon={ChevronRight}
+          onPress={onImpact}
+        />
       </View>
     </>
   );
 }
 
-function Screen({ children }: { children: React.ReactNode }) {
+function Screen({
+  children,
+  greeting = false,
+}: {
+  children: React.ReactNode;
+  greeting?: boolean;
+}) {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const { state } = useAccount();
+  const profile =
+    state.kind === 'signedIn'
+      ? state.account.profiles.find((p) => p.kind === state.selected)
+      : undefined;
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + 18, paddingBottom: 24 },
         ]}
       >
-        <Text style={styles.appName}>AMR Fan App</Text>
+        <View style={styles.brandHeader}>
+          <View style={styles.brandCopy}>
+            {greeting && profile ? (
+              <>
+                <Text style={styles.caption}>Hi,</Text>
+                <Text key={fontScale} style={styles.brandName}>
+                  {profile.displayName}
+                </Text>
+              </>
+            ) : (
+              <Text key={fontScale} style={styles.brandName}>
+                Aston Martin
+              </Text>
+            )}
+          </View>
+          <AccountPanel compact />
+        </View>
         {children}
       </ScrollView>
     </View>
   );
 }
 
-function HomeScreen() {
+function HomeScreen({ navigation }: BottomTabScreenProps<Tabs, 'Home'>) {
   return (
-    <Screen>
-      <Home />
+    <Screen greeting>
+      <Home
+        onTravel={() => navigation.navigate('Travel')}
+        onRewards={() => navigation.navigate('Rewards', { section: 'History' })}
+        onImpact={() => navigation.navigate('Impact')}
+      />
     </Screen>
   );
 }
 function TravelScreen() {
-  return <Placeholder title="Travel" />;
-}
-function RewardsScreen() {
-  return <Placeholder title="Rewards" />;
-}
-function ImpactScreen() {
-  return <Placeholder title="Impact" />;
-}
-
-function Placeholder({ title }: { title: string }) {
+  const ctx = useProfileContext();
   return (
     <Screen>
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderTitle}>{title}</Text>
-        <Text style={styles.muted}>{title} content is coming soon.</Text>
-      </View>
+      {ctx ? (
+        <TravelComparison key={`${ctx.token}:${ctx.profileId}`} />
+      ) : (
+        <View style={styles.section}>
+          <Text style={styles.muted}>Sign in to compare routes.</Text>
+        </View>
+      )}
     </Screen>
+  );
+}
+function RewardsScreen({
+  route,
+  navigation,
+}: BottomTabScreenProps<Tabs, 'Rewards'>) {
+  return (
+    <Screen>
+      <PointsRewards
+        section={route.params?.section ?? 'Redemption'}
+        onSectionChange={(section) => navigation.setParams({ section })}
+      />
+    </Screen>
+  );
+}
+function ImpactScreen() {
+  const ctx = useProfileContext();
+  return (
+    <Screen>
+      {ctx ? (
+        <OfficialImpact key={`${ctx.token}:${ctx.profileId}`} />
+      ) : (
+        <View style={styles.section}>
+          <Text style={styles.muted}>
+            Sign in to read approved team figures.
+          </Text>
+        </View>
+      )}
+    </Screen>
+  );
+}
+
+function AccountNavigation() {
+  const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const largeLabels = fontScale > 1.3;
+  const [labelHeights, setLabelHeights] = useState<Record<string, number>>({});
+  const labelHeight = Math.max(14 * fontScale, ...Object.values(labelHeights));
+  return (
+    <AccountProvider>
+      <PointsProvider>
+        <Onboarding>
+          <NavigationContainer
+            theme={{
+              ...DarkTheme,
+              colors: { ...DarkTheme.colors, background: '#081310' },
+            }}
+          >
+            <Tab.Navigator
+              safeAreaInsets={{ bottom: 0 }}
+              screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: '#CEDC00',
+                tabBarInactiveTintColor: '#ADBDB3',
+                tabBarLabelPosition: 'below-icon',
+                ...(largeLabels
+                  ? {
+                      tabBarLabel: ({ color, children }) => (
+                        <Text
+                          style={{
+                            color,
+                            fontSize: 12,
+                            lineHeight: 14,
+                            textAlign: 'center',
+                            paddingHorizontal: 2,
+                            maxWidth: '100%',
+                          }}
+                          accessibilityElementsHidden
+                          importantForAccessibility="no"
+                          onLayout={({ nativeEvent }) => {
+                            const { height } = nativeEvent.layout;
+                            setLabelHeights((previous) =>
+                              previous[children] === height
+                                ? previous
+                                : { ...previous, [children]: height },
+                            );
+                          }}
+                        >
+                          {children}
+                        </Text>
+                      ),
+                    }
+                  : {}),
+                tabBarStyle: {
+                  backgroundColor: '#14221C',
+                  borderColor: '#344C40',
+                  borderWidth: 1,
+                  borderTopWidth: 1,
+                  borderTopColor: '#344C40',
+                  borderRadius: 32,
+                  marginHorizontal: 16,
+                  marginBottom: Math.max(insets.bottom, 8) + 8,
+                  marginTop: 8,
+                  paddingTop: 6,
+                  paddingBottom: 8,
+                  height: largeLabels ? 48 + labelHeight : 68,
+                  elevation: 0,
+                },
+              }}
+            >
+              <Tab.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={House} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Travel"
+                component={TravelScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Route} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Rewards"
+                component={RewardsScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Gift} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Impact"
+                component={ImpactScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Leaf} focused={focused} />
+                  ),
+                }}
+              />
+            </Tab.Navigator>
+          </NavigationContainer>
+        </Onboarding>
+      </PointsProvider>
+    </AccountProvider>
   );
 }
 
 export default function App() {
   return (
-    <GluestackUIProvider mode="dark">
+    <GluestackUIProvider mode="dark" style={styles.screen}>
       <SafeAreaProvider>
-        <NavigationContainer
-          theme={{
-            ...DarkTheme,
-            colors: { ...DarkTheme.colors, background: '#121212' },
-          }}
-        >
-          <Tab.Navigator
-            screenOptions={{
-              headerShown: false,
-              tabBarActiveTintColor: '#FFFFFF',
-              tabBarInactiveTintColor: '#E0E0DC',
-              tabBarStyle: {
-                backgroundColor: '#04524B',
-                borderTopColor: '#3D3D3D',
-              },
-            }}
-          >
-            <Tab.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={House} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Travel"
-              component={TravelScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Route} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Rewards"
-              component={RewardsScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Gift} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Impact"
-              component={ImpactScreen}
-              options={{
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Leaf} focused={focused} />
-                ),
-              }}
-            />
-          </Tab.Navigator>
-        </NavigationContainer>
+        <AccountNavigation />
       </SafeAreaProvider>
     </GluestackUIProvider>
   );
@@ -169,51 +375,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectedTabIcon: { backgroundColor: '#D8DBD8' },
-  screen: { flex: 1, backgroundColor: '#121212' },
+  selectedTabIcon: { backgroundColor: '#26382B' },
+  screen: { flex: 1, backgroundColor: '#081310' },
   content: { minHeight: '100%' },
-  appName: {
-    color: '#F5F5F3',
-    fontSize: 17,
-    fontWeight: '600',
+  brandHeader: {
     marginHorizontal: 20,
     marginBottom: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  hero: {
-    minHeight: 235,
-    backgroundColor: '#083E3B',
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    justifyContent: 'flex-end',
-  },
-  heroLabel: { color: '#DDE7E2', fontSize: 14 },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    lineHeight: 35,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  heroDetail: { color: '#DDE7E2', fontSize: 14, marginTop: 8 },
-  section: {
+  brandCopy: { flex: 1 },
+  brandName: { fontSize: 22, lineHeight: 28, fontFamily: 'Geist_600SemiBold' },
+  balancePanel: {
+    backgroundColor: '#004A4D',
     marginHorizontal: 20,
-    paddingVertical: 26,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D3D3D',
+    padding: 20,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#344C40',
+    borderRadius: 12,
   },
+  balanceLabel: { color: '#ADBDB3', fontSize: 17 },
+  homeContent: { marginHorizontal: 20, paddingVertical: 20, gap: 20 },
+  impactGroup: {
+    flexDirection: 'column',
+    gap: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#3D3D3D',
+    paddingTop: 20,
+  },
+  impactItem: { flex: 1, gap: 8 },
+  caption: { color: '#A9A9A3', fontSize: 14, lineHeight: 20 },
+  travelEntry: {
+    gap: 16,
+  },
+  section: { marginHorizontal: 20, paddingVertical: 26 },
   sectionTitle: {
     color: '#F5F5F3',
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: 'Geist_600SemiBold',
   },
-  points: { color: '#F5F5F3', fontSize: 36, fontWeight: '600' },
-  muted: { color: '#B8BCB9', fontSize: 15, lineHeight: 22 },
-  placeholder: { marginHorizontal: 20, paddingTop: 34 },
-  placeholderTitle: {
-    color: '#F5F5F3',
-    fontSize: 30,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
+  muted: { color: '#A9A9A3', fontSize: 17, lineHeight: 25 },
 });

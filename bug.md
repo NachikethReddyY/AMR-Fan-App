@@ -136,3 +136,98 @@ Verified by gpt-6-astra through Codex (T3 Code).
 Unlinked local deployment-readiness follow-up, 26 September 2026. Merged main09b61e9 includes migration0009, but the hosted bootstrap is fixed at eight migrations and returns unchanged on the existing installation. Acceptance: checksum/ownership/privilege-guarded atomic eight-to-nine upgrade, scoped runtime grants, retained data/role/password/ACL proof and replay/collision/rollback tests. No production migration/deploy until the manager supplies the exact reviewed integrated candidate.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+UI-ACCOUNT-004 correction on the held mobile branch: large-text tab labels now
+wrap inside their existing columns and the bar uses measured label height.
+Explicit tab names preserve accessible labels when a custom visual label is
+used; React Navigation retains selected state. Pixel proof at font scale 3.2
+shows every full label and reachable destinations, with selected state in the
+accessibility tree. Scale 1.0 restores the original geometry. Both settings and
+private screenshots are recorded under `.evidence/account-4/tabfix-*`. Required
+small-iPhone/VoiceOver acceptance is still pending, not replaced by Android.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## PHONE-004-005: activate held account UI and current balance/History
+
+User authorized replaying only the three held mobile commits onto repaired main
+`8e346af`, then connecting Home/account/Rewards to the existing owner-checked
+History endpoint. Root/native integration is verified and frozen at `6eb5585`;
+the root writer moved to submissions. The continuation adds no backend, route,
+CI or dependency changes after that freeze. Real/demo state clears on changes,
+logout and expiry; server order, cursor strings and immutable records are retained.
+
+State and HTTP/PostgreSQL proof pass, including two-page History, maximum balance,
+cross-account denial, restart, offline recovery and revocation. New native UI
+proof remains held: Pixel/iPad reservations are inactive because supported
+cross-thread app-session ownership cannot be confirmed. No further owner hunt,
+device open or Metro startup is permitted. Prior Android proof covers only the
+unchanged account/tab lineage. Small-iPhone largest Dynamic Type, actual VoiceOver
+and live OIDC remain mandatory pending gates. This does not close #4 or #5.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## UI-DOCK-028: reconcile bottom navigation with selected design
+
+Related to #4 and PR28. The user selected a dark rounded floating dock for the
+four existing Home, Travel, Rewards and Impact destinations. Replace the green
+full-width bar, preserve account/navigation state and allow large labels to wrap.
+Native proof is pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Email resend cooldown, 2026-09-26
+
+The native confirmation screen allowed a resend six seconds after signup.
+Supabase rejected it with 429 and 51 seconds remaining. Add a visible local
+60-second countdown and prevent duplicate dispatch; provider limits remain
+authoritative. Original email delivery is a separate unresolved check.
+
+## PR28 password-only signup, 2026-09-26
+
+Related to #4 and PR28. The user explicitly removed MFA and email confirmation
+codes. New signup must exchange an immediate provider session, ask for a name,
+and enter the app; password sign-in remains separate. No existing account,
+password, points or session is reset. An unexpected confirmation-required
+provider response fails closed. Hosted auto-confirmation is owned by the
+infrastructure thread; this mobile change does not mutate cloud configuration.
+
+Transport recording/progress and camera capture are absent from the current
+phone build. Guest catalogue source exists but requires backend deployment of
+405739286063f77fdd50def2e02ddfb9da914239. No future camera control is added.
+Password-only synthetic signup/name and normal/largest navigation now pass on
+Pixel and iPhone 17 Pro. Final user build still waits for reviewed photo integration.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## PR28-REFRESH: resolve conflicts with current main
+
+Tracker: [PR #28](https://github.com/NachikethReddyY/AMR-Fan-App/pull/28).
+Integrate current `main` into the published mobile branch without rewriting its
+history. Preserve the phone's public native auth examples and current main's
+server-only Supabase configuration. Keep both branches' steering and work records.
+The separate account worktree has unpublished commits and local edits; leave it
+untouched. Native interaction remains subject to its existing acceptance hold.
+
+Edited by gpt-6-sol through Codex (T3 Code).
+
+## PR28 photo client integration, 2026-09-26
+
+- User steering: integrate reviewed client candidate `ca71166bce7d576f943af36e67a5cc2551c848ae` into [PR28](https://github.com/NachikethReddyY/AMR-Fan-App/pull/28). Keep server hooks/migrations and live AI outside this slice.
+- Acceptance: reachable Home camera entry, camera-only permissions, same-account refresh preserves capture/draft, explicit logout/switch/known expiry and Home blur clear it, loading cannot authorize checks. Sequential Pixel/iPhone proof uses synthetic scenery only.
+- Status: local integration and focused tests pass; complete checks and native proof pending. No live photo upload or points claim exists.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR28 photo integration status: focused/full/security checks and bounded native
+proof complete. Pixel capture/draft/current-identity transitions passed with
+synthetic scenery. iPhone permission/launch/cancel/return/expiry and large text
+passed; its simulator shutter produced no photo, so iOS capture/draft proof remains
+unverified. See `docs/operations/native-acceptance.md`. Live photo backend/AI and
+final user APK remain separate; no media transmission or points were enabled.
+Current main refresh completed; final-head review and serialized squash turn pending.
+
+Verified by gpt-6-astra through Codex (T3 Code).
