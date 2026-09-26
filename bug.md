@@ -130,3 +130,9 @@ with the export finished. Security checks passed, including zero source SAST
 findings and no high/critical dependency advisories. Guarded push is next.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## DEPLOY-009: retained Supabase installation cannot apply participation migration
+
+Unlinked local deployment-readiness follow-up, 26 September 2026. Merged main09b61e9 includes migration0009, but the hosted bootstrap is fixed at eight migrations and returns unchanged on the existing installation. Acceptance: checksum/ownership/privilege-guarded atomic eight-to-nine upgrade, scoped runtime grants, retained data/role/password/ACL proof and replay/collision/rollback tests. No production migration/deploy until the manager supplies the exact reviewed integrated candidate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

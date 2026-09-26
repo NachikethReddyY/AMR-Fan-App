@@ -99,7 +99,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
         'SELECT name,checksum FROM public.schema_migrations ORDER BY name',
       )
     ).rows;
-    assert.equal(history.length, 8);
+    assert.equal(history.length, 9);
     assert.equal(
       (
         await q(

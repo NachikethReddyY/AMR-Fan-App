@@ -17,6 +17,18 @@ const migrationNames = [
   '0006_rewards.sql',
   '0007_reports.sql',
   '0008_journey_awards.sql',
+  '0009_submission_participation.sql',
+];
+const participationTables = [
+  'fan_submission_contributions',
+  'fan_submission_admin_actions',
+  'fan_interaction_sessions',
+  'fan_submission_selections',
+];
+const participationFunctions = [
+  'protect_participation_history',
+  'close_interaction_once',
+  'resolve_selection_once',
 ];
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -87,7 +99,7 @@ export async function bootstrapDatabase(pool, runtimePassword) {
         )
       ).rows;
       if (
-        history.length !== migrations.length ||
+        ![8, migrations.length].includes(history.length) ||
         history.some(
           (m, i) =>
             m.name !== migrations[i].name ||
@@ -96,8 +108,24 @@ export async function bootstrapDatabase(pool, runtimePassword) {
       )
         throw new Error('Migration checksum collision.');
       await verifyPrivileges(client);
+      if (history.length === 8) {
+        await client.query(`SET LOCAL ROLE ${OWNER}`);
+        const { name, sql, checksum } = migrations[8];
+        await client.query(sql);
+        await grantParticipation(client);
+        await client.query(
+          'INSERT INTO public.schema_migrations(name,checksum) VALUES($1,$2)',
+          [name, checksum],
+        );
+        await client.query('RESET ROLE');
+        await verifyPrivileges(client);
+      }
+      await verifyParticipationPrivileges(client);
       await client.query('COMMIT');
-      return { state: 'unchanged', migrations: history.length };
+      return {
+        state: history.length === 8 ? 'upgraded' : 'unchanged',
+        migrations: migrations.length,
+      };
     }
     await client.query(
       `CREATE ROLE ${OWNER} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
@@ -141,11 +169,13 @@ export async function bootstrapDatabase(pool, runtimePassword) {
     await client.query(
       `REVOKE INSERT,UPDATE,DELETE ON app.principals,app.role_assignments FROM ${RUNTIME}; GRANT INSERT(issuer,subject),UPDATE(subject) ON app.principals TO ${RUNTIME}; REVOKE ALL ON public.schema_migrations FROM PUBLIC,${RUNTIME}`,
     );
+    await grantParticipation(client);
     await client.query('RESET ROLE');
     await client.query(
       `REVOKE CREATE ON SCHEMA public FROM ${OWNER}; REVOKE CREATE ON DATABASE ${pg.escapeIdentifier((await client.query('SELECT current_database() AS name')).rows[0].name)} FROM ${OWNER}`,
     );
     await verifyPrivileges(client);
+    await verifyParticipationPrivileges(client);
     await client.query('COMMIT');
     return { state: 'created', migrations: migrations.length };
   } catch (error) {
@@ -153,6 +183,93 @@ export async function bootstrapDatabase(pool, runtimePassword) {
     throw error;
   } finally {
     client.release();
+  }
+}
+
+async function grantParticipation(client) {
+  const tables = participationTables.map((name) => `app.${name}`).join(',');
+  const functions = participationFunctions
+    .map((name) => `app.${name}()`)
+    .join(',');
+  const sequence = 'app.fan_interaction_sessions_sequence_seq';
+  const denied = ['PUBLIC', RUNTIME];
+  for (const name of ['anon', 'authenticated'])
+    if (
+      (await client.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [name]))
+        .rowCount
+    )
+      denied.push(name);
+  await client.query(
+    `REVOKE ALL ON ${tables} FROM ${denied.join(',')};
+     REVOKE ALL ON SEQUENCE ${sequence} FROM ${denied.join(',')};
+     REVOKE ALL ON FUNCTION ${functions} FROM ${denied.join(',')};
+     GRANT SELECT,INSERT ON ${tables} TO ${RUNTIME};
+     GRANT UPDATE(closed_by,closed_at,closed_action_id) ON app.fan_interaction_sessions TO ${RUNTIME};
+     GRANT UPDATE(status,resolved_by,resolved_at,reason,resolved_action_id) ON app.fan_submission_selections TO ${RUNTIME};
+     GRANT USAGE,SELECT ON SEQUENCE ${sequence} TO ${RUNTIME};
+     GRANT EXECUTE ON FUNCTION ${functions} TO ${RUNTIME}`,
+  );
+}
+
+async function verifyParticipationPrivileges(client) {
+  for (const table of participationTables) {
+    const permissions = (
+      await client.query(
+        `SELECT has_table_privilege($1,$2,'SELECT') AS read,
+       has_table_privilege($1,$2,'INSERT') AS insert,
+       has_table_privilege($1,$2,'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS elevated`,
+        [RUNTIME, `app.${table}`],
+      )
+    ).rows[0];
+    if (!permissions.read || !permissions.insert || permissions.elevated)
+      throw new Error('Participation privilege collision.');
+  }
+  const columns = {
+    fan_interaction_sessions: ['closed_by', 'closed_at', 'closed_action_id'],
+    fan_submission_selections: [
+      'status',
+      'resolved_by',
+      'resolved_at',
+      'reason',
+      'resolved_action_id',
+    ],
+  };
+  for (const table of participationTables) {
+    const rows = (
+      await client.query(
+        `SELECT a.attname,has_column_privilege($1,a.attrelid,a.attnum,'UPDATE') AS allowed
+       FROM pg_attribute a WHERE a.attrelid=$2::regclass AND a.attnum>0 AND NOT a.attisdropped`,
+        [RUNTIME, `app.${table}`],
+      )
+    ).rows;
+    if (
+      rows.some(
+        (row) => row.allowed !== (columns[table] ?? []).includes(row.attname),
+      )
+    )
+      throw new Error('Participation privilege collision.');
+  }
+  const sequence = (
+    await client.query(
+      `SELECT has_sequence_privilege($1,'app.fan_interaction_sessions_sequence_seq','USAGE') AS usage,
+     has_sequence_privilege($1,'app.fan_interaction_sessions_sequence_seq','SELECT') AS read,
+     has_sequence_privilege($1,'app.fan_interaction_sessions_sequence_seq','UPDATE') AS write`,
+      [RUNTIME],
+    )
+  ).rows[0];
+  if (!sequence.usage || !sequence.read || sequence.write)
+    throw new Error('Participation privilege collision.');
+  for (const name of participationFunctions) {
+    const fn = (
+      await client.query(
+        `SELECT pg_get_userbyid(proowner) AS owner,has_function_privilege($1,oid,'EXECUTE') AS execute,
+       EXISTS(SELECT 1 FROM aclexplode(COALESCE(proacl,acldefault('f',proowner))) WHERE grantee=0 AND privilege_type='EXECUTE') AS public
+       FROM pg_proc WHERE oid=$2::regprocedure`,
+        [RUNTIME, `app.${name}()`],
+      )
+    ).rows[0];
+    if (!fn || fn.owner !== OWNER || !fn.execute || fn.public)
+      throw new Error('Participation privilege collision.');
   }
 }
 
