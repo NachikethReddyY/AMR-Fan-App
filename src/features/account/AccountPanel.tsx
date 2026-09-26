@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { UserRound } from 'lucide-react-native';
 import { useAccount } from './provider';
 import { api, localSignInEnabled, signInWithProvider } from './native-auth';
 import { Balance } from '../points/Balance';
@@ -58,7 +59,7 @@ function Action({
     </Pressable>
   );
 }
-export function AccountPanel() {
+export function AccountPanel({ compact = false }: { compact?: boolean }) {
   const { controller, state } = useAccount();
   const { controller: history } = useHistory();
   const [bold, setBold] = useState(false);
@@ -109,19 +110,40 @@ export function AccountPanel() {
   }
   return (
     <BoldText.Provider value={bold}>
-      <View style={styles.entry}>
-        <Action
-          secondary
-          label={
-            profile
-              ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
-              : 'Sign in'
-          }
-          onPress={() => {
-            setOpen(true);
-            void history.refresh();
-          }}
-        />
+      <View style={compact ? styles.compactEntry : styles.entry}>
+        {compact ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              profile
+                ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
+                : 'Sign in'
+            }
+            onPress={() => {
+              setOpen(true);
+              void history.refresh();
+            }}
+            style={({ pressed }) => [
+              styles.accountButton,
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <UserRound size={22} color="#F5F5F3" accessible={false} />
+          </Pressable>
+        ) : (
+          <Action
+            secondary
+            label={
+              profile
+                ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
+                : 'Sign in'
+            }
+            onPress={() => {
+              setOpen(true);
+              void history.refresh();
+            }}
+          />
+        )}
       </View>
       <Modal
         visible={open}
@@ -303,6 +325,17 @@ export function AccountPanel() {
 }
 const styles = StyleSheet.create({
   entry: { marginHorizontal: 20, marginBottom: 20 },
+  compactEntry: { flexShrink: 0 },
+  accountButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#191919',
+    borderWidth: 1,
+    borderColor: '#3D3D3D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modal: { flex: 1, backgroundColor: '#121212' },
   section: {
     marginHorizontal: 20,

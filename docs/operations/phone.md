@@ -58,6 +58,32 @@ timezone fail validation. Literal figures and source evidence remain unchanged.
 This corrects the native Hermes rejection of PostgreSQL's space-separated date
 format. Related to #19, #20 and parent #3.
 
+## Selected C presentation
+
+The user selected C Balanced green for native Home and Travel. Home now uses a
+full-width green balance panel, a compact labelled account action and functional
+entries into the existing destinations. Travel gives the server recommendation
+and duration a green summary, while preserving every route row, estimate,
+source and selected/unavailable state. Shared secondary actions use the selected
+neutral capsule treatment. Four tabs and their measured large-text labels remain.
+
+Normal balance text is 60/68 pt. At accessibility sizes it uses a 24/32 pt base
+with system scaling still active; the full observed five-digit value remains
+readable on Pixel and iPhone. No balance value is calculated or abbreviated.
+The native text-measurement correction remains at the leaf; controllers and
+screen state are not remounted for font changes.
+
+The selected map remains open. Installed Expo 57's compatible map version is
+react-native-maps 1.27.2, currently absent. A proposed Apple Maps iOS / Google Maps
+Android integration needs dependency/config ownership, confirmed app identities,
+Android key restrictions and a native rebuild. Existing server comparisons return
+bounded geometry; the phone adapter currently discards it. A separately scoped
+adapter and map change must preserve geometry/source association and address
+native basemap provider privacy. No map package or provider was introduced here.
+Optional explicit location, verified race/calendar and news integration also
+remain open. No sample news, countdown, map or nonfunctional controls were added.
+See [selected design](../../DESIGN.md).
+
 ## Proof and limits
 
 The phone tests cover durable retry/restart, stale confirmations, ownership,
@@ -84,8 +110,8 @@ Small-iPhone largest Dynamic Type and actual VoiceOver remain mandatory and
 unverified. Live OIDC and Google/provider configuration remain external limits.
 
 Metro and Babel use the accepted baseline configuration. Native SecureStore,
-accessibility queries/subscriptions, typography and four-tab navigation remain
-unchanged. The six prepared native dependencies include `expo-web-browser` for
+accessibility queries/subscriptions and four-tab navigation remain protected.
+C changes only the owned presentation described above. The six prepared native dependencies include `expo-web-browser` for
 native OIDC authentication; that dependency does not create a fan web product.
 
 Earlier synthetic browser experiments remain private historical evidence. They
@@ -101,5 +127,13 @@ Related to #4, #5, #19, #20 and parent #3. All partial issues remain open and th
 candidate remains on mandatory native UI HOLD for the outstanding small-phone
 and screen-reader proof. Hosted CI is paused by the user to save build minutes;
 local proof does not imply hosted gates passed.
+
+C was observed on Pixel Android 16 and iPhone 17 Pro iOS 26.5 through Expo Go
+SDK57 with the local candidate JavaScript bundle and synthetic own-server data.
+Normal and largest text, real/demo balance, retained content, approved figures,
+History pagination and route selection were checked. iPhone live size changes
+preserve an unsaved name draft, edited route query and selected route. This is
+simulator/emulator development-client proof, not a standalone release build or
+physical journey proof. No new paid transaction was required for this restyle.
 
 Edited by gpt-6-astra through Codex (T3 Code).

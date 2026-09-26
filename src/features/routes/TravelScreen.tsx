@@ -1,7 +1,9 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Text } from '../points/controls';
+import { ArrowRight } from 'lucide-react-native';
+
+import { Action, Text } from '../points/controls';
 import { useProfileContext } from '../account/useResource';
 import { useAccount } from '../account/provider';
 import { api } from '../account/native-auth';
@@ -132,8 +134,14 @@ function Result({
       </Text>
       {recommendation?.kind === 'recommended' && (
         <View style={styles.summary} accessibilityRole="summary">
-          <Text style={styles.routeTitle}>
-            Recommended: {modeLabels[recommendation.route.mode]}
+          <Text style={styles.summaryLabel}>Recommended route</Text>
+          <Text style={styles.summaryTitle}>
+            {modeLabels[recommendation.route.mode]}
+          </Text>
+          <Text style={styles.duration}>
+            {recommendation.route.durationSeconds === null
+              ? 'Duration unavailable'
+              : minutes(recommendation.route.durationSeconds)}
           </Text>
           <Text style={styles.routeDetail}>
             Fastest {minutes(recommendation.fastestSeconds)} · Limit{' '}
@@ -152,7 +160,7 @@ function Result({
               ? `${recommendation.avoidedKgCo2e.toFixed(2)} kg estimated CO2e avoided`
               : `${(-recommendation.avoidedKgCo2e).toFixed(2)} kg more CO2e than driving`}
           </Text>
-          <Text style={styles.routeLegs}>
+          <Text style={[styles.routeLegs, styles.summaryNote]}>
             Indicative demo estimates. Changi Airport Group FY2024/25
             passenger-km factors; walking and cycling count operational travel
             only. Not measured savings.
@@ -233,7 +241,7 @@ export function TravelScreen() {
       <Text style={styles.intro}>
         Compare routes between places in Singapore.
       </Text>
-      <Text style={styles.label}>Start</Text>
+      <Text style={styles.label}>From</Text>
       <TextInput
         accessibilityLabel="Start"
         value={origin}
@@ -246,7 +254,7 @@ export function TravelScreen() {
         placeholderTextColor="#A9A9A3"
         autoCorrect={false}
       />
-      <Text style={styles.label}>Destination</Text>
+      <Text style={styles.label}>To</Text>
       <TextInput
         accessibilityLabel="Destination"
         value={destination}
@@ -273,16 +281,16 @@ export function TravelScreen() {
         style={styles.input}
         placeholderTextColor="#A9A9A3"
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Compare routes"
-        accessibilityState={{ disabled }}
-        onPress={compare}
-        disabled={disabled}
-        style={styles.action}
-      >
-        <Text style={styles.actionText}>Compare routes</Text>
-      </Pressable>
+      <View style={styles.compareAction}>
+        <Action
+          label="Compare routes"
+          icon={ArrowRight}
+          disabled={disabled}
+          onPress={() => {
+            void compare();
+          }}
+        />
+      </View>
       {extraMinutes === null && (
         <Text style={styles.message}>
           Enter whole extra minutes from 0 to 1,440.
@@ -312,27 +320,27 @@ export function TravelScreen() {
 
 const styles = StyleSheet.create({
   container: { marginHorizontal: 20, paddingBottom: 24 },
-  title: { color: '#F5F5F3', fontSize: 30, fontWeight: '600', marginBottom: 8 },
+  title: {
+    color: '#F5F5F3',
+    fontSize: 30,
+    lineHeight: 38,
+    fontFamily: 'Geist_600SemiBold',
+    marginBottom: 8,
+  },
   intro: { color: '#E0E0DC', fontSize: 17, lineHeight: 25, marginBottom: 24 },
   label: { color: '#E0E0DC', fontSize: 17, marginBottom: 8 },
   input: {
     minHeight: 48,
     color: '#F5F5F3',
     fontSize: 17,
+    fontFamily: 'Geist_400Regular',
+    paddingVertical: 12,
     borderColor: '#3D3D3D',
     borderWidth: 1,
     paddingHorizontal: 12,
     marginBottom: 16,
   },
-  action: {
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#04524B',
-    marginBottom: 24,
-    paddingHorizontal: 12,
-  },
-  actionText: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  compareAction: { marginBottom: 24 },
   source: { color: '#E0E0DC', fontSize: 15, lineHeight: 22, marginBottom: 14 },
   route: {
     minHeight: 80,
@@ -342,7 +350,27 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: 'transparent',
   },
-  summary: { backgroundColor: '#191919', padding: 14, marginBottom: 16 },
+  summary: {
+    backgroundColor: '#04524B',
+    padding: 20,
+    marginHorizontal: -20,
+    marginBottom: 20,
+    gap: 8,
+  },
+  summaryLabel: { color: '#D6E5E1', fontSize: 14, lineHeight: 20 },
+  summaryTitle: {
+    color: '#F5F5F3',
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: 'Geist_600SemiBold',
+  },
+  duration: {
+    color: '#F5F5F3',
+    fontSize: 44,
+    lineHeight: 52,
+    fontFamily: 'Geist_600SemiBold',
+  },
+  summaryNote: { color: '#D6E5E1' },
   selectedRoute: { borderLeftColor: '#CEDC00' },
   unavailableRoute: { opacity: 0.8 },
   routeHeading: {
@@ -354,7 +382,7 @@ const styles = StyleSheet.create({
   routeTitle: {
     color: '#F5F5F3',
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'Geist_600SemiBold',
     flexShrink: 1,
   },
   selectedText: { color: '#F5F5F3', fontSize: 15 },

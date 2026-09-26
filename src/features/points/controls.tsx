@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import type { LucideIcon } from 'lucide-react-native';
 import {
   AccessibilityInfo,
   Pressable,
@@ -45,10 +46,14 @@ export function Action({
   label,
   disabled = false,
   onPress,
+  secondary = false,
+  icon: Icon,
 }: {
   label: string;
   disabled?: boolean;
   onPress: () => void;
+  secondary?: boolean;
+  icon?: LucideIcon;
 }) {
   return (
     <Pressable
@@ -58,10 +63,13 @@ export function Action({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
-        (pressed || disabled) && { opacity: 0.6 },
+        secondary && styles.secondary,
+        disabled && styles.disabled,
+        pressed && !disabled && { opacity: 0.75 },
       ]}
     >
       <Text style={styles.label}>{label}</Text>
+      {Icon && <Icon size={20} color="#F5F5F3" accessible={false} />}
     </Pressable>
   );
 }
@@ -79,10 +87,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 2,
+    flexDirection: 'row',
+    gap: 10,
   },
+  secondary: {
+    backgroundColor: '#222222',
+    borderColor: '#3D3D3D',
+    borderWidth: 1,
+    borderRadius: 26,
+  },
+  disabled: { backgroundColor: '#3A3A3A' },
   label: {
     color: '#F5F5F3',
     fontFamily: 'Geist_600SemiBold',
     textAlign: 'center',
+    flexShrink: 1,
   },
 });

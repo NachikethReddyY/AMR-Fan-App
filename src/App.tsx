@@ -5,12 +5,21 @@ import {
   DarkTheme,
   useFocusEffect,
 } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
+import {
+  createBottomTabNavigator,
+  type BottomTabScreenProps,
+} from '@react-navigation/bottom-tabs';
+import {
+  ArrowRight,
+  Gift,
+  House,
+  Leaf,
+  Route,
+  type LucideIcon,
+} from 'lucide-react-native';
 import {
   ScrollView,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -25,6 +34,7 @@ import { AccountProvider } from './features/account/provider';
 import { AccountPanel } from './features/account/AccountPanel';
 import { PointsProvider, useHistory } from './features/points/provider';
 import { Balance } from './features/points/Balance';
+import { Action, Text } from './features/points/controls';
 import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
 
 import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
@@ -47,8 +57,17 @@ function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   );
 }
 
-function Home() {
+function Home({
+  onTravel,
+  onRewards,
+  onImpact,
+}: {
+  onTravel: () => void;
+  onRewards: () => void;
+  onImpact: () => void;
+}) {
   const { controller } = useHistory();
+  const { fontScale } = useWindowDimensions();
   useFocusEffect(
     useCallback(() => {
       void controller.refresh();
@@ -56,26 +75,54 @@ function Home() {
   );
   return (
     <>
-      <View style={styles.hero}>
-        <Text style={styles.heroLabel}>Fan and race updates</Text>
-        <Text style={styles.heroTitle}>{'Latest from\nthe team'}</Text>
-        <Text style={styles.heroDetail}>Published updates appear here</Text>
+      <View style={styles.balancePanel}>
+        <Text style={styles.balanceLabel}>Available points</Text>
+        <Balance prominent />
       </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Points and rewards</Text>
-        <Balance />
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Team impact</Text>
+      <View style={styles.homeContent}>
+        <Action
+          secondary
+          label="View rewards and History"
+          onPress={onRewards}
+        />
+        <View
+          style={[styles.impactGroup, fontScale > 1.3 && styles.impactStack]}
+        >
+          <View style={styles.impactItem}>
+            <Text style={styles.caption}>Your verified impact</Text>
+            <Text style={styles.unavailable}>Unavailable</Text>
+          </View>
+          <View style={styles.impactItem}>
+            <Text style={styles.caption}>Community impact</Text>
+            <Text style={styles.unavailable}>Unavailable</Text>
+          </View>
+        </View>
         <Text style={styles.muted}>
-          Sourced team activity and your contribution record appear here.
+          Points are separate from impact. Demo balances stay in the demo
+          profile.
         </Text>
+        <View style={styles.travelEntry}>
+          <Text style={styles.sectionTitle}>Where are you going?</Text>
+          <Text>Compare routes between places in Singapore.</Text>
+          <Action label="Compare routes" icon={ArrowRight} onPress={onTravel} />
+        </View>
+        <Action
+          secondary
+          label="Read approved team figures"
+          onPress={onImpact}
+        />
       </View>
     </>
   );
 }
 
-function Screen({ children }: { children: React.ReactNode }) {
+function Screen({
+  children,
+  compactAccount = false,
+}: {
+  children: React.ReactNode;
+  compactAccount?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   return (
@@ -87,28 +134,42 @@ function Screen({ children }: { children: React.ReactNode }) {
           { paddingTop: insets.top + 18, paddingBottom: 24 },
         ]}
       >
-        <Text key={fontScale} style={styles.appName}>
-          AMR Fan App
-        </Text>
+        {compactAccount ? (
+          <View style={styles.brandHeader}>
+            <View style={styles.brandCopy}>
+              <Text key={fontScale} style={styles.brandName}>
+                Aston Martin
+              </Text>
+              <Text style={styles.caption}>Fan app</Text>
+            </View>
+            <AccountPanel compact />
+          </View>
+        ) : (
+          <Text key={fontScale} style={styles.appName}>
+            AMR Fan App
+          </Text>
+        )}
         {children}
       </ScrollView>
     </View>
   );
 }
 
-function HomeScreen() {
+function HomeScreen({ navigation }: BottomTabScreenProps<Tabs, 'Home'>) {
   return (
-    <Screen>
-      <AccountPanel />
-      <Home />
+    <Screen compactAccount>
+      <Home
+        onTravel={() => navigation.navigate('Travel')}
+        onRewards={() => navigation.navigate('Rewards')}
+        onImpact={() => navigation.navigate('Impact')}
+      />
     </Screen>
   );
 }
 function TravelScreen() {
   const ctx = useProfileContext();
   return (
-    <Screen>
-      <AccountPanel />
+    <Screen compactAccount>
       {ctx ? (
         <TravelComparison key={`${ctx.token}:${ctx.profileId}`} />
       ) : (
@@ -276,41 +337,41 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 22,
   },
-  hero: {
-    minHeight: 235,
-    backgroundColor: '#083E3B',
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    justifyContent: 'flex-end',
-  },
-  heroLabel: { color: '#DDE7E2', fontSize: 14 },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    lineHeight: 35,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  heroDetail: { color: '#DDE7E2', fontSize: 14, marginTop: 8 },
-  section: {
+  brandHeader: {
     marginHorizontal: 20,
-    paddingVertical: 26,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D3D3D',
+    marginBottom: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
+  brandCopy: { flex: 1 },
+  brandName: { fontSize: 22, lineHeight: 28, fontFamily: 'Geist_600SemiBold' },
+  balancePanel: { backgroundColor: '#04524B', padding: 20, gap: 12 },
+  balanceLabel: { color: '#F5F5F3', fontSize: 17 },
+  homeContent: { marginHorizontal: 20, paddingVertical: 20, gap: 20 },
+  impactGroup: {
+    flexDirection: 'row',
+    gap: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#3D3D3D',
+    paddingTop: 20,
+  },
+  impactStack: { flexDirection: 'column' },
+  impactItem: { flex: 1, gap: 8 },
+  caption: { color: '#A9A9A3', fontSize: 14, lineHeight: 20 },
+  unavailable: { fontFamily: 'Geist_600SemiBold' },
+  travelEntry: {
+    gap: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#3D3D3D',
+    paddingTop: 20,
+  },
+  section: { marginHorizontal: 20, paddingVertical: 26 },
   sectionTitle: {
     color: '#F5F5F3',
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: 'Geist_600SemiBold',
   },
-  points: { color: '#F5F5F3', fontSize: 36, fontWeight: '600' },
-  muted: { color: '#B8BCB9', fontSize: 15, lineHeight: 22 },
-  placeholder: { marginHorizontal: 20, paddingTop: 34 },
-  placeholderTitle: {
-    color: '#F5F5F3',
-    fontSize: 30,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
+  muted: { color: '#A9A9A3', fontSize: 17, lineHeight: 25 },
 });

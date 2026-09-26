@@ -1,9 +1,10 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useHistory } from './provider';
 import { Action, Text } from './controls';
 
-export function Balance() {
+export function Balance({ prominent = false }: { prominent?: boolean }) {
   const { state, account, profile, controller } = useHistory();
+  const { fontScale } = useWindowDimensions();
   if (account.kind === 'signedOut')
     return <Text>Sign in to see your points.</Text>;
   if (account.kind === 'unavailable')
@@ -13,12 +14,19 @@ export function Balance() {
       {state.kind === 'ready' ? (
         <>
           <Text
-            style={styles.balance}
+            style={[
+              styles.balance,
+              prominent &&
+                (fontScale <= 1.3
+                  ? styles.prominent
+                  : styles.accessibleDisplay),
+            ]}
             accessibilityLabel={`${state.page.balance} available points, ${profile?.kind === 'demo' ? 'demo profile' : 'real profile'}`}
           >
-            {state.page.balance.toLocaleString()} <Text>available points</Text>
+            {state.page.balance.toLocaleString()}
+            {!prominent && <Text> available points</Text>}
           </Text>
-          <Text style={styles.caption}>
+          <Text style={[styles.caption, prominent && styles.onGreen]}>
             {profile?.kind === 'demo' ? 'Demo profile' : 'Real profile'}
           </Text>
         </>
@@ -47,4 +55,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   caption: { color: '#A9A9A3', fontSize: 14, lineHeight: 20 },
+  prominent: { fontSize: 60, lineHeight: 68 },
+  accessibleDisplay: { fontSize: 24, lineHeight: 32 },
+  onGreen: { color: '#D6E5E1', fontSize: 17, lineHeight: 25 },
 });
