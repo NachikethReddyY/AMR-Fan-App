@@ -355,3 +355,10 @@ requires legitimate access and remains blocked. Local implementation and browser
 DAST10202 and exact-source candidate is pending; no production deployment.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+PR46 delivery update: user accepted the exact three-form10202 exception; see
+[exception record](docs/operations/admin-dast-exception.md). Retained DAST still
+fails. Route-main refresh is local only, with scheduled gates and root review
+pending. No blanket exception, scanner suppression or cloud action.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

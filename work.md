@@ -990,3 +990,19 @@ candidate/additional origin must be deployed by the infrastructure owner. PR and
 production publication remain pending independent review and delivery gates.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## PR46 route-main refresh and accepted DAST exception
+
+Rebased the admin candidate onto main `026b4d70f9ab1eb4ef2b1731db88e1162feda1fb` as
+`8a0b54fe99556fe066c8124218db1e5514d2511b`. Only bug/work append conflicts required resolution;
+both histories are retained. The admin patch, all14 browser assets and build
+script are unchanged. Original e71 evidence and local TODO edits are preserved.
+
+The user accepted only the independently reviewed10202 false positives on the
+three unchanged login forms. [Exact exception record](docs/operations/admin-dast-exception.md)
+retains the failed scan, source hashes and scope without changing scanner rules
+or global policy. No refreshed execution is claimed. Impact owns the heavy slot;
+full/security/DAST/browser gates and affected independent review remain scheduled
+by root. No push, merge, deployment or Render settings change occurred.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

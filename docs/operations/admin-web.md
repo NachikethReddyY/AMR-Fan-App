@@ -71,3 +71,7 @@ Live assigned-admin reads require legitimate supplied access; synthetic local
 proof cannot establish hosted admin readiness. The pinned Render release must
 contain every API route the pages use. No claim of complete admin operations is
 made while this backend dependency or legitimate access is missing.
+
+The [accepted PR46 DAST exception](admin-dast-exception.md) records the exact
+three-form 10202 disposition. The failed scan is retained; scheduled integration
+gates, root review and deployment timing remain separate.
