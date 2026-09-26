@@ -86,6 +86,13 @@ The adapter uses the fixed HTTPS Storage API, refuses redirects, bounds response
 bytes and deadlines, serializes inventory/upload through a database transaction
 advisory lock, enforces 256 MiB/1000-object capacity, writes without upsert, and
 reads back the committed hash. A lost response is recoverable by same-hash retry.
+Missing-object reads accept HTTP 404 or a bounded HTTP 400 JSON envelope with
+semantic `statusCode` 404, `code: NoSuchKey`, and the supported `not_found` or
+`NoSuchKey` error label. Other errors remain unavailable and never trigger an
+upload. The error body limit is 16 KiB under the existing operation deadline.
+A real HTTP regression covers first upload, retry, hash preservation and
+malformed, unauthorized and oversized refusals. No live provider request is
+implied. [Provider error contract](https://github.com/supabase/storage/blob/master/src/internal/errors/storage-error.ts).
 Startup never deletes objects. Existing hashes, page evidence, revisions and
 approvals remain in PostgreSQL. Bucket creation is pending independent review;
 it is not performed by the database bootstrap command. There is no remote

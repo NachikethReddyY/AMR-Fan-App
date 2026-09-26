@@ -122,6 +122,22 @@ export async function createSupabaseStorage({
       await response.body?.cancel();
       return null;
     }
+    if (response.status === 400) {
+      let error: Record<string, unknown>;
+      try {
+        error = record(JSON.parse((await bounded(response, 16384)).toString()));
+      } catch {
+        throw unavailable();
+      }
+      // Storage's compatibility handler can put semantic 404 inside HTTP 400.
+      if (
+        (error.statusCode === '404' || error.statusCode === 404) &&
+        error.code === 'NoSuchKey' &&
+        (error.error === 'not_found' || error.error === 'NoSuchKey')
+      )
+        return null;
+      throw unavailable();
+    }
     if (!response.ok) {
       await response.body?.cancel();
       throw unavailable();

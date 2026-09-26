@@ -242,3 +242,180 @@ test('real HTTP transport bounds provider errors and cancels redirects without c
     );
   }
 });
+
+test('real HTTP missing-key envelopes allow first upload; other errors never upload', async (t) => {
+  const { createServer } = await import('node:http');
+  const { once } = await import('node:events');
+  const missing = { statusCode: '404', code: 'NoSuchKey', error: 'not_found' };
+  let status = 404,
+    body = '',
+    declaredLength: number | undefined;
+  let uploads = 0,
+    lists = 0;
+  const files = new Map<string, Buffer>();
+  const server = createServer(async (req, res) => {
+    const path = req.url ?? '';
+    const json = (value: unknown) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(value));
+    };
+    if (path === '/storage/v1/bucket/amr-report-originals')
+      return json({
+        id: 'amr-report-originals',
+        public: false,
+        file_size_limit: 10485760,
+      });
+    if (path === '/storage/v1/object/list/amr-report-originals') {
+      lists++;
+      return json(
+        Array.from(files, ([name, bytes]) => ({
+          name,
+          metadata: { size: bytes.length },
+        })),
+      );
+    }
+    const name = path.split('/').pop()!;
+    if (req.method === 'POST') {
+      uploads++;
+      assert.equal(req.headers['x-upsert'], 'false');
+      assert.equal(files.has(name), false);
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk);
+      files.set(name, Buffer.concat(chunks));
+      return json({ Key: name });
+    }
+    if (files.has(name)) return res.end(files.get(name));
+    res.statusCode = status;
+    res.setHeader('Content-Type', 'application/json');
+    if (declaredLength !== undefined)
+      res.setHeader('Content-Length', declaredLength);
+    // Explicit write exercises the byte limit without Content-Length as well.
+    res.write(body);
+    res.end();
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const transport: typeof fetch = (input, init) =>
+    fetch(
+      String(input).replace(SUPABASE_URL, `http://127.0.0.1:${address.port}`),
+      init,
+    );
+  try {
+    const store = await createSupabaseStorage({
+      credential,
+      exclusive,
+      transport,
+    });
+    for (const [name, wire, envelope] of [
+      ['wire404', 404, ''],
+      ['legacy error', 400, JSON.stringify(missing)],
+      [
+        'numeric semantic status',
+        400,
+        JSON.stringify({ ...missing, statusCode: 404 }),
+      ],
+      [
+        'current error code',
+        400,
+        JSON.stringify({ ...missing, error: 'NoSuchKey' }),
+      ],
+    ] as const) {
+      await t.test(name, async () => {
+        status = wire;
+        body = envelope;
+        files.clear();
+        uploads = 0;
+        lists = 0;
+        const id = randomUUID(),
+          bytes = Buffer.from('%PDF-1.7 synthetic');
+        assert.deepEqual(await store.put(id, bytes), {
+          sha256: hash(bytes),
+          bytes: bytes.length,
+        });
+        assert.deepEqual(await store.get(id, hash(bytes)), bytes);
+        await store.put(id, bytes);
+        await assert.rejects(store.put(id, Buffer.from('changed')), {
+          status: 409,
+        });
+        assert.equal(uploads, 1);
+        assert.equal(lists, 1);
+        await assert.rejects(store.get(randomUUID(), hash(bytes)), {
+          status: 404,
+        });
+      });
+    }
+    const oversized = JSON.stringify({
+      ...missing,
+      message: 'x'.repeat(16384),
+    });
+    for (const [name, wire, envelope, length] of [
+      [
+        'unrelated400',
+        400,
+        JSON.stringify({ error: 'InvalidRequest' }),
+        undefined,
+      ],
+      [
+        'forbidden400',
+        400,
+        JSON.stringify({ ...missing, statusCode: '403', code: 'AccessDenied' }),
+        undefined,
+      ],
+      ['wire403 cannot masquerade', 403, JSON.stringify(missing), undefined],
+      [
+        'wrong semantic status',
+        400,
+        JSON.stringify({ ...missing, statusCode: 403 }),
+        undefined,
+      ],
+      [
+        'wrong error',
+        400,
+        JSON.stringify({ ...missing, error: 'AccessDenied' }),
+        undefined,
+      ],
+      [
+        'missing code',
+        400,
+        JSON.stringify({ statusCode: '404', error: 'not_found' }),
+        undefined,
+      ],
+      [
+        'bucket absence',
+        400,
+        JSON.stringify({ ...missing, code: 'NoSuchBucket' }),
+        undefined,
+      ],
+      ['malformed', 400, '{', undefined],
+      ['null', 400, 'null', undefined],
+      ['array', 400, JSON.stringify([missing]), undefined],
+      ['oversized streamed', 400, oversized, undefined],
+      ['oversized declared', 400, oversized, Buffer.byteLength(oversized)],
+    ] as const) {
+      await t.test(name, async () => {
+        status = wire;
+        body = envelope;
+        declaredLength = length;
+        files.clear();
+        uploads = 0;
+        lists = 0;
+        await assert.rejects(
+          store.put(randomUUID(), Buffer.from('synthetic')),
+          {
+            status: 503,
+            message: 'Private report storage is unavailable.',
+          },
+        );
+        assert.equal(uploads, 0);
+        assert.equal(lists, 0);
+      });
+    }
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
