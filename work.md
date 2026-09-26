@@ -489,3 +489,15 @@ Commands and raw evidence remain under ignored `.evidence/account-4/continuation
 and `history-*`; reproducible commands are in `docs/operations/points.md`.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### PR28 phone foundation refresh, 2026-09-26
+
+Related to #3, #4 and #5. Replayed only the six owned mobile commits after
+8e346aff onto manager-selected f51a25ca. Preserved original 0b24ce7 and local
+TODO/evidence. No server, scripts or CI changes. Frozen install, full check,
+security check and Android/iOS static exports pass. Root reconciliation keeps
+only the six prepared native dependencies, auth scheme/plugins and public
+configuration; all main scripts and PDF dependency remain intact. Root is frozen
+and released at this commit. Native interaction remains held.
+
+Edited by gpt-6-astra through Codex (T3 Code).
