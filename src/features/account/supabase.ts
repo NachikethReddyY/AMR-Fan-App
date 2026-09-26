@@ -23,12 +23,28 @@ const configuration = z.object({
     publishableKey: z.string().regex(/^sb_publishable_[A-Za-z0-9_-]{16,200}$/),
   }),
 });
-export function validateCredentials(email: string, password: string) {
+export class EmailConfirmationRequired extends Error {
+  constructor() {
+    super('Confirm your email before signing in.');
+  }
+}
+export function validateEmail(email: string) {
   const parsed = z.email().max(254).safeParse(email.trim());
   if (!parsed.success) throw new Error('Enter a valid email address.');
+  return parsed.data;
+}
+export function validateConfirmation(email: string, code: string) {
+  const address = validateEmail(email);
+  const token = code.trim();
+  if (!/^[0-9]{6,10}$/.test(token))
+    throw new Error('Enter the confirmation code from your email.');
+  return { email: address, token, type: 'email' as const };
+}
+export function validateCredentials(email: string, password: string) {
+  const address = validateEmail(email);
   if (!password || password.length > 1024)
     throw new Error('Enter a password of at most 1,024 characters.');
-  return { email: parsed.data, password };
+  return { email: address, password };
 }
 export function createSupabaseAuth({
   config,
@@ -113,7 +129,7 @@ export function createSupabaseAuth({
       if (response.status === 429)
         throw new Error('Too many attempts. Wait a moment and try again.');
       if (code.success && code.data.error_code === 'email_not_confirmed')
-        throw new Error('Confirm your email before signing in.');
+        throw new EmailConfirmationRequired();
       if (
         path.startsWith('token?grant_type=refresh_token') &&
         [400, 401, 403].includes(response.status)
@@ -124,6 +140,16 @@ export function createSupabaseAuth({
         [401, 403, 404].includes(response.status)
       )
         throw new AccountError(401, 'Provider session is no longer available.');
+      if (path === 'verify')
+        throw new Error(
+          [400, 401, 403].includes(response.status)
+            ? 'The code is invalid or expired. Request a new code and try again.'
+            : 'Could not confirm your email. Try again in a moment.',
+        );
+      if (path === 'resend')
+        throw new Error(
+          'Could not resend the code. Wait a moment and try again.',
+        );
       if (path === 'signup')
         throw new Error(
           'Could not create an account. Check your details and password requirements, then try again.',
@@ -165,14 +191,20 @@ export function createSupabaseAuth({
       email: string,
       password: string,
     ): Promise<
-      { kind: 'confirmation' } | { kind: 'session'; provider: ProviderSession }
+      | { kind: 'confirmation'; email: string }
+      | { kind: 'session'; provider: ProviderSession }
     > => {
       const value = await send('signup', validateCredentials(email, password));
       if (value && typeof value === 'object' && 'access_token' in value)
         return { kind: 'session', provider: parse(value) };
       if (!z.object({ id: z.uuid() }).safeParse(value).success)
         throw new Error('Invalid sign-up response.');
-      return { kind: 'confirmation' };
+      return { kind: 'confirmation', email: validateEmail(email) };
+    },
+    verifyCode: async (email: string, code: string) =>
+      parse(await send('verify', validateConfirmation(email, code))),
+    resendCode: async (email: string): Promise<void> => {
+      await send('resend', { email: validateEmail(email), type: 'signup' });
     },
     refresh,
     revoke: async (session: ProviderSession) => {

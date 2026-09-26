@@ -651,7 +651,10 @@ test('profile selection retains provider credentials and confirmation creates no
   });
   const fresh = fixture();
   const other = createSessionController(fresh.api, fresh.storage);
-  await other.signIn(async () => ({ kind: 'confirmation' }));
+  await other.signIn(async () => ({
+    kind: 'confirmation',
+    email: 'fan@example.test',
+  }));
   expect(fresh.stored).toBeNull();
   expect(other.getState()).toMatchObject({
     kind: 'signedOut',
@@ -680,11 +683,113 @@ test('logout still revokes both sessions when persisting revocation intent fails
 test('changing authentication intent clears stale confirmation copy without touching a session', async () => {
   const f = fixture();
   const c = createSessionController(f.api, f.storage);
-  await c.signIn(async () => ({ kind: 'confirmation' }));
+  await c.signIn(async () => ({
+    kind: 'confirmation',
+    email: 'fan@example.test',
+  }));
   c.dismissSignInMessage();
   expect(c.getState()).toEqual({ kind: 'signedOut', error: null });
   await c.signIn(async () => identity('A'));
   c.dismissSignInMessage();
   expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'A' });
   expect(f.stored?.token).toBe('A');
+});
+
+test('pending confirmation survives a failed code and successful verification persists both sessions', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(async () => ({
+    kind: 'confirmation',
+    email: 'fan@example.test',
+  }));
+  expect(c.getState()).toMatchObject({
+    kind: 'signedOut',
+    confirmationEmail: 'fan@example.test',
+  });
+  expect(f.stored).toBeNull();
+  await c.signIn(async () => {
+    throw new Error('The code is invalid or expired.');
+  });
+  expect(c.getState()).toMatchObject({
+    kind: 'signedOut',
+    confirmationEmail: 'fan@example.test',
+    error: 'The code is invalid or expired.',
+  });
+  await c.signIn(async () => ({
+    ...identity('verified'),
+    provider: providerIdentity,
+  }));
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'verified' });
+  expect(f.stored).toMatchObject({
+    kind: 'active',
+    token: 'verified',
+    provider: providerIdentity,
+  });
+  expect(c.getState()).not.toHaveProperty('confirmationEmail');
+});
+test('cancelled verification revokes late credentials and cannot overwrite a newer sign-in', async () => {
+  const f = fixture();
+  const lifecycle = {
+    refresh: async () => providerIdentity,
+    revoke: jest.fn(async () => {}),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  const late = deferred<Session & { provider: typeof providerIdentity }>();
+  const verification = c.signIn(() => late.promise);
+  c.cancelSignIn();
+  expect(c.getState()).toEqual({ kind: 'signedOut', error: null });
+  await c.signIn(async () => identity('new'));
+  late.resolve({ ...identity('cancelled'), provider: providerIdentity });
+  await verification;
+  expect(f.stored?.token).toBe('new');
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'new' });
+  expect(lifecycle.revoke).toHaveBeenCalledWith(providerIdentity);
+  expect(f.api.logout).toHaveBeenCalledWith('cancelled');
+  c.cancelSignIn();
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'new' });
+});
+test('cancelled resend/confirmation cannot reopen confirmation after switching modes', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  const late = deferred<{ kind: 'confirmation'; email: string }>();
+  const pending = c.signIn(() => late.promise);
+  c.cancelSignIn();
+  late.resolve({ kind: 'confirmation', email: 'fan@example.test' });
+  await pending;
+  expect(c.getState()).toEqual({ kind: 'signedOut', error: null });
+  expect(f.stored).toBeNull();
+});
+
+test('closing Account cannot cancel a published session or unrelated resume', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  c.subscribe(() => {
+    if (c.getState().kind === 'signedIn') c.cancelSignIn();
+  });
+  await c.signIn(async () => identity('verified'));
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'verified' });
+  const resumed = c.resume();
+  c.cancelSignIn();
+  await resumed;
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'verified' });
+});
+
+test('late verification error cannot replace newer pending confirmation', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  const late = deferred<Session>();
+  const pending = c.signIn(() => late.promise);
+  c.cancelSignIn();
+  await c.signIn(async () => ({
+    kind: 'confirmation',
+    email: 'new@example.test',
+  }));
+  late.reject(new Error('expired old code'));
+  await pending;
+  expect(c.getState()).toMatchObject({
+    kind: 'signedOut',
+    confirmationEmail: 'new@example.test',
+  });
+  expect(c.getState()).not.toMatchObject({ error: 'expired old code' });
+  expect(f.stored).toBeNull();
 });

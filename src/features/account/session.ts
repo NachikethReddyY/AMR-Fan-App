@@ -25,7 +25,7 @@ type Storage = {
 };
 export type SessionState =
   | { kind: 'loading' }
-  | { kind: 'signedOut'; error: string | null }
+  | { kind: 'signedOut'; error: string | null; confirmationEmail?: string }
   | { kind: 'unavailable'; message: string }
   | {
       kind: 'signedIn';
@@ -41,6 +41,7 @@ export function createSessionController(
 ) {
   let state: SessionState = { kind: 'loading' };
   let generation = 0;
+  let authenticationGeneration: number | null = null;
   let storageQueue = Promise.resolve();
   // SecureStore writes cannot be cancelled. Serialize reads/mutations so an old
   // completion or cleanup cannot overwrite a newer persisted credential.
@@ -151,10 +152,13 @@ export function createSessionController(
   }
   async function signIn(
     authenticate: () => Promise<
-      AuthenticatedSession | { kind: 'confirmation' }
+      AuthenticatedSession | { kind: 'confirmation'; email: string }
     >,
   ) {
+    const confirmationEmail =
+      state.kind === 'signedOut' ? state.confirmationEmail : undefined;
     const attempt = ++generation;
+    authenticationGeneration = attempt;
     set({ kind: 'loading' });
     try {
       const session = await authenticate();
@@ -163,7 +167,8 @@ export function createSessionController(
           set({
             kind: 'signedOut',
             error:
-              'Check your email for a confirmation link, then return here to sign in. If an account already exists, sign in instead.',
+              'Enter the confirmation code from your email. If you already confirmed your email, return to sign in.',
+            confirmationEmail: session.email,
           });
         return;
       }
@@ -208,11 +213,14 @@ export function createSessionController(
       if (attempt === generation)
         set({
           kind: 'signedOut',
+          ...(confirmationEmail ? { confirmationEmail } : {}),
           error:
             error instanceof Error
               ? error.message
               : 'Sign-in failed. Try again.',
         });
+    } finally {
+      if (authenticationGeneration === attempt) authenticationGeneration = null;
     }
   }
   async function logout() {
@@ -278,6 +286,16 @@ export function createSessionController(
   }
   return {
     getState: () => state,
+    cancelSignIn: () => {
+      if (
+        state.kind !== 'signedOut' &&
+        !(state.kind === 'loading' && authenticationGeneration === generation)
+      )
+        return;
+      ++generation;
+      authenticationGeneration = null;
+      set({ kind: 'signedOut', error: null });
+    },
     dismissSignInMessage: () => {
       if (state.kind === 'signedOut') set({ kind: 'signedOut', error: null });
     },

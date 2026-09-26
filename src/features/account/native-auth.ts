@@ -4,6 +4,7 @@ import { createAccountApi } from './api';
 import type { StoredSession } from './session';
 import { parseStoredSession } from './stored-session';
 import { createSupabaseAuth } from './supabase';
+import { createEmailFlow } from './email-flow';
 
 const dev = __DEV__;
 export const localSignInEnabled =
@@ -80,24 +81,7 @@ export const emailAuth = createSupabaseAuth({
   development: dev,
   fixtureUrl,
 });
-export async function authenticateEmail(
-  mode: 'signIn' | 'signUp',
-  email: string,
-  password: string,
-) {
-  const result =
-    mode === 'signUp'
-      ? await emailAuth.signUp(email, password)
-      : {
-          kind: 'session' as const,
-          provider: await emailAuth.signIn(email, password),
-        };
-  if (result.kind === 'confirmation') return result;
-  try {
-    const session = await api.signIn(result.provider.accessToken);
-    return { ...session, provider: result.provider };
-  } catch (error) {
-    await emailAuth.revoke(result.provider);
-    throw error;
-  }
-}
+const emailFlow = createEmailFlow(emailAuth, api);
+export const authenticateEmail = emailFlow.authenticate;
+export const verifyEmailCode = emailFlow.verify;
+export const resendEmailCode = emailFlow.resend;
