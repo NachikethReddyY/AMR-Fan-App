@@ -1,3 +1,4 @@
+import { loadDefaultFactorRelease } from '../factors.ts';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
@@ -45,7 +46,7 @@ const readSchema = z.object({
 
 async function fixture(
   missing = false,
-  released: boolean | 'provisional' = false,
+  released: boolean | 'provisional' | 'co2' = false,
 ) {
   const account = await ensureAccount(pool, {
     issuer: 'urn:amr:awards-registered-test',
@@ -57,22 +58,28 @@ async function fixture(
   let now = Date.now() - 360000;
   const route = awardRoute(2.419, now);
   const config = released ? awardReleaseFixture(route) : null;
-  const awardConfig = released === 'provisional' ? null : config;
-  const factorConfig = config
-    ? {
-        factors: config.factors,
-        release: {
-          version: config.release.version,
-          factorFingerprint: config.release.factorFingerprint,
-          geographyVersion: config.release.geographyVersion,
-          factorEvidence: config.release.factorEvidence,
-        },
-      }
-    : null;
+  const awardConfig = released === true ? config : null;
+  const factorConfig =
+    released === 'co2'
+      ? loadDefaultFactorRelease()
+      : config
+        ? {
+            factors: config.factors,
+            release: {
+              version: config.release.version,
+              factorFingerprint: config.release.factorFingerprint,
+              geographyVersion: config.release.geographyVersion,
+              factorEvidence: config.release.factorEvidence,
+            },
+          }
+        : null;
   if (factorConfig && route.basis.calculation.kind === 'available') {
     route.basis.calculation.factors = factorConfig.factors;
     route.basis.factorRelease = factorConfig.release;
     route.basis.factorStatus = 'approved';
+    route.basis.factorVersions = factorConfig.factors.map((f) => f.id);
+    route.routeEvidence.geographyVersion =
+      factorConfig.release.geographyVersion;
     route.source = { kind: 'live', provider: 'synthetic-test-only' };
   }
   const journeys = createJourneyService({
@@ -516,7 +523,7 @@ test('registered API observes real journey and session lock waits before retaini
   }
 });
 
-for (const release of [true, 'provisional'] as const)
+for (const release of [true, 'provisional', 'co2'] as const)
   test(`registered HTTP ${release} receipt credits once and survives API restart without a new release`, async (t) => {
     const f = await fixture(false, release);
     const first = await api(t);
@@ -524,7 +531,21 @@ for (const release of [true, 'provisional'] as const)
     const response = await first.request(path, f.token, f.input);
     assert.equal(response.status, 200);
     const result = resultSchema.parse(await response.json());
-    assert.equal(result.entry.delta, 120);
+    assert.equal(result.entry.delta, release === 'co2' ? 7 : 120);
+    if (release === 'co2') {
+      const decision = result.outcome.receipt.result.decision;
+      assert.ok(decision.kind === 'provisional');
+      assert.deepEqual(decision.calculation.measurement, {
+        version: 'cag-surface-access-co2-v1',
+        gas: 'CO2',
+        unit: 'kgCO2',
+      });
+      assert.equal(decision.calculation.savingsKg, '0.146');
+      assert.equal(
+        result.outcome.receipt.basis.factorRelease?.version,
+        'cag-surface-access-co2-v1',
+      );
+    }
     assert.equal(
       result.outcome.creditContext,
       release === true ? 'production' : 'provisional',

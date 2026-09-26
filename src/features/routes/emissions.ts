@@ -1,9 +1,8 @@
 import type { LegMode, RouteOption } from './routes.ts';
 
-export type EmissionFactor = {
+type FactorMetadata = {
   id: string;
   mode: LegMode;
-  kgCo2ePerPassengerKm: number;
   geography: 'Singapore';
   period: string;
   source: string;
@@ -12,13 +11,31 @@ export type EmissionFactor = {
   status: 'indicative_demo' | 'approved';
 };
 
+export type LegacyEmissionFactor = FactorMetadata & {
+  kgCo2ePerPassengerKm: number;
+};
+export type Co2EmissionFactor = FactorMetadata & {
+  gas: 'CO2';
+  unit: 'kgCO2/passenger-km';
+  kgPerPassengerKm: number;
+};
+export type EmissionFactor = LegacyEmissionFactor | Co2EmissionFactor;
+export function factorValue(factor: EmissionFactor) {
+  return 'gas' in factor
+    ? factor.kgPerPassengerKm
+    : factor.kgCo2ePerPassengerKm;
+}
+export function factorGas(factor: EmissionFactor) {
+  return 'gas' in factor ? factor.gas : 'CO2e';
+}
+
 const changiReport =
   'https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024-25/cag-ar-2024-25-beyond-boundaries-transforming-tomorrow-oct.pdf';
 const activeTravelSource =
   'https://www.lta.gov.sg/content/dam/ltagov/who_we_are/statistics_and_publications/master-plans/pdf/LTMP2013Report.pdf';
 
 // These are indicative Singapore surface-access factors, not official team metrics or approved award factors.
-export const singaporeFactors: readonly EmissionFactor[] = [
+export const singaporeFactors: readonly LegacyEmissionFactor[] = [
   {
     id: 'cag-fy2024-25-car',
     mode: 'car',
@@ -55,7 +72,7 @@ export const singaporeFactors: readonly EmissionFactor[] = [
       "MRT passenger distance; CAG does not identify this factor's individual upstream dataset or occupancy method.",
     status: 'indicative_demo',
   },
-  ...(['walk', 'cycle'] as const).map((mode): EmissionFactor => ({
+  ...(['walk', 'cycle'] as const).map((mode): LegacyEmissionFactor => ({
     id: `sg-${mode}-operational-v1`,
     mode,
     kgCo2ePerPassengerKm: 0,
@@ -73,8 +90,19 @@ export const singaporeFactors: readonly EmissionFactor[] = [
 export type RouteEstimate =
   | { kind: 'estimated'; kgCo2e: number; factorIds: string[] }
   | {
+      kind: 'estimated_co2';
+      gas: 'CO2';
+      unit: 'kgCO2';
+      kg: number;
+      factorIds: string[];
+    }
+  | {
       kind: 'unavailable';
-      reason: 'route_unavailable' | 'invalid_route' | 'missing_factor';
+      reason:
+        | 'route_unavailable'
+        | 'invalid_route'
+        | 'missing_factor'
+        | 'incompatible_gases';
       mode?: LegMode;
     };
 
@@ -109,7 +137,8 @@ export function estimateRoute(
     return { kind: 'unavailable', reason: 'invalid_route' };
   }
 
-  let kgCo2e = 0;
+  let kg = 0;
+  let gas: 'CO2' | 'CO2e' | undefined;
   const factorIds: string[] = [];
   for (const leg of route.legs) {
     const factor = factors.find(
@@ -117,18 +146,23 @@ export function estimateRoute(
     );
     if (
       !factor ||
-      !Number.isFinite(factor.kgCo2ePerPassengerKm) ||
-      factor.kgCo2ePerPassengerKm < 0
+      !Number.isFinite(factorValue(factor)) ||
+      factorValue(factor) < 0
     ) {
       return { kind: 'unavailable', reason: 'missing_factor', mode: leg.mode };
     }
-    const legKgCo2e = (leg.distanceMeters / 1000) * factor.kgCo2ePerPassengerKm;
+    if (gas && factorGas(factor) !== gas)
+      return { kind: 'unavailable', reason: 'incompatible_gases' };
+    gas = factorGas(factor);
+    const legKgCo2e = (leg.distanceMeters / 1000) * factorValue(factor);
     if (!Number.isFinite(legKgCo2e))
       return { kind: 'unavailable', reason: 'invalid_route' };
-    kgCo2e += legKgCo2e;
-    if (!Number.isFinite(kgCo2e))
+    kg += legKgCo2e;
+    if (!Number.isFinite(kg))
       return { kind: 'unavailable', reason: 'invalid_route' };
     factorIds.push(factor.id);
   }
-  return { kind: 'estimated', kgCo2e, factorIds };
+  return gas === 'CO2'
+    ? { kind: 'estimated_co2', gas: 'CO2', unit: 'kgCO2', kg, factorIds }
+    : { kind: 'estimated', kgCo2e: kg, factorIds };
 }

@@ -1,3 +1,4 @@
+import { loadDefaultFactorRelease } from '../awards/factors.ts';
 import { loadAwardRelease, loadFactorRelease } from '../awards/readiness.ts';
 import {
   createServer,
@@ -107,7 +108,9 @@ export function createApi({
   ]);
   const awardConfig = loadAwardRelease(env.JOURNEY_AWARD_RELEASE_FILE);
   const factorConfig =
-    loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ?? awardConfig;
+    loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ??
+    awardConfig ??
+    loadDefaultFactorRelease();
   const queryRoutes = createRouteQuery({
     env,
     factors: factorConfig?.factors,

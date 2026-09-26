@@ -83,3 +83,16 @@ photo preliminary deduction and upward-only accounting. Its decision is explicit
 `provisional`; `full` still means assessed distances. Provisional points contribute
 nothing to verified impact. Independent factor review is engineering work, not a
 new user permission gate. Physical evidence remains required for the physical variant.
+
+## Accepted CO2 factor variant, 26 September 2026
+
+The user accepted CAG FY2023/24 published surface-access factors for clearly
+labelled CO2 estimates and provisional points: .1901 car vehicle-km, .0441 bus
+passenger-km and .0578 MRT passenger-km, with a neutral single-occupant car baseline.
+This version supersedes the ICE/CO2e requirement only for this explicit variant.
+It makes no ICE-specific, Singapore fleet-average, lifecycle or all-GHG claim.
+The source's original CO2e labels remain discrepant provenance; the application
+uses CO2 with the disclosed CO2-focus limitation. Walking/cycling zero is only
+motorized operational energy, excluding food, manufacture and infrastructure.
+Legacy CO2e records retain their units. See the [release contract](../operations/journey-award-release.md)
+for exact gas/unit fields, retained evidence and the physical validation boundary.

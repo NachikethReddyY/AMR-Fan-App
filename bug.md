@@ -429,3 +429,19 @@ match EPA CO2-only values. No CO2e relabelling or dataset activation is authoriz
 yet; independent policy code remains testable with synthetic factors.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+### Accepted CAG CO2 factor variant, 26 September 2026
+
+The final user decision supersedes the pending factor-unit question above.
+PR50 now adds the versioned neutral single-occupant-car / published_surface_access
+CO2 dataset (.1901/.0441/.0578), retained source-label discrepancy and operational
+walk/cycle exclusions. Route estimates and recommendations use distinct CO2
+variants; receipt calculations add explicit measurement gas/unit/version without
+rewriting legacy CO2e data. Planned provisional and actual assessed values remain
+separate. Native owns parser/UI adaptation and Impact owns aggregate adaptation.
+No physical calibration is claimed. Source/focused proof precedes root's queued
+heavy checks and new exact-head review; the earlier b9d370f clearance covers only
+the prior synthetic-factor slice. One PR50 remains open, with no squash yet.
+
+Edited by gpt-6-astra through Codex (T3 Code).

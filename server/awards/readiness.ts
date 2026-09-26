@@ -1,3 +1,4 @@
+import { factorValue, factorGas } from '../../src/features/routes/emissions.ts';
 import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -79,6 +80,9 @@ function validateFactors(
     throw new Error(
       'Award release requires unique approved factors and a car baseline.',
     );
+  const co2 = release.factorEvidence.boundary === 'published_surface_access';
+  if (factors.some((f) => factorGas(f) !== (co2 ? 'CO2' : 'CO2e')))
+    throw new Error('Factor release gas basis mismatch.');
   for (const factor of factors) {
     const units = release.factorEvidence.units.filter(
       (unit) => unit.factorId === factor.id,
@@ -87,18 +91,18 @@ function validateFactors(
     if (
       units.length !== 1 ||
       !unit ||
-      (unit.sourceUnit === 'kgCO2e/passenger-km' && unit.occupants !== 1) ||
+      (unit.sourceUnit.endsWith('/passenger-km') && unit.occupants !== 1) ||
       decimalString(decimal(unit.sourceValue)) !==
         decimalString(
           multiply(
-            decimal(factor.kgCo2ePerPassengerKm),
+            decimal(factorValue(factor)),
             decimal(
-              unit.sourceUnit === 'kgCO2e/vehicle-km' ? unit.occupants : 1,
+              unit.sourceUnit.endsWith('/vehicle-km') ? unit.occupants : 1,
             ),
           ),
         ) ||
       (factor.mode === 'car' &&
-        (unit.sourceUnit !== 'kgCO2e/vehicle-km' || unit.occupants !== 1))
+        (!unit.sourceUnit.endsWith('/vehicle-km') || unit.occupants !== 1))
     )
       throw new Error(
         'Award factor unit conversion or single-driver baseline evidence is invalid.',

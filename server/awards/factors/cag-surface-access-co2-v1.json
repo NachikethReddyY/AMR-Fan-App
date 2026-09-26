@@ -1,0 +1,122 @@
+{
+  "factors": [
+    {
+      "id": "cag-surface-access-co2-v1-car",
+      "mode": "car",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "kgPerPassengerKm": 0.1901,
+      "geography": "Singapore",
+      "period": "FY2023/24",
+      "source": "https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024/rediscovering-the-magic-of-travel.pdf",
+      "method": "CAG published surface-access table; CO2-only interpretation with disclosed source-label discrepancy",
+      "assumptions": "One occupant in a neutral car. No ICE-specific or Singapore fleet-average claim. Published CO2e label retained as discrepant provenance. CO2 estimate excludes separately reported CH4/N2O and makes no lifecycle or all-GHG claim.",
+      "status": "approved"
+    },
+    {
+      "id": "cag-surface-access-co2-v1-bus",
+      "mode": "bus",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "kgPerPassengerKm": 0.0441,
+      "geography": "Singapore",
+      "period": "FY2023/24",
+      "source": "https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024/rediscovering-the-magic-of-travel.pdf",
+      "method": "CAG published surface-access table; CO2-only interpretation with disclosed source-label discrepancy",
+      "assumptions": "Published passenger-km value; no additional occupancy conversion. Published CO2e label retained as discrepant provenance. CO2 estimate excludes separately reported CH4/N2O and makes no lifecycle or all-GHG claim.",
+      "status": "approved"
+    },
+    {
+      "id": "cag-surface-access-co2-v1-train",
+      "mode": "train",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "kgPerPassengerKm": 0.0578,
+      "geography": "Singapore",
+      "period": "FY2023/24",
+      "source": "https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024/rediscovering-the-magic-of-travel.pdf",
+      "method": "CAG published surface-access table; CO2-only interpretation with disclosed source-label discrepancy",
+      "assumptions": "Published passenger-km value; no additional occupancy conversion. Published CO2e label retained as discrepant provenance. CO2 estimate excludes separately reported CH4/N2O and makes no lifecycle or all-GHG claim.",
+      "status": "approved"
+    },
+    {
+      "id": "cag-surface-access-co2-v1-walk",
+      "mode": "walk",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "kgPerPassengerKm": 0,
+      "geography": "Singapore",
+      "period": "2013 operational convention",
+      "source": "https://www.lta.gov.sg/content/dam/ltagov/who_we_are/statistics_and_publications/master-plans/pdf/LTMP2013Report.pdf",
+      "method": "Zero motorized operational journey energy",
+      "assumptions": "Excludes food, manufacture, infrastructure and all other lifecycle emissions.",
+      "status": "approved"
+    },
+    {
+      "id": "cag-surface-access-co2-v1-cycle",
+      "mode": "cycle",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "kgPerPassengerKm": 0,
+      "geography": "Singapore",
+      "period": "2013 operational convention",
+      "source": "https://www.lta.gov.sg/content/dam/ltagov/who_we_are/statistics_and_publications/master-plans/pdf/LTMP2013Report.pdf",
+      "method": "Zero motorized operational journey energy",
+      "assumptions": "Excludes food, manufacture, infrastructure and all other lifecycle emissions.",
+      "status": "approved"
+    }
+  ],
+  "release": {
+    "version": "cag-surface-access-co2-v1",
+    "factorFingerprint": "efa59d7351ee4131b65c9a99c39a4b43d30eac5a86ad95000e944df30b3b35d6",
+    "geographyVersion": "ura-mp2019-regions-no-sea-2025-12-03",
+    "factorEvidence": {
+      "reference": "CAG FY2023/24 PDF pp90-92; EPA 2024 Table10; LTA LTMP2013; retained technical scope note",
+      "sha256": "399d5f48e278d6f185eb789d882d6157126c28a36349ffa650957e82864ac6fa",
+      "boundary": "published_surface_access",
+      "baseline": "single_occupant_car",
+      "gas": "CO2",
+      "unit": "kgCO2/passenger-km",
+      "compatibility": "Coherent published CAG surface-access factors with neutral one-person car baseline. CO2-only estimate: original CO2e labels retained as discrepant provenance; EPA numerical match is an inference. No ICE, Singapore fleet-average, all-GHG or lifecycle claim. Walk/cycle zero covers motorized operational energy only.",
+      "units": [
+        {
+          "factorId": "cag-surface-access-co2-v1-car",
+          "sourceValue": 0.1901,
+          "sourceUnit": "kgCO2/vehicle-km",
+          "publishedUnit": "kgCO2e/vehicle-km",
+          "occupants": 1
+        },
+        {
+          "factorId": "cag-surface-access-co2-v1-bus",
+          "sourceValue": 0.0441,
+          "sourceUnit": "kgCO2/passenger-km",
+          "publishedUnit": "kgCO2e/passenger-km",
+          "occupants": 1
+        },
+        {
+          "factorId": "cag-surface-access-co2-v1-train",
+          "sourceValue": 0.0578,
+          "sourceUnit": "kgCO2/passenger-km",
+          "publishedUnit": "kgCO2e/passenger-km",
+          "occupants": 1
+        },
+        {
+          "factorId": "cag-surface-access-co2-v1-walk",
+          "sourceValue": 0,
+          "sourceUnit": "kgCO2/passenger-km",
+          "publishedUnit": "kgCO2/passenger-km",
+          "occupants": 1
+        },
+        {
+          "factorId": "cag-surface-access-co2-v1-cycle",
+          "sourceValue": 0,
+          "sourceUnit": "kgCO2/passenger-km",
+          "publishedUnit": "kgCO2/passenger-km",
+          "occupants": 1
+        }
+      ],
+      "datasetVersion": "cag-surface-access-co2-v1"
+    }
+  },
+  "evidenceFile": "cag-surface-access-co2-v1.md"
+}

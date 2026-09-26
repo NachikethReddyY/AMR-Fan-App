@@ -1,3 +1,4 @@
+import { factorValue } from '../../../src/features/routes/emissions.ts';
 import { fingerprint } from '../readiness.ts';
 import type { AwardRelease } from '../../journeys/contracts.ts';
 import { randomUUID } from 'node:crypto';
@@ -120,7 +121,7 @@ export function awardReleaseFixture(route: ReturnType<typeof awardRoute>) {
       compatibility: 'Synthetic arithmetic only.',
       units: factors.map((f) => ({
         factorId: f.id,
-        sourceValue: f.kgCo2ePerPassengerKm,
+        sourceValue: factorValue(f),
         sourceUnit:
           f.mode === 'car' ? 'kgCO2e/vehicle-km' : 'kgCO2e/passenger-km',
         occupants: 1,

@@ -1,3 +1,4 @@
+import { factorValue, factorGas } from '../../src/features/routes/emissions.ts';
 import { fingerprint, productionReadiness } from './readiness.ts';
 import type { JourneySettlementProjection } from '../journeys/settlement.ts';
 import { earningPolicy } from '../journeys/contracts.ts';
@@ -28,10 +29,7 @@ function emissions(legs: Legs, basis: Basis, versions: string[]) {
     total = add(
       total,
       perThousand(
-        multiply(
-          decimal(leg.distanceMeters),
-          decimal(factor.kgCo2ePerPassengerKm),
-        ),
+        multiply(decimal(leg.distanceMeters), decimal(factorValue(factor))),
       ),
     );
   }
@@ -133,6 +131,18 @@ export function calculateJourneyAward(
   const usedFactors = basis.factors.filter((factor) =>
     usedModes.has(factor.mode),
   );
+  const gases = new Set(basis.factors.map(factorGas));
+  if (gases.size !== 1) return unavailable('incompatible_factor_gases');
+  const isCo2 = gases.has('CO2');
+  if (
+    isCo2 &&
+    (!journey.basis.factorRelease ||
+      journey.basis.factorRelease.factorFingerprint !==
+        fingerprint(basis.factors) ||
+      journey.basis.factorRelease.factorEvidence.boundary !==
+        'published_surface_access')
+  )
+    return unavailable('co2_factor_release_required');
   // Legacy datasets need a common documented method. A retained factor review
   // may instead document compatibility across sources; matching hashes bind it.
   const methods = new Set(
@@ -161,6 +171,15 @@ export function calculateJourneyAward(
     const reduction = savings(baseline, value);
     return {
       arithmeticVersion: policy.arithmeticVersion,
+      ...(isCo2
+        ? {
+            measurement: {
+              version: 'cag-surface-access-co2-v1' as const,
+              gas: 'CO2' as const,
+              unit: 'kgCO2' as const,
+            },
+          }
+        : {}),
       baselineKg: decimalString(baseline),
       journeyKg: decimalString(value),
       savingsKg: decimalString(reduction),

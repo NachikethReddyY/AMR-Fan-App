@@ -1,3 +1,4 @@
+import { loadDefaultFactorRelease } from '../awards/factors.ts';
 import {
   loadAwardRelease,
   loadFactorRelease,
@@ -49,7 +50,8 @@ export function createJourneyService({
   env = process.env,
   awardConfig = loadAwardRelease(env.JOURNEY_AWARD_RELEASE_FILE),
   factorConfig = loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ??
-    awardConfig,
+    awardConfig ??
+    loadDefaultFactorRelease(),
   policy = awardConfig?.policy ?? candidatePolicy,
   clock = Date.now,
   queryRoutes = createRouteQuery({

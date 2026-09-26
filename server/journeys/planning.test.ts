@@ -1,8 +1,13 @@
+import { loadDefaultFactorRelease } from '../awards/factors.ts';
+import {
+  estimateRoute,
+  singaporeFactors,
+} from '../../src/features/routes/emissions.ts';
+import { recommendRoute } from '../../src/features/routes/recommendation.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { boundarySource } from '../routes/geography.ts';
 import type { RouteQueryResult } from '../routes/query.ts';
-import { singaporeFactors } from '../../src/features/routes/emissions.ts';
 import { planSchema, projectPlanDisplay, routeSnapshots } from './planning.ts';
 
 function comparison(): RouteQueryResult {
@@ -234,4 +239,40 @@ test('prepared route retains reviewed factor provenance from the single comparis
   }
   const display = projectPlanDisplay(response);
   assert.equal(display.calculationStatus, 'approved');
+});
+
+test('single comparison projects explicit CO2 display and retains exact factor release', () => {
+  const response = comparison();
+  assert.ok(response.result.kind === 'routes');
+  const config = loadDefaultFactorRelease();
+  const bus = response.result.routes[0];
+  response.result.routes.push({
+    ...bus,
+    id: 'car',
+    mode: 'car',
+    legs: bus.legs.map((leg) => ({ ...leg, mode: 'car' })),
+  });
+  response.factors = config.factors;
+  response.factorRelease = config.release;
+  response.calculationStatus = 'approved';
+  response.estimates = response.result.routes.map((route) => ({
+    routeId: route.id,
+    estimate: estimateRoute(route, config.factors),
+  }));
+  response.recommendation = recommendRoute(
+    response.result.routes,
+    10,
+    config.factors,
+  );
+  const display = projectPlanDisplay(response);
+  assert.equal(display.calculationStatus, 'approved');
+  assert.equal(display.routes[0].estimate.kind, 'estimated_co2');
+  assert.equal(display.recommendation.kind, 'recommended_co2');
+  assert.deepEqual(display.factors, config.factors);
+  const retained = planSchema.parse({
+    kind: 'prepared',
+    display,
+    candidates: [],
+  });
+  assert.deepEqual(retained.display, display);
 });

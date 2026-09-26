@@ -19,6 +19,13 @@ const exactKg = z
   .regex(/^(0|[1-9]\d*)(\.\d+)?$/);
 export const calculationSchema = z.strictObject({
   arithmeticVersion: z.literal('floor-decimal-v1'),
+  measurement: z
+    .strictObject({
+      version: z.literal('cag-surface-access-co2-v1'),
+      gas: z.literal('CO2'),
+      unit: z.literal('kgCO2'),
+    })
+    .optional(),
   baselineKg: exactKg,
   journeyKg: exactKg,
   savingsKg: exactKg,

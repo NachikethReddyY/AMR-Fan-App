@@ -6,6 +6,10 @@ import {
 import type { RouteOption } from './routes.ts';
 
 type Estimated = Extract<RouteEstimate, { kind: 'estimated' }>;
+type EstimatedCo2 = Extract<RouteEstimate, { kind: 'estimated_co2' }>;
+function estimateKg(estimate: Estimated | EstimatedCo2) {
+  return estimate.kind === 'estimated_co2' ? estimate.kg : estimate.kgCo2e;
+}
 export type Recommendation =
   | {
       kind: 'recommended';
@@ -16,6 +20,18 @@ export type Recommendation =
       fastestSeconds: number;
       limitSeconds: number;
       avoidedKgCo2e: number;
+    }
+  | {
+      kind: 'recommended_co2';
+      gas: 'CO2';
+      unit: 'kgCO2';
+      route: RouteOption;
+      estimate: EstimatedCo2;
+      baseline: EstimatedCo2;
+      baselineDistanceMeters: number;
+      fastestSeconds: number;
+      limitSeconds: number;
+      avoidedKg: number;
     }
   | {
       kind: 'unavailable';
@@ -88,7 +104,7 @@ export function recommendRoute(
       limitSeconds,
     };
   const baseline = estimateRoute(baselineRoute, factors);
-  if (baseline.kind !== 'estimated')
+  if (baseline.kind === 'unavailable')
     return {
       kind: 'unavailable',
       reason: 'missing_baseline',
@@ -99,11 +115,13 @@ export function recommendRoute(
   const candidates = available.flatMap((route) => {
     if (route.durationSeconds > limitSeconds) return [];
     const estimate = estimateRoute(route, factors);
-    return estimate.kind === 'estimated' ? [{ route, estimate }] : [];
+    return estimate.kind !== 'unavailable' && estimate.kind === baseline.kind
+      ? [{ route, estimate }]
+      : [];
   });
   candidates.sort(
     (a, b) =>
-      a.estimate.kgCo2e - b.estimate.kgCo2e ||
+      estimateKg(a.estimate) - estimateKg(b.estimate) ||
       a.route.durationSeconds - b.route.durationSeconds ||
       a.route.id.localeCompare(b.route.id),
   );
@@ -119,7 +137,7 @@ export function recommendRoute(
     (sum, leg) => sum + leg.distanceMeters,
     0,
   );
-  const avoidedKgCo2e = baseline.kgCo2e - winner.estimate.kgCo2e;
+  const avoidedKgCo2e = estimateKg(baseline) - estimateKg(winner.estimate);
   if (
     !Number.isFinite(baselineDistanceMeters) ||
     !Number.isFinite(avoidedKgCo2e)
@@ -130,9 +148,33 @@ export function recommendRoute(
       fastestSeconds,
       limitSeconds,
     };
+  if (
+    baseline.kind === 'estimated_co2' &&
+    winner.estimate.kind === 'estimated_co2'
+  )
+    return {
+      kind: 'recommended_co2',
+      gas: 'CO2',
+      unit: 'kgCO2',
+      route: winner.route,
+      estimate: winner.estimate,
+      baseline,
+      baselineDistanceMeters,
+      fastestSeconds,
+      limitSeconds,
+      avoidedKg: avoidedKgCo2e,
+    };
+  if (baseline.kind !== 'estimated' || winner.estimate.kind !== 'estimated')
+    return {
+      kind: 'unavailable',
+      reason: 'no_eligible_estimate',
+      fastestSeconds,
+      limitSeconds,
+    };
   return {
     kind: 'recommended',
-    ...winner,
+    route: winner.route,
+    estimate: winner.estimate,
     baseline,
     baselineDistanceMeters,
     fastestSeconds,

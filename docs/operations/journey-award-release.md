@@ -1,77 +1,37 @@
 # Journey award release evidence
 
-This is the release procedure for the evidence-backed server path. No physical
-calibration report or approved numerical factor release is shipped. Defaults
-continue to retain calculations without issuing production journey points.
-The [award rules](../features/05-points-and-history.md) remain unchanged.
+The bundled `cag-surface-access-co2-v1` factor configuration supports clearly
+labelled CO2 estimates and provisional points for applicable Singapore routes.
+Physical award readiness still defaults to unavailable: no physical calibration
+report is shipped. The [award rules](../features/05-points-and-history.md) retain
+50 points/kg, cap 2,000, no daily cap, fallback and difference-only top-ups.
 
 ## Evidence status, 26 September 2026
 
 | Dimension | Status | Sample and method | Evidence and limits |
 | --- | --- | --- | --- |
-| Singapore factor values | Candidate values found | Primary SBF SEFR slide, CAG report | Passenger-kilometre values do not establish one-driver occupancy or compatible boundaries. |
-| Single-driver baseline | Blocked | Reviewed car units in those two sources | Need conventional ICE vehicle-km factor or documented conversion to one occupant. |
+| Published factor dataset | Accepted technical basis | Three CAG FY2023/24 rows, EPA Table 10 comparison | CO2-only interpretation; original CO2e labels retained as discrepant provenance. |
+| Car baseline | Neutral single occupant | .1901 kg per vehicle-km, one occupant | No ICE-specific, Singapore fleet-average or lifecycle claim. |
 | Physical calibration | Unverified | Zero real trips in supplied handoffs | Simulator UI/camera proof cannot establish GPS thresholds or distance validity. |
-| Ready/no-credit policy | Synthetic tests | Retained release versus changed policy, factor, geography, mode and endpoints | Tests prove code decisions, not truth of external evidence. |
-| Ledger integration | Passed with synthetic factors | 58 isolated PostgreSQL/HTTP tests | Public physical/provisional credit, replay, top-ups, photo deductions and ownership checked; no field or real-factor approval. |
+| Policy and unit boundaries | Focused tests | Explicit CO2 plus unchanged legacy CO2e, changed factors/units/endpoints | Synthetic journeys prove code decisions, not real travel or calibration. |
+| Ledger integration | Prior slice passed with synthetic factors | 49 isolated PostgreSQL/HTTP tests plus 9 photo tests | New CO2 dataset/composition needs the scheduled affected database proof. |
 
-Confidence is high for the inspected units and missing handoff evidence. The
-research is a bounded source review, not an exhaustive search of all datasets.
+The exact dataset and source limitations are retained in
+[the factor evidence note](../../server/awards/factors/cag-surface-access-co2-v1.md)
+and [configuration](../../server/awards/factors/cag-surface-access-co2-v1.json).
+CAG publishes .1901 car per vehicle-km, .0441 bus and .0578 MRT per passenger-km.
+These values numerically match EPA's CO2 column after mile-to-kilometre conversion.
+CAG's table says CO2e while its methodology focuses on CO2. The application uses
+explicit CO2, excludes separately reported CH4/N2O and does not add a conversion.
+The match is a numeric inference, not a CAG row-level source mapping.
 
-## Exact factor gap and next source work
-
-[SBF's April 2025 member orientation, PDF page 55](https://www.sbf.org.sg/docs/default-source/membership/members-orientation/member-orientation-slides-april-2025.pdf#page=55)
-shows SEFR 2022 values in kg CO2-equivalent per passenger-km: ICE car 0.17,
-hybrid 0.13, battery-electric car 0.06, public bus 0.07 and train 0.01.
-The slide does not supply occupancy, calculation boundary or electricity details.
-[SBF's registry launch](https://www.sbf.org.sg/newsroom/media/press-releases/detail/sbf-launches-singapore-emission-factors-registry-and-an-industry-led-resource-portal-to-accelerate-businesses-net-zero-transition)
-identifies SEFR as Singapore-specific data developed with A*STAR. Direct registry
-retrieval returned HTTP 403 on this review. The selected next source is the
-underlying SEFR land-transport records and methodology, not its slide screenshot.
-
-The existing [CAG FY2024/25 report](https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024-25/cag-ar-2024-25-beyond-boundaries-transforming-tomorrow-oct.pdf)
-remains an indicative planning source. A passenger factor cannot be relabelled
-vehicle-km, nor can multiplying by guessed occupancy establish the single-driver
-baseline. CAG's older vehicle-km table does not by itself establish compatible
-fleet, period and boundary with newer passenger factors. No such mixture is released.
-
-Obtain the primary source record for each selected mode, reference period,
-Singapore scope, whether it includes combustion CH4/N2O and electricity generation,
-upstream fuel/electricity coverage, vehicle/fuel mix, occupancy and conversion.
-The factor review must reconcile a common use-phase CO2e boundary for the
-conventional single-occupant car, bus, train and any enabled EV/cab factors.
-Operational walk/cycle zero excludes food, manufacture and infrastructure; it
-can join only a compatible use-phase comparison. Do not substitute a CO2-only
-value for CO2e without a documented justification. Unknown modes remain unavailable.
-
-Engineers can complete this source review with an accessible official registry
-export or primary methodology; the user need not choose numerical factors.
-The approved provisional policy below still requires this factor review. It does not require physical GPS calibration.
-
-## CAG FY2023/24 alternative under technical review
-
-[CAG FY2023/24, printed pages 88–90](https://www.changiairport.com/content/dam/changiairport/common/pdf/publications/2024/rediscovering-the-magic-of-travel.pdf#page=90)
-publishes a coherent surface-access table: privately owned car 0.1901
-kgCO2e/vehicle-km, public bus 0.0441 and MRT 0.0578 kgCO2e/passenger-km.
-For a one-occupant car comparison no occupancy conversion is required. The report
-does not identify that car row as ICE-only or as a Singapore fleet average.
-Its methodology states a CO2 focus despite the table's CO2e labels.
-
-The three numbers match the CO2-only column in its cited
-[US EPA June 2024 Table 10, PDF page 6](https://www.epa.gov/system/files/documents/2024-02/ghg-emission-factors-hub-2024.pdf#page=6):
-0.306, 0.071 and 0.093 kg per vehicle/passenger-mile divided by 1.609344
-and rounded to four decimals. EPA lists methane and nitrous oxide separately.
-This numerical source match is an inference, since CAG does not map references
-per row. It supports the CO2-focus caveat, not a claim of complete CO2e coverage.
-Do not add EPA gases to CAG's values or mix them with newer SEFR passenger factors.
-
-The later user question concerns an explicitly labelled estimated CO2 avoided
-basis using the CAG surface-access values and neutral one-occupant car baseline,
-with the published label and CO2-focus discrepancy disclosed. An accepted CO2
-variant must retain its own unit/version; existing kgCO2e receipts cannot be relabelled. This is under independent
-technical review. The current release schema's ICE and use-phase-CO2e assertions
-must be revised before it could honestly represent that alternative. No dataset
-is activated by this research note.
+`published_surface_access` and `single_occupant_car` identify this accepted scope.
+Legacy `use_phase_co2e` / `single_occupant_ice` releases retain their old meaning.
+The earlier SEFR/CAG2024/25 passenger factors are not mixed into this dataset.
+The exact unresolved physical boundary is validation of the retained phone
+assessment thresholds and distance methods on real trips. Full greenhouse-gas,
+ICE-specific and Singapore fleet-average estimates are outside this release;
+those would need different, independently compatible factor evidence.
 
 ## Physical field protocol
 
@@ -126,8 +86,11 @@ of physical calibration. It contains `factors`, `release` and `evidenceFile`.
 `release` contains `version`, `factorFingerprint`, `geographyVersion` and
 `factorEvidence` with the same units, boundary, baseline, compatibility and
 reference/digest fields as a physical release. The shared validator checks
-approved unique factors, exact unit conversion, single-occupant ICE baseline,
-fingerprint and the factor review file bytes. No numerical approval is shipped.
+approved unique factors, exact unit conversion, the declared single-occupant
+baseline, gas basis, fingerprint and the factor review file bytes. With no explicit
+configuration, the server loads the bundled CAG CO2 factor release. A configured
+physical release supplies its own factors; an explicit factor file overrides the
+bundled default and must match any configured physical release.
 If both files are configured, their factor datasets must match. Physical release
 selects the physical variant; otherwise retained reviewed factors select provisional.
 
@@ -142,6 +105,20 @@ make no physical calibration, mode verification or measured-carbon claim.
 `productionCredit: {kind: provisional, policyVersion: planned-endpoints-v1,
 factorReleaseVersion: ...}` and `creditContext: provisional` expose this status.
 
+Route estimates are `{kind: estimated_co2, gas: CO2, unit: kgCO2, kg, factorIds}`.
+Recommendations use `recommended_co2`, the same `gas`/`unit`, `avoidedKg`, and
+CO2 `estimate`/`baseline` objects. `calculationStatus` remains `indicative_demo`
+or `approved`. Legacy `estimated`/`recommended` and `kgCo2e`/`avoidedKgCo2e`
+are unchanged. New factors use `gas: CO2`, `unit: kgCO2/passenger-km` and
+`kgPerPassengerKm`; legacy factors keep `kgCo2ePerPassengerKm`.
+
+Receipt calculations retain decimal `baselineKg`, `journeyKg` and `savingsKg`.
+CO2 calculations add `measurement: {version: cag-surface-access-co2-v1,
+gas: CO2, unit: kgCO2}`. Absence means the legacy CO2e contract. Consumers must
+branch on the retained measurement and must not sum CO2 and CO2e together.
+No old receipt is rewritten or relabelled. Display “Estimated CO2 avoided” for
+this new basis with the published-factor caveat; never claim measured savings.
+
 ## Runtime and retained contract
 
 `JOURNEY_AWARD_RELEASE_FILE` points to a trusted, deployer-owned JSON file. Omit it
@@ -151,11 +128,11 @@ HTTP enable flag or client-supplied approval. The file contains:
 - `policy`: exact versioned evidence thresholds, calibrated per-mode plausibility
   bounds and `calibration: physical_validated`.
 - `factors`: sourced factors in the existing schema, explicitly reviewed and
-  normalized to kg CO2e/passenger-km.
+  normalized to their explicit CO2 or legacy CO2e passenger-km basis.
 - `release`: version, assessment engine, canonical policy/factor SHA-256 hashes,
   geography dataset version, supported modes and distance methods, factor review and both platform
   report references/digests. Factor review includes source values/units and
-  occupancy. The car baseline must be documented kg CO2e/vehicle-km for one occupant.
+  occupancy. The car baseline must be documented vehicle-km for one occupant in the declared gas basis.
 - `evidenceFiles`: local paths for the factor review and physical iOS/Android
   JSON reports. Files are bounded to 1 MiB and their bytes must match the digests.
 

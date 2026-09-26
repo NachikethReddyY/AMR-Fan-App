@@ -1,3 +1,4 @@
+import { factorValue } from '../../src/features/routes/emissions.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
@@ -40,7 +41,7 @@ function released() {
       compatibility: 'Synthetic arithmetic only; not field evidence.',
       units: journey.basis.calculation.factors.map((f) => ({
         factorId: f.id,
-        sourceValue: f.kgCo2ePerPassengerKm,
+        sourceValue: factorValue(f),
         sourceUnit:
           f.mode === 'car' ? 'kgCO2e/vehicle-km' : 'kgCO2e/passenger-km',
         occupants: 1,
@@ -76,8 +77,10 @@ test('readiness is reachable for a retained, bound release; default and mismatch
       j.routeEvidence.geographyVersion = 'unknown';
     },
     (j: ReturnType<typeof released>) => {
-      if (j.basis.calculation.kind === 'available')
+      if (j.basis.calculation.kind === 'available') {
+        assert.ok('kgCo2ePerPassengerKm' in j.basis.calculation.factors[0]);
         j.basis.calculation.factors[0].kgCo2ePerPassengerKm += 1;
+      }
     },
   ]) {
     const journey = released();
@@ -164,6 +167,7 @@ test('release loader requires actual local evidence bytes, matching policy and f
         c.policy.accuracyMeters = 49;
       },
       (c: typeof config) => {
+        assert.ok('kgCo2ePerPassengerKm' in c.factors[0]);
         c.factors[0].kgCo2ePerPassengerKm = 9;
       },
       (c: typeof config) => {
@@ -273,6 +277,7 @@ function provisional() {
 test('approved provisional policy uses retained plan and exposes assessed estimate separately without physical approval', () => {
   const journey = provisional();
   assert.ok(journey.basis.calculation.kind === 'available');
+  assert.ok('kgCo2ePerPassengerKm' in journey.basis.calculation.factors[1]);
   journey.basis.calculation.factors[1].kgCo2ePerPassengerKm = 0.1;
   assert.ok(journey.basis.factorRelease);
   journey.basis.factorRelease.factorFingerprint = fingerprint(
@@ -421,6 +426,7 @@ test('provisional whole-point boundaries, journey cap and fallback ceiling use t
       journey.basis.calculation.kind === 'available' &&
         journey.basis.factorRelease,
     );
+    assert.ok('kgCo2ePerPassengerKm' in journey.basis.calculation.factors[0]);
     journey.basis.calculation.factors[0].kgCo2ePerPassengerKm = kg;
     journey.basis.factorRelease.factorFingerprint = fingerprint(
       journey.basis.calculation.factors,

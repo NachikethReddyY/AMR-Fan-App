@@ -534,6 +534,7 @@ test('the retained calculation basis preserves server factors, rule values and t
   assert.equal(prepared.basis.calculation.kind, 'available');
   if (prepared.basis.calculation.kind !== 'available')
     assert.fail('Expected fixture basis.');
+  assert.ok('kgCo2ePerPassengerKm' in prepared.basis.calculation.factors[0]);
   assert.equal(
     prepared.basis.calculation.factors[0].kgCo2ePerPassengerKm,
     0.07,
