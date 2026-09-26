@@ -92,6 +92,21 @@ test('readiness is reachable for a retained, bound release; default and mismatch
   }
 });
 
+test('single-mode release does not validate leg geometry distance attribution', () => {
+  const journey = released();
+  assert.ok(journey.assessedLegs.kind === 'available');
+  assert.equal(calculateJourneyAward(journey).productionCredit.kind, 'ready');
+  journey.assessedLegs.method = 'gps_leg_geometry_lower_bound';
+  const result = calculateJourneyAward(journey);
+  assert.equal(result.decision.kind, 'full');
+  assert.deepEqual(result.productionCredit, {
+    kind: 'unavailable',
+    reasons: ['distance_method_not_validated'],
+  });
+  journey.assessedLegs.method = 'gps_single_mode_lower_bound';
+  assert.equal(calculateJourneyAward(journey).productionCredit.kind, 'ready');
+});
+
 test('released fallback still requires both endpoints and never supplies full assessed emissions', () => {
   const journey = released();
   journey.assessment.status = 'insufficient_evidence';

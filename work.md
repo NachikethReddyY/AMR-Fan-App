@@ -1714,3 +1714,177 @@ no broad rerun under root's resource limit. Combined native integration and root
 squash remain separate gates; CI remains paused.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: native journey successor restored
+
+Related to #8, #7 and #10. Created the authorized native branch from main
+026b4d70 after confirming the clean old OneMap branch and T3 binding. Applied
+only preserved stash a56c0089, including its ten untracked files. The stash and
+old branch remain intact. This successor prepares one new PR; PR43 is complete.
+
+Local source now connects prepared route selection to native recording and the
+selected Travel UI B. Recording replaces comparison; arrival/stop remain usable
+during sync; an explicit action restores planning. GPS samples and retry intents
+use AES-encrypted SQLite with a device-only SecureStore key. Account invalidation
+stops capture and clears the queue. Google step shapes and continuous OneMap leg
+shapes retain their provider ordering; the new assessor uses observed lower-bound
+distances and rejects incomplete or ambiguous multimodal attribution.
+
+Focused controlled checks cover Stop/late Start races, denied permission,
+offline mutation identity, restart, profile isolation, planning request identity
+and recording controls. These checks are not device or physical-travel proof.
+The final provisional receipt awaits the awards owner's merged schema. Full
+gates, native compilation and T3 device verification remain queued under the
+root lease. No CI query, provider request, cloud change or publication occurred.
+
+Implemented locally by gpt-6-astra through Codex (T3 Code).
+
+### Native explicit CO2 adapter, pending awards integration
+
+Prepared the native route parser, Travel labels and provisional receipt copy for
+the awards owner's distinct CO2 transport variants. Receipt measurement absence
+preserves legacy CO2e. Focused tests reject mixed units and unknown measurement
+versions, preserve the retained savings amount, and keep CO2/CO2e labels separate.
+Shared emissions/recommendation files are unchanged. Typecheck and focused lint
+pass. These local adapter checks do not establish integration with unmerged PR50;
+main squash, full gates and leased native proof remain pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native integration with Awards main 458cae12
+
+Integrated the actual merged main after preserving native WIP and both stashes.
+Retained merged factor/release/Start behavior and restored only owned native and
+leg-attribution changes. Native34 and provider/planning/legs24 focused tests pass.
+Root authorized one readiness caller adjustment for the expanded assessed-method
+union. Exact membership comparison preserves the physical release's original
+single-mode coverage; a regression rejects leg geometry as unvalidated while
+legacy single-mode remains ready. Typecheck, readiness12, changed-file lint and
+diff checks pass. Full/security/database/build/device gates remain root-leased;
+no provider, CI or production activation occurred. The bounded execution sequence
+is retained in local native evidence.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native source freeze and internal build checkpoint
+
+Integrated Reports main d079833d and Impact main a92b9d28 through actual main,
+with owned WIP and TODO preserved. Full check passed on d079 plus native source
+(native/unit Jest170, DOM25, repository Node suites), security check passed with
+one existing moderate advisory, and 51 isolated PostgreSQL/HTTP tests passed.
+The owned database was removed. Impact integration passed typecheck, 49 focused
+state/client cases and four affected DOM cases. App remains a two-line observer
+addition against integrated main.
+
+The native assessment decoder now accepts the merged server's unvalidated and
+physical_validated statuses; a failure-first focused case protects reading both
+without granting client authority. Android ARM64 debug compilation and both
+platform exports passed. Root authorized matching iOS bundle ID
+xyz.theynr.amrfanapp solely for internal simulator proof; CocoaPods was installed
+locally. iOS compilation and device acceptance remain pending at this source
+freeze. No final user APK, live provider or factor activation is claimed.
+
+DAST remains failed: scanner exit2, 59 passes, five 10202 admin-form warnings and
+informational10031. Independent review matched the exact scanned d079 image and
+nine source hashes; root accepted the existing narrow five-form disposition for
+this delivery. Impact's additive route was separately reviewed and not scanned;
+admin forms/auth/origin behavior is unchanged. No scanner suppression or green
+claim. Raw evidence and generated native projects remain local and unstaged.
+
+Implemented and verified locally by gpt-6-astra through Codex (T3 Code).
+
+### Independent native review corrections
+
+Rebased the frozen source onto Participation main e3577631 at the completed iOS
+build boundary; native config and dependencies are byte-identical. Both native
+compiles passed. Three independent findings were reproduced with failing tests:
+late identity cleanup erased successor capture; native settlement decoded the
+outer HTTP envelope as an award; and clearing a finished pending settlement lost
+its retry identity. Recorder cleanup now blocks successor restore/Start, native
+settlement validates entry/outcome and ownership, and clear/replacement waits for
+an acknowledged terminal receipt. Legitimate no-award receipts still allow clear.
+
+Deferred-stop tests cover both profile changes and same-profile restoration.
+Actual registered HTTP fallback, physical, provisional and CO2 outcomes decode
+through the native client, including 401 mapping and unchanged replay keys.
+Client38, DOM3, registered HTTP7, typecheck and changed-file lint pass. Native
+module builds predate these JS-only corrections; device bundles use corrected
+source. Pixel installation found an existing signature mismatch and stopped
+without deleting the installed app or its data. Root owns the internal install
+identity decision; no device journey success is claimed at this checkpoint.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### Native journey device corrections
+
+Actual internal Pixel proof found Android AESSealedData.fromCombined rejects
+stored base64 strings at its ByteArray bridge. Decode ciphertext to bytes before
+native decryption; encryption/key storage and Start ordering are unchanged. The
+adapter regression fails before the correction and passes afterward, together
+with 21 recorder cases. Device retry recovered the original encrypted intent
+and sent one exact two-field Start without another provider request. Its first
+location callback exposed TaskManager's missing RECEIVE_BOOT_COMPLETED manifest
+permission. Added that required Android permission; rebuilt callback/finish and
+iOS proof remain pending. The .nativeproof suffix is generated-only and protects
+the existing installed app/data. All temporary diagnostics were removed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native iOS transient errors and offline Finish
+
+Scoped iOS code0/kCLErrorDomain to its documented transient locationUnknown
+behavior, awaiting valid callbacks without generating samples or Finish. Native
+account refresh now suspends recorder dispatch while preserving local Stop and
+Finish intent; authenticated restore resumes the original request. Explicit
+identity invalidation continues to hide/delete old capture synchronously. Root
+authorized this journey-only adaptation; account modules are unchanged. Current
+29focused recorder/storage/runtime and4Recording DOM checks, typecheck and
+changed-file lint pass. Actual affected iPhone recovery proof remains pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native recorder asynchronous authority correction
+
+Corrected the reviewed d162 Finish/queued-restore races and audited only existing
+recorder context adoption and dispatch boundaries. Evidence upload and Resume
+read now recheck authority after durable writes. Restore checks its requested
+epoch within the local queue and after storage/native waits before adopting
+context. Invalidated writes cannot republish capture. Known 401 uses the existing
+synchronous invalidation/serial cleanup barrier; stale rejected requests cannot
+expire a later context. Local Finish intent and retry keys remain intact.
+
+Retained failing-first proof has 7 failures and 25 passes. The corrected focused
+recorder/runtime/storage set has 39 passing cases, including deferred stop/write,
+restore read/status invalidation, and stale 401 recovery. No native module,
+authentication module, provider activation, or signing changes. Exact-head review
+and continued isolated iPhone recovery evidence remain required.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### Native journey final local handoff
+
+Application source 6f18ab54738433d2a3a4c1fe7d4753b0b3e69c71 passes full
+pnpm check (227 native/unit Jest, 39 web cases and all repository Node stages),
+security checks, and final Android/iOS JS exports. Root relayed both independent
+spec and safety CLEAR receipts for that exact source. This final documentation
+update changes no application, test, dependency or native configuration source.
+Main remains e357763181fb594fc643dfa32a3467f80e1f514d, already integrated.
+
+Actual internal Pixel and iPhone builds proved native module linkage. Pixel
+exercised denied permission, encrypted recovery, callbacks and Finish. iPhone
+proved SecureStore onboarding, background callbacks, offline Stop with two queued
+samples, cold restart and same-account reconnect with one Finish, then profile
+switch/logout/successor isolation. Largest-text contribution controls were
+reachable. The video and sanitized screenshots stay local. Original app/data and
+signing identity are preserved; proof APK uses a generated-only suffix.
+
+Raw DAST remains failed exit 2 with 59 passes, alert 10202 on five forms and informational 10031.
+Root accepted the existing narrowly matched disposition for the exact
+scanned d079 source/image; subsequent reviewed additive main code was not scanned.
+Physical calibration, locked callbacks, Android visible numeric keyboard,
+native provisional receipt and populated Impact rendering remain unverified.
+No provider calls, live factor activation, CI query, production release or final
+user APK. Owned fixture/Metro resources are removed, iPhone large text/shutdown
+restored and Pixel remains booted/large. Root owns final reconciliation and merge.
+
+Verified by gpt-6-astra through Codex (T3 Code).

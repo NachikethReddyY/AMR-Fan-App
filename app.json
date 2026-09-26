@@ -4,6 +4,9 @@
     "slug": "amr-fan-app",
     "version": "0.1.0",
     "icon": "./assets/branding/fan-icon-v1.png",
+    "ios": {
+      "bundleIdentifier": "xyz.theynr.amrfanapp"
+    },
     "android": {
       "package": "xyz.theynr.amrfanapp",
       "blockedPermissions": [
@@ -13,7 +16,8 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
-      ]
+      ],
+      "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED"]
     },
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -29,6 +33,17 @@
           "cameraPermission": "Allow AMR Fan to take a photo of your activity.",
           "photosPermission": false,
           "microphonePermission": false
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow AMR Fan to record your location during a journey you start.",
+          "locationAlwaysAndWhenInUsePermission": "Allow AMR Fan to keep recording your journey when the screen is locked or the app is in the background.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ]

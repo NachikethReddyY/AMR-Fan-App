@@ -621,4 +621,150 @@ Do not redesign dock here. Android keyboard and iPhone largest contribution
 controls remain unverified for combined native integration. Native fixture,
 measurements, screenshots and video paths are recorded in local acceptance proof.
 
+## JOURNEY-NATIVE-001: native recording successor
+
+Related to #8, #7 and #10; successor and provisional receipt steering is unlinked. Restore
+only stash a56c0089 on a new branch based on merged main. Implement selected
+Travel UI B: active journey replaces search/comparison, arrival and stop remain
+accessible, and planning returns after completion. Preserve encrypted offline
+GPS capture, immediate finish time, account isolation and conservative leg
+attribution. Approved provisional points use the awards owner's retained planned
+estimate and recorded endpoints; label their basis and exclude verified impact.
+Approved factors and strict $0 provider configuration remain separate gates.
+Heavy checks, native builds and T3 device proof wait for the root lease. Physical
+calibration is unavailable. One new PR, no CI queries or final APK delivery here.
+
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: Google route warning
+
+Cloud review confirmed ordinary step geometry does not introduce an extra route
+request. Retain Google's beta/missing-path warning in existing walking/cycling
+route details, including displayed walking connections. Do not add traffic-aware
+routing, TRAFFIC_ON_POLYLINE or speedReadingIntervals. Strict $0 project activation
+remains held; no provider calls establish Singapore mode availability or latency.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: explicit CO2 provenance and overnight coordination
+
+The user accepted provisional CO2 estimates from the exact CAG factors: car
+0.1901 kg/vehicle-km with one occupant, bus 0.0441 kg/passenger-km and MRT
+0.0578 kg/passenger-km, under published_surface_access scope. The awards owner
+will publish explicit gas/unit fields in PR50. Native parsing and copy must use
+those retained fields after the main squash. Legacy CO2e receipts retain their
+original meaning; no ICE, Singapore fleet-average or lifecycle interpretation.
+The previous receipt schema freeze is superseded for these additions only.
+
+The user delegated overnight coordination to root. Send blockers there and ask
+no further user questions. Existing internal-build authority still follows root
+resource leases; final APK delivery waits for all integration. CI stays paused.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: CO2 transport adaptation
+
+Review correction: implicit CO2 dataset activation would break the existing main
+client before native integration. Awards removes the default fallback; root will
+activate the accepted artifact through `JOURNEY_FACTOR_RELEASE_FILE` only after
+the compatible client merges. Native accepts both legacy and CO2 variants under
+both calculation statuses without unit reinterpretation. No peer patch copied.
+
+Awards communicated distinct estimated_co2/recommended_co2 variants with CO2 and
+kgCO2, plus optional cag-surface-access-co2-v1 receipt measurement. The native
+route parser, journey display projection and copy now accept those variants and
+preserve legacy estimated/recommended CO2e values. Mixed estimate/recommendation
+units and wrong measurement versions fail parsing. Shared calculations remain
+with the awards owner. This is source preparation against the communicated
+schema; actual main-squash integration and device proof remain pending.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: merged readiness caller compatibility
+
+Awards main 458cae12 retained a literal-only includes parameter for released
+single-mode distance. The native assessed-leg union exposed a type error. Root
+authorized a narrow exact-membership comparison and regression in the successor
+PR. Typecheck and 12 readiness tests pass; leg geometry remains unvalidated under
+the unchanged physical release schema. No API/default dataset activation changed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: merged assessment decoder and build authority
+
+The freeze check reproduced rejection of the merged physical_validated server
+assessment by the phone's old literal-only decoder. Both server statuses are now
+readable, with a focused regression; the phone grants no physical release.
+Root authorized ios.bundleIdentifier xyz.theynr.amrfanapp for internal simulator
+builds after confirming no tracked identifier. Apple account/distribution
+registration is outside that authority. Internal Android compile passed; iOS and
+combined device proof remain pending. No final APK claim.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: independent review corrections
+
+Confirmed and fixed recorder cleanup/successor overlap, settlement envelope
+mismatch and unacknowledged settlement loss. Failure-first deferred-stop,
+clear/replacement and real registered-HTTP-to-native regressions now pass.
+The recorder enforces cleanup and receipt boundaries independent of React.
+Geometry review found no blocking issue. Device proof remains a separate gate.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: actual Android storage and job scheduling
+
+The internal Pixel build reproduced two native integration failures missed by
+pure recorder tests. Expo Crypto's Android fromCombined bridge rejects a base64
+string despite the public type accepting it. The adapter now decodes stored
+ciphertext to bytes before native decryption; its failure-first regression
+preserves validated capture recovery. After that correction the retained intent
+sent exactly one Start with the unchanged two-field input. The first native
+location callback then crashed because TaskManager persists its job without a
+manifest boot permission. Explicit RECEIVE_BOOT_COMPLETED is required; no other
+permissions or production identity changes. Actual rebuilt callback/finish proof
+remains pending. Temporary diagnostics are removed, with no raw data in source.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: iOS transient location and offline controls
+
+Actual iOS Core Location delivered temporary locationUnknown followed by a valid
+callback; treating all task errors as terminal stopped the capture first. Ignore
+only iOS numeric0 with NSError's kCLErrorDomain description. Other errors still
+interrupt, and no location is invented. Expo exposes the domain only in message.
+
+Foreground account refresh while the fixture was offline hid the retained
+capture. Root authorized a journey-only correction: suspend network authority
+while account state loads/is unavailable, keep local Arrived/Stop visible, and
+resume dispatch only after matching authenticated restore. Logout/profile/401
+invalidation still synchronously removes the capture. No auth module changes.
+Failure-first recorder/runtime and DOM regressions pass; affected device proof
+is in progress.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: suspended recorder authority after asynchronous waits
+
+Independent review found Finish dispatched after suspension during native stop,
+and queued restore could re-adopt suspended credentials. A bounded recorder-only
+audit reproduced the same missing guard after durable batch/Resume writes and
+old capture publication during restore waits. Known 401 also waited for native
+stop before hiding capture. Recheck the existing epoch after queue/storage/native
+waits, adopt restored context only after validated reads, and reuse synchronous
+invalidation for 401. Preserve local Finish and original retry identities.
+Failure-first stop/write tests and protected recovery cases pass; final exact-head
+review and current native recovery proof remain pending.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: final acceptance status
+
+Native flow and scoped review corrections are locally verified at 6f18ab5; both
+independent reviewers cleared that source. Simulator offline/restart/Finish and
+identity-isolation proof completed. Physical/locked behavior, visible Android
+numeric keyboard, native provisional receipt and populated Impact remain explicit
+limits. Final documentation and the sole native PR proceed under existing root
+authority; no merge, release or provider activation is implied.
+
+Verified by gpt-6-astra through Codex (T3 Code).

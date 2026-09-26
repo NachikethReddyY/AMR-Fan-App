@@ -112,3 +112,20 @@ test('usable geometry preserves consecutive duplicates and closed loops with dis
       assert.equal(geometry.points.length, fixture.count);
   }
 });
+
+test('same-response step geometry is retained by leg index; partial geometry stays unavailable', async () => {
+  const raw = route();
+  const steps = raw.routes[0].legs[0].steps.map((s) => ({
+    ...s,
+    polyline: { encodedPolyline: encoded },
+  }));
+  const complete = await normalizeResponse('DRIVE', {
+    routes: [{ ...raw.routes[0], legs: [{ ...raw.routes[0].legs[0], steps }] }],
+  });
+  assert.equal(complete.kind, 'routes');
+  if (complete.kind !== 'routes') return;
+  assert.equal(complete.evidence[0].legGeometry?.kind, 'provider');
+  const absent = await normalizeResponse('DRIVE', raw);
+  if (absent.kind !== 'routes') throw new Error('Comparison lost');
+  assert.equal(absent.evidence[0].legGeometry?.kind, 'unavailable');
+});

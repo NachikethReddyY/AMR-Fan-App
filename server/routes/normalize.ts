@@ -16,6 +16,15 @@ const duration = z
   .regex(/^\d+(?:\.\d{1,9})?s$/)
   .refine((value) => Number(value.slice(0, -1)) <= 604800);
 const step = z.strictObject({
+  polyline: z
+    .strictObject({
+      encodedPolyline: z
+        .string()
+        .min(1)
+        .max(24000)
+        .regex(/^[?-~]+$/),
+    })
+    .optional(),
   distanceMeters: distance,
   staticDuration: duration,
   travelMode: primaryMode,
@@ -76,6 +85,9 @@ export type RouteEvidence = {
         points: Coordinate[];
         encoding: 'google-polyline5';
       };
+  legGeometry?:
+    | { kind: 'unavailable'; reason: 'missing_geometry' }
+    | { kind: 'provider'; legs: { legIndex: number; points: Coordinate[] }[] };
   factorApplicability:
     | 'singapore_indicative'
     | 'geography_unverified'
@@ -185,10 +197,35 @@ export async function normalizeResponse(
           item.transitDetails?.transitLine.vehicle.type ?? '',
         ),
     );
+    const legPoints = steps.map((item) =>
+      item.polyline ? decodePolyline(item.polyline.encodedPolyline) : null,
+    );
+    const completeLegs: { legIndex: number; points: Coordinate[] }[] = [];
+    let previous = geometry.kind === 'provider' ? geometry.start : null;
+    let total = 0;
+    for (const [legIndex, shape] of legPoints.entries()) {
+      if (!shape || !previous || !sameEndpoint(previous, shape[0])) break;
+      total += shape.length;
+      if (
+        total > 2048 ||
+        (await singaporeRouteGeography(shape, signal)) !== 'Singapore'
+      )
+        break;
+      completeLegs.push({ legIndex, points: shape });
+      previous = shape[shape.length - 1];
+    }
+    const legGeometry: RouteEvidence['legGeometry'] =
+      geometry.kind === 'provider' &&
+      completeLegs.length === steps.length &&
+      previous &&
+      sameEndpoint(previous, geometry.end)
+        ? { kind: 'provider', legs: completeLegs }
+        : { kind: 'unavailable', reason: 'missing_geometry' };
     evidence.push({
       routeId: `google-${parserMode[mode]}-${index}`,
       primaryMode: mode,
       geometry,
+      legGeometry,
       factorApplicability:
         geography !== 'Singapore'
           ? 'geography_unverified'

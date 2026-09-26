@@ -254,10 +254,13 @@ export function productionReadiness(
     )
   )
     reasons.push('mode_not_calibrated');
+  const assessedMethod =
+    journey.assessedLegs.kind === 'available'
+      ? journey.assessedLegs.method
+      : null;
   if (
     decision.kind === 'full' &&
-    (journey.assessedLegs.kind !== 'available' ||
-      !release.distanceMethods.includes(journey.assessedLegs.method))
+    !release.distanceMethods.some((method) => method === assessedMethod)
   )
     reasons.push('distance_method_not_validated');
   // Missing middle evidence may have no usable speed; that is the accepted fallback.

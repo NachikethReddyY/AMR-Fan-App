@@ -31,6 +31,7 @@ import {
   type RouteSnapshot,
 } from './contracts.ts';
 import { assessJourney } from './evidence.ts';
+import { assessLegs } from './legs.ts';
 import { createRouteQuery } from '../routes/query.ts';
 import {
   planInput,
@@ -251,22 +252,14 @@ export function createJourneyService({
     const result: Journey = {
       ...journey,
       assessment,
-      assessedLegs:
-        assessment.status !== 'satisfies_configured_rules'
-          ? { kind: 'unavailable', reason: 'insufficient_evidence' }
-          : new Set(journey.selectedLegs.map((leg) => leg.mode)).size !== 1
-            ? { kind: 'unavailable', reason: 'multimodal_distances_unknown' }
-            : {
-                kind: 'available',
-                method: 'gps_single_mode_lower_bound',
-                legs: [
-                  {
-                    mode: journey.selectedLegs[0].mode,
-                    distanceMeters: assessment.observedDistanceMeters,
-                    durationSeconds: (assessment.elapsedMs ?? 0) / 1000,
-                  },
-                ],
-              },
+      assessedLegs: assessLegs({
+        route,
+        policy: journey.policy,
+        assessment,
+        samples: stored.rows.map(
+          (row) => parse(storedSampleSchema, row.sample).evidence,
+        ),
+      }),
     };
     await client.query('UPDATE app.journeys SET summary = $2 WHERE id = $1', [
       journey.id,

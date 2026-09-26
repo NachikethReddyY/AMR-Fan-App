@@ -6,12 +6,24 @@ import { ArrowRight } from 'lucide-react-native';
 import { Action, Text } from '../points/controls';
 import { useProfileContext } from '../account/useResource';
 import { useAccount } from '../account/provider';
-import { api } from '../account/native-auth';
-import { createTravelApi, type Comparison } from './api';
-import { createTravelController } from './state';
+import type { Comparison } from './api';
+import {
+  estimateAmount,
+  estimateLabel,
+  recommendationLabels,
+} from './measurement';
+import { randomUUID } from 'expo-crypto';
+import { journeyApi } from '../journeys/runtime';
+import {
+  createJourneyController,
+  type JourneyComparison,
+} from '../journeys/controller';
+import { useJourneyRecorder } from '../journeys/provider';
+import { Recording } from '../journeys/Recording';
+import { Recovery } from '../journeys/Recovery';
+import { routeWarning } from '../journeys/route-warning';
 import type { RouteMode, RouteOption } from './routes';
 type RouteEstimate = Comparison['estimates'][number]['estimate'];
-const read = createTravelApi(api.request);
 const modeLabels: Record<RouteMode, string> = {
   bus: 'Bus',
   train: 'Train',
@@ -28,17 +40,6 @@ function minutes(seconds: number) {
 function distance(meters: number) {
   return `${(meters / 1000).toFixed(1)} km`;
 }
-function carbon(kg: number) {
-  return `${kg.toFixed(2)} kg CO2e`;
-}
-
-function estimateLabel(estimate: RouteEstimate) {
-  if (estimate.kind === 'estimated')
-    return `${carbon(estimate.kgCo2e)} estimated`;
-  if (estimate.reason === 'missing_factor')
-    return 'Emissions estimate unavailable: no compatible factor';
-  return 'Emissions estimate unavailable';
-}
 
 function RouteRow({
   route,
@@ -46,7 +47,9 @@ function RouteRow({
   recommended,
   estimate,
   onSelect,
+  warning,
 }: {
+  warning: string | null;
   route: RouteOption;
   selected: boolean;
   recommended: boolean;
@@ -67,7 +70,7 @@ function RouteRow({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !isAvailable, selected }}
-      accessibilityLabel={`${modeLabels[route.mode]}, ${detail}, ${estimateLabel(estimate)}${recommended ? ', recommended' : ''}${isAvailable ? `, ${legs}` : ''}${selected ? ', selected' : ''}`}
+      accessibilityLabel={`${modeLabels[route.mode]}, ${detail}, ${estimateLabel(estimate)}${recommended ? ', recommended' : ''}${isAvailable ? `, ${legs}` : ''}${selected ? ', selected' : ''}${warning ? `, ${warning}` : ''}`}
       disabled={!isAvailable}
       onPress={onSelect}
       style={[
@@ -91,6 +94,9 @@ function RouteRow({
         <Text style={styles.routeDetail}>{estimateLabel(estimate)}</Text>
       )}
       {isAvailable && <Text style={styles.routeLegs}>{legs}</Text>}
+      {isAvailable && warning && (
+        <Text style={styles.routeLegs}>{warning}</Text>
+      )}
     </Pressable>
   );
 }
@@ -101,7 +107,7 @@ function Result({
   extraMinutes,
   onSelect,
 }: {
-  value: Comparison;
+  value: JourneyComparison;
   selectedId: string | null;
   extraMinutes: number | null;
   onSelect: (id: string) => void;
@@ -132,7 +138,7 @@ function Result({
           ? 'Enter whole extra minutes above.'
           : `Up to ${extraMinutes} extra min from the fastest available route.`}
       </Text>
-      {recommendation?.kind === 'recommended' && (
+      {recommendation.kind !== 'unavailable' && (
         <View style={styles.summary} accessibilityRole="summary">
           <Text style={styles.summaryLabel}>Recommended route</Text>
           <Text style={styles.summaryTitle}>
@@ -148,28 +154,24 @@ function Result({
             {minutes(recommendation.limitSeconds)}
           </Text>
           <Text style={styles.routeDetail}>
-            {carbon(recommendation.estimate.kgCo2e)} estimated
+            {estimateLabel(recommendation.estimate)}
           </Text>
           <Text style={styles.routeDetail}>
             Baseline: one person driving{' '}
             {distance(recommendation.baselineDistanceMeters)},{' '}
-            {carbon(recommendation.baseline.kgCo2e)}
+            {estimateAmount(recommendation.baseline)}
           </Text>
           <Text style={styles.routeDetail}>
-            {recommendation.avoidedKgCo2e >= 0
-              ? `${recommendation.avoidedKgCo2e.toFixed(2)} kg estimated CO2e avoided`
-              : `${(-recommendation.avoidedKgCo2e).toFixed(2)} kg more CO2e than driving`}
+            {recommendationLabels(recommendation).avoided}
           </Text>
           <Text style={[styles.routeLegs, styles.summaryNote]}>
-            Indicative demo estimates. Changi Airport Group FY2024/25
-            passenger-km factors; walking and cycling count operational travel
-            only. Not measured savings.
+            {recommendationLabels(recommendation).basis}
           </Text>
         </View>
       )}
       <Text style={styles.message}>
-        Cab and electric-car routes are unavailable from this provider.
-        Estimates are indicative, not earned points.
+        Cab and electric-car routes are unavailable from this provider. Route
+        estimates are not earned points.
       </Text>
       {recommendationMessage && (
         <Text style={styles.message}>{recommendationMessage}</Text>
@@ -180,10 +182,14 @@ function Result({
         result.routes.map((route) => (
           <RouteRow
             key={route.id}
+            warning={routeWarning(
+              result.source,
+              route.legs.map((l) => l.mode),
+            )}
             route={route}
             selected={selectedId === route.id}
             recommended={
-              recommendation?.kind === 'recommended' &&
+              recommendation.kind !== 'unavailable' &&
               recommendation.route.id === route.id
             }
             estimate={
@@ -196,11 +202,7 @@ function Result({
           />
         ))
       )}
-      {selectedId && (
-        <Text style={styles.message}>
-          Route selected for comparison. Journey recording is not available yet.
-        </Text>
-      )}
+      {selectedId && <Text style={styles.message}>Route selected.</Text>}
     </View>
   );
 }
@@ -211,10 +213,14 @@ export function TravelScreen() {
   const context = useProfileContext();
   const { controller: session } = useAccount();
   const [controller] = useState(() =>
-    createTravelController(read, session.expire),
+    createJourneyController(journeyApi.prepare, randomUUID, session.expire),
   );
   const state = useSyncExternalStore(controller.subscribe, controller.getState);
-  useEffect(() => () => controller.clear(), [controller]);
+  useEffect(() => {
+    controller.clear();
+    return () => controller.clear();
+  }, [controller, context?.token, context?.profileId]);
+  const recording = useJourneyRecorder();
   const loading = state.kind === 'loading';
   const [extraMinutesText, setExtraMinutesText] = useState('15');
   const extraMinutes =
@@ -235,9 +241,23 @@ export function TravelScreen() {
       extraMinutes,
     });
   }
+  if (recording.state.capture)
+    return (
+      <Recording
+        state={recording.state}
+        recorder={recording.recorder}
+        context={context}
+        onPlan={controller.clear}
+      />
+    );
+  const selected =
+    state.kind === 'ready' && state.plan.kind === 'prepared'
+      ? state.plan.candidates.find((c) => c.routeId === state.selectedId)
+      : null;
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Travel</Text>
+      {context && <Recovery key={context.profileId} context={context} />}
       <Text style={styles.intro}>
         Compare routes between places in Singapore.
       </Text>
@@ -306,6 +326,11 @@ export function TravelScreen() {
           {state.message}
         </Text>
       )}
+      {recording.state.message && (
+        <Text accessibilityLiveRegion="polite" style={styles.message}>
+          {recording.state.message}
+        </Text>
+      )}
       {state.kind === 'ready' && (
         <Result
           value={state.value}
@@ -313,6 +338,40 @@ export function TravelScreen() {
           extraMinutes={extraMinutes}
           onSelect={controller.select}
         />
+      )}
+      {selected?.kind === 'prepared' && context && (
+        <>
+          <Text style={styles.message}>
+            Record your location during this journey, including while your phone
+            is locked. Choose Allow all the time for background access. Stop at
+            any time.
+          </Text>
+          <Action
+            label="Start journey"
+            disabled={recording.state.busy}
+            onPress={() => {
+              const route =
+                state.kind === 'ready'
+                  ? state.plan.display?.routes.find(
+                      (r) => r.routeId === selected.routeId,
+                    )
+                  : null;
+              void recording.recorder.begin(context, selected.journey, {
+                modes: route?.legs.map((l) => l.mode),
+                origin: origin.trim(),
+                destination: destination.trim(),
+                distanceMeters: route?.distanceMeters ?? null,
+                durationSeconds: route?.durationSeconds ?? null,
+              });
+            }}
+          />
+        </>
+      )}
+      {selected?.kind === 'unavailable' && (
+        <Text style={styles.message}>
+          Recording unavailable for this route:{' '}
+          {selected.reason.replaceAll('_', ' ')}.
+        </Text>
       )}
     </View>
   );

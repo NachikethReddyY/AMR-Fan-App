@@ -31,13 +31,21 @@ const route = z.object({
   distanceMeters: nonnegative.nullable(),
   durationSeconds: nonnegative.nullable(),
 });
-const estimated = z.object({
+export const estimated = z.object({
   kind: z.literal('estimated'),
   kgCo2e: nonnegative,
   factorIds: z.array(z.string().max(200)).max(128),
 });
+export const estimatedCo2 = z.object({
+  kind: z.literal('estimated_co2'),
+  gas: z.literal('CO2'),
+  unit: z.literal('kgCO2'),
+  kg: nonnegative,
+  factorIds: z.array(z.string().max(200)).max(128),
+});
 export const estimateSchema = z.discriminatedUnion('kind', [
   estimated,
+  estimatedCo2,
   z.object({
     kind: z.literal('unavailable'),
     reason: z.string().min(1).max(100),
@@ -76,6 +84,18 @@ const comparison = z.object({
       limitSeconds: nonnegative,
       avoidedKgCo2e: z.number().finite(),
     }),
+    z.object({
+      kind: z.literal('recommended_co2'),
+      gas: z.literal('CO2'),
+      unit: z.literal('kgCO2'),
+      route,
+      estimate: estimatedCo2,
+      baseline: estimatedCo2,
+      baselineDistanceMeters: nonnegative,
+      fastestSeconds: nonnegative,
+      limitSeconds: nonnegative,
+      avoidedKg: z.number().finite(),
+    }),
   ]),
   factors: z
     .array(
@@ -89,7 +109,7 @@ const comparison = z.object({
     )
     .max(50),
   unsupportedModes: z.array(mode).max(7),
-  calculationStatus: z.literal('indicative_demo'),
+  calculationStatus: z.enum(['indicative_demo', 'approved']),
 });
 export type Comparison = z.infer<typeof comparison>;
 export type TravelQuery = {
@@ -109,15 +129,23 @@ export function parseComparison(raw: unknown) {
       parsed.estimates.some((e) => !ids.has(e.routeId))
     )
       throw new Error('Invalid route estimates.');
-    if (parsed.recommendation.kind === 'recommended') {
+    if (parsed.recommendation.kind !== 'unavailable') {
       const selected = parsed.recommendation.route;
       const match = routes.find((r) => r.id === selected.id);
       if (!match || JSON.stringify(match) !== JSON.stringify(selected))
         throw new Error('Invalid recommendation.');
+      const estimate = parsed.estimates.find(
+        (e) => e.routeId === selected.id,
+      )?.estimate;
+      if (
+        JSON.stringify(estimate) !==
+        JSON.stringify(parsed.recommendation.estimate)
+      )
+        throw new Error('Recommendation estimate does not match its route.');
     }
   } else if (
     parsed.estimates.length ||
-    parsed.recommendation.kind === 'recommended'
+    parsed.recommendation.kind !== 'unavailable'
   )
     throw new Error('Invalid unavailable routes.');
   return parsed;

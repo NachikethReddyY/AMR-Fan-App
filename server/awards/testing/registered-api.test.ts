@@ -18,6 +18,11 @@ import { summarySchema } from '../../journeys/contracts.ts';
 import { historyEntry } from '../../points/contracts.ts';
 import { outcomeSchema, receiptSchema } from '../contracts.ts';
 import { awardRoute, awardReleaseFixture } from './fixtures.ts';
+import { createJourneyApi } from '../../../src/features/journeys/api.ts';
+import {
+  createAccountApi,
+  AccountError,
+} from '../../../src/features/account/api.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -245,6 +250,21 @@ test('registered API retains fallback/full revisions, concurrent no-op credit, s
   assert.equal(fallback.outcome.targetPoints, 50);
   assert.equal(fallback.entry.delta, 0);
   assert.equal(fallback.outcome.creditContext, 'production_unavailable');
+  const native = createJourneyApi(async (path, token, _method, input) => {
+    const response = await first.request(path, token, input);
+    assert.equal(response.status, 200);
+    return response.json();
+  });
+  const decoded = await native.settle(
+    { token: f.token, profileId: f.profile.id },
+    f.journeyId,
+    f.input.requestId,
+    f.input.assessmentVersion,
+    f.input.assessmentRevision,
+  );
+  assert.equal(decoded.targetPoints, fallback.outcome.targetPoints);
+  assert.equal(decoded.creditContext, fallback.outcome.creditContext);
+  assert.equal(decoded.receipt.journeyId, f.journeyId);
   const evidenceResponse = await first.request(
     `/v1/journeys/${f.journeyId}/evidence`,
     f.token,
@@ -531,6 +551,33 @@ for (const release of [true, 'provisional', 'co2'] as const)
     const response = await first.request(path, f.token, f.input);
     assert.equal(response.status, 200);
     const result = resultSchema.parse(await response.json());
+    const native = createJourneyApi(
+      createAccountApi(`http://127.0.0.1:${first.port}`, true).request,
+    );
+    const args = [
+      { token: f.token, profileId: f.profile.id },
+      f.journeyId,
+      f.input.requestId,
+      f.input.assessmentVersion,
+      f.input.assessmentRevision,
+    ] as const;
+    const decoded = await native.settle(...args);
+    assert.equal(decoded.creditedPoints, result.outcome.creditedPoints);
+    assert.equal(decoded.creditContext, result.outcome.creditContext);
+    assert.equal(
+      decoded.receipt.result.decision.kind,
+      result.outcome.receipt.result.decision.kind,
+    );
+    await assert.rejects(
+      native.settle(
+        { token: 'invalid', profileId: f.profile.id },
+        f.journeyId,
+        f.input.requestId,
+        f.input.assessmentVersion,
+        f.input.assessmentRevision,
+      ),
+      (error: unknown) => error instanceof AccountError && error.status === 401,
+    );
     assert.equal(result.entry.delta, release === 'co2' ? 7 : 120);
     if (release === 'co2') {
       const decision = result.outcome.receipt.result.decision;

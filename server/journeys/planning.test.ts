@@ -276,3 +276,28 @@ test('single comparison projects explicit CO2 display and retains exact factor r
   });
   assert.deepEqual(retained.display, display);
 });
+
+test('prepared snapshot keeps the selected provider leg geometry without changing its distances', () => {
+  const value = comparison();
+  if (value.result.kind !== 'routes') throw new Error('Missing fixture');
+  const start = { latitude: 1.3, longitude: 103.8 };
+  const end = { latitude: 1.31, longitude: 103.8 };
+  const geometry = {
+    kind: 'provider' as const,
+    legs: [{ legIndex: 0, points: [start, end] }],
+  };
+  value.result.evidence[0].geometry = {
+    kind: 'provider',
+    start,
+    end,
+    points: [start, end],
+    encoding: 'google-polyline5',
+  };
+  value.result.evidence[0].legGeometry = geometry;
+  const snapshot = routeSnapshots(value)[0];
+  assert.equal(snapshot.kind, 'available');
+  if (snapshot.kind === 'available') {
+    assert.deepEqual(snapshot.snapshot.legGeometry, geometry);
+    assert.equal(snapshot.snapshot.legs[0].distanceMeters, 2000);
+  }
+});

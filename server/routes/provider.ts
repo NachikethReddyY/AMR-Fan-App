@@ -64,6 +64,7 @@ const fieldMask = [
   'routes.distanceMeters',
   'routes.duration',
   'routes.legs.steps.distanceMeters',
+  'routes.legs.steps.polyline.encodedPolyline',
   'routes.legs.steps.staticDuration',
   'routes.legs.steps.travelMode',
   'routes.legs.steps.transitDetails.transitLine.vehicle.type',
