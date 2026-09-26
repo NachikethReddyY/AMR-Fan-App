@@ -115,3 +115,18 @@ The actual API owner-shutdown check also passes. No shared process is signalled.
 Tracker #4; reviewer evidence and repeated author proof remain private.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## PR39-REFRESH: resolve conflicts with current main
+
+Tracker: [PR #39](https://github.com/NachikethReddyY/AMR-Fan-App/pull/39), related to #12 and #13.
+Requested: integrate main using the existing rebase convention, preserve both
+sides, verify the build before pushing, and preserve pre-existing local edits.
+The prepared nine-commit rebase already includes main at `4efa304`. Eight patches
+are unchanged; API registration moved around the new authentication routes.
+Voting source and migration 0009 remain identical to the published candidate.
+Frozen install, full serial checks and production exports passed. The initial
+concurrent check hit the unchanged AI transport test's 40 ms deadline; it passed
+with the export finished. Security checks passed, including zero source SAST
+findings and no high/critical dependency advisories. Guarded push is next.
+
+Verified by gpt-6-astra through Codex (T3 Code).

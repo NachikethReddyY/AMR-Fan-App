@@ -376,3 +376,23 @@ independent review and a subsequent mobile rebase. Evidence: ignored
 `.evidence/account-4/launcher-descendant-*` and `review-fix-*`.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## PR39 conflict refresh, 2026-09-26
+
+The prepared branch already rebased all nine PR commits onto main `4efa304`.
+Range comparison found eight identical patches and only API registration context
+changes in the ninth. Participation source, tests and migration 0009 are unchanged
+from the published PR; main's authentication and journey changes are retained.
+Pre-existing hosted sign-in edits are saved separately and excluded from delivery.
+
+Frozen install, full `pnpm check` and `pnpm exec expo export --platform all` passed.
+The first check ran beside the export and failed the unchanged AI transport
+test's 40 ms request-count assertion. A serial full rerun passed without source
+changes. Security checks passed: no detected secrets, zero SAST findings across
+166 targets, successful scanner fixtures, and no high/critical dependency
+advisories. The previously triaged moderate UUID advisory remains. Raw proof is under
+`.evidence/pr39-conflict-refresh/`. Database integration, DAST and rendered UI
+were not rerun for this bounded conflict/build refresh. Existing hosted Actions
+pause is preserved; no CI queries, workflow changes or merge are part of this task.
+
+Verified by gpt-6-astra through Codex (T3 Code).

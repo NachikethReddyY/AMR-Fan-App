@@ -17,6 +17,22 @@ remain required acceptance.
 verification and limits. Voting and selection remain with issues #12 and #13;
 their accepted rules below are unchanged. This candidate does not close #11.
 
+## Issues #12/#13 registered candidate status
+
+The registered participation module implements atomic contributions, one exact
+shared ranking, assigned-admin session creation/closure and audited release or
+demonstration fulfilment. All 20 serial PostgreSQL/registered HTTP/restart cases
+and 18 unit/admin cases pass. Original #11 receipts and moderation remain unchanged;
+callers use the separate live projection for operation-linked status and totals.
+The separate admin page has actual browser proof for authority, ranking, original
+snapshots, retained-key retries, release and demonstration fulfilment. The preview
+host disconnected during the 320px check; narrow-width/200% zoom, full keyboard,
+phone and reset acceptance remain unverified. Package/check/CI and API/static
+registration are included; shared navigation is unchanged.
+[Participation operations](../operations/participation.md) records interfaces,
+proof and remaining acceptance. #12/#13 remain open pending independent review
+and remaining product integration.
+
 ## Outcome
 
 Fans submit questions or proposed driver/team activities and spend points to choose what is selected for a fan interaction.

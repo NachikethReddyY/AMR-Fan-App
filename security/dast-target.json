@@ -3,6 +3,6 @@
   "target": {
     "dockerfile": "server/api/Dockerfile",
     "port": 3000,
-    "path": "/admin/reports/"
+    "path": "/admin/participation/"
   }
 }

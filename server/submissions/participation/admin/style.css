@@ -1,0 +1,35 @@
+/* Extend the established admin geometry only for this page's retained lists. */
+#workspace > .profile-controls,
+#retry,
+#receipt {
+  margin-bottom: 24px;
+}
+.participation-list {
+  padding: 0;
+  list-style: none;
+}
+.participation-list > li {
+  border-top: 1px solid #3d3d3d;
+  padding: 16px 0;
+}
+#workspace,
+#receipt,
+.participation-list li,
+header {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.participation-list ol {
+  padding-left: 24px;
+}
+#workspace button,
+header button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+header {
+  flex-wrap: wrap;
+}
+.selection-form {
+  margin-top: 16px;
+}

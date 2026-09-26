@@ -27,7 +27,7 @@
     "security:check": "pnpm security:secrets && pnpm security:sast && pnpm security:audit && pnpm security:self-test",
     "security:dast": "node scripts/security.mjs dast",
     "security:dast:self-test": "node scripts/security.mjs dast-self-test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test && pnpm reports:test && pnpm awards:test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test && pnpm reports:test && pnpm awards:test && pnpm participation:test",
     "test:web": "jest --config jest.web.config.js --runInBand",
     "test:database:unit": "node --test server/database/config.test.ts",
     "db:up": "node scripts/local-db.mjs up",
@@ -62,7 +62,9 @@
     "reports:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/reports/reports.test.ts server/reports/http.test.ts server/reports/registration.test.ts server/reports/integration.test.ts server/reports/storage.test.ts",
     "reports:parser:build": "docker build --tag amr-report-parser:local -f server/reports/Dockerfile .",
     "awards:test": "node --test server/awards/policy.test.ts",
-    "awards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/awards/awards.test.ts server/awards/http.test.ts server/awards/testing/registered-api.test.ts"
+    "awards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/awards/awards.test.ts server/awards/http.test.ts server/awards/testing/registered-api.test.ts",
+    "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs",
+    "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts"
   },
   "dependencies": {
     "@expo/html-elements": "^57.0.0",
