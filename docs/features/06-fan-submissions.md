@@ -24,8 +24,10 @@ ranking, assigned-admin session creation/closure and audited release or
 demonstration fulfilment. Local PostgreSQL concurrency/authorization and owned
 HTTP/restart cases pass. Original #11 receipts and moderation remain unchanged;
 a separate live projection supplies totals and statuses. Root/API, admin-shell
-and phone registration remain reserved integration work. The retained actual
-API registration case is red (404); no full phone, browser or reset completion
+and phone registration remain reserved integration work. Owned admin controls
+now provide creation, confirmed closure, frozen snapshots and audited resolution
+using the established admin layout; DOM-state and asset tests pass. The retained
+actual API/assets registration cases are red (404/401); no full phone, browser or reset completion
 is claimed. [Participation operations](../operations/participation.md) records
 the exact handoff, verification and remaining acceptance. #12/#13 remain open.
 

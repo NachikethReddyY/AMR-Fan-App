@@ -7,12 +7,15 @@ module. [Fan submissions](../features/06-fan-submissions.md) owns product rules.
 
 ## Current delivery boundary
 
-The owned domain, migration and HTTP adapter have local PostgreSQL and adapter
-proof. Root API registration, scripts/CI registration and admin/phone controls
-are reserved to the integration owners and are not changed here. The retained
+The owned domain, migration, HTTP adapter and separate admin page have local
+PostgreSQL, adapter and DOM-state proof. Root API/assets registration,
+scripts/CI registration, shared navigation and phone controls are reserved to
+the integration owners and are not changed here. The retained
 `actual createApi registers participation routes` test currently fails with 404
 instead of 201. Passing owned adapter tests do not establish a registered product
-flow. Browser, native, reset and deployment acceptance remain unverified.
+flow. A second actual API case for the page returns 401 instead of 200 because
+the static route is not registered. Browser, native, reset and deployment
+acceptance remain unverified.
 
 The implementation base is reviewed main
 `a7696eac5f521b7e718ccba8de173b207e2f5c58`. No shared module, original submission
@@ -100,7 +103,10 @@ admin, server time and bounded reason. A matching retry returns its stored resul
 a conflicting payload or another new resolution of a terminal selection fails.
 
 `listInteractionSessions` returns the original closed snapshot alongside current
-selection resolutions. This preserves previous selection/release cycles when a
+selection resolutions and `content: [{ id, text, tag }]` for selected submissions.
+The content joins immutable originals so admin actions remain identifiable when
+the live ranking page changes. It adds no owner/profile fields and does not
+rewrite action receipts. This preserves previous selection/release cycles when a
 later session chooses a released submission again. Current admin authorization
 is required for session audit reads as well as writes. No zero-value personal
 points entry substitutes for the separate admin action audit.
@@ -141,7 +147,23 @@ The reserved root/API owner adds this import to `server/api/app.ts`:
 
 ```ts
 import { handleParticipationRequest } from '../submissions/participation-http.ts';
+import { serveParticipationAdmin } from '../submissions/participation-admin.ts';
 ```
+
+Alongside existing static admin handlers, before bearer extraction, add:
+
+```ts
+if (req.method === 'GET' && (await serveParticipationAdmin(path, res))) return;
+```
+
+The exact asset allowlist is `/admin/participation/`,
+`/admin/participation/app.js` and `/admin/participation/style.css`. The HTML also
+uses the existing `/admin/style.css`. Keep the trailing slash on the page link.
+No tests, TypeScript sources, directory traversal or arbitrary asset paths are
+served. The handler sets same-origin script/style/connect CSP, no-store and
+nosniff; the existing API retains its other headers. The separate shell owner
+may register a link to `/admin/participation/` in the established navigation.
+This author has not changed navigation.
 
 After bearer extraction and existing origin/rate guards, before the generic
 fallback, call the adapter alongside the registered #11/journey/reward adapters:
@@ -181,25 +203,98 @@ Proposed root scripts, for the separate integration grant:
 
 ```json
 {
-  "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts",
-  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation-http.database.test.ts"
+  "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs",
+  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts"
 }
 ```
 
 Add the first to `check`, and the full unfiltered second to the `local-postgres`
 CI job immediately after `pnpm db:test`, before account/points/other feature
-database suites. The domain suite resets only its canonical worktree
+database suites. The domain suite and the focused admin-read fixture reset only
+their canonical worktree
 `_test` database's app/migration state between cases. Run it serially and before
 other database regressions; never share that database with a concurrently running
 suite. The explicit temporary pre-registration filter below is not a CI command.
 
-The admin-shell owner wires create/close/release/fulfil controls to these routes,
+The owned page implements create/close/release/fulfil controls using these routes,
 with existing same-origin in-memory bearer authentication and current server role
-checks. No admin assets or navigation are delivered by this domain slice. The
+checks. Root registration and actual browser verification remain separate. The
 phone owner joins live status into Rewards History and exposes shared voting in
 Redemption, preserving exactly two Rewards tabs and the four main destinations.
 Show exact confirmed spend, freeze/refusal states and demonstration fulfilment.
 No new visual direction or real fulfilment arrangement is selected here.
+
+## Owned admin controls and browser acceptance
+
+The page reuses the established admin sign-in, shared CSS, controls and list
+geometry. Its small stylesheet extends wrapping for long IDs, decimal totals
+and content. It uses native buttons, labelled select/textarea controls, polite
+status output and explicit keyboard focus for close confirmation and recorded
+results. A DOM test can prove those attributes and focus calls; it cannot prove
+rendered overflow, assistive-technology behavior or visual quality.
+
+The existing local account selector is available only when `/admin/config`
+reports synthetic mode. Current `/v1/admin/session` gates entry and refresh;
+every mutation and session/audit read also requires current backend authority.
+Live sign-in remains the existing project's pending setup. No token entry form,
+client-assigned role or credential persistence is added. Tokens stay in memory;
+requests omit cookies and use a 10-second timeout and no-store.
+
+Ranking preserves the server's order, full decimal strings and microsecond
+timestamps. It pages with the opaque `after` cursor; session history pages with
+the decimal `before` cursor. Refresh replaces both first pages. The page does
+not predict winners from a partial live ranking. Closing requires a separate
+confirmation naming the session and the irreversible up-to-three freeze.
+
+Original close snapshots and current resolution records are shown separately.
+Empty snapshots are explicit. A selected entry has a reason of 1–500 characters
+and release or demonstration fulfilment controls. Terminal entries show actor,
+time and reason without another action. Immutable selected content is rendered
+as text, as are reasons, tags, IDs and server messages; no HTML interpolation.
+
+Double clicks cannot start a second in-flight action. An unknown outcome keeps
+the exact path, payload and request ID in memory, scoped to that authenticated
+actor. Only an explicit retry resends it. Refresh and reauthentication do not
+replace it, even if the session has already closed or the selection resolved.
+Another signed-in actor cannot view or replay that intent. A definitive input,
+missing-target or conflict response requires a fresh read before new actions.
+This is a temporary UI recovery guard, not a server session cap or new lifecycle.
+An acknowledged result remains visible if its subsequent refresh fails.
+
+Pending intents do not survive page reload or process termination. The page
+warns against reload while an outcome is unknown. Server records remain durable;
+after reload inspect current session/audit state before deliberately creating a
+new action. No cross-reload automatic retry guarantee is claimed. Successful
+creation receipts can say open while the current session is closed; the recorded
+action and live list are deliberately separate.
+
+After the root owner registers these exact assets and APIs, use an explicitly
+granted browser against the real `createApi` target, never the owned test server:
+
+1. Open `/admin/participation/` directly. Verify all three owned assets and shared
+   CSS load with CSP/no-store headers. Sign in as a fan and then an assigned admin;
+   verify denial versus entry. Revoke the role/session while open and prove data
+   clears and writes are denied, including a retry of a completed request.
+2. With approved synthetic contributions across question/activity tags, inspect
+   huge totals and microsecond/equal-key ties in server order. Page both lists,
+   refresh, and verify pending/rejected content and private profiles never appear.
+   Use literal HTML-like text and reasons; verify no execution or unexpected URLs.
+3. Create an open session, cancel close without a write, then confirm. Observe the
+   original zero/fewer-than-three/three snapshot. Race a vote and competing close
+   through the real API; show only the committed server result. Selected entries
+   must reject new contributions; refreshed sessions must not replace winners.
+4. Lose a create, close and resolution response while retaining the page. Retry
+   the original action and inspect identical request ID/payload and one effect.
+   Repeat after refresh and same-actor reauthentication; switch actor and prove
+   no cross-actor pending details. A stale competing resolution should show the
+   conflict and require refresh, without an automatic replacement action.
+5. Release with a reason, contribute again and select in a later session. Verify
+   retained earlier snapshots and audit. Record demonstration fulfilment and
+   verify no further action/selection; show no claim of a real driver/team event.
+6. Use keyboard only, including close/cancel, bounded reason validation and retry.
+   At 320 CSS px and 200% zoom, inspect long text/IDs/totals, focus visibility,
+   labels/status announcements and absence of horizontal overflow. Capture actual
+   browser evidence. Phone/History and reset remain separate acceptance.
 
 ## Local proof and limits
 
@@ -213,6 +308,22 @@ boundary test and two real HTTP/owned-process-restart cases pass. Existing point
 and #11 suites pass against migration 0009, including their immutable TRUNCATE
 checks. Ten account/API regression cases also pass. The actual registered API
 case remains intentionally red until integration.
+
+Ops99 adds 14 focused cases against the exact shipped HTML/JS/CSS and asset
+handler, plus one actual PostgreSQL content-read case. The 15 existing domain
+cases and two owned HTTP/restart cases passed again. DOM interaction cases use
+the already-installed Jest environment's jsdom with controlled HTTP responses,
+not a browser or fake product-registration claim. A failing-first recovery run
+exposed stale enabled actions after failed refresh and missing result focus;
+both are fixed. The original absent-asset run and absent-content read run were
+also red before implementation. Typecheck, scoped ESLint/Prettier and source
+security checks passed; the unchanged dependency audit still has one moderate
+advisory. The actual static/API registration cases remain RED at 401/404.
+
+```sh
+node --test --test-concurrency=1 server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs
+pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts
+```
 
 The repository's `check` stages pass with test files run serially. Source secret
 and SAST scans and scanner self-tests pass. The dependency audit meets the
