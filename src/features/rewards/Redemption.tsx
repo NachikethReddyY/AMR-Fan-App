@@ -7,12 +7,66 @@ import { useAccount } from '../account/provider';
 import { AccountError } from '../account/api';
 import { api } from '../account/native-auth';
 import { privateStorage } from '../account/storage';
+import { AccountPanel } from '../account/AccountPanel';
+import { createCatalogue } from './catalogue';
 import { useProfileContext, useResource } from '../account/useResource';
 import { createRewardsApi } from './api';
 import { createPurchaseController } from './state';
 import type { Offer } from './contracts';
 import { ReceiptDetail } from './ReceiptDetail';
 const rewards = createRewardsApi(api.request);
+export function GuestRedemption() {
+  const [catalogue] = useState(() => createCatalogue(rewards.catalogue));
+  const state = useSyncExternalStore(catalogue.subscribe, catalogue.getState);
+  useEffect(() => {
+    void catalogue.start();
+    return () => catalogue.stop();
+  }, [catalogue]);
+  return (
+    <View style={styles.section}>
+      <Text style={styles.title}>Rewards to redeem</Text>
+      <Action
+        secondary
+        label={state.kind === 'loading' ? 'Loading offers…' : 'Refresh offers'}
+        disabled={state.kind === 'loading'}
+        onPress={() => {
+          void catalogue.refresh();
+        }}
+      />
+      {state.kind === 'error' && (
+        <Text accessibilityLiveRegion="polite">{state.error}</Text>
+      )}
+      {state.kind === 'ready' && (
+        <>
+          {state.items.length === 0 && <Text>No offers available.</Text>}
+          {state.items.map((o) => (
+            <View key={o.id} style={styles.row}>
+              <Text style={styles.title}>{o.product.title}</Text>
+              <Text>{o.product.description}</Text>
+              <Text>{o.product.pointsPrice.toLocaleString()} points</Text>
+            </View>
+          ))}
+          {state.error && (
+            <Text accessibilityLiveRegion="polite">{state.error}</Text>
+          )}
+          {state.nextCursor && (
+            <Action
+              secondary
+              label={state.busy ? 'Loading more…' : 'Load more offers'}
+              disabled={state.busy}
+              onPress={() => {
+                void catalogue.more();
+              }}
+            />
+          )}
+        </>
+      )}
+      <Text>Sign in to redeem rewards.</Text>
+      <AccountPanel />
+    </View>
+  );
+}
+
 export function Redemption() {
   const ctx = useProfileContext();
   const { controller: session } = useAccount();

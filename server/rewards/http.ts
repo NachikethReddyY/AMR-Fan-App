@@ -4,6 +4,7 @@ import {
   editOffer,
   listAdminOffers,
   listOffers,
+  listPublicOffers,
   purchaseReward,
   readContent,
   readOffer,
@@ -66,4 +67,12 @@ export async function dispatchRewards({
       value: await readContent(pool, token, profileId, offerId),
     };
   return null;
+}
+
+// Called only by the exact public GET registration, after origin/rate guards.
+export async function publicRewardsCatalogue(
+  pool: Pool,
+  query: Record<string, string>,
+) {
+  return { status: 200, value: await listPublicOffers(pool, query) };
 }

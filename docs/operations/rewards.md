@@ -33,6 +33,36 @@ one voucher or one content right; intentional repeat tree/voucher purchases use
 new request keys. No quantity control, purchase cap, expiry, refund or access
 revocation is introduced.
 
+## Guest catalogue
+
+The native Rewards tab defaults to Redemption. The explicit Home History action
+still opens History. Signed-out fans can browse enabled offers with their stored
+titles, descriptions and points prices, then use the existing Account entry to
+sign in. Catalogue content is not a synthetic preview. An empty catalogue or
+unavailable service is shown honestly.
+
+Only `GET /v1/rewards/offers` is public, after the existing global rate limit and
+browser-origin guard. Optional `limit` is 1 to 25 (default 25); optional `after`
+is the last UUID cursor. Unknown query fields fail. Results contain `offers` and
+`nextCursor`; current enabled versions use the same `publicOffer` projection as
+authenticated reads, which excludes paid content text. No catalogue request
+needs a session token or profile. The API must deploy this route before a new
+mobile build can browse hosted rewards anonymously.
+
+All mutations, profile-specific offers, balances, History, receipts, content,
+submissions and admin access retain their existing authentication. Signed-in
+redemption still re-reads the offer and confirms its current version and price.
+The guest reader cancels publication on unmount; returning after logout starts a
+fresh catalogue. It never supplies a fake authenticated context.
+
+Local verification adds `server/rewards/testing/guest-api.test.ts`, intended only
+for a disposable isolated `amr_c787guest_test` database, plus client catalogue
+lifecycle/API tests. Real HTTP proof covers redaction, pagination, exact method
+and path boundaries, origin checks and the rate limit. This does not establish
+installed native or hosted deployment acceptance.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 ## Transaction and ownership
 
 `server/rewards/index.ts` accepts the existing opaque session. A purchase supplies

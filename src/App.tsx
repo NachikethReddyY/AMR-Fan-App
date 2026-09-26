@@ -197,7 +197,7 @@ function RewardsScreen({
   return (
     <Screen>
       <PointsRewards
-        section={route.params?.section ?? 'History'}
+        section={route.params?.section ?? 'Redemption'}
         onSectionChange={(section) => navigation.setParams({ section })}
       />
     </Screen>

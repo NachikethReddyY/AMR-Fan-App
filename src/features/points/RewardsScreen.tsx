@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useHistory } from './provider';
 import { Balance } from './Balance';
 import { Action, Text } from './controls';
-import { Redemption } from '../rewards/Redemption';
+import { Redemption, GuestRedemption } from '../rewards/Redemption';
 import { ReceiptHistory } from '../rewards/ReceiptDetail';
 import { SubmissionForm } from '../submissions/SubmissionForm';
 import { SubmissionStatus } from '../submissions/SubmissionStatus';
@@ -28,7 +28,7 @@ export function RewardsScreen({
     <View>
       <View style={styles.content}>
         <Text style={styles.title}>Rewards</Text>
-        <Balance />
+        {context && <Balance />}
         <View style={styles.tabs} accessibilityRole="tablist">
           {(['Redemption', 'History'] as const).map((name) => (
             <Pressable
@@ -51,10 +51,11 @@ export function RewardsScreen({
               <SubmissionForm />
             </View>
           ) : (
-            <Text>Sign in to view rewards and submissions.</Text>
+            <GuestRedemption key="guest-catalogue" />
           )
         ) : (
           <>
+            {!context && <Text>Sign in to view your History.</Text>}
             {account.kind === 'signedIn' && (
               <Action
                 secondary

@@ -16,6 +16,17 @@ export function createRewardsApi(request: Request) {
     return q;
   };
   return {
+    catalogue: async (after?: string) => {
+      const page = z
+        .object({
+          offers: z
+            .array(offerSchema.extend({ enabled: z.literal(true) }))
+            .max(25),
+          nextCursor: z.uuid().nullable(),
+        })
+        .parse(await request(`/v1/rewards/offers?${query(after)}`));
+      return { items: page.offers, nextCursor: page.nextCursor };
+    },
     offers: async (ctx: Context, after?: string) => {
       const p = z
         .object({
