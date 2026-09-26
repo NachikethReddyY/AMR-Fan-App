@@ -4,9 +4,15 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useHistory } from './provider';
 import { Balance } from './Balance';
 import { Action, Text } from './controls';
+import { Redemption } from '../rewards/Redemption';
+import { ReceiptHistory } from '../rewards/ReceiptDetail';
+import { SubmissionForm } from '../submissions/SubmissionForm';
+import { SubmissionStatus } from '../submissions/SubmissionStatus';
+import { useProfileContext } from '../account/useResource';
 import { AccountPanel } from '../account/AccountPanel';
 
 export function RewardsScreen() {
+  const context = useProfileContext();
   const [section, setSection] = useState<'Redemption' | 'History'>('History');
   const { state, controller, account } = useHistory();
   useFocusEffect(
@@ -36,7 +42,14 @@ export function RewardsScreen() {
           ))}
         </View>
         {section === 'Redemption' ? (
-          <Text>Redemption is not available yet.</Text>
+          context ? (
+            <View key={`${context.token}:${context.profileId}:redemption`}>
+              <Redemption />
+              <SubmissionForm />
+            </View>
+          ) : (
+            <Text>Sign in to view rewards and submissions.</Text>
+          )
         ) : (
           <>
             {account.kind === 'signedIn' && (
@@ -94,6 +107,15 @@ export function RewardsScreen() {
                   />
                 )}
               </>
+            )}
+            {context && (
+              <View
+                key={`${context.token}:${context.profileId}:rights`}
+                style={{ gap: 24 }}
+              >
+                <ReceiptHistory />
+                <SubmissionStatus />
+              </View>
             )}
           </>
         )}

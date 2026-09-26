@@ -115,6 +115,7 @@ export function createAccountApi(baseUrl: string, development: boolean) {
     return response.json();
   }
   return {
+    request,
     signIn: async (accessToken: string) =>
       session(await request('/v1/session', accessToken, 'POST')),
     syntheticSignIn: async (fixture: 'fan-a' | 'fan-b') => {
@@ -149,4 +150,5 @@ export function createAccountApi(baseUrl: string, development: boolean) {
     },
   };
 }
-export type AccountApi = ReturnType<typeof createAccountApi>;
+export type AccountApi = Omit<ReturnType<typeof createAccountApi>, 'request'>;
+export type Request = ReturnType<typeof createAccountApi>['request'];

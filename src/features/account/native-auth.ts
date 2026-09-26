@@ -1,5 +1,5 @@
 import * as AuthSession from 'expo-auth-session';
-import * as SecureStore from 'expo-secure-store';
+import { privateStorage } from './storage';
 import { createAccountApi } from './api';
 import type { StoredSession } from './session';
 
@@ -10,7 +10,7 @@ export const api = createAccountApi(process.env.EXPO_PUBLIC_API_URL ?? '', dev);
 const storageKey = 'amr.account.session.v1';
 export const storage = {
   read: async (): Promise<StoredSession | null> => {
-    const raw = await SecureStore.getItemAsync(storageKey);
+    const raw = await privateStorage.read(storageKey);
     if (!raw) return null;
     const value: unknown = JSON.parse(raw);
     if (
@@ -32,10 +32,8 @@ export const storage = {
     throw new Error('Stored sign-in could not be read.');
   },
   write: async (value: StoredSession) =>
-    SecureStore.setItemAsync(storageKey, JSON.stringify(value), {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    }),
-  clear: async () => SecureStore.deleteItemAsync(storageKey),
+    privateStorage.write(storageKey, JSON.stringify(value)),
+  clear: async () => privateStorage.clear(storageKey),
 };
 export async function signInWithProvider() {
   const issuer = process.env.EXPO_PUBLIC_AUTH_ISSUER;
