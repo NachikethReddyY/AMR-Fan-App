@@ -4,6 +4,9 @@ Related to #3, #4, #5, #6, #7, #11, #14, #15, #16, #19 and #20.
 These are partial implementations. Native accessibility and provider evidence
 remain required; this document does not close an issue.
 
+Fans use the native iOS/Android app. Web is reserved for the separate admin
+dashboard. The phone has no web account-storage adapter.
+
 ## Current behavior
 
 The four destinations remain Home, Travel, Rewards and Impact. Account sessions
@@ -72,34 +75,14 @@ submissions, Travel, official Impact and balance/History need native observation
 Small-iPhone largest Dynamic Type and actual VoiceOver remain mandatory and
 unverified. Live OIDC and Google/provider configuration remain external limits.
 
-A development-only web storage adapter exists solely for loopback synthetic
-proof and uses sessionStorage, not a production web-session policy. Non-development,
-non-loopback or non-synthetic builds reject this adapter. Native storage uses the
-same key, serialization, SecureStore calls and accessibility setting as before.
-The ignored local proof bridge preserves the API's origin and auth guards.
+Metro and Babel use the accepted baseline configuration. Native SecureStore,
+accessibility queries/subscriptions, typography and four-tab navigation remain
+unchanged. The six prepared native dependencies include `expo-web-browser` for
+native OIDC authentication; that dependency does not create a fan web product.
 
-The local web repair excludes only React Native Web's own package files from
-NativeWind's web import rewriting in Babel and Metro. Expo still transforms those
-files; application web styling and native resolution/transforms remain active.
-The focused resolver/transform regression checks mixed platform callers in one
-Babel process, native output equality and application styling transforms.
-
-AccountPanel and PointsTextProvider also skip the bold-text query/subscription
-only when web does not provide `AccessibilityInfo.isBoldTextEnabled`. Their native
-query, initial value, change listener and cleanup are preserved and tested. An
-unsupported web capability supplies no evidence about native accessibility.
-
-The owned synthetic browser mounted and exercised sign-in, current server balance,
-real/demo switching, History pagination and the Redemption offer list. Account
-and Rewards screenshots show the existing styling and four bottom labels. The
-proof bridge required a flex root for its generated HTML; that is not product UI.
-Initial Home content was not visibly established by its screenshot.
-
-The next action selected a content offer for review. T3 timed out while waiting
-for confirmation, then reported no automation host and instructed no retry.
-No confirmation was clicked. Purchase/retained content/retry, paid submission,
-route comparison and official reports remain interactively unverified. No browser
-fallback ran after cleanup. All new native/manual gates remain held; exports are
-not a substitute for UI observation.
+Earlier synthetic browser experiments remain private historical evidence. They
+do not establish native functionality, visual acceptance or accessibility.
+Device observation is pending an exclusive device allocation. All partial issues
+remain open and this candidate remains on mandatory native UI HOLD.
 
 Edited by gpt-6-astra through Codex (T3 Code).

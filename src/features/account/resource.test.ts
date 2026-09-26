@@ -1,4 +1,3 @@
-import { privateStorage as webStorage } from './storage.web';
 import { AccountError } from './api';
 import { createResource, createIntent } from './resource';
 
@@ -232,35 +231,4 @@ test('failure to clear a definitive rejection preserves retry rather than losing
   await c.setContext(a);
   await expect(c.submit('request')).resolves.toBeUndefined();
   expect(c.getState().kind).toBe('retry');
-});
-
-test('web credential adapter rejects non-development, non-synthetic and non-loopback use', async () => {
-  const dev = Object.getOwnPropertyDescriptor(globalThis, '__DEV__');
-  const location = Object.getOwnPropertyDescriptor(globalThis, 'location');
-  const flag = process.env.EXPO_PUBLIC_LOCAL_SIGN_IN;
-  try {
-    Object.defineProperty(globalThis, '__DEV__', {
-      value: false,
-      configurable: true,
-    });
-    await expect(webStorage.read('proof')).rejects.toThrow('not available');
-    Object.defineProperty(globalThis, '__DEV__', {
-      value: true,
-      configurable: true,
-    });
-    process.env.EXPO_PUBLIC_LOCAL_SIGN_IN = 'false';
-    await expect(webStorage.read('proof')).rejects.toThrow('not available');
-    process.env.EXPO_PUBLIC_LOCAL_SIGN_IN = 'true';
-    Object.defineProperty(globalThis, 'location', {
-      value: { hostname: 'example.com' },
-      configurable: true,
-    });
-    await expect(webStorage.read('proof')).rejects.toThrow('not available');
-  } finally {
-    if (dev) Object.defineProperty(globalThis, '__DEV__', dev);
-    if (location) Object.defineProperty(globalThis, 'location', location);
-    else Reflect.deleteProperty(globalThis, 'location');
-    if (flag === undefined) delete process.env.EXPO_PUBLIC_LOCAL_SIGN_IN;
-    else process.env.EXPO_PUBLIC_LOCAL_SIGN_IN = flag;
-  }
 });

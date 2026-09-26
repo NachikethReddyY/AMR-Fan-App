@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
-  Platform,
   Pressable,
   StyleSheet,
   Text as NativeText,
@@ -16,12 +15,6 @@ export function PointsTextProvider({
 }) {
   const [bold, setBold] = useState(false);
   useEffect(() => {
-    if (
-      Platform.OS === 'web' &&
-      typeof AccessibilityInfo.isBoldTextEnabled !== 'function'
-    ) {
-      return;
-    }
     void AccessibilityInfo.isBoldTextEnabled().then(setBold);
     const listener = AccessibilityInfo.addEventListener(
       'boldTextChanged',

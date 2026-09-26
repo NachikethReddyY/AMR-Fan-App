@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
-  Platform,
   Modal,
   Pressable,
   ScrollView,
@@ -61,12 +60,6 @@ export function AccountPanel() {
   const { controller: history } = useHistory();
   const [bold, setBold] = useState(false);
   useEffect(() => {
-    if (
-      Platform.OS === 'web' &&
-      typeof AccessibilityInfo.isBoldTextEnabled !== 'function'
-    ) {
-      return;
-    }
     void AccessibilityInfo.isBoldTextEnabled().then(setBold);
     const listener = AccessibilityInfo.addEventListener(
       'boldTextChanged',
