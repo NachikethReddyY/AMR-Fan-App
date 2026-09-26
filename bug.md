@@ -1,5 +1,53 @@
 # Steering and bug inbox
 
+## AI-SUPPORT-046: one authorized technical support email
+
+User authorized one email to the official TokenRouter support address about the
+aggregate charge ceiling, exact Jev model routing and separate Luna image/billing
+bounds. Sent once from the observed authenticated account after compose review.
+Confirmed Gmail's sent notice and the sent message headers/body. No attachments,
+credentials, account IDs or private source were included in the sent message.
+No provider inference is authorized. Sanitized receipt and private thread link
+are stored only under `.evidence/tokenrouter-live-integration/`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AI-GATEWAY-046: establish the live provider contract
+
+Related to parent [#3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3);
+new tracker item unlinked. After merged PR45, the provider owner must establish
+the actual Jev route/envelopes, Luna image support, current billing bounds and
+the shared USD 10 controls before transport implementation or activation.
+Preserve the separate durable-store, photo HTTP and route owners' paths.
+
+Read-only official docs and the existing Helium console established the gateway
+Jev request path, both models' displayed rates including Luna tiers/cache, and
+the finite AMR key quota/model restrictions. Full response/echo, image bounds and
+failure/failover charges remain missing. See [contract evidence](docs/ai/gateway-contract.md).
+No live requests, account changes or replacement credentials were used.
+
+The durable owner retains `cost-reservation.ts`, its PostgreSQL implementation,
+isolated tests, migration 0011 and the durable-seam documentation. Runtime config
+will use only explicit `AI_COST_DATABASE_URL`. No interface change is needed yet.
+
+Follow-up: root requested full model-example/output-limit inspection, concrete
+documented preparation, and the smallest remaining fields. Completed a pure
+Jev request mapper with failing-first tests; response/transport activation stays
+blocked on the documented facts. Same-model direct OpenAI image support is
+recorded only as an approval-dependent alternative. The later authorized support
+email is recorded in AI-SUPPORT-046 above; no reply is claimed.
+
+Root review correction: the earlier failed criterion treated response-envelope
+facts as prerequisites for a diagnostic probe. Only the aggregate maximum charge
+and no-substitution assurance remain provider blockers before that probe; unknown
+usage retains the full reservation and the result remains unavailable to product
+callers. Classification: project guidance; shared instructions are unchanged.
+The support draft was prepared before the later authorization. Deliver this offline slice
+through one PR after the scheduled full/security lease. Preserve TODO exactly
+while rebasing main; no cross-branch import or live activation is authorized.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 Record every actionable request, correction or reproducible finding here.
 Read open entries at task start. Keep stable IDs and link the owning issue when
 available. An entry does not authorize unrelated work. Sensitive findings follow
