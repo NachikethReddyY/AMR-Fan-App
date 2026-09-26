@@ -121,6 +121,47 @@ The design documents are currently separate, uncommitted work. Read them when
 present. If absent from a checkout, obtain the accepted design inputs before UI
 implementation; do not invent replacements or treat draft directions as approved.
 
+## Design skill routing
+
+For UI improvements, use `design-ui` for scope and accepted direction, then
+`better-interface` for a consolidated review. Read only the relevant specialist
+workflows below. Skills inform execution; they do not expand source, dependency,
+publication, service, browser or device authority.
+
+Project skills resolve through `.agents/skills/<name>/SKILL.md`. Global skills
+resolve through the installed skill catalog; their canonical home is Fleet's
+`skills/<name>/SKILL.md`. Report missing skills instead of inventing their rules.
+
+| Task | Skills |
+| --- | --- |
+| Product direction and coherent UI implementation | Global `design-ui`; project `emil-design-eng` |
+| Full interface review | `better-interface`, which routes to the six `better-*` owners below |
+| Controls, icons, hit areas and optical alignment | `better-ui` |
+| Type scale, wrapping and large text | `better-typography` |
+| Semantic colors, palette and contrast | `better-colors` |
+| Accessible names, navigation and assistive access | `better-accessibility` |
+| Grouping, spacing and reading order | `better-layout`; global `critique-information-density` for overloaded screens |
+| Concise labels, errors and state copy | `better-writing`; global `ux-writing` when copy is the deliverable |
+| Remove redundant decoration and generic defaults | Global `no-ai-design-slop`; `audit-ai-design-slop` for an evidence-backed read-only audit |
+| Swift implementation when explicitly in scope | `write-swift` |
+| Native Expo motion | `animate-expo`; use Reanimated and the native reduced-motion setting |
+| Admin web motion and physical interactions | `animate`, `apple-design` |
+| Motion review or improvement planning | `review-animations`, `improve-animations`, `find-animation-opportunities`, `animation-vocabulary` |
+| Design alternatives when explicitly requested | `prototype`, `variant`; use global `html-communicator` for required static selection artifacts |
+| Explicit interface review, explanation or state stress test | `interface-review`, `explain-interface`, `break`, respectively |
+| Explicit library selection | `pick-ui-library`; preserve the installed stack unless a change is authorized |
+| Admin web mobile ergonomics or toast behavior | `mobile-native`, `ask-sonner`; these do not make a fan web app |
+
+Native fan screens use native layout, text scaling, gestures and accessibility
+proof. Web CSS, DOM, GSAP and browser-zoom instructions apply to admin web only.
+Keep existing four-tab navigation and accepted Account/Impact design. The selected
+Home is points-first with forest-dark panels, off-white balances and restrained
+lime actions. Preserve the sample account and explain sample data once in Account;
+remove repetitive "real" and "demo" labels without hiding data limitations.
+New destinations, reward rules, fabricated stats and broad redesigns need a product
+decision. Native screenshots and recordings must identify the tested build and
+platform; static mocks or exports do not establish native acceptance.
+
 ## Attribution and handoff
 
 Record work in [work.md](work.md). End agent-authored issue/PR comments, PR bodies
