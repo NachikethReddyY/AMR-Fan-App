@@ -11,10 +11,7 @@ import { createSession } from '../auth/session.ts';
 import { adjustPoints } from '../points/index.ts';
 import { createSubmission, moderateSubmission } from './index.ts';
 import { createApi } from '../api/app.ts';
-import {
-  participationTestServer,
-  requireOwnTestDatabase,
-} from './participation/test-server.ts';
+import { requireOwnTestDatabase } from './participation/test-server.ts';
 
 requireOwnTestDatabase();
 const pool = createDatabase();
@@ -69,9 +66,12 @@ function requests(port: number) {
     });
 }
 
-test('owned HTTP adapter applies votes and current admin sessions, with private reads and exact retries', async () => {
+test('registered HTTP applies votes and current admin sessions, with private reads and exact retries', async () => {
   const f = await fixtures();
-  const server = participationTestServer(pool);
+  const server = createApi({
+    pool,
+    env: { NODE_ENV: 'test', AUTH_DEV_ENABLED: 'true', API_HOST: '127.0.0.1' },
+  });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const address = server.address();
@@ -243,7 +243,7 @@ async function startProcess() {
   };
 }
 
-test('owned adapter process restart preserves contribution and replay with one debit', async () => {
+test('registered API process restart preserves contribution and replay with one debit', async () => {
   const f = await fixtures();
   const input = { requestId: randomUUID(), points: 10 };
   const path = `/v1/profiles/${f.profileId}/submissions/${f.submissionId}/contributions`;
@@ -298,6 +298,43 @@ test('actual createApi registers participation routes', async () => {
       { requestId: randomUUID(), points: 10 },
     );
     assert.equal(response.status, 201);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    const url = `http://127.0.0.1:${address.port}/v1/admin/submission-sessions`;
+    const headers = {
+      Authorization: `Bearer ${f.adminToken}`,
+      'Content-Type': 'application/json',
+    };
+    for (const [body, expected] of [
+      ['{', 400],
+      ['[]', 400],
+      [JSON.stringify({ padding: 'x'.repeat(4096) }), 413],
+    ] as const) {
+      assert.equal(
+        (await fetch(url, { method: 'POST', headers, body })).status,
+        expected,
+      );
+    }
+    assert.equal(
+      (
+        await fetch(url, {
+          method: 'POST',
+          headers: { ...headers, Origin: 'https://untrusted.invalid' },
+          body: JSON.stringify({ requestId: randomUUID() }),
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await fetch(url, {
+          method: 'POST',
+          headers: { Authorization: headers.Authorization },
+          body: '{}',
+        })
+      ).status,
+      415,
+    );
   } finally {
     server.close();
     await once(server, 'close');

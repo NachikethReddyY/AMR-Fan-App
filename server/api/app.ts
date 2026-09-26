@@ -33,6 +33,8 @@ import { createRouteQuery } from '../routes/query.ts';
 import { createJourneyService } from '../journeys/store.ts';
 import { handleSubmissionRequest } from '../submissions/http.ts';
 import { serveSubmissionAdmin } from '../submissions/admin.ts';
+import { handleParticipationRequest } from '../submissions/participation-http.ts';
+import { serveParticipationAdmin } from '../submissions/participation-admin.ts';
 import { dispatchRewards } from '../rewards/http.ts';
 import { serveRewardsAdmin } from '../rewards/admin.ts';
 import { reportRuntime, isReportPath } from '../reports/runtime.ts';
@@ -154,6 +156,8 @@ export function createApi({
         (await serveReportsAdmin(path, res, adminAuth.mode === 'supabase'))
       )
         return;
+      if (req.method === 'GET' && (await serveParticipationAdmin(path, res)))
+        return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
       if (Date.now() - windowStart >= 60000) {
@@ -226,6 +230,18 @@ export function createApi({
       });
       if (submissionResult)
         return send(res, submissionResult.status, submissionResult.value);
+      const participationResult = await handleParticipationRequest({
+        pool,
+        token,
+        method: req.method,
+        path,
+        query: Object.fromEntries(
+          new URL(req.url ?? '/', 'http://api.invalid').searchParams,
+        ),
+        body: () => body(req),
+      });
+      if (participationResult)
+        return send(res, participationResult.status, participationResult.value);
       const rewards = await dispatchRewards({
         pool,
         token,
