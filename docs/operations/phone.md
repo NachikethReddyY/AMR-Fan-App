@@ -90,9 +90,16 @@ native OIDC authentication; that dependency does not create a fan web product.
 
 Earlier synthetic browser experiments remain private historical evidence. They
 do not establish native functionality, visual acceptance or accessibility.
-Live Dynamic Type clipping on mounted iPhone text is still under correction;
-relaunching is not an accepted remedy. All partial issues remain open and this
-candidate remains on mandatory native UI HOLD. Hosted CI is paused by the user
-to save build minutes; local proof does not imply hosted gates passed.
+The shared header and account/points text renew their native text measurement
+when font scale changes. Screens and controllers remain mounted. On iPhone 17 Pro,
+Large to largest accessibility text and back preserves the open name editor,
+its unsaved draft, current profile and History. Header, body and action text
+reflow without relaunch. Pixel normal/largest text and approved-figure refresh
+also pass; Android's font-setting change recreates the Expo activity, so that
+observation does not establish mounted-state preservation on Android.
+Related to #4, #5, #19, #20 and parent #3. All partial issues remain open and this
+candidate remains on mandatory native UI HOLD for the outstanding small-phone
+and screen-reader proof. Hosted CI is paused by the user to save build minutes;
+local proof does not imply hosted gates passed.
 
 Edited by gpt-6-astra through Codex (T3 Code).

@@ -77,6 +77,7 @@ function Home() {
 
 function Screen({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
@@ -86,7 +87,9 @@ function Screen({ children }: { children: React.ReactNode }) {
           { paddingTop: insets.top + 18, paddingBottom: 24 },
         ]}
       >
-        <Text style={styles.appName}>AMR Fan App</Text>
+        <Text key={fontScale} style={styles.appName}>
+          AMR Fan App
+        </Text>
         {children}
       </ScrollView>
     </View>

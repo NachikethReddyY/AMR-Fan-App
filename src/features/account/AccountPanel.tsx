@@ -8,6 +8,7 @@ import {
   Text as NativeText,
   type TextProps,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,8 +20,10 @@ import { useHistory } from '../points/provider';
 const BoldText = createContext(false);
 function Text(props: TextProps) {
   const bold = useContext(BoldText);
+  const { fontScale } = useWindowDimensions();
   return (
     <NativeText
+      key={fontScale}
       {...props}
       style={[props.style, bold && { fontFamily: 'Geist_600SemiBold' }]}
     />

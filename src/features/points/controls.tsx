@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text as NativeText,
   type TextProps,
+  useWindowDimensions,
 } from 'react-native';
 
 const BoldText = createContext(false);
@@ -26,8 +27,11 @@ export function PointsTextProvider({
 }
 export function Text(props: TextProps) {
   const bold = useContext(BoldText);
+  const { fontScale } = useWindowDimensions();
+  // Renew the native paragraph's cached measurement, not its owning screen.
   return (
     <NativeText
+      key={fontScale}
       {...props}
       style={[
         styles.text,
