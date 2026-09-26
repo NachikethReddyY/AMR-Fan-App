@@ -17,19 +17,21 @@ remain required acceptance.
 verification and limits. Voting and selection remain with issues #12 and #13;
 their accepted rules below are unchanged. This candidate does not close #11.
 
-## Issues #12/#13 owned module status
+## Issues #12/#13 registered candidate status
 
-The participation module implements atomic contributions, one exact shared
-ranking, assigned-admin session creation/closure and audited release or
-demonstration fulfilment. Local PostgreSQL concurrency/authorization and owned
-HTTP/restart cases pass. Original #11 receipts and moderation remain unchanged;
-a separate live projection supplies totals and statuses. Root/API, admin-shell
-and phone registration remain reserved integration work. Owned admin controls
-now provide creation, confirmed closure, frozen snapshots and audited resolution
-using the established admin layout; DOM-state and asset tests pass. The retained
-actual API/assets registration cases are red (404/401); no full phone, browser or reset completion
-is claimed. [Participation operations](../operations/participation.md) records
-the exact handoff, verification and remaining acceptance. #12/#13 remain open.
+The registered participation module implements atomic contributions, one exact
+shared ranking, assigned-admin session creation/closure and audited release or
+demonstration fulfilment. All 20 serial PostgreSQL/registered HTTP/restart cases
+and 18 unit/admin cases pass. Original #11 receipts and moderation remain unchanged;
+callers use the separate live projection for operation-linked status and totals.
+The separate admin page has actual browser proof for authority, ranking, original
+snapshots, retained-key retries, release and demonstration fulfilment. The preview
+host disconnected during the 320px check; narrow-width/200% zoom, full keyboard,
+phone and reset acceptance remain unverified. Package/check/CI and API/static
+registration are included; shared navigation is unchanged.
+[Participation operations](../operations/participation.md) records interfaces,
+proof and remaining acceptance. #12/#13 remain open pending independent review
+and remaining product integration.
 
 ## Outcome
 

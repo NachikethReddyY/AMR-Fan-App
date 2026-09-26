@@ -7,23 +7,26 @@ module. [Fan submissions](../features/06-fan-submissions.md) owns product rules.
 
 ## Current delivery boundary
 
-The owned domain, migration, HTTP adapter and separate admin page have local
-PostgreSQL, adapter and DOM-state proof. Root API/assets registration,
-scripts/CI registration, shared navigation and phone controls are reserved to
-the integration owners and are not changed here. The retained
-`actual createApi registers participation routes` test currently fails with 404
-instead of 201. Passing owned adapter tests do not establish a registered product
-flow. A second actual API case for the page returns 401 instead of 200 because
-the static route is not registered. Browser, native, reset and deployment
-acceptance remain unverified.
+The domain, migration, seven HTTP routes and separate admin page are registered
+in the actual API. Package/check and serial CI registration are included. The
+retained actual API/static registration cases now pass, alongside real-process
+restart and existing feature regressions. Shared navigation and phone controls
+remain with their owners.
 
-The implementation base is reviewed main
-`a7696eac5f521b7e718ccba8de173b207e2f5c58`. No shared module, original submission
-receipt, moderation row or prior migration is changed. Migration
+The implementation was refreshed once onto reviewed main
+`2ce02fdd652b5a7d24923a804cf233c120181247`; the original seven commits retained
+identical patches. Original submission receipts, moderation rows, accounting and
+authorization policy remain unchanged. Migration
 `0009_submission_participation.sql` follows reserved 0006 rewards, 0007 reports
-and 0008 awards. Migrations 0002 accounts, 0003 points and 0005 submissions must
-be present. The migration runner applies existing filenames in sorted order;
-this worktree does not invent or apply peer migrations.
+and 0008 awards. Accounts, points and submissions migrations must be present.
+The runner applies existing filenames in sorted order; no peer migration is
+copied or invented here.
+
+Actual T3 browser flows passed on these exact assets and the real API with
+synthetic accounts. The preview host disconnected during the narrow-width check.
+320px, 200% zoom, complete keyboard/assistive-technology, phone and reset
+acceptance remain unverified. This is an integrated review candidate, not final
+product acceptance or independent signoff.
 
 ## Contribution and current status
 
@@ -141,16 +144,16 @@ new expiry policy for later profile/domain waits. Role/session changes serialize
 against held authority locks; a revocation committed before authorization wins
 causes denial. No client role, badge or actor field grants authority.
 
-## Exact registration handoff
+## Registered API and remaining caller handoff
 
-The reserved root/API owner adds this import to `server/api/app.ts`:
+The registered imports in `server/api/app.ts` are:
 
 ```ts
 import { handleParticipationRequest } from '../submissions/participation-http.ts';
 import { serveParticipationAdmin } from '../submissions/participation-admin.ts';
 ```
 
-Alongside existing static admin handlers, before bearer extraction, add:
+Alongside existing static admin handlers, before bearer extraction:
 
 ```ts
 if (req.method === 'GET' && (await serveParticipationAdmin(path, res))) return;
@@ -166,7 +169,7 @@ may register a link to `/admin/participation/` in the established navigation.
 This author has not changed navigation.
 
 After bearer extraction and existing origin/rate guards, before the generic
-fallback, call the adapter alongside the registered #11/journey/reward adapters:
+fallback, the API calls the adapter alongside the registered #11/journey/reward adapters:
 
 ```ts
 const participationResult = await handleParticipationRequest({
@@ -199,7 +202,7 @@ Invalid input is 400, invalid/revoked/expired initial session 401, non-admin 403
 absent/private unavailable target 404, unsupported method 405 and funds,
 eligibility, terminal-state or payload-key conflict 409.
 
-Proposed root scripts, for the separate integration grant:
+Registered root scripts:
 
 ```json
 {
@@ -208,17 +211,17 @@ Proposed root scripts, for the separate integration grant:
 }
 ```
 
-Add the first to `check`, and the full unfiltered second to the `local-postgres`
+The first runs in `check`. The full unfiltered second runs in the `local-postgres`
 CI job immediately after `pnpm db:test`, before account/points/other feature
 database suites. The domain suite and the focused admin-read fixture reset only
 their canonical worktree
 `_test` database's app/migration state between cases. Run it serially and before
 other database regressions; never share that database with a concurrently running
-suite. The explicit temporary pre-registration filter below is not a CI command.
+suite. Do not use registration skip filters in CI.
 
 The owned page implements create/close/release/fulfil controls using these routes,
 with existing same-origin in-memory bearer authentication and current server role
-checks. Root registration and actual browser verification remain separate. The
+checks. Root registration is complete. The
 phone owner joins live status into Rewards History and exposes shared voting in
 Redemption, preserving exactly two Rewards tabs and the four main destinations.
 Show exact confirmed spend, freeze/refusal states and demonstration fulfilment.
@@ -268,8 +271,8 @@ new action. No cross-reload automatic retry guarantee is claimed. Successful
 creation receipts can say open while the current session is closed; the recorded
 action and live list are deliberately separate.
 
-After the root owner registers these exact assets and APIs, use an explicitly
-granted browser against the real `createApi` target, never the owned test server:
+For subsequent browser acceptance, use these exact assets and APIs with an
+explicit browser grant against real `createApi`, never the owned test server:
 
 1. Open `/admin/participation/` directly. Verify all three owned assets and shared
    CSS load with CSP/no-store headers. Sign in as a fan and then an assigned admin;
@@ -298,50 +301,64 @@ granted browser against the real `createApi` target, never the owned test server
 
 ## Local proof and limits
 
-The recorded failing-first runs initially fail on absent owned modules. Input
-schemas then pass three cases. Fifteen real PostgreSQL cases cover minimum and
-repeat votes, concurrent spending, exact tie order, private real/demo state,
-rollback, immutable receipts/audit, session transitions, concurrent close/vote,
-current revocation and unchanged initial-session expiry waits. A separate control
-preserves valid authorization across a later profile wait. One owned adapter
-boundary test and two real HTTP/owned-process-restart cases pass. Existing points
-and #11 suites pass against migration 0009, including their immutable TRUNCATE
-checks. Ten account/API regression cases also pass. The actual registered API
-case remains intentionally red until integration.
-
-Ops99 adds 14 focused cases against the exact shipped HTML/JS/CSS and asset
-handler, plus one actual PostgreSQL content-read case. The 15 existing domain
-cases and two owned HTTP/restart cases passed again. DOM interaction cases use
-the already-installed Jest environment's jsdom with controlled HTTP responses,
-not a browser or fake product-registration claim. A failing-first recovery run
-exposed stale enabled actions after failed refresh and missing result focus;
-both are fixed. The original absent-asset run and absent-content read run were
-also red before implementation. Typecheck, scoped ESLint/Prettier and source
-security checks passed; the unchanged dependency audit still has one moderate
-advisory. The actual static/API registration cases remain RED at 401/404.
+Failing-first domain, asset, recovery and admin-read evidence is retained from
+the original implementation. Root registration turned the retained API 404 and
+static 401 cases green. The current serial unfiltered database suite passes all
+20 cases: 15 domain, one immutable-content read, three registered HTTP/restart
+cases and one actual static/API registration case. The 18 unit/asset/DOM cases
+also pass. DOM fixtures remain tests, not substitutes for the browser.
 
 ```sh
-node --test --test-concurrency=1 server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs
-pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts
+pnpm participation:test
+pnpm participation:test:database
 ```
 
-The repository's `check` stages pass with test files run serially. Source secret
-and SAST scans and scanner self-tests pass. The dependency audit meets the
-configured high-severity gate, but still reports one moderate `uuid` advisory,
-GHSA-w5hq-g745-h8pq, in the unchanged dependency graph. Dependencies are outside
-this slice. These local checks are not independent candidate review or DAST.
+Frozen install and every `pnpm check` stage pass. Node test files ran serially
+through a private invocation wrapper; package dependencies and the lockfile were
+not changed. Fresh regression passes include accounts 10, points 21, submissions 16,
+rewards 21, journeys 17, route-provider 1, reports 21 and parser-container 3. Database
+suites used only the isolated worktree test database and ran serially. The report
+storage fixture first failed because macOS `/var` is a symlink; using its canonical
+`/private/var` path fixed the fixture without changing source or security rules.
+The pinned parser ran with the inherited bounded nonroot/no-network/no-mount
+container contract, then its owned image and private report files were removed.
 
-```sh
-node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts
-pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts
-pnpm db:run-test -- node --test --test-concurrency=1 --test-skip-pattern='actual createApi registers' server/submissions/participation-http.database.test.ts
-```
+Source security passed: no leaks, zero findings across 143 SAST targets and
+scanner self-tests passed. The dependency audit meets the configured high gate
+but retains the moderate `uuid` advisory GHSA-w5hq-g745-h8pq. No dependency change
+was authorized. One passive application scan started at `/admin/participation/`
+using the actual API image in the existing isolated scanner environment. It had
+zero blocking alerts and one informational 10109 notice. This unauthenticated
+public-path scan does not prove authenticated admin authorization or replace the
+HTTP/browser checks. Scanner implementation, rules and isolation were unchanged.
 
-After registration, remove only the invocation filter and run the complete suite
-plus relevant account/points/#11 regressions. Verify the actual application body,
-origin, auth and error guards. Then obtain browser/device/DAST grants for the
-visible fan/admin loop and the native Rewards/History integration. A test-only
-HTTP server, typecheck or passive unauthenticated scan cannot prove those paths.
+Actual T3 browser observations used the exact registered page and real PostgreSQL:
+
+- Fan denial, assigned-admin entry, current role revocation during an explicit
+  successful-action replay, and revoked-session write denial cleared private UI.
+- Create/open, cancel without a close write, and keyboard confirmation produced
+  empty, two-item and three-item original snapshots.
+- Live ranking and the three-item snapshot retained decimal 4294967294 totals,
+  microsecond approval order and numeric sequence order on exact ties. Zero-vote
+  backlog was excluded. Shared question/activity content stayed in one process.
+- Controlled response loss occurred after actual create, close and release
+  commits. Refresh and same-actor reauthentication preserved the exact key/body;
+  explicit retries returned original records. A different actor could not see or
+  retry the pending intent. A competing terminal resolution returned 409.
+- Selected-item contributions were denied. Release retained old snapshot 20 while
+  a later contribution and session snapshot showed 30. Demonstration fulfilment
+  stayed terminal and labelled; raw HTML-like text/reasons rendered literally.
+- Close confirmation received focus; successful results received focus; inspected
+  form controls had labels. Full keyboard-only operation and announcement behavior
+  have not been established.
+
+The T3 host became unavailable during the 320px resize and explicitly prohibited
+retry. The saved desktop sign-in screenshot was inspected, but 320px/200% zoom and
+workspace visual overflow remain unverified. Resume these checks when the manager
+allocates a connected browser. Paging is covered by domain/DOM tests, not this
+bounded browser run. Concurrency, lock waits, profile isolation, immutable History
+and rollback/restart claims come from actual PostgreSQL/HTTP tests, not from the
+single browser session. Full independent candidate review remains separate.
 
 Two local vote samples each used one request, 526 response bytes, zero provider
 calls and roughly 13–15 ms. This tiny warm loopback sample is not a production
