@@ -1603,3 +1603,23 @@ remain intact. Final CO2 source review and root squash remain pending. No full-a
 native, provider or deployed proof is claimed.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+## Native participation client, 2026-09-26
+
+The fan participation client now validates the registered ranking, owner History
+projection and contribution response. Decimal ranking totals and opaque cursors
+remain exact. Contribution confirmation accepts whole points from 10 through the
+server integer limit and rejects selected/fulfilled entries. The existing private
+paid-intent queue retains original request IDs and amounts across lost responses,
+remounts and matching-profile reauthentication. Server roles, prices, eligibility
+and atomic debits remain authoritative; no backend code changed.
+
+Local proof: 38 focused participation/submission/resource tests pass; TypeScript
+check passes. New tests were authored before their implementation. They cover
+malformed/mismatched responses, literal fan text, duplicate confirmation,
+refusals, storage failure and late profile-switch results. These adapter tests
+do not establish actual database charging, deployment or native rendering.
+The frozen offline install used only cached packages. Static alternatives are
+private local evidence pending user selection through the coordinator. UI,
+full/security checks, allocated device proof and real PR delivery remain pending.
+
+Implemented by gpt-6-astra through Codex (T3 Code).

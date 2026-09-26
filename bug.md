@@ -434,6 +434,18 @@ so independent photo/journey readers can migrate while AI stays inactive. Omitte
 target remains 0011 with its verified initialization prerequisite. Reject target
 below existing history; no SQL edits, guessed liabilities or production mutation.
 
+## Native participation in Rewards, 2026-09-26
+
+Tracker: #11, #12 and #13. Add shared fan voting and current operation-linked
+participation status to Rewards' existing Redemption and History sections.
+Preserve the 500-point non-refundable submission fee (including rejection),
+minimum 10-point contributions, server authority, exact ranking and original-key
+retries. Selected/fulfilled entries cannot receive contributions; fulfilment
+remains demonstration. No app/auth/dock/backend/photo/travel/admin changes.
+Static option selection goes through the coordinator. Heavy tests/device proof
+await an allocated slot; cloud, providers and CI are excluded. One real PR,
+independent review and coordinator-owned squash; no cross-branch copies.
+
 Recorded by gpt-6-astra through Codex (T3 Code).
 
 ### AWARD-PRODUCTION-001, 2026-09-26
