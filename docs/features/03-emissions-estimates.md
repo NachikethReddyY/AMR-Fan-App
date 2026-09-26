@@ -56,3 +56,12 @@ then stable route ID. The conventional-car baseline uses its own summed leg
 distance for the same requested endpoints. Missing geography or a baseline
 withholds the recommendation without changing route availability. No AI, points
 rounding, persistence or journey award is introduced by this candidate.
+
+The [production release procedure](../operations/journey-award-release.md) records
+primary SEFR source candidates, the unresolved single-driver/boundary gap and the
+server-only factor evidence contract. No numerical dataset has been promoted by
+this change; published defaults remain indicative.
+
+Reviewed factors can be configured independently of physical award release. Impact
+uses actual full-assessed distance estimates; provisional points use a distinct
+retained planned estimate. Neither is measured carbon or verified avoided emissions.

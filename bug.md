@@ -387,3 +387,45 @@ target remains 0011 with its verified initialization prerequisite. Reject target
 below existing history; no SQL edits, guessed liabilities or production mutation.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### AWARD-PRODUCTION-001, 2026-09-26
+
+Requested reachable production journey award readiness using sourced Singapore
+factors and retained physical calibration evidence. Preserve feature 03/04/05
+rules, assessed distances, endpoint-only missing-middle fallback, idempotent
+upward-only ledger and merged PR47 photo preliminary hooks. Server awards/factors
+and minimum assessment contract owned here; phone/routes and impact have separate
+owners. Tracker: #9. In progress; no shared DB/cloud/provider/CI/device actions.
+
+Award/Impact boundary clarification: user permits labelled estimates for recorded
+full journeys with approved factors before physical calibration, without automatic
+points or verified-savings claims. Impact owns that implementation. Provisional
+points remain unauthorized. Google Routes is selected with strict $0 provider
+spend. This award candidate preserves its retained release boundary.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Approved provisional journey policy, 2026-09-26
+
+The later user decision supersedes the earlier provisional-points hold above.
+Implement `planned-endpoints-v1` with retained planned estimate, recorded start
+and arrival, separately reviewed compatible factors and explicit provisional
+receipts. Physical release remains a separate variant. `decision.full` retains
+actual assessed-distance meaning; provisional receipts expose a separate nullable
+`assessedCalculation` for Impact. Planned estimates and points never contribute
+to verified impact. Start request stays `requestId`/`captureSessionId`.
+Native owns geometry and assessed-leg attribution only. Factor release/config,
+policy and Start binding remain award-owned. Tracker: #9. DB/full/security proof
+remains queued; no numerical factor or physical approval is fabricated.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Award proof update: isolated PostgreSQL/API regressions, full local check and
+security check pass. Photo fixture guard was corrected to the exact worktree
+test namespace after it refused the allocated disposable database. No application
+photo behavior changed. Pending product question is now explicit CO2 estimation
+with neutral car baseline because the candidate published CAG factors numerically
+match EPA CO2-only values. No CO2e relabelling or dataset activation is authorized
+yet; independent policy code remains testable with synthetic factors.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

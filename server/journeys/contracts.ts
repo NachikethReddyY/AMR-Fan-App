@@ -38,6 +38,32 @@ const routeEvidenceSchema = z.strictObject({
   ]),
   geographyVersion: version,
 });
+const evidenceReference = z.strictObject({
+  reference: z.string().min(1).max(500),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export const factorEvidenceSchema = evidenceReference.extend({
+  boundary: z.literal('use_phase_co2e'),
+  baseline: z.literal('single_occupant_ice'),
+  compatibility: z.string().min(1).max(2000),
+  units: z
+    .array(
+      z.strictObject({
+        factorId: version,
+        sourceValue: z.number().nonnegative().max(100),
+        sourceUnit: z.enum(['kgCO2e/vehicle-km', 'kgCO2e/passenger-km']),
+        occupants: z.number().positive().max(1000),
+      }),
+    )
+    .min(1)
+    .max(16),
+});
+export const factorReleaseSchema = z.strictObject({
+  version,
+  factorFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  geographyVersion: version,
+  factorEvidence: factorEvidenceSchema,
+});
 export const routeSchema = z.strictObject({
   routeId: z.string().min(1).max(160),
   routeEvidence: routeEvidenceSchema,
@@ -63,6 +89,7 @@ export const routeSchema = z.strictObject({
   basis: z.strictObject({
     factorVersions: z.array(version).max(128),
     factorStatus: z.enum(['indicative_demo', 'approved', 'unavailable']),
+    factorRelease: factorReleaseSchema.optional(),
     earningRuleVersion: version,
     calculation: z.discriminatedUnion('kind', [
       z.strictObject({
@@ -115,7 +142,7 @@ export const routeSchema = z.strictObject({
 export type RouteSnapshot = z.infer<typeof routeSchema>;
 export const policySchema = z.strictObject({
   version,
-  calibration: z.literal('unvalidated'),
+  calibration: z.enum(['unvalidated', 'physical_validated']),
   accuracyMeters: z.number().positive().max(50),
   endpointMeters: z.number().positive().max(100),
   endpointFreshnessMs: z.number().int().positive().max(30000),
@@ -153,7 +180,7 @@ export const storedSampleSchema = z.strictObject({
 });
 export const assessmentSchema = z.strictObject({
   version,
-  calibration: z.literal('unvalidated'),
+  calibration: z.enum(['unvalidated', 'physical_validated']),
   revision: z.number().int().nonnegative(),
   status: z.enum([
     'unfinished',
@@ -203,6 +230,35 @@ export const assessedLegsSchema = z.discriminatedUnion('kind', [
     ]),
   }),
 ]);
+// Server deployment evidence, never accepted from journey/settlement HTTP input.
+export const awardReleaseSchema = z.strictObject({
+  version,
+  assessmentEngine: z.literal('journey-assessment-v1'),
+  policyFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  factorFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  geographyVersion: version,
+  supportedModes: z.array(mode).min(1).max(7),
+  distanceMethods: z
+    .array(z.literal('gps_single_mode_lower_bound'))
+    .min(1)
+    .max(1),
+  factorEvidence: factorEvidenceSchema,
+  physicalEvidence: z.strictObject({
+    ios: evidenceReference,
+    android: evidenceReference,
+  }),
+});
+export type AwardRelease = z.infer<typeof awardReleaseSchema>;
+export const awardPolicySchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('provisional'),
+    version: z.literal('planned-endpoints-v1'),
+  }),
+  z.strictObject({
+    kind: z.literal('physical'),
+    version: z.literal('assessed-evidence-v1'),
+  }),
+]);
 export const summarySchema = z.strictObject({
   id,
   profileId: id,
@@ -213,6 +269,8 @@ export const summarySchema = z.strictObject({
   routeEvidence: routeEvidenceSchema,
   selectedLegs: routeSchema.shape.legs,
   assessedLegs: assessedLegsSchema,
+  awardRelease: awardReleaseSchema.nullable().optional(),
+  awardPolicy: awardPolicySchema.optional(),
   earningPolicy: earningPolicySchema.nullable(),
   policy: policySchema,
   preparedAtMs: timestamp,

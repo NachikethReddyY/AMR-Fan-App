@@ -16,6 +16,8 @@ export type JourneySettlementProjection = Pick<
   | 'assessedLegs'
   | 'earningPolicy'
   | 'policy'
+  | 'awardRelease'
+  | 'awardPolicy'
   | 'startedAtMs'
   | 'finishedAtMs'
   | 'finishReason'
@@ -55,6 +57,8 @@ export async function lockJourneyForSettlement(
     assessedLegs,
     earningPolicy,
     policy,
+    awardRelease,
+    awardPolicy,
     startedAtMs,
     finishedAtMs,
     finishReason,
@@ -72,6 +76,8 @@ export async function lockJourneyForSettlement(
     assessedLegs,
     earningPolicy,
     policy,
+    awardRelease,
+    awardPolicy,
     startedAtMs,
     finishedAtMs,
     finishReason,

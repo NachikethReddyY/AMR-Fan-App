@@ -22,7 +22,7 @@ export type SettlementArgs = {
   journeyId: string;
   input: unknown;
 };
-type CreditContext = AwardOutcome['creditContext'];
+type CreditContext = 'production_unavailable' | 'synthetic_test';
 
 // Internal composition shared with testing/service.ts. No HTTP/client option
 // reaches creditContext; even direct server misuse cannot enable it outside test.
@@ -96,6 +96,12 @@ export function executeSettlement(
         finishReason: journey.finishReason,
         mode: journey.mode,
         policy: journey.policy,
+        ...(journey.awardRelease === undefined
+          ? {}
+          : { awardRelease: journey.awardRelease }),
+        ...(journey.awardPolicy === undefined
+          ? {}
+          : { awardPolicy: journey.awardPolicy }),
         result,
       });
       const prior = await client.query<{ id: string; receipt: unknown }>(
@@ -137,6 +143,8 @@ export function executeSettlement(
           !isDeepStrictEqual(latest.selectedLegs, receipt.selectedLegs) ||
           !isDeepStrictEqual(latest.source, receipt.source) ||
           !isDeepStrictEqual(latest.policy, receipt.policy) ||
+          !isDeepStrictEqual(latest.awardRelease, receipt.awardRelease) ||
+          !isDeepStrictEqual(latest.awardPolicy, receipt.awardPolicy) ||
           !isDeepStrictEqual(latest.routeEvidence, receipt.routeEvidence)
         )
           throw new ApiError(
@@ -149,7 +157,7 @@ export function executeSettlement(
       );
       const decision = result.decision;
       const targetPoints =
-        decision.kind === 'full'
+        decision.kind === 'full' || decision.kind === 'provisional'
           ? decision.calculation.targetPoints
           : decision.kind === 'fallback'
             ? decision.targetPoints
@@ -160,7 +168,9 @@ export function executeSettlement(
         journeyId,
       );
       const creditedPoints =
-        creditContext === 'synthetic_test'
+        creditContext === 'synthetic_test' ||
+        result.productionCredit.kind === 'ready' ||
+        result.productionCredit.kind === 'provisional'
           ? remainingJourneyAward(targetPoints, creditedBefore, preliminary)
           : 0;
       const cumulativeAutomaticCredit =
@@ -186,18 +196,30 @@ export function executeSettlement(
          SET cumulative_automatic_credit=EXCLUDED.cumulative_automatic_credit, latest_receipt_id=EXCLUDED.latest_receipt_id`,
         [journeyId, profile.id, cumulativeAutomaticCredit, receiptId],
       );
+      const effectiveContext: AwardOutcome['creditContext'] =
+        creditContext === 'synthetic_test'
+          ? 'synthetic_test'
+          : result.productionCredit.kind === 'ready'
+            ? 'production'
+            : result.productionCredit.kind === 'provisional'
+              ? 'provisional'
+              : 'production_unavailable';
       const reason =
-        creditContext === 'production_unavailable'
+        effectiveContext === 'production_unavailable'
           ? 'Journey calculation retained; production credit pending trusted factor and calibration validation.'
-          : creditedPoints > 0
-            ? `Synthetic test journey ${creditedBefore > 0 ? 'top-up' : decision.kind} credit; ${decision.kind === 'fallback' ? 'insufficient evidence retained' : 'configured assessment retained'}, no physical travel claim.`
-            : `Synthetic test journey ${decision.kind}; no additional automatic credit.`;
+          : effectiveContext === 'provisional'
+            ? `Provisional journey points: ${creditedPoints} additional points from the retained planned estimate and recorded endpoints${decision.kind === 'fallback' ? '; missing middle GPS fallback' : ''}; no physical calibration, verified mode or verified impact claim.`
+            : effectiveContext === 'production'
+              ? `Journey ${creditedBefore > 0 || preliminary > 0 ? 'top-up' : decision.kind}: ${creditedPoints} additional points; estimated emissions, ${decision.kind === 'fallback' ? 'missing middle GPS fallback' : 'configured evidence assessment'}; no verified mode or offset claim.`
+              : creditedPoints > 0
+                ? `Synthetic test journey ${creditedBefore > 0 ? 'top-up' : decision.kind} credit; ${decision.kind === 'fallback' ? 'insufficient evidence retained' : 'configured assessment retained'}, no physical travel claim.`
+                : `Synthetic test journey ${decision.kind}; no additional automatic credit.`;
       return {
         delta: creditedPoints,
         reason,
         outcome: {
           receipt,
-          creditContext,
+          creditContext: effectiveContext,
           targetPoints,
           creditedPoints,
           cumulativeAutomaticCredit,

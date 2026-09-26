@@ -1,3 +1,4 @@
+import { loadAwardRelease, loadFactorRelease } from '../awards/readiness.ts';
 import {
   createServer,
   type IncomingMessage,
@@ -104,8 +105,22 @@ export function createApi({
     adminOrigin(env.ADMIN_ORIGIN),
     adminOrigin(env.ADMIN_ADDITIONAL_ORIGIN),
   ]);
-  const queryRoutes = createRouteQuery({ env });
-  const journeys = createJourneyService({ pool, env, queryRoutes });
+  const awardConfig = loadAwardRelease(env.JOURNEY_AWARD_RELEASE_FILE);
+  const factorConfig =
+    loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ?? awardConfig;
+  const queryRoutes = createRouteQuery({
+    env,
+    factors: factorConfig?.factors,
+    factorRelease: factorConfig?.release,
+    calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
+  });
+  const journeys = createJourneyService({
+    pool,
+    env,
+    queryRoutes,
+    awardConfig,
+    factorConfig,
+  });
   const reports = reportRuntime(pool, env);
   const awards = createAwardsHandler({ pool });
   const photoActivity = createPhotoHandler(pool);

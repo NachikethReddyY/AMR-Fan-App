@@ -16,7 +16,7 @@ import { createJourneyService } from '../../journeys/store.ts';
 import { summarySchema } from '../../journeys/contracts.ts';
 import { historyEntry } from '../../points/contracts.ts';
 import { outcomeSchema, receiptSchema } from '../contracts.ts';
-import { awardRoute } from './fixtures.ts';
+import { awardRoute, awardReleaseFixture } from './fixtures.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -43,7 +43,10 @@ const readSchema = z.object({
   cumulativeAutomaticCredit: z.number(),
 });
 
-async function fixture(missing = false) {
+async function fixture(
+  missing = false,
+  released: boolean | 'provisional' = false,
+) {
   const account = await ensureAccount(pool, {
     issuer: 'urn:amr:awards-registered-test',
     subject: randomUUID(),
@@ -52,7 +55,29 @@ async function fixture(missing = false) {
   assert.ok(profile);
   const token = (await createSession(pool, account.id)).token;
   let now = Date.now() - 360000;
+  const route = awardRoute(2.419, now);
+  const config = released ? awardReleaseFixture(route) : null;
+  const awardConfig = released === 'provisional' ? null : config;
+  const factorConfig = config
+    ? {
+        factors: config.factors,
+        release: {
+          version: config.release.version,
+          factorFingerprint: config.release.factorFingerprint,
+          geographyVersion: config.release.geographyVersion,
+          factorEvidence: config.release.factorEvidence,
+        },
+      }
+    : null;
+  if (factorConfig && route.basis.calculation.kind === 'available') {
+    route.basis.calculation.factors = factorConfig.factors;
+    route.basis.factorRelease = factorConfig.release;
+    route.basis.factorStatus = 'approved';
+    route.source = { kind: 'live', provider: 'synthetic-test-only' };
+  }
   const journeys = createJourneyService({
+    awardConfig,
+    factorConfig,
     pool,
     env: { NODE_ENV: 'test', JOURNEY_FIXTURES_ENABLED: 'true' },
     clock: () => now,
@@ -60,7 +85,7 @@ async function fixture(missing = false) {
   const prepared = await journeys.prepare(
     token,
     { profileId: profile.id, requestId: randomUUID() },
-    awardRoute(2.419, now),
+    route,
   );
   const captureSessionId = randomUUID();
   await journeys.start(token, prepared.id, {
@@ -490,3 +515,33 @@ test('registered API observes real journey and session lock waits before retaini
     await pending?.catch(() => {});
   }
 });
+
+for (const release of [true, 'provisional'] as const)
+  test(`registered HTTP ${release} receipt credits once and survives API restart without a new release`, async (t) => {
+    const f = await fixture(false, release);
+    const first = await api(t);
+    const path = `/v1/journeys/${f.journeyId}/settlements`;
+    const response = await first.request(path, f.token, f.input);
+    assert.equal(response.status, 200);
+    const result = resultSchema.parse(await response.json());
+    assert.equal(result.entry.delta, 120);
+    assert.equal(
+      result.outcome.creditContext,
+      release === true ? 'production' : 'provisional',
+    );
+    assert.equal(
+      result.outcome.receipt.result.productionCredit.kind,
+      release === true ? 'ready' : 'provisional',
+    );
+    await first.stop();
+    const second = await api(t);
+    const replay = await second.request(path, f.token, f.input);
+    assert.equal(replay.status, 200);
+    assert.deepEqual(resultSchema.parse(await replay.json()), result);
+    const next = await second.request(path, f.token, {
+      ...f.input,
+      requestId: randomUUID(),
+    });
+    assert.equal(next.status, 200);
+    assert.equal(resultSchema.parse(await next.json()).entry.delta, 0);
+  });

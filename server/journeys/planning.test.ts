@@ -170,3 +170,68 @@ test('legacy receipts have explicitly absent display; provider failure has no fa
     reason: 'no_routes',
   });
 });
+
+test('prepared route retains reviewed factor provenance from the single comparison response', () => {
+  const response = comparison();
+  assert.ok(response.result.kind === 'routes');
+  const bus = response.result.routes[0];
+  const car = {
+    ...bus,
+    id: 'baseline',
+    mode: 'car' as const,
+    legs: [{ ...bus.legs[0], mode: 'car' as const }],
+  };
+  response.result.routes.push(car);
+  response.estimates.push({
+    routeId: car.id,
+    estimate: response.estimates[0].estimate,
+  });
+  response.result.evidence = [bus, car].map((route) => ({
+    routeId: route.id,
+    primaryMode: route.mode === 'car' ? 'DRIVE' : 'TRANSIT',
+    geometry: {
+      kind: 'provider',
+      encoding: 'google-polyline5',
+      start: { latitude: 1.3, longitude: 103.8 },
+      end: { latitude: 1.31, longitude: 103.8 },
+      points: [
+        { latitude: 1.3, longitude: 103.8 },
+        { latitude: 1.31, longitude: 103.8 },
+      ],
+    },
+    factorApplicability: 'singapore_indicative',
+  }));
+  response.calculationStatus = 'approved';
+  response.factorRelease = {
+    version: 'synthetic-review-v1',
+    factorFingerprint: 'a'.repeat(64),
+    geographyVersion: response.geographySource.id,
+    factorEvidence: {
+      reference: 'Synthetic test only',
+      sha256: 'b'.repeat(64),
+      boundary: 'use_phase_co2e',
+      baseline: 'single_occupant_ice',
+      compatibility: 'Synthetic fixture',
+      units: [
+        {
+          factorId: response.factors[0].id,
+          sourceValue: 0,
+          sourceUnit: 'kgCO2e/passenger-km',
+          occupants: 1,
+        },
+      ],
+    },
+  };
+  const snapshots = routeSnapshots(response);
+  assert.equal(snapshots.length, 2);
+  for (const result of snapshots) {
+    assert.ok(result.kind === 'available');
+    assert.deepEqual(
+      result.snapshot.basis.factorRelease,
+      response.factorRelease,
+    );
+    assert.equal(result.snapshot.basis.factorStatus, 'approved');
+  }
+  const display = projectPlanDisplay(response);
+  assert.equal(display.calculationStatus, 'approved');
+});

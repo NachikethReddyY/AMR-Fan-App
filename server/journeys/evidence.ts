@@ -241,7 +241,7 @@ export function assessJourney({
           : 'satisfies_configured_rules';
   return {
     version: policy.version,
-    calibration: 'unvalidated',
+    calibration: policy.calibration,
     revision,
     status,
     reasons: [...reasons].sort(),

@@ -1,3 +1,4 @@
+import { fingerprint, productionReadiness } from './readiness.ts';
 import type { JourneySettlementProjection } from '../journeys/settlement.ts';
 import { earningPolicy } from '../journeys/contracts.ts';
 import type { PolicyResult } from './contracts.ts';
@@ -40,19 +41,9 @@ function emissions(legs: Legs, basis: Basis, versions: string[]) {
 export function calculateJourneyAward(
   journey: JourneySettlementProjection,
 ): PolicyResult {
-  const readinessReasons = ['calibration_unvalidated'];
-  if (journey.source.kind === 'fixture')
-    readinessReasons.push('synthetic_journey');
-  if (journey.basis.factorStatus !== 'approved')
-    readinessReasons.push('factors_not_approved');
-  readinessReasons.push('production_factor_applicability_unavailable');
-  const productionCredit = {
-    kind: 'unavailable',
-    reasons: readinessReasons,
-  } as const;
   const result = (decision: PolicyResult['decision']): PolicyResult => ({
     decision,
-    productionCredit,
+    productionCredit: productionReadiness(journey, decision),
   });
   const unavailable = (reason: string) =>
     result({ kind: 'unavailable', reasons: [reason] });
@@ -82,6 +73,7 @@ export function calculateJourneyAward(
     journey.finishedAtMs <= journey.startedAtMs
   )
     return result({ kind: 'no_award', reason: 'validated_endpoints_required' });
+  const provisional = journey.awardPolicy?.kind === 'provisional';
   const fallback = assessment.status === 'insufficient_evidence';
   // Missing middle samples can also explain zero measured movement. Other
   // uncertainty/contradiction reasons do not establish this fallback's condition.
@@ -127,21 +119,22 @@ export function calculateJourneyAward(
     basis.baseline.legs.some((leg) => leg.mode !== 'car')
   )
     return unavailable('single_driver_baseline_required');
-  if (!fallback && journey.assessedLegs.kind === 'unavailable')
+  if (!fallback && !provisional && journey.assessedLegs.kind === 'unavailable')
     return unavailable(journey.assessedLegs.reason);
-  const legs = fallback
-    ? journey.selectedLegs
-    : journey.assessedLegs.kind === 'available'
-      ? journey.assessedLegs.legs
-      : [];
+  const legs =
+    fallback || provisional
+      ? journey.selectedLegs
+      : journey.assessedLegs.kind === 'available'
+        ? journey.assessedLegs.legs
+        : [];
   const usedModes = new Set(
     [...basis.baseline.legs, ...legs].map((leg) => leg.mode),
   );
   const usedFactors = basis.factors.filter((factor) =>
     usedModes.has(factor.mode),
   );
-  // The current projection has no cross-dataset compatibility declaration.
-  // Compute only a common documented basis; this still does not approve it.
+  // Legacy datasets need a common documented method. A retained factor review
+  // may instead document compatibility across sources; matching hashes bind it.
   const methods = new Set(
     usedFactors.map((factor) =>
       JSON.stringify([
@@ -152,7 +145,11 @@ export function calculateJourneyAward(
       ]),
     ),
   );
-  if (methods.size > 1) return unavailable('incompatible_factor_basis');
+  const reviewedFactors =
+    (journey.basis.factorRelease?.factorFingerprint ??
+      journey.awardRelease?.factorFingerprint) === fingerprint(basis.factors);
+  if (!reviewedFactors && methods.size > 1)
+    return unavailable('incompatible_factor_basis');
   const baseline = emissions(
     basis.baseline.legs,
     basis,
@@ -160,14 +157,30 @@ export function calculateJourneyAward(
   );
   const traveled = emissions(legs, basis, journey.basis.factorVersions);
   if (!baseline || !traveled) return unavailable('missing_or_ambiguous_factor');
-  const reduction = savings(baseline, traveled);
-  const calculation = {
-    arithmeticVersion: policy.arithmeticVersion,
-    baselineKg: decimalString(baseline),
-    journeyKg: decimalString(traveled),
-    savingsKg: decimalString(reduction),
-    targetPoints: wholePoints(reduction, policy.pointsPerKg, policy.journeyCap),
+  const calculate = (value: NonNullable<typeof traveled>) => {
+    const reduction = savings(baseline, value);
+    return {
+      arithmeticVersion: policy.arithmeticVersion,
+      baselineKg: decimalString(baseline),
+      journeyKg: decimalString(value),
+      savingsKg: decimalString(reduction),
+      targetPoints: wholePoints(
+        reduction,
+        policy.pointsPerKg,
+        policy.journeyCap,
+      ),
+    };
   };
+  const calculation = calculate(traveled);
+  let assessedCalculation = null;
+  if (provisional && !fallback && journey.assessedLegs.kind === 'available') {
+    const assessed = emissions(
+      journey.assessedLegs.legs,
+      basis,
+      journey.basis.factorVersions,
+    );
+    if (assessed) assessedCalculation = calculate(assessed);
+  }
   return result(
     fallback
       ? {
@@ -175,6 +188,8 @@ export function calculateJourneyAward(
           calculation,
           targetPoints: Math.min(50, calculation.targetPoints),
         }
-      : { kind: 'full', calculation },
+      : provisional
+        ? { kind: 'provisional', calculation, assessedCalculation }
+        : { kind: 'full', calculation },
   );
 }

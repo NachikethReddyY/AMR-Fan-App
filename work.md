@@ -1164,3 +1164,98 @@ Proof: `.evidence/photo-ai-migration-tool/acl-target-red-corrected-fixture.txt`,
 Verified source is ready for one PR and root's independent exact-head review.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+### Production journey award readiness, 2026-09-26
+
+Local candidate rebased onto main `026b4d7`, including merged PR47 hooks and the
+route deadline correction, replaces the literal disabled
+production gate with a retained server-only release and per-receipt readiness.
+The release binds exact policy/factor content, normalized source units, single-driver
+baseline review, supported modes/distance methods and physical iOS/Android report
+references. No approved release or real-trip proof is supplied. Missing releases
+preserve legacy unavailable results; existing journeys cannot gain readiness from
+a later deployment. The public transaction retains PR47 preliminary photo credit,
+upward-only difference, receipt immutability and idempotency. No provisional
+planned-distance shortcut or new earning rule is introduced.
+
+Primary SBF SEFR source research found candidate Singapore passenger-km factors;
+registry access returned HTTP 403. Single-driver occupancy conversion and common
+CO2e boundary remain unproved. The [release procedure](docs/operations/journey-award-release.md)
+records that precise gap and a physical field protocol. Hashes bind evidence;
+reviewed actual observations establish calibration. GPS never verifies mode,
+measures carbon or creates offsets.
+
+Observed local proof: 28 focused policy, readiness, assessment, planning and photo
+arithmetic tests pass; TypeScript and changed-file lint checks pass. A single
+1,000-iteration synthetic two-factor ready calculation averaged 0.0233 ms with
+zero network requests; this is not API latency or field calibration. Database/public HTTP production
+path tests are written but unexecuted, queued with serialized full/security checks.
+No shared database, cloud, provider, CI or device actions occurred. PR and independent
+final-head reviews remain pending. This is not production activation or delivery.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Impact's user-approved labelled full-journey estimates are independent of points
+readiness and may precede physical calibration when factors are approved. This
+change does not authorize provisional points. Google Routes strict $0 selection
+belongs to the route owner; no provider calls were made here. Award heavy tests
+remain queued behind Impact. Rebase preserved both route and award records using
+captured stash `5e5e1bd449fe9a0bfb78db8a0815b3a1ab212817`; no peer stash was applied.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Approved provisional journey policy, 2026-09-26
+
+The later user decision supersedes the earlier provisional-points hold above.
+Implement `planned-endpoints-v1` with retained planned estimate, recorded start
+and arrival, separately reviewed compatible factors and explicit provisional
+receipts. Physical release remains a separate variant. `decision.full` retains
+actual assessed-distance meaning; provisional receipts expose a separate nullable
+`assessedCalculation` for Impact. Planned estimates and points never contribute
+to verified impact. Start request stays `requestId`/`captureSessionId`.
+Native owns geometry and assessed-leg attribution only. Factor release/config,
+policy and Start binding remain award-owned. Tracker: #9. DB/full/security proof
+remains queued; no numerical factor or physical approval is fabricated.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Independent award policy proof, 2026-09-26
+
+The physical and provisional policy paths pass local `pnpm check` and
+`pnpm security:check`. The full gate includes 136 native/state and 23 web Jest
+cases plus repository tooling/domain checks; 34 focused award/readiness/evidence/
+planning/photo arithmetic cases pass across the focused runs. In isolated
+PostgreSQL 18, 49 award/journey/registered HTTP cases passed, including public
+physical/provisional receipt replay after API restart, concurrent top-ups,
+config removal after Start, no clawback and preliminary photo deductions.
+The initial photo suite refused its hardcoded database name before connection;
+its guard now requires the same exact worktree test namespace as other suites.
+All nine photo PostgreSQL/HTTP cases then passed. Both owned tmpfs containers
+were removed and absence checked. No shared database/config was used.
+
+Security proof: source secret/SAST scans report zero findings; dependency audit
+retains the known moderate advisory, with no high/critical advisory; scanner
+positive/negative controls pass. Scope is the trusted deployer configuration,
+retained basis and existing authenticated settlement transaction. Actual HTTP
+tests cover ownership, authority, invalid inputs and replay. New unauthenticated
+DAST was not run; physical/device proof remains unverified. No cloud/provider/CI
+or device action occurred. Heavy lease released after cleanup.
+
+CAG FY2023/24 source review found .1901 car vehicle-km, .0441 bus passenger-km
+and .0578 MRT passenger-km. These match cited EPA CO2-only columns after unit
+conversion, with separately omitted CH4/N2O. User choice on explicitly labelled
+estimated CO2 avoided and neutral car baseline remains pending. No dataset is
+activated or bundled, no old kgCO2e receipt is relabelled, and independent factor
+review does not invent approval. Exact schema sent to Native/Impact; physical
+public outcome creditContext is `production`, provisional is `provisional`.
+PR/review and any accepted unit-specific implementation remain outstanding.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+Review candidate rebased onto main `e2f95534`; main's additional admin origin and
+API registrations are preserved. Rebased TypeScript, API lint, 34 focused tests,
+agent structure and diff checks pass. Full/security and 58 PostgreSQL/API passes
+above precede this composition-only rebase. No repeated heavy work or factor
+activation occurred. Local TODO stays unstaged.
+
+Verified by gpt-6-astra through Codex (T3 Code).

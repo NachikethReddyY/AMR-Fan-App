@@ -34,7 +34,7 @@ A fan earns or receives points, spends them once and can understand every change
 
 ## Before implementation
 
-Prove concurrency and replay protection through the authenticated points/rewards interface. Whole-point rounding is retained as `floor-decimal-v1`; validate evidence calibration and applicable factors before production credit. The [module design](../points-rewards-design.md) records the agreed implementation responsibility; it does not require another deployment or a service per feature.
+Prove concurrency and replay protection through the authenticated points/rewards interface. Whole-point rounding is retained as `floor-decimal-v1`; validate applicable factors before provisional credit and physical evidence calibration before physically ready credit. The [module design](../points-rewards-design.md) records the agreed implementation responsibility; it does not require another deployment or a service per feature.
 
 ## Owned awards implementation
 
@@ -42,7 +42,8 @@ The [awards procedure](../operations/awards.md) records deterministic calculatio
 immutable assessment receipts and difference-only accounting through the existing
 points transaction. Local real-PostgreSQL tests use explicit synthetic server
 fixtures. The public entry retains calculations while production credit remains
-pending trusted factor/calibration validation. The authenticated API is registered;
+pending trusted factor review. The approved provisional variant can credit before
+physical calibration; the physical variant also requires field validation. The authenticated API is registered;
 phone UI, future admin rules and demo/reset integration remain separately owned. The current
 configured-rule assessment continues to work and does not imply physical proof.
 
@@ -70,3 +71,15 @@ configured-rule assessment continues to work and does not imply physical proof.
 | An offer is disabled before purchase confirmation                                                     | Refuse without charge; preserve prior redemptions and content access.                                                                                                                            |
 | Admin corrects an erroneous point transaction                                                         | Append a reason-recorded adjustment; keep the original and existing reward; refuse a deduction that would make balance negative.                                                                 |
 | Two purchases or two copies of a top-up arrive concurrently                                           | Keep one consistent balance and outcome; no double spend, duplicate top-up or negative balance.                                                                                                  |
+
+The [release evidence procedure](../operations/journey-award-release.md) defines
+reachable per-receipt production readiness. Current defaults still lack the
+required source/calibration evidence. A ready receipt uses the existing atomic
+upward-only ledger, including preliminary photo credit for that same journey.
+
+User-approved provisional policy `planned-endpoints-v1` uses the retained planned
+estimate when recorded start/arrival checks pass. It preserves caps, fallback,
+photo preliminary deduction and upward-only accounting. Its decision is explicitly
+`provisional`; `full` still means assessed distances. Provisional points contribute
+nothing to verified impact. Independent factor review is engineering work, not a
+new user permission gate. Physical evidence remains required for the physical variant.

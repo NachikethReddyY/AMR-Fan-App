@@ -9,7 +9,7 @@ export type EmissionFactor = {
   source: string;
   method: string;
   assumptions: string;
-  status: 'indicative_demo';
+  status: 'indicative_demo' | 'approved';
 };
 
 const changiReport =

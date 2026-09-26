@@ -1,3 +1,4 @@
+import { claimSyntheticPhoto } from '../activity/claims.ts';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
@@ -12,7 +13,7 @@ import { createJourneyService } from '../journeys/store.ts';
 import { adjustPoints, readPointsHistory } from '../points/index.ts';
 import { readJourneyAward, settleJourneyAward } from './store.ts';
 import { settleSyntheticJourneyAward } from './testing/service.ts';
-import { awardRoute } from './testing/fixtures.ts';
+import { awardRoute, awardReleaseFixture } from './testing/fixtures.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -25,18 +26,43 @@ const issuer = `urn:amr:awards-test:${randomUUID()}`;
 before(() => migrate(pool));
 after(() => pool.end());
 
-async function fixture(kg = 2.4, missing = false, live = false) {
+async function fixture(
+  kg = 2.4,
+  missing = false,
+  live = false,
+  released: boolean | 'provisional' = false,
+) {
   const account = await ensureAccount(pool, { issuer, subject: randomUUID() });
   const profile = account.profiles.find((item) => item.kind === 'real');
   assert.ok(profile);
   const token = (await createSession(pool, account.id)).token;
   let now = Date.now();
+  const route = awardRoute(kg, now);
+  const config = released ? awardReleaseFixture(route) : null;
+  const awardConfig = released === 'provisional' ? null : config;
+  const factorConfig = config
+    ? {
+        factors: config.factors,
+        release: {
+          version: config.release.version,
+          factorFingerprint: config.release.factorFingerprint,
+          geographyVersion: config.release.geographyVersion,
+          factorEvidence: config.release.factorEvidence,
+        },
+      }
+    : null;
   const journeys = createJourneyService({
+    awardConfig,
+    factorConfig,
     pool,
     env: { NODE_ENV: 'test', JOURNEY_FIXTURES_ENABLED: 'true' },
     clock: () => now,
   });
-  const route = awardRoute(kg, now);
+  if (factorConfig && route.basis.calculation.kind === 'available') {
+    route.basis.factorStatus = 'approved';
+    route.basis.calculation.factors = factorConfig.factors;
+    route.basis.factorRelease = factorConfig.release;
+  }
   if (live)
     route.source = { kind: 'live', provider: 'synthetic-negative-control' };
   const prepared = await journeys.prepare(
@@ -88,6 +114,7 @@ async function fixture(kg = 2.4, missing = false, live = false) {
     samples,
     captureSessionId,
     input,
+    clock: () => now,
     advance: (ms: number) => {
       now += ms;
     },
@@ -642,4 +669,183 @@ test('a prepared journey cannot settle before Start or pin an unfinished earning
   };
   await assert.rejects(settleSyntheticJourneyAward(args), { status: 409 });
   assert.equal((await readJourneyAward(args)).latestReceipt, null);
+});
+
+test('public settlement credits released evidence once, tops up a fallback and never claws back', async () => {
+  // Synthetic live provenance is constructed only in this isolated database test.
+  const f = await fixture(2.4, true, true, true);
+  const args = { pool, token: f.token, journeyId: f.journeyId, input: f.input };
+  const fallback = await settleJourneyAward(args);
+  assert.equal(fallback.outcome.creditContext, 'production');
+  assert.equal(fallback.outcome.receipt.result.productionCredit.kind, 'ready');
+  assert.equal(fallback.entry.delta, 50);
+  const replay = await settleJourneyAward(args);
+  assert.deepEqual(replay, fallback);
+  const laterDeployment = createJourneyService({
+    pool,
+    env: { NODE_ENV: 'test' },
+    awardConfig: null,
+    clock: f.clock,
+  });
+  const full = await laterDeployment.appendEvidence(f.token, f.journeyId, {
+    requestId: randomUUID(),
+    captureSessionId: f.captureSessionId,
+    samples: f.samples.slice(1, -1),
+  });
+  const input = {
+    ...f.input,
+    requestId: randomUUID(),
+    assessmentRevision: full.assessment.revision,
+  };
+  const [first, second] = await Promise.all([
+    settleJourneyAward({ ...args, input }),
+    settleJourneyAward({
+      ...args,
+      input: { ...input, requestId: randomUUID() },
+    }),
+  ]);
+  assert.equal(first.entry.delta + second.entry.delta, 70);
+  assert.equal(first.outcome.cumulativeAutomaticCredit, 120);
+  assert.deepEqual(first.outcome.receipt.awardRelease, f.finished.awardRelease);
+  // An ineligible later revision preserves the original 120 rather than recovering it.
+  await pool.query(
+    "UPDATE app.journeys SET summary=jsonb_set(jsonb_set(summary,'{assessment,status}','\"ineligible\"'),'{assessment,revision}',to_jsonb($2::int)) WHERE id=$1",
+    [f.journeyId, full.assessment.revision + 1],
+  );
+  const lower = await settleJourneyAward({
+    ...args,
+    input: {
+      ...input,
+      requestId: randomUUID(),
+      assessmentRevision: full.assessment.revision + 1,
+    },
+  });
+  assert.equal(lower.entry.delta, 0);
+  assert.equal(lower.outcome.cumulativeAutomaticCredit, 120);
+  assert.equal(
+    (await readJourneyAward({ pool, token: f.token, journeyId: f.journeyId }))
+      .cumulativeAutomaticCredit,
+    120,
+  );
+});
+
+test('release at Start does not promote a plan carrying different factors', async () => {
+  const f = await fixture(2.4, false, true, true);
+  await pool.query(
+    "UPDATE app.journeys SET summary=jsonb_set(summary,'{basis,calculation,factors,0,kgCo2ePerPassengerKm}','2.5') WHERE id=$1",
+    [f.journeyId],
+  );
+  const result = await settleJourneyAward({
+    pool,
+    token: f.token,
+    journeyId: f.journeyId,
+    input: f.input,
+  });
+  assert.equal(result.entry.delta, 0);
+  assert.equal(result.outcome.creditContext, 'production_unavailable');
+  assert.ok(
+    result.outcome.receipt.result.productionCredit.kind === 'unavailable',
+  );
+  assert.ok(
+    result.outcome.receipt.result.productionCredit.reasons.includes(
+      'factor_release_mismatch',
+    ),
+  );
+});
+
+for (const release of [true, 'provisional'] as const)
+  test(`public ${release} settlement deducts PR47 same-journey preliminary credit once`, async () => {
+    const f = await fixture(2.4, false, false, release);
+    await claimSyntheticPhoto(pool, f.token, {
+      profileId: f.profile.id,
+      requestId: randomUUID(),
+      fingerprint: createHash('sha256').update(randomUUID()).digest('hex'),
+      journeyId: f.journeyId,
+      activity: 'bus-trip',
+      verdict: 'supported',
+      confidence: 1,
+    });
+    // Isolated fixture setup models the future live photo writer; no live photo API is enabled.
+    await pool.query(
+      "UPDATE app.journeys SET summary=jsonb_set(summary,'{source}',$2::jsonb) WHERE id=$1",
+      [
+        f.journeyId,
+        JSON.stringify({
+          kind: 'live',
+          provider: 'synthetic-accounting-fixture',
+        }),
+      ],
+    );
+    const args = {
+      pool,
+      token: f.token,
+      journeyId: f.journeyId,
+      input: f.input,
+    };
+    const first = await settleJourneyAward(args);
+    assert.equal(first.entry.delta, 70);
+    assert.equal(first.outcome.cumulativeAutomaticCredit, 120);
+    const second = await settleJourneyAward({
+      ...args,
+      input: { ...f.input, requestId: randomUUID() },
+    });
+    assert.equal(second.entry.delta, 0);
+    assert.equal(
+      (await readPointsHistory(pool, f.token, f.profile.id)).balance,
+      120,
+    );
+  });
+
+test('public provisional settlement retains planned basis and difference-only late-evidence replay across deployment', async () => {
+  const f = await fixture(2.4, true, true, 'provisional');
+  assert.equal(f.finished.awardPolicy?.kind, 'provisional');
+  assert.equal(f.finished.policy.calibration, 'unvalidated');
+  assert.equal(f.finished.awardRelease, null);
+  const args = { pool, token: f.token, journeyId: f.journeyId, input: f.input };
+  const first = await settleJourneyAward(args);
+  assert.equal(first.entry.delta, 50);
+  assert.equal(first.outcome.creditContext, 'provisional');
+  assert.equal(first.outcome.receipt.result.decision.kind, 'fallback');
+  assert.deepEqual(await settleJourneyAward(args), first);
+  const nextDeployment = createJourneyService({
+    pool,
+    env: { NODE_ENV: 'test' },
+    clock: f.clock,
+    awardConfig: null,
+    factorConfig: null,
+  });
+  const updated = await nextDeployment.appendEvidence(f.token, f.journeyId, {
+    requestId: randomUUID(),
+    captureSessionId: f.captureSessionId,
+    samples: f.samples.slice(1, 5),
+  });
+  const topups = await Promise.all(
+    Array.from({ length: 3 }, () =>
+      settleJourneyAward({
+        ...args,
+        input: {
+          ...f.input,
+          requestId: randomUUID(),
+          assessmentRevision: updated.assessment.revision,
+        },
+      }),
+    ),
+  );
+  assert.equal(
+    topups.reduce((sum, value) => sum + value.entry.delta, 0),
+    70,
+  );
+  const receipt = topups[0].outcome.receipt;
+  assert.equal(receipt.result.productionCredit.kind, 'provisional');
+  assert.ok(receipt.result.decision.kind === 'provisional');
+  assert.ok(receipt.result.decision.assessedCalculation);
+  assert.equal(receipt.result.decision.calculation.targetPoints, 120);
+  assert.deepEqual(
+    receipt.basis.factorRelease,
+    first.outcome.receipt.basis.factorRelease,
+  );
+  assert.equal(
+    (await readPointsHistory(pool, f.token, f.profile.id)).balance,
+    120,
+  );
 });

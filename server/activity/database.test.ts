@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { namespaceFor } from '../../scripts/local-db.mjs';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount } from '../accounts/store.ts';
@@ -14,7 +16,7 @@ import { readJourneyAward } from '../awards/store.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    '/amr_photo_disposable'
+    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
 )
   throw new Error('Use only the owned disposable photo database.');
 const pool = createDatabase();

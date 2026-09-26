@@ -86,7 +86,7 @@ export const planDisplaySchema = z.strictObject({
     licence: z.url().max(2048),
     attribution: z.string().min(1).max(2000),
   }),
-  calculationStatus: z.literal('indicative_demo'),
+  calculationStatus: z.enum(['indicative_demo', 'approved']),
   unsupportedModes: z.tuple([z.literal('cab'), z.literal('electric_car')]),
   outcomes: z
     .array(
@@ -263,6 +263,9 @@ export function routeSnapshots(
         durationSeconds,
       })),
       basis: {
+        ...(response.factorRelease
+          ? { factorRelease: response.factorRelease }
+          : {}),
         factorVersions: response.factors.map((factor) => factor.id),
         factorStatus: applicable ? response.calculationStatus : 'unavailable',
         earningRuleVersion: 'initial-50-cap-2000-v1',
