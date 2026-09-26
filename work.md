@@ -558,3 +558,16 @@ advisory and no high/critical findings. Hosted CI remains paused and was not
 queried. Installed-native acceptance follows this source checkpoint.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+### Automatic signup handoff correction, 2026-09-26
+
+The independent requirements review found that successful signup kept the
+Account sheet open and delayed name setup. A failing test with the actual panel
+reproduced its missing close notification. The panel now closes after its current
+password authentication succeeds; cancellation, mode changes and unmount invalidate
+the local attempt. A late cancelled result cannot close a reopened sheet.
+Seven focused panel/onboarding tests and typecheck pass. Standards review found
+no actionable issues in the preceding password-only slice. This correction will
+receive follow-up review and native proof before delivery.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

@@ -110,6 +110,13 @@ export function AccountPanel({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const authAttempt = useRef(0);
+  useEffect(
+    () => () => {
+      authAttempt.current++;
+    },
+    [],
+  );
   const [editOwner, setEditOwner] = useState<{
     token: string;
     profileId: string;
@@ -135,6 +142,7 @@ export function AccountPanel({
     [controller],
   );
   function close() {
+    authAttempt.current++;
     controller.cancelSignIn();
     setPassword('');
     setAuthError('');
@@ -153,9 +161,15 @@ export function AccountPanel({
     setAuthError('');
     const submitted = password;
     setPassword('');
+    const attempt = ++authAttempt.current;
     await controller.signIn(() =>
       authenticateEmail(authMode, email, submitted),
     );
+    if (
+      attempt === authAttempt.current &&
+      controller.getState().kind === 'signedIn'
+    )
+      close();
   }
   async function save() {
     setSaving(true);
@@ -332,6 +346,7 @@ export function AccountPanel({
                       : 'Create an account'
                   }
                   onPress={() => {
+                    authAttempt.current++;
                     focusAuthHeading.current = true;
                     setAuthMode(authMode === 'signUp' ? 'signIn' : 'signUp');
                     setPassword('');
