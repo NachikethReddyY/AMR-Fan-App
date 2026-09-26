@@ -38,6 +38,7 @@ before(async () => {
       NODE_ENV: 'test',
       AUTH_DEV_ENABLED: 'true',
       API_HOST: '127.0.0.1',
+      REPORT_FAILED_UPLOAD_TTL_SECONDS: '3600',
       REPORT_STORAGE_ROOT: root,
       REPORT_PARSER_MODE: process.env.REPORT_PARSER_IMAGE ? 'docker' : 'native',
       REPORT_PARSER_IMAGE: process.env.REPORT_PARSER_IMAGE,
@@ -71,7 +72,7 @@ async function reserve() {
   assert.equal(response.status, 201);
   return response.json();
 }
-test('HTTP upload keeps exact bytes; source download is an admin-only attachment', async () => {
+test('HTTP upload retains text; source download is an admin-only text attachment', async () => {
   const doc = await reserve();
   const bytes = syntheticPdf([['Water result 20 litres in 2025.']]);
   const upload = await fetch(`${base}/v1/admin/reports/${doc.id}/source`, {
@@ -89,7 +90,8 @@ test('HTTP upload keeps exact bytes; source download is an admin-only attachment
   });
   assert.match(source.headers.get('content-disposition') ?? '', /^attachment/);
   assert.equal(source.headers.get('x-content-type-options'), 'nosniff');
-  assert.deepEqual(Buffer.from(await source.arrayBuffer()), bytes);
+  assert.match(await source.text(), /Page 1\n/);
+  assert.match(source.headers.get('content-disposition') ?? '', /\.txt/);
   const denied = await fetch(`${base}/v1/admin/reports/${doc.id}/source`, {
     headers: { Authorization: `Bearer ${fan}` },
   });
@@ -170,7 +172,7 @@ test('anonymous input is refused before PDF processing and unpublished detail is
   );
 });
 
-test('original bytes persist across an actual owned API process restart', async () => {
+test('page-labelled text persists across an actual owned API process restart', async () => {
   const { spawn } = await import('node:child_process');
   const { fileURLToPath } = await import('node:url');
   async function start() {
@@ -234,7 +236,8 @@ test('original bytes persist across an actual owned API process restart', async 
       `${ownedApi.base}/v1/admin/reports/${doc.id}/source`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    assert.deepEqual(Buffer.from(await source.arrayBuffer()), bytes);
+    assert.match(await source.text(), /Page 1\n/);
+    assert.match(source.headers.get('content-disposition') ?? '', /\.txt/);
   } finally {
     ownedApi.child.kill('SIGTERM');
     await once(ownedApi.child, 'close');

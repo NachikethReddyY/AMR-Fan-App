@@ -4,6 +4,7 @@ import { ApiError } from '../accounts/types.ts';
 import { authenticateSession } from '../auth/session.ts';
 import { transaction } from '../database/index.ts';
 import {
+  MAX_FILE_BYTES,
   boundedText,
   candidateInput,
   integer,
@@ -18,6 +19,7 @@ import {
 import { extractCandidates, type ExtractReport } from './extraction.ts';
 import type { ParsedReport } from './parser.ts';
 import type { SourceStorage } from './storage.ts';
+import { sourceText } from './retention.ts';
 
 type Db = Pool | PoolClient;
 type Document = {
@@ -225,6 +227,7 @@ export function createReports({
     return result.rows[0];
   }
   let extracting = false;
+  let uploading = false;
   return {
     detail,
     async access(token: string) {
@@ -287,54 +290,93 @@ export function createReports({
         return true;
       });
     },
-    async upload(token: string, id: string, bytes: Buffer) {
-      await authorized(token, async (db, actorId) => {
-        const doc = await document(db, id);
-        if (doc.uploaderId !== actorId)
-          throw new ApiError(404, 'Upload reservation not found.');
-      });
-      if (!/^%PDF-(1\.[0-7]|2\.0)/.test(bytes.subarray(0, 8).toString('ascii')))
-        throw new ApiError(415, 'Use a PDF document.');
-      const saved = await storage.put(id, bytes);
-      let parsed: ParsedReport;
+    async upload(
+      token: string,
+      id: string,
+      source: Buffer | (() => Promise<Buffer>),
+    ) {
+      await admin(token);
+      if (uploading)
+        throw new ApiError(503, 'Another report is being processed.');
+      uploading = true;
       try {
-        parsed = await parser.parse(bytes);
-      } catch (error) {
-        await authorized(token, async (db) => {
-          const doc = await document(db, id, true);
-          if (doc.status !== 'review')
-            await db.query(
-              "UPDATE app.report_documents SET status='failed',failure='parse-failed',sha256=$2,byte_count=$3 WHERE id=$1",
-              [id, saved.sha256, saved.bytes],
-            );
-        });
-        throw error;
-      }
-      await authorized(token, async (db, actorId) => {
-        const doc = await document(db, id, true);
-        if (doc.uploaderId !== actorId)
-          throw new ApiError(404, 'Upload reservation not found.');
-        if (doc.sha256 && doc.sha256 !== saved.sha256)
-          throw new ApiError(409, 'Report source is immutable.');
-        if (doc.status === 'review') return;
-        await db.query(
-          "UPDATE app.report_documents SET sha256=$2,byte_count=$3,parser_version=$4,status='review',failure=NULL WHERE id=$1",
-          [id, saved.sha256, saved.bytes, parsed.parserVersion],
-        );
-        for (const page of parsed.pages)
-          await db.query(
-            'INSERT INTO app.report_pages(document_id,page,parser_version,text) VALUES($1,$2,$3,$4)',
-            [id, page.page, parsed.parserVersion, page.text],
+        // Acquire the slot before HTTP buffers the PDF, including slow uploads.
+        const bytes = typeof source === 'function' ? await source() : source;
+        // Serialize a document across API processes without holding its row during parsing.
+        return await transaction(pool, async (lock) => {
+          const acquired = await lock.query<{ acquired: boolean }>(
+            'SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) AS acquired',
+            [`report-upload:${uuid(id)}`],
           );
-      });
-      return detail(token, id);
+          if (!acquired.rows[0]?.acquired)
+            throw new ApiError(
+              503,
+              'This report is being processed. Retry shortly.',
+            );
+          if (bytes.length > MAX_FILE_BYTES)
+            throw new ApiError(413, 'PDF exceeds 10 MiB.');
+          if (
+            !/^%PDF-(1\.[0-7]|2\.0)/.test(
+              bytes.subarray(0, 8).toString('ascii'),
+            )
+          )
+            throw new ApiError(415, 'Use a PDF document.');
+          const sha256 = createHash('sha256').update(bytes).digest('hex');
+          const prior = await authorized(token, async (db, actorId) => {
+            const doc = await document(db, id, true);
+            if (doc.uploaderId !== actorId)
+              throw new ApiError(404, 'Upload reservation not found.');
+            if (doc.sha256 && doc.sha256 !== sha256)
+              throw new ApiError(409, 'Report source is immutable.');
+            if (!doc.sha256)
+              await db.query(
+                'UPDATE app.report_documents SET sha256=$2,byte_count=$3 WHERE id=$1',
+                [id, sha256, bytes.length],
+              );
+            return doc;
+          });
+          if (prior.status !== 'review') {
+            let parsed: ParsedReport;
+            try {
+              // New originals stay in bounded memory. No storage upload or provider file exists.
+              parsed = await parser.parse(bytes);
+            } catch (error) {
+              await authorized(token, async (db) => {
+                await db.query(
+                  "UPDATE app.report_documents SET status='failed',failure='parse-failed' WHERE id=$1 AND status<>'review'",
+                  [id],
+                );
+              });
+              throw error;
+            }
+            await authorized(token, async (db) => {
+              await document(db, id, true);
+              await db.query(
+                "UPDATE app.report_documents SET parser_version=$2,status='review',failure=NULL WHERE id=$1",
+                [id, parsed.parserVersion],
+              );
+              for (const page of parsed.pages)
+                await db.query(
+                  'INSERT INTO app.report_pages(document_id,page,parser_version,text) VALUES($1,$2,$3,$4)',
+                  [id, page.page, parsed.parserVersion, page.text],
+                );
+            });
+          }
+          // Also removes pre-upgrade originals. A failed delete is retryable without re-parsing.
+          await storage.remove(id);
+          return detail(token, id);
+        });
+      } finally {
+        uploading = false;
+      }
     },
     async source(token: string, id: string) {
-      const doc = await authorized(token, (db) => document(db, id));
-      if (!doc.sha256) throw new ApiError(404, 'Source is not uploaded.');
-      const bytes = await storage.get(id, doc.sha256);
-      await admin(token);
-      return bytes;
+      return authorized(token, async (db) => {
+        const doc = await document(db, id);
+        if (doc.status !== 'review')
+          throw new ApiError(404, 'Extracted source text is not available.');
+        return Buffer.from(sourceText(doc, await pages(db, id)), 'utf8');
+      });
     },
     async addCandidate(token: string, documentId: string, value: unknown) {
       const v = input(value, ['requestId', 'fields', 'reason']);

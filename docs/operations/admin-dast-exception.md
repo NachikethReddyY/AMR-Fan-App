@@ -73,3 +73,71 @@ byte-identical in this refresh. Raw evidence is not published with this record.
 New gate results must be stored separately and identify their exact candidate.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+## Reports delivery: two additional reviewed instances
+
+On 26 September 2026, root accepted two additional technical false positives
+under the user's explicit overnight decision delegation, after independent
+review by `pr42_standards`. This disposition covers only 10202 on `/admin/` and
+`/admin/rewards/` for the report text-retention candidate identified below.
+It is separate from the original three-form user exception. All five observed
+10202 instances remain recorded as a failed scan, with informational 10031 on
+the unchanged points input. No scanner rule, threshold or application CSRF code
+was changed. No new browser execution is claimed.
+
+The independently checked basis is unchanged: explicit bearer authority, no
+ambient cookie authority, unnamed native POST credential controls, the fixed
+provider endpoint and `credentials: 'omit'`. The report HTML changes only its
+download button label. The other four forms, authentication helper, API and
+session implementation are byte-identical to main `e2f95534`.
+
+The actual scan began at `/admin/reports/` and followed navigation to all five
+forms. ZAP 2.17.0 returned exit 2, 59 rule passes and two alert types. The scanned
+image was `sha256:ec023447d5669ea10679c96234ec3e03fb71f42d77594084399da32b1d599b9d`.
+After cleanup, the original retained Docker build record supplied its exact
+image index, manifest and source COPY blobs. Every blob digest was verified and
+all nine source hashes below matched the delivery worktree. This was extraction
+from the original cached artifact, not a reconstruction or scan rerun.
+
+This disposition applies only while the final PR candidate has these exact
+source hashes and unchanged authentication/origin/proxy behavior. The PR records
+the final commit after rebasing. Any relevant change requires reassessment.
+
+| Source | SHA-256 |
+| --- | --- |
+| `server/api/app.ts` | `1b84221a9c15c6233a3e25e76440a38fd360bba2d8fca645e64d135c44f50787` |
+| `server/auth/admin.js` | `37de50089ba8a0f43d564763ae00ecb508726a3b8a29c9a3ace75bba27522f5c` |
+| `server/auth/session.ts` | `7c9db0e7799671d0500af83975ae6c71709db1b5725219b4b143334a15e3428b` |
+| `server/points/admin.ts` | `0e710fea2c546c1579d1bf7a2d97ff2189c4ae48cd79c05e9ed6d155e2490602` |
+| `server/points/admin/index.html` | `10e7fde74ae1e3be2ee5163c18c3689279ffa178fc5b4cab8b0f775b44bd6c91` |
+| `server/reports/admin/index.html` | `4ae42d5883db7cb1afe1fe333672f68ec2c408d2fd12cab4c358cf32f694bb5a` |
+| `server/rewards/admin/index.html` | `f701e483368ef298340862fe9edb5dfded5dbb05646ab8d55047f5622d9b571a` |
+| `server/submissions/admin/index.html` | `51be36a220eab2fa252d93d23624857b14a73389b52f3f5a820f843ec71ccae1` |
+| `server/submissions/participation/admin/index.html` | `c129921b3f534cf175c56e990f70f488234e1b7a991b5dbb5a13d6787f57d652` |
+
+
+Private reports and source reconciliation remain under
+`.evidence/hosted-report-text-retention/`, including `dast-admin/zap.json` and
+`dast-source-reconciliation.json`. They are not published with the PR. The
+parser's separate anonymous scan returned zero alerts; it does not change this
+admin scan's failed status or establish hosted parser readiness.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+### Reports rebase through Awards main
+
+The pagination correction rebases through actual main
+`458cae125437692c03d036139063c4a99bae2c5d`. The original failed scan and its
+image/source hashes above remain unchanged historical evidence. Main's Awards
+commit changes only award/factor configuration imports and route/journey
+construction in `server/api/app.ts`; this report branch preserves that file
+exactly. Its new SHA-256 is
+`5306e324a52ea84d1a03990b650ddb8a4746e6b20f744b6d52c634136d17a3cf`.
+The other eight listed HTML/helper/session sources retain their scanned hashes.
+This is source equivalence evidence, not a fresh scan or automatic extension of
+the disposition. Root reviews the inherited API delta with the pagination fix
+before merge; no unrelated login or scanner code was changed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

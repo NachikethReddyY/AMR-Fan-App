@@ -6,7 +6,7 @@ import { migrate } from '../database/migrate.ts';
 import { ensureAccount, assignRole } from '../accounts/store.ts';
 import { createSession, revokeSession } from '../auth/session.ts';
 import { createStorage } from './storage.ts';
-import { createParser } from './parser.ts';
+import { reportTestParser } from './testing/parser.ts';
 import { createReports } from './index.ts';
 import { syntheticPdf } from './testing/fixtures.ts';
 
@@ -38,7 +38,7 @@ before(async () => {
   reports = createReports({
     pool,
     storage: await createStorage({ root: storageRoot }),
-    parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
+    parser: reportTestParser(),
     extractReport: async () => ({
       kind: 'unavailable',
       reason: 'disabled',
@@ -338,7 +338,7 @@ test('stale revisions conflict; approved snapshots survive later corrections and
     const reopened = createReports({
       pool: reopenedPool,
       storage: await createStorage({ root: storageRoot }),
-      parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
+      parser: reportTestParser(),
       extractReport: async () => null,
     });
     assert.equal(
@@ -373,7 +373,7 @@ test('completed extraction replay does not invoke the extractor again', async ()
   const service = createReports({
     pool,
     storage: await createStorage({ root: storageRoot }),
-    parser: createParser({ dockerImage: process.env.REPORT_PARSER_IMAGE }),
+    parser: reportTestParser(),
     extractReport: async () => {
       calls++;
       return { kind: 'unavailable', reason: 'disabled', reviewRequired: true };
@@ -502,5 +502,210 @@ test('approval blocked on an unchanged session row is refused after expiry', asy
   } finally {
     await blocker.query('ROLLBACK');
     blocker.release();
+  }
+});
+
+test('saved pages precede deletion, retries skip parsing, and cleanup failure preserves approval inputs', async () => {
+  const storage = await createStorage({ root: storageRoot });
+  let calls = 0,
+    failDelete = true;
+  const text = 'Water result 20 litres in 2025. Method: meters.';
+  const service = createReports({
+    pool,
+    storage: {
+      ...storage,
+      async remove(id) {
+        const row = await pool.query(
+          'SELECT status FROM app.report_documents WHERE id=$1',
+          [id],
+        );
+        assert.equal(row.rows[0].status, 'review');
+        const pages = await pool.query(
+          'SELECT text FROM app.report_pages WHERE document_id=$1',
+          [id],
+        );
+        assert.equal(pages.rows[0].text, text);
+        if (failDelete) throw new Error('synthetic delete unavailable');
+        await storage.remove(id);
+      },
+    },
+    parser: {
+      async parse() {
+        calls++;
+        return {
+          pages: [{ page: 1, text }],
+          parserVersion: 'synthetic-fixture',
+        };
+      },
+    },
+    extractReport: async () => null,
+  });
+  const doc = await service.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic cleanup retry',
+    sourceKind: 'synthetic',
+  });
+  const bytes = syntheticPdf([[text]]);
+  await storage.put(doc.id, bytes); // Synthetic pre-upgrade original.
+  await assert.rejects(
+    service.upload(admin.token, doc.id, bytes),
+    /delete unavailable/,
+  );
+  assert.equal((await service.detail(admin.token, doc.id)).status, 'review');
+  assert.ok((await storage.list()).some((row) => row.id === doc.id));
+  failDelete = false;
+  const retry = await service.upload(admin.token, doc.id, bytes);
+  assert.equal(calls, 1);
+  assert.equal(retry.pages[0].text, text);
+  assert.ok(!(await storage.list()).some((row) => row.id === doc.id));
+  assert.match(
+    (await service.source(admin.token, doc.id)).toString(),
+    /Page 1\nWater result/,
+  );
+  await service.upload(admin.token, doc.id, bytes);
+  assert.equal(calls, 1);
+  await assert.rejects(
+    service.upload(admin.token, doc.id, syntheticPdf([['different']])),
+    /immutable/,
+  );
+  assert.ok(!(await storage.list()).some((row) => row.id === doc.id));
+  assert.ok(
+    !(await service.official(fan.token)).some(
+      (row) => row.documentId === doc.id,
+    ),
+  );
+});
+
+test('new parse failures leave no persisted PDF and retry retains the bound source identity', async () => {
+  const storage = await createStorage({ root: storageRoot });
+  let fails = true;
+  const service = createReports({
+    pool,
+    storage: {
+      ...storage,
+      async put() {
+        throw new Error('PDF persistence forbidden');
+      },
+    },
+    parser: {
+      async parse() {
+        if (fails) throw new Error('synthetic parser failure');
+        return {
+          parserVersion: 'synthetic-fixture',
+          pages: [{ page: 1, text: 'Synthetic retry text' }],
+        };
+      },
+    },
+    extractReport: async () => null,
+  });
+  const doc = await service.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic transient failure',
+    sourceKind: 'synthetic',
+  });
+  const bytes = syntheticPdf([['Synthetic retry text']]);
+  await assert.rejects(
+    service.upload(admin.token, doc.id, bytes),
+    /synthetic parser failure/,
+  );
+  assert.equal((await service.detail(admin.token, doc.id)).status, 'failed');
+  assert.ok(!(await storage.list()).some((row) => row.id === doc.id));
+  await assert.rejects(
+    service.upload(admin.token, doc.id, syntheticPdf([['different']])),
+    /immutable/,
+  );
+  fails = false;
+  assert.equal(
+    (await service.upload(admin.token, doc.id, bytes)).status,
+    'review',
+  );
+  assert.ok(!(await storage.list()).some((row) => row.id === doc.id));
+});
+
+test('failed page persistence rolls back review state and retains no original', async () => {
+  const storage = await createStorage({ root: storageRoot });
+  let invalid = true;
+  const service = createReports({
+    pool,
+    storage,
+    parser: {
+      async parse() {
+        return {
+          parserVersion: 'synthetic-fixture',
+          pages: [
+            { page: 1, text: invalid ? '\0' : 'Synthetic durable retry' },
+          ],
+        };
+      },
+    },
+    extractReport: async () => null,
+  });
+  const doc = await service.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic failed persistence',
+    sourceKind: 'synthetic',
+  });
+  const bytes = syntheticPdf([['Synthetic durable retry']]);
+  await assert.rejects(service.upload(admin.token, doc.id, bytes));
+  const detail = await service.detail(admin.token, doc.id);
+  assert.equal(detail.status, 'awaiting-upload');
+  assert.deepEqual(detail.pages, []);
+  assert.ok(!(await storage.list()).some((row) => row.id === doc.id));
+  invalid = false;
+  assert.equal(
+    (await service.upload(admin.token, doc.id, bytes)).pages[0].text,
+    'Synthetic durable retry',
+  );
+});
+
+test('upload slot rejects a competing request before its PDF body is buffered', async () => {
+  const storage = await createStorage({ root: storageRoot });
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let started!: () => void;
+  const parsing = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const service = createReports({
+    pool,
+    storage,
+    parser: {
+      async parse() {
+        started();
+        await waiting;
+        return {
+          parserVersion: 'synthetic-fixture',
+          pages: [{ page: 1, text: 'Synthetic slot fixture' }],
+        };
+      },
+    },
+    extractReport: async () => null,
+  });
+  const doc = await service.reserve(admin.token, {
+    requestId: randomUUID(),
+    title: 'Synthetic slot fixture',
+    sourceKind: 'synthetic',
+  });
+  const first = service.upload(
+    admin.token,
+    doc.id,
+    syntheticPdf([['Synthetic slot fixture']]),
+  );
+  await parsing;
+  let read = false;
+  try {
+    await assert.rejects(
+      service.upload(admin.token, doc.id, async () => {
+        read = true;
+        return Buffer.alloc(0);
+      }),
+      { status: 503 },
+    );
+    assert.equal(read, false);
+  } finally {
+    release();
+    await first;
   }
 });

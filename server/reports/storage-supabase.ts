@@ -153,6 +153,63 @@ export async function createSupabaseStorage({
     return bytes;
   }
   return {
+    async list() {
+      const signal = AbortSignal.timeout(15000);
+      const entries: Awaited<ReturnType<SourceStorage['list']>> = [];
+      let previous = '';
+      // Finish the inventory before callers delete: deletion would shift offsets.
+      for (let offset = 0; ; offset += 1000) {
+        signal.throwIfAborted();
+        const response = await request(`/object/list/${bucket}`, signal, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prefix: '',
+            limit: 1000,
+            offset,
+            sortBy: { column: 'name', order: 'asc' },
+          }),
+        });
+        if (!response.ok) {
+          await response.body?.cancel();
+          throw unavailable();
+        }
+        let rows: unknown;
+        try {
+          rows = JSON.parse((await bounded(response, 512 * 1024)).toString());
+        } catch {
+          throw unavailable();
+        }
+        if (!Array.isArray(rows) || rows.length > 1000) throw unavailable();
+        for (const entry of rows) {
+          const row = record(entry);
+          if (
+            typeof row.name !== 'string' ||
+            !/^[a-f0-9-]{36}\.pdf$/.test(row.name) ||
+            typeof row.created_at !== 'string'
+          )
+            throw unavailable();
+          if (row.name <= previous) throw unavailable();
+          previous = row.name;
+          const createdAt = Date.parse(row.created_at);
+          if (!Number.isFinite(createdAt)) throw unavailable();
+          entries.push({ id: uuid(row.name.slice(0, -4)), createdAt });
+        }
+        if (rows.length < 1000) return entries;
+      }
+    },
+    async remove(id) {
+      id = uuid(id);
+      const signal = AbortSignal.timeout(15000);
+      const response = await request(`/object/${bucket}`, signal, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: [`${uuid(id)}.pdf`] }),
+      });
+      await response.body?.cancel();
+      if (!response.ok) throw unavailable();
+      if (await original(id, signal)) throw unavailable();
+    },
     async get(id, expectedHash) {
       uuid(id);
       if (!/^[a-f0-9]{64}$/.test(expectedHash))
@@ -224,7 +281,7 @@ export async function createSupabaseStorage({
         return { sha256, bytes: bytes.length };
       });
     },
-    // Atomic object uploads have no local partial files. Never delete originals.
+    // Atomic uploads have no partial files. Retention removes saved/expired originals explicitly.
     async cleanupIncomplete() {},
   };
 }

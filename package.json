@@ -56,7 +56,7 @@
     "rewards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts",
     "submissions:test": "node --test server/submissions/http.test.ts",
     "submissions:test:database": "pnpm db:run-test -- node --test server/submissions/submissions.test.ts",
-    "reports:test": "node --test --test-concurrency=1 server/reports/contracts.test.ts server/reports/extraction.test.ts server/reports/disabled.test.ts",
+    "reports:test": "node --test --test-concurrency=1 server/reports/contracts.test.ts server/reports/extraction.test.ts server/reports/disabled.test.ts server/reports/retention.test.ts server/reports/storage-supabase.test.ts server/reports/parser-hosted.test.ts server/reports/hosted/service.test.ts",
     "reports:test:native": "node --test --test-concurrency=1 server/reports/parser.test.ts server/reports/parser-boundaries.test.ts",
     "reports:test:container": "node --test --test-concurrency=1 server/reports/parser-container.test.ts",
     "reports:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/reports/reports.test.ts server/reports/http.test.ts server/reports/registration.test.ts server/reports/integration.test.ts server/reports/storage.test.ts",

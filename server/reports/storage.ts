@@ -10,6 +10,8 @@ const busyRoots = new Set<string>();
 export type SourceStorage = {
   get(id: string, expectedHash: string): Promise<Buffer>;
   put(id: string, bytes: Buffer): Promise<{ sha256: string; bytes: number }>;
+  list(): Promise<{ id: string; createdAt: number }[]>;
+  remove(id: string): Promise<void>;
   cleanupIncomplete(): Promise<void>;
 };
 
@@ -71,6 +73,27 @@ export async function createStorage({
   }
   return {
     get,
+    async list() {
+      const entries = [];
+      for (const name of await readdir(root)) {
+        if (!/^[a-f0-9-]{36}\.pdf$/.test(name)) continue;
+        const info = await lstat(join(root, name));
+        if (!info.isFile() || info.isSymbolicLink())
+          throw new Error('Unexpected report storage entry.');
+        entries.push({ id: uuid(name.slice(0, -4)), createdAt: info.mtimeMs });
+      }
+      return entries;
+    },
+    async remove(id: string) {
+      await unlink(filename(id)).catch((error: unknown) => {
+        if (!(
+          error instanceof Error &&
+          'code' in error &&
+          error.code === 'ENOENT'
+        ))
+          throw error;
+      });
+    },
     async put(id: string, bytes: Buffer) {
       const final = filename(id);
       if (bytes.length > MAX_FILE_BYTES)

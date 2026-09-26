@@ -511,3 +511,45 @@ Project-level lesson proposed: verify default server responses against the clien
 on the merge base before enabling a new wire variant. Shared guidance unchanged.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## REPORT-TEXT-RETENTION: hosted report delivery contract, 2026-09-26
+
+Owning work: report ingestion #19 and approval #20. Latest user contract requires
+hosted PDF processing with transient original uploads, durable page-labelled text
+and source provenance, deletion after text commits, and expiry of failed uploads.
+Existing storage explicitly retains originals and source delivery downloads PDFs.
+Preserve assigned-admin approval before official Impact publication and all
+unrelated product code. Prepare locally first; root coordinates actual-host
+isolation proof and zero-spend verification before any Render Free creation.
+New uploads now stay in bounded memory, with no object-storage write. Expiry
+duration is pending only for failed/abandoned legacy objects; no default is implied.
+Local candidate and tests are in progress; hosted readiness remains unverified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Report queue steering, 2026-09-26: rebase preparation through main `e2f95534` and
+hold container/parser work until after migration and Impact proofs. Rebase and
+lightweight source/fixture inspection completed; report Linux/PG proof remains
+queued before native builds. No new-upload decision is pending. Legacy expiry
+remains isolated from the new in-memory upload path.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Root expiry assumption, 2026-09-26: under the user's no-further-decisions request,
+legacy failed/abandoned uploads use a configurable 24-hour expiry. New PDFs remain
+in memory. Cleanup must skip active uploads and remove successfully extracted
+originals only after durable text commits. This code change authorizes no
+production bulk deletion; runtime deployment and idle scheduling remain owned by
+root. Send blockers to root rather than ask the user again.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+PR53 review correction: cleanup inspected only the first 1,000 name-sorted
+legacy objects. This can delay expiry, or starve later expired/saved objects
+when new lower-sorted arrivals continue. Fetch the full bounded-page inventory
+before deletion changes offsets; reject repeated/out-of-order pages and preserve
+active-upload locks, durable commit ordering and expiry. A 2,005-object test
+fails before the fix and passes afterward. No remote storage or heavy fixture ran.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

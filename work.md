@@ -1363,3 +1363,137 @@ Default factors are not activated. Root must review the new exact head before
 serialized squash; native-compatible main precedes explicit deployment config.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: hosted report text-retention preparation
+
+User scope: one focused reports candidate from main `1dd01419`, local preparation
+before root review/cloud work. Owning report ingestion #19 and approval #20.
+New PDFs remain in bounded request memory. Saved page text, hash, byte count and
+parser provenance remain in PostgreSQL; original storage is legacy cleanup only.
+Completed retries skip parsing. Source download is a page-labelled UTF-8 text
+attachment. Approval, immutable revisions and official ESG read policy remain
+unchanged; no points, auth, photo, budget SQL, mobile or Impact implementation edits.
+
+| Boundary                         | Status and sample                                           | Method/evidence                                                                  | Confidence and limits                                                                 |
+| -------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Retention/adapters/protocol      | 40 tests passed in the report command                       | Synthetic local temp files, controlled provider responses and real loopback HTTP | Good local contract evidence; no remote storage/provider used                         |
+| Static checks                    | Typecheck, focused lint/format, agent/document check passed | Local Node 24.20.0; cached frozen install downloaded nothing                     | Does not establish parser or transaction behavior                                     |
+| Durable commit/deletion/approval | Unverified in this candidate                                | Focused PostgreSQL tests authored, shared heavy slot queued                      | Must run before candidate freeze                                                      |
+| Linux isolation                  | Unverified for this new launcher                            | Prior ARM64 experiment read; owned artifact now prepared                         | Prior prototype is not evidence for changed launcher or Render AMD64                  |
+| Hosted readiness/cost/memory     | Unverified                                                  | Exact trial proposal in `server/reports/hosted/README.md`                        | Root review, zero-spend proof, actual-host isolation and memory measurements required |
+| UI/DAST/full security            | Unverified for this candidate                               | Download copy/type/extension updated; no browser consent used                    | Relevant checks remain queued, no product-security pass claimed                       |
+
+The default-disabled synthetic trial has a separate signed audience and exact
+fixture hashes/sizes, with production parse/readiness closed until host approval.
+The dedicated service has no application credentials, storage or inference calls.
+The accepted hard resource boundary is 512 MiB service-wide. Swap/PID observations
+remain review evidence, not claims inherited from the old Docker job profile.
+
+Legacy-only expiry duration and idle cleanup scheduling are pending. No duration
+was invented, and new uploads do not depend on one. Existing historical PDF
+retention claims in report operations were replaced with the accepted contract.
+Local evidence stays ignored and synthetic. No commit, push, PR, cloud creation,
+remote provider call, secret access or evidence publication in this preparation.
+
+Implemented and locally checked by gpt-6-astra through Codex (T3 Code).
+
+Reports light rebase, 2026-09-26: moved this preparation branch onto actual main
+`e2f95534814b7e6289ba24f01aa20a919ed1514a`. The only restore conflicts were
+append-only bug/work records; complete main records and this report entry remain.
+TODO is byte-identical to its private pre-rebase copy and stays unstaged. Report
+source is byte-identical to the preparation manifest except the admin HTML,
+which preserves main's navigation and changes only the download label. Package
+scripts retain main's additions and the focused report test expansion.
+
+Cached offline frozen install added main's Sharp dependency without downloads.
+Post-rebase typecheck passed. Lightweight fixture inspection found no missing
+local import or file outside the test Dockerfile's explicit source-copy list.
+Docker binary exists, but daemon/image/package availability and Linux compiler,
+parser/PG execution remain unverified until the queued lease. No container or
+parser started. New in-memory upload behavior has no pending product decision;
+legacy expiry stays separate. The exact hosted candidate is not frozen and has
+no actual-host readiness claim.
+
+Rebased and inspected by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: report Linux and PostgreSQL proof
+
+On main `e2f95534814b7e6289ba24f01aa20a919ed1514a`, the owned Linux ARM64
+fixture compiled the actual launcher with compiler warnings treated as errors.
+Twenty tests passed with no skips, using real Landlock ABI 8, seccomp, PDF.js,
+HTTP, PostgreSQL transactions and synthetic PDFs. They cover denied file/proc/
+network access, invalid/encrypted/image-only/page-limit/deadline failure and
+recovery, signed trial parsing with production readiness closed, memory-only
+upload, durable page commit before legacy deletion, deletion retry, rollback,
+role/session revocation, approval concurrency and official ESG reads. They do
+not establish hosted AMD64 behavior or worst-case service memory.
+
+The accepted legacy-only default is now 24 hours, configurable with
+`REPORT_FAILED_UPLOAD_TTL_SECONDS`. The real PostgreSQL test confirms cleanup
+skips an active upload's advisory lock and expires the object after release.
+New uploads write no original object. Idle cleanup scheduling remains a deployment
+prerequisite; no production object was inspected or deleted.
+
+Actual execution found and fixed two launcher prerequisites: Node needs read
+access to `/etc/ssl/openssl.cnf`, and RLIMIT_NPROC counted the shared UID's threads
+across containers and blocked Node startup. The final launcher retains thread-only
+seccomp creation controls and observes service cgroup limits. The accepted
+512 MiB service-wide contract does not introduce an unproved zero-swap/64-PID
+promise. The parser Docker build includes CA certificates and retains strict TLS.
+
+Full `pnpm check` and `pnpm security:check` passed serially on this source. Security
+fixtures rejected their deliberate unsafe inputs; those expected findings are
+not product findings. Local proof is private under
+`.evidence/hosted-report-text-retention/`. Supported-host isolation, peak service
+memory, zero-spend review and independent sandbox review remain prerequisites
+for actual hosted readiness. No cloud, CI or production action occurred.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+Reports passive DAST and cleanup: the actual reports admin page returned 200;
+the spider followed all five admin forms. The scan remains failed with five
+10202 instances and informational 10031. Root accepted only the two additional
+points/rewards instances after independent review; the original three-form
+exception remains separate. [Exact source-bound disposition](docs/operations/admin-dast-exception.md)
+records the nine original-image/source hashes. The initial parser scanner could
+not write its startup log. A retry with the owned writable working directory
+returned exit 0, 60 rule passes and zero alerts; `/health` returned 200 and ZAP
+observed `/ready` false. Retained ZAP errors are denied external update/telemetry
+DNS lookups on the internal network, not target failures. No remote scan occurred.
+
+The original image index, manifest and source COPY blobs remained in Docker's
+build record after cleanup. Digest-verified reads reconciled all nine relevant
+files with the current candidate, without building or starting another container.
+All owned containers, three images, internal network and temporary source context
+were removed; the heavy slot was released to root. Shared caches were not pruned.
+No rendered admin, actual Render AMD64, service memory-peak or production claim
+follows from this local proof. One real PR and root's exact review remain next.
+
+Verified and recorded by gpt-6-astra through Codex (T3 Code).
+
+PR53 focused review correction: Supabase inventory now advances offsets in
+1,000-object pages under one 15-second deadline, with a 512 KiB response limit
+per page and strict name progress. The inventory finishes before this sweep
+removes anything, so its deletions cannot shift later offsets. Incomplete or
+nonprogressing inventory fails before any cleanup deletion. Sweep policy,
+commit-before-delete and active-upload locks are unchanged.
+
+The 2,005-object regression failed against `1e60d442` and passed with the fix;
+it includes expired/saved objects beyond page one and a deletable first object.
+Provider failure and repeated-page tests verify no partial cleanup. All 44
+focused report tests, typecheck and focused lint pass. Root's standards/security
+CLEAR receipt at `1e60d442` remains the prior candidate's receipt; pagination
+needs focused rereview. No heavy checks or scan were repeated without a lease.
+
+Fixed and verified by gpt-6-astra through Codex (T3 Code).
+
+PR53 pagination rebase: actual main `458cae125437692c03d036139063c4a99bae2c5d`
+is now the base. Both owners' append-only records and main's expanded Awards
+script are preserved. Report source is byte-identical to the corrected source
+before rebase; API/Awards source is byte-identical to main. Forty-four focused
+report tests, typecheck and agent/docs validation pass after rebase. The original
+full/security/Linux/DAST receipts remain prior-source evidence, with no heavy
+rerun. The inherited Awards API hash change is separately recorded in the DAST
+exception document for root's focused review. Merge remains held.
+
+Rebased and verified by gpt-6-astra through Codex (T3 Code).
