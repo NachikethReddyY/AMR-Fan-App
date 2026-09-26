@@ -1,15 +1,15 @@
 # Feature specification
 
-The accepted product is split into the 12 features below. These documents own the detailed behavior and acceptance cases; the [main specification](../fan-app-specification.md) owns scope and source precedence. [CONTEXT.md](../../CONTEXT.md) owns terminology.
+The accepted product is split into the 13 features below. These documents own the detailed behavior and acceptance cases; the [main specification](../fan-app-specification.md) owns scope and source precedence. [CONTEXT.md](../../CONTEXT.md) owns terminology.
 
-Status: documentation prepared from the confirmed interview. The committed app is an Expo starter; separate local changes add Home and navigation, with Travel, Rewards and Impact placeholders. Product behavior described here is planned, not implemented or tested.
+Status checked 26 September 2026: the repository has implemented backend slices and a native candidate, not only an Expo starter. Accounts, accounting, rewards, submissions, reports and journey server code have scoped evidence. Full native journey verification, production journey credit, personal/community impact, photo activities and hosted AI/report processing remain incomplete. Requirements below are not a claim that every end-to-end flow passes.
 
 ## Features
 
 | ID  | Feature                                                 | Fan or admin outcome                                                                        |
 | --- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | F01 | [Accounts and demo mode](01-accounts-and-demo.md)       | Sign in, resume progress and use a separate persistent demo profile.                        |
-| F02 | [Route planning](02-route-planning.md)                  | Compare Singapore routes and choose the lowest emissions within the extra-time limit.       |
+| F02 | [Route planning](02-route-planning.md)                  | Compare Singapore routes and balance time and emissions within the extra-time limit.       |
 | F03 | [Emissions estimates](03-emissions-estimates.md)        | Compare route emissions against one person driving between the same places.                 |
 | F04 | [Real journey tracking](04-journey-tracking.md)         | Record and assess actual travel, including background and locked-phone use.                 |
 | F05 | [Points, Rewards and History](05-points-and-history.md) | Earn, receive and spend points with consistent records and no duplicate credits or charges. |
@@ -20,6 +20,7 @@ Status: documentation prepared from the confirmed interview. The committed app i
 | F10 | [Impact dashboard](10-impact-dashboard.md)              | See personal/community lifetime estimates and separate official team figures.               |
 | F11 | [Report upload and review](11-report-ingestion.md)      | Extract report-supported details and approve them before publication in the app.            |
 | F12 | [Admin web dashboard](12-admin-dashboard.md)            | Operate rewards, points, submissions, reports, factors and demo reset with assigned roles.  |
+| F13 | [Photo activity evidence](13-activity-evidence.md) | Capture and assess sustainable activities with duplicate-safe points and transient photos. |
 
 ## How the features fit
 
@@ -42,8 +43,8 @@ These items do not block the feature breakdown. Resolve them before implementing
 
 | Affected features        | Work or decision still needed                                                                                                                                                       |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Accounts and admin       | Select authentication, Azure services and admin frontend; obtain actual access and approved UI inputs.                                                                              |
-| Routes and estimates     | Verify provider contracts, Singapore datasets and units; settle rounding and equal-emissions tie handling.                                                                          |
+| Accounts and admin       | Supabase email/password auth and Render Free backend are selected; complete integrated native signup/signin and assigned-admin acceptance. |
+| Routes and estimates     | Configure Google Routes access, validate factor applicability and integrate Jev preference ranking within the hard time limit. |
 | Real journeys and points | Measure endpoint/route quality thresholds, interruption/offline handling and seven-day trace cleanup; verify both physical platforms. Only upward late-evidence top-ups are agreed. |
 | AI and reports           | Confirm the integration contract, permitted source report, supported formats, field schema, upload limits and extraction provider.                                                  |
 | Rewards and screens      | Select detailed presentation, content and demonstration offers. Actual merchant/tree/driver fulfilment remains later work.                                                          |
@@ -54,4 +55,4 @@ The final interview confirmed the single-driver baseline, fastest-route time ref
 
 Each feature has observable acceptance cases. They are requirements for future implementation, not claims of tests already passing. The split retains all 69 cases from the previous active specification and adds cases for the newly confirmed rules and previously implicit reward protections.
 
-AI action scoring from photos/text/video/voice, campaigns, leaderboards and a chatbot/voice assistant remain future proposals. They have no implementation ticket in this POC breakdown. Historical race-only travel restrictions do not apply to ordinary travel.
+Photo activity assessment with a short description entered current scope on 26 September 2026; see F13 for the accepted rules and unimplemented boundaries. Video/audio, campaigns, leaderboards and a chatbot/voice assistant remain future proposals. Historical race-only travel restrictions do not apply to ordinary travel.

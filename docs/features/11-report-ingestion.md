@@ -11,6 +11,8 @@ An admin uploads a sustainability report, gets its supported details prefilled a
 ## Accepted behavior
 
 - Report upload and extraction are required in the POC. Replace the earlier manual-only plan while retaining human review.
+- Processing must run on the hosted system. A laptop-only parser does not satisfy this requirement.
+- New PDF originals are transient inputs. Save extracted page-labelled text or Markdown, source details, original content hash and extraction version durably, then delete the PDF original. Failed uploads must expire and be removed. Existing retained originals require an explicit migration before deletion; this rule does not authorize bulk removal.
 - Extract all supported structured details: category/name, value, unit, reporting period, source document/page, evidence text and whether a figure is a target, result, annual total, cumulative value or estimate.
 - Retain extraction/model version metadata. Missing or unsupported fields stay missing and are flagged for review. Do not invent numbers, provenance, reviewers or approval times.
 - An assigned admin reviews and can correct candidates before approving them. Approval identity and time come from that action.
@@ -33,3 +35,5 @@ Choose supported report formats, upload limits, extraction schema/provider and s
 | A report does not contain a required value or source detail | Leave that field missing and flag it for review; invent no value.                                        |
 | Extracted report records await approval                     | Keep them out of the official dashboard until an authorized admin approves them.                         |
 | Report extraction fails                                     | Preserve the previously approved dashboard data and expose the failed extraction for admin follow-up.    |
+| Extracted text and provenance have been saved successfully | The original PDF is removed, while candidates remain reviewable against retained page-labelled text. |
+| Parsing, persistence or cleanup fails | Preserve prior approved data, expose processing/deletion state truthfully, and remove transient originals through bounded retry/expiry handling. |
