@@ -1,3 +1,4 @@
+import { checkScanBudget, rethrowScanError } from './limits.ts';
 import { createHash } from 'node:crypto';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -51,6 +52,9 @@ export async function readContributions({
     const community = createSummary();
     const sources = new Map<string, ImpactSource>();
     const validation = new Set<'reviewed_release' | 'unvalidated_estimate'>();
+    const started = performance.now();
+    let scannedRows = 0;
+    await client.query("SET LOCAL statement_timeout = '5s'");
     // The state table owns the latest receipt. Never sum append-only assessments
     // or ledger entries: a replay/top-up is still one journey contribution.
     await client.query(`DECLARE impact_rows NO SCROLL CURSOR FOR
@@ -62,7 +66,19 @@ export async function readContributions({
       LEFT JOIN app.journey_award_assessments a ON a.id=s.latest_receipt_id
       WHERE j.summary->>'state'='finished' AND j.summary->'source'->>'kind'='live'`);
     while (true) {
+      const remainingMs = checkScanBudget({
+        rows: scannedRows,
+        elapsedMs: performance.now() - started,
+      });
+      await client.query("SELECT set_config('statement_timeout',$1,true)", [
+        `${remainingMs}ms`,
+      ]);
       const rows = await client.query('FETCH FORWARD 100 FROM impact_rows');
+      scannedRows += rows.rows.length;
+      checkScanBudget({
+        rows: scannedRows,
+        elapsedMs: performance.now() - started,
+      });
       for (const raw of rows.rows) {
         const row = rowSchema.parse(raw);
         if (row.source.kind === 'fixture' || row.state !== 'finished') continue;
@@ -91,6 +107,10 @@ export async function readContributions({
       }
       if (rows.rows.length < 100) break;
     }
+    checkScanBudget({
+      rows: scannedRows,
+      elapsedMs: performance.now() - started,
+    });
     return contributionsSchema.parse({
       period: 'lifetime',
       unit: 'kgCO2e',
@@ -102,5 +122,5 @@ export async function readContributions({
       sources: [...sources.values()],
       validation: [...validation].sort(),
     });
-  });
+  }).catch(rethrowScanError);
 }

@@ -72,3 +72,9 @@ Home and Impact preserve the accepted layout and expose loading, sign-in, empty,
 unavailable and populated states. Impact permits refresh and shows the
 single-driver same-endpoint baseline, lifetime period and source disclosure.
 Rendered native behavior remains unverified until coordinated device proof.
+
+The read fails closed after 10,000 finished live records or a five-second scan
+budget. Each fetch uses the remaining database statement timeout. This limit
+returns an error, never a truncated lifetime total; larger deployments need a
+separately reviewed persisted aggregate. Evidence-rejected finished journeys
+remain unavailable and count among excluded records beside a partial estimate.

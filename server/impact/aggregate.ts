@@ -23,7 +23,12 @@ export function classifyReceipt(
 ): Contribution {
   if (receipt.source.kind === 'fixture') return { kind: 'excluded' };
   const decision = receipt.result.decision;
-  if (decision.kind === 'no_award') return { kind: 'excluded' };
+  if (decision.kind === 'no_award')
+    return receipt.assessment.status === 'insufficient_evidence' ||
+      decision.reason === 'validated_endpoints_required' ||
+      decision.reason === 'not_missing_intervening_evidence'
+      ? { kind: 'unavailable', reason: 'insufficient_evidence' }
+      : { kind: 'excluded' };
   if (decision.kind === 'fallback')
     return { kind: 'unavailable', reason: 'insufficient_evidence' };
   if (decision.kind !== 'full')

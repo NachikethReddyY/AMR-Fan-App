@@ -66,7 +66,7 @@
     "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs",
     "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts",
     "activity:test": "node --test server/activity/claims.test.ts server/activity/media.test.ts",
-    "impact:test": "node --test server/impact/aggregate.test.ts"
+    "impact:test": "node --test server/impact/aggregate.test.ts server/impact/limits.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/geist": "^0.4.2",

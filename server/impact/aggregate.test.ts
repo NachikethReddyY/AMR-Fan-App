@@ -168,3 +168,29 @@ test('full decision still requires an actual assessed record, never planned or i
     reason: 'insufficient_evidence',
   });
 });
+
+test('evidence-rejected finished journeys stay unavailable alone and are counted as excluded beside an estimate', () => {
+  const stored = receipt();
+  stored.source = {
+    kind: 'live',
+    provider: 'synthetic-rejected-evidence-test',
+  };
+  stored.result.decision = {
+    kind: 'no_award',
+    reason: 'validated_endpoints_required',
+  };
+  stored.assessment.status = 'insufficient_evidence';
+  const rejected = classifyReceipt(stored);
+  assert.deepEqual(rejected, {
+    kind: 'unavailable',
+    reason: 'insufficient_evidence',
+  });
+  assert.deepEqual(summarizeContributions([rejected]), {
+    kind: 'unavailable',
+    reasons: ['insufficient_evidence'],
+  });
+  assert.deepEqual(
+    summarizeContributions([rejected, { kind: 'eligible', savingsKg: '2' }]),
+    { kind: 'available', savingsKg: '2', journeyCount: 1, excludedJourneys: 1 },
+  );
+});

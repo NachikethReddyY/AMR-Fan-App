@@ -1534,3 +1534,15 @@ No provider/device/cloud/shared-DB/CI action occurred. Approved live numerical
 factors and actual populated journey proof remain upstream activation work.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+PR review corrections: independent specification review found evidence-related
+`no_award` receipts were displayed as empty; they now remain unavailable and are
+counted beside partial totals. Independent standards review required a bound on
+the full community scan. The read now caps work at 10,000 records and five seconds,
+with a shrinking per-fetch database timeout, and never returns a truncated total.
+Failing-first focused regressions pass. The final budget SQL has not rerun in
+PostgreSQL because the heavy slot was released to the migration owner; prior
+isolated proof predates that correction. Native and impact-specific DAST remain
+unverified. Review scope is the impact diff, not a repository-wide audit.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
