@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { estimated, estimatedCo2, estimateSchema } from '../routes/api';
+import { estimated, estimatedCo2, estimateSchema } from '../routes/api.ts';
 import type { Journey as ServerJourney } from '../../../server/journeys/contracts';
 import type { JourneyPlan as ServerPlan } from '../../../server/journeys/planning';
 import type { AwardOutcome as ServerAward } from '../../../server/awards/contracts';
@@ -239,6 +239,10 @@ export const awardSchema = z.object({
   }),
 });
 export type Award = z.infer<typeof awardSchema>;
+export const settlementSchema = z.object({
+  entry: z.object({ profileId: id }),
+  outcome: awardSchema,
+});
 export const fromServerAward = (value: ServerAward): Award =>
   awardSchema.parse(value);
 export const listSchema = z.object({

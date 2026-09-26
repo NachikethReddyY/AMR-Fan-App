@@ -288,12 +288,14 @@ export function createRecorder({
     }
   }
   let networkQueue = Promise.resolve();
+  let identityCleanup = Promise.resolve();
   async function run(action: () => Promise<void>) {
     const requestedEpoch = epoch;
     const pending = networkQueue.then(async () => {
-      if (requestedEpoch !== epoch) return;
-      set({ busy: true });
       try {
+        await identityCleanup;
+        if (requestedEpoch !== epoch) return;
+        set({ busy: true });
         await action();
       } catch (e) {
         await failure(e, ctx?.token);
@@ -341,7 +343,12 @@ export function createRecorder({
       selection?: StoredCapture['selection'],
     ) =>
       run(async () => {
-        if (state.capture && state.capture.phase !== 'finished') return;
+        if (
+          state.capture &&
+          (state.capture.phase !== 'finished' ||
+            state.award?.receipt.journeyId !== state.capture.journey.id)
+        )
+          return;
         const attempt = ++epoch;
         ctx = context;
         invalidated = false;
@@ -532,15 +539,23 @@ export function createRecorder({
       invalidated = true;
       cutoff = now();
       set({ collecting: false, capture: null, award: null, message: null });
-      try {
-        await location.stop();
-      } finally {
-        await serial(() => save(null));
-      }
+      // Reserve cleanup before yielding. Successor restore/Start cannot adopt
+      // old data or create a new key until this stop and deletion finish.
+      identityCleanup = serial(async () => {
+        try {
+          await location.stop();
+        } finally {
+          await save(null);
+        }
+      });
+      await identityCleanup.catch((error: unknown) => failure(error));
     },
     clear: async () =>
       run(async () => {
-        if (state.capture?.phase === 'finished') {
+        if (
+          state.capture?.phase === 'finished' &&
+          state.award?.receipt.journeyId === state.capture.journey.id
+        ) {
           await serial(() => save(null));
           set({ award: null, message: null });
         }

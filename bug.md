@@ -701,3 +701,13 @@ registration is outside that authority. Internal Android compile passed; iOS and
 combined device proof remain pending. No final APK claim.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: independent review corrections
+
+Confirmed and fixed recorder cleanup/successor overlap, settlement envelope
+mismatch and unacknowledged settlement loss. Failure-first deferred-stop,
+clear/replacement and real registered-HTTP-to-native regressions now pass.
+The recorder enforces cleanup and receipt boundaries independent of React.
+Geometry review found no blocking issue. Device proof remains a separate gate.
+
+Fixed by gpt-6-astra through Codex (T3 Code).

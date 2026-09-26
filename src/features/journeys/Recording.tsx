@@ -140,7 +140,7 @@ export function Recording({
           void recorder.retry();
         }}
       />
-      {finished && (
+      {finished && state.award && (
         <Action
           label="Plan another journey"
           disabled={state.busy}

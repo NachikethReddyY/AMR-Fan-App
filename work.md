@@ -1792,3 +1792,25 @@ admin forms/auth/origin behavior is unchanged. No scanner suppression or green
 claim. Raw evidence and generated native projects remain local and unstaged.
 
 Implemented and verified locally by gpt-6-astra through Codex (T3 Code).
+
+### Independent native review corrections
+
+Rebased the frozen source onto Participation main e3577631 at the completed iOS
+build boundary; native config and dependencies are byte-identical. Both native
+compiles passed. Three independent findings were reproduced with failing tests:
+late identity cleanup erased successor capture; native settlement decoded the
+outer HTTP envelope as an award; and clearing a finished pending settlement lost
+its retry identity. Recorder cleanup now blocks successor restore/Start, native
+settlement validates entry/outcome and ownership, and clear/replacement waits for
+an acknowledged terminal receipt. Legitimate no-award receipts still allow clear.
+
+Deferred-stop tests cover both profile changes and same-profile restoration.
+Actual registered HTTP fallback, physical, provisional and CO2 outcomes decode
+through the native client, including 401 mapping and unchanged replay keys.
+Client38, DOM3, registered HTTP7, typecheck and changed-file lint pass. Native
+module builds predate these JS-only corrections; device bundles use corrected
+source. Pixel installation found an existing signature mismatch and stopped
+without deleting the installed app or its data. Root owns the internal install
+identity decision; no device journey success is claimed at this checkpoint.
+
+Fixed by gpt-6-astra through Codex (T3 Code).

@@ -59,7 +59,10 @@ function setup() {
       return current;
     }),
     read: jest.fn(async () => current),
-    settle: jest.fn(async () => ({
+    settle: jest.fn<
+      ReturnType<JourneyApi['settle']>,
+      Parameters<JourneyApi['settle']>
+    >(async () => ({
       creditedPoints: 0,
       cumulativeAutomaticCredit: 0,
       targetPoints: 0,
@@ -438,4 +441,91 @@ test('Stop cutoff survives restart and rejects headless callbacks without sessio
   expect((await x.store.read())?.samples).toEqual([]);
   expect((await x.store.read())?.finish?.endedAtMs).toBe(1500);
   expect(x.api.evidence).not.toHaveBeenCalled();
+});
+
+test.each([false, true])(
+  'successor capture waits for deferred identity cleanup (same profile: %s)',
+  async (sameProfile) => {
+    const x = setup(),
+      r = x.create();
+    let running = false;
+    x.location.start.mockImplementation(async () => {
+      running = true;
+    });
+    x.location.stop.mockImplementation(async () => {
+      running = false;
+    });
+    x.location.isRunning.mockImplementation(async () => running);
+    x.api.start.mockImplementation(
+      async (context, id, _request, captureSessionId) => ({
+        ...journey,
+        id,
+        profileId: context.profileId,
+        state: 'active',
+        startedAtMs: 1000,
+        captureSessionId,
+      }),
+    );
+    await r.begin(ctx, journey);
+    let release: (() => void) | undefined;
+    x.location.stop.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      running = false;
+    });
+    const invalidating = r.invalidate();
+    const nextContext = {
+      token: 'successor',
+      profileId: sameProfile
+        ? ctx.profileId
+        : '00000000-0000-4000-8000-000000000004',
+    };
+    const nextJourney = {
+      ...journey,
+      id: '00000000-0000-4000-8000-000000000005',
+      profileId: nextContext.profileId,
+    };
+    const restoring = r.restore(nextContext);
+    const beginning = r.begin(nextContext, nextJourney);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const beforeRelease = {
+      capture: r.getState().capture,
+      starts: x.api.start.mock.calls.length,
+    };
+    if (!release) throw new Error('Cleanup did not stop');
+    release();
+    await Promise.all([invalidating, restoring, beginning]);
+    expect(beforeRelease).toEqual({ capture: null, starts: 1 });
+    expect((await x.store.read())?.journey.id).toBe(nextJourney.id);
+    expect(r.getState().capture?.journey.id).toBe(nextJourney.id);
+    expect(r.getState().collecting).toBe(true);
+    expect(running).toBe(true);
+  },
+);
+
+test('unacknowledged settlement survives clear and replacement, then retries its original key', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  x.api.settle.mockRejectedValueOnce(new Error('offline before settlement'));
+  await r.finish('arrival');
+  const retained = await x.store.read();
+  expect(retained?.phase).toBe('finished');
+  const requestId = retained?.settlement?.requestId;
+  await r.clear();
+  await r.begin(ctx, {
+    ...journey,
+    id: '00000000-0000-4000-8000-000000000005',
+  });
+  expect((await x.store.read())?.settlement?.requestId).toBe(requestId);
+  expect(x.api.start).toHaveBeenCalledTimes(1);
+  await r.retry();
+  expect(x.api.settle.mock.calls.map((call) => call[2])).toEqual([
+    requestId,
+    requestId,
+  ]);
+  expect(r.getState().award?.receipt.result.decision.kind).toBe('no_award');
+  await r.clear();
+  expect(await x.store.read()).toBeNull();
 });

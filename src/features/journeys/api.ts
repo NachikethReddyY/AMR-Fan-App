@@ -2,13 +2,13 @@ import type { Request } from '../account/api';
 import type { Context } from '../account/resource';
 import type { TravelQuery } from '../routes/api';
 import {
-  awardSchema,
+  settlementSchema,
   journeySchema,
   listSchema,
   planSchema,
   type FinishReason,
   type Sample,
-} from './contracts';
+} from './contracts.ts';
 
 export function createJourneyApi(request: Request) {
   const path = (id: string) => `/v1/journeys/${encodeURIComponent(id)}`;
@@ -113,7 +113,7 @@ export function createJourneyApi(request: Request) {
       version: string,
       revision: number,
     ) => {
-      const award = awardSchema.parse(
+      const settlement = settlementSchema.parse(
         await request(`${path(id)}/settlements`, ctx.token, 'POST', {
           profileId: ctx.profileId,
           requestId,
@@ -121,7 +121,9 @@ export function createJourneyApi(request: Request) {
           assessmentRevision: revision,
         }),
       );
+      const award = settlement.outcome;
       if (
+        settlement.entry.profileId !== ctx.profileId ||
         award.receipt.profileId !== ctx.profileId ||
         award.receipt.journeyId !== id
       )

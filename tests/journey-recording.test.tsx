@@ -147,6 +147,23 @@ test('finished receipt restores planning through its explicit action and never c
           busy: false,
           collecting: false,
           capture: { ...x.state.capture, phase: 'finished' },
+          award: {
+            creditedPoints: 0,
+            cumulativeAutomaticCredit: 0,
+            targetPoints: 0,
+            creditContext: 'production_unavailable',
+            receipt: {
+              journeyId: journey.id,
+              profileId: context.profileId,
+              result: {
+                productionCredit: {
+                  kind: 'unavailable',
+                  reasons: ['insufficient_evidence'],
+                },
+                decision: { kind: 'no_award', reason: 'insufficient_evidence' },
+              },
+            },
+          },
         }}
       />,
     ),
@@ -161,4 +178,26 @@ test('finished receipt restores planning through its explicit action and never c
   );
   expect(onPlan).toHaveBeenCalledTimes(1);
   expect(clear).toHaveBeenCalledTimes(1);
+});
+
+test('finished unacknowledged settlement keeps retry and withholds planning', async () => {
+  const x = setup();
+  await act(async () =>
+    root.render(
+      <Recording
+        recorder={x.recorder}
+        context={context}
+        onPlan={jest.fn()}
+        state={{
+          ...x.state,
+          busy: false,
+          collecting: false,
+          capture: { ...x.state.capture, phase: 'finished' },
+        }}
+      />,
+    ),
+  );
+  const labels = [...host.querySelectorAll('button')].map((b) => b.textContent);
+  expect(labels).toContain('Refresh assessment and points');
+  expect(labels).not.toContain('Plan another journey');
 });
