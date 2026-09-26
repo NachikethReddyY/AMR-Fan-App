@@ -1,8 +1,12 @@
 {
   "expo": {
-    "name": "AMR Fan App",
+    "name": "AMR Fan",
     "slug": "amr-fan-app",
     "version": "0.1.0",
+    "icon": "./assets/branding/fan-icon-v1.png",
+    "android": {
+      "package": "xyz.theynr.amrfanapp"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "platforms": ["ios", "android"],
