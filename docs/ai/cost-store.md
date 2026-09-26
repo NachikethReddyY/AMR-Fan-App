@@ -82,9 +82,9 @@ dependencies may use network access; the running database cannot reach providers
 The test guard requires its exact test database and loopback connection.
 
 The fixture applies the available migration chain, including independent `0011`.
-If `0010` has not landed, this proves `0001` through `0009` plus `0011`, not the
-future integrated photo chain. Re-run after the photo migration lands. Tests
-exercise independent processes, concurrent cap admission, reconnect/replay,
+All eleven tests passed on the complete `0001` through `0011` chain after the
+photo migration landed in main `726efbb`. Tests exercise independent processes,
+concurrent cap admission, reconnect/replay,
 claim/cancel rules, partial two-stage settlement, unknown recovery, lock-wait
 expiry, persistent suspension, rollback and the exact runtime grants above.
 No real provider, hosted database, fan data or paid request is used.

@@ -265,6 +265,8 @@ no HTTP body decoding, inference or live credit. Infrastructure retains the
 0010 hosted upgrader. Deployment must wait for that reviewed migration and grants;
 merge is a separate manager-owned turn. No CI queries or device/provider actions.
 
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## AI-BUDGET-001: durable shared USD admission
 
 Related to parent #3 and merged PR45. Implement the existing `AiCostStore`
@@ -274,8 +276,11 @@ enabled. Migration `0011_ai_cost_store.sql` is reserved by the coordinator;
 photo work owns `0010`. Acceptance covers concurrent admission, restart/replay,
 immutable fingerprints/rates, per-stage claims, partial completion, unknown-spend
 holds and persistent suspension after bound violations. Isolated PostgreSQL and
-heavy gates wait for the coordinator's explicit slot grant. Deliver one reviewed
-inactive PR; the coordinator owns the squash turn. CI remains paused.
+heavy gates used the coordinator's explicit slot grant, now released. Eleven
+full-chain PostgreSQL cases and security pass. Full repository checks retain an
+unrelated route responsiveness deadline failure; its isolated rerun passes.
+Deliver one reviewed inactive PR with that limit explicit; the coordinator owns
+publication disposition and the squash turn. CI remains paused.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 

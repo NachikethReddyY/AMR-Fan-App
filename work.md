@@ -872,15 +872,32 @@ races, lock-wait expiry, partial two-stage recovery, rollback and exact runtime
 column grants. Six initial behavioral tests failed against the stub before the
 implementation. Each fixture owned one disposable container/internal network,
 with no host ports/mounts or shared credentials, and removed its resources.
-The initial chain was 0001–0009 plus independent 0011. Main now includes photo
-0010; integrated-chain verification follows the rebase. Typecheck passed.
+The initial chain was 0001–0009 plus independent 0011. After rebase onto photo
+main `726efbb`, all eleven cases passed on the complete 0001–0011 chain in
+3.78 seconds. Owned container and network IDs were confirmed absent after cleanup.
+Typecheck passed.
 Independent read-only source review found no actionable issues.
 
 The first full gate stopped on bug-record formatting, repaired locally. The next
 reached the unchanged route responsiveness fixture, where the 5-second deadline
-returned six routes instead of twelve under load. A focused rerun and final
-full/security gates remain pending; no threshold was changed. Raw proof remains
+returned six routes instead of twelve under load. The isolated rerun passed
+unchanged in 4.6 seconds. The integrated full run again reached this test and
+returned `unavailable` at its deadline. All preceding gates and the seven
+remaining suite commands pass; no route source or threshold was changed.
+Security passed before and after the rebase, with zero source findings and
+zero high/critical dependency advisories. Scanner negative fixtures failed as
+expected. The DB/heavy slot was released after cleanup. Raw proof remains
 local under `.evidence/ai-cost-store/`. CI is paused and was not queried. The
-coordinator owns eventual squash merge; publication follows completed checks.
+coordinator owns publication disposition for the unrelated timing gate and the
+eventual squash merge.
+
+A bare stash pop during rebase recovery selected a peer's concurrently newer
+stash. It remained intact. The accidental untracked copy was verified against
+that retained stash before removal, deploy tooling was restored to this task's
+HEAD, and this task's TODO was restored byte-for-byte from its captured stash
+object. Private recovery assertions confirm no deploy diff and retained stash;
+no peer worktree or reset was touched. Failed criterion: preserve task-owned
+changes across shared stash ordering. Proposed project guidance: use captured
+stash object IDs only. No global guidance was edited.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
