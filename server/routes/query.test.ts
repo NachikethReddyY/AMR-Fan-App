@@ -1,3 +1,4 @@
+import { parseComparison } from '../../src/features/routes/api.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createRouteQuery } from './query.ts';
@@ -25,6 +26,8 @@ test('query requires server-authenticated actor and rejects client ownership fie
     (error: unknown) => error instanceof ApiError && error.status === 400,
   );
   const result = await query({ principalId: 'account-a', role: 'fan' }, input);
+  assert.equal(parseComparison(result).calculationStatus, 'indicative_demo');
+  assert.equal(result.factorRelease, undefined);
   assert.equal(result.result.kind, 'unavailable');
   assert.deepEqual(result.result, {
     kind: 'unavailable',

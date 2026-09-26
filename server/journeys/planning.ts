@@ -19,8 +19,16 @@ const estimated = z.strictObject({
   kgCo2e: z.number().nonnegative(),
   factorIds: z.array(text).max(128),
 });
+const estimatedCo2 = z.strictObject({
+  kind: z.literal('estimated_co2'),
+  gas: z.literal('CO2'),
+  unit: z.literal('kgCO2'),
+  kg: z.number().nonnegative(),
+  factorIds: z.array(text).max(128),
+});
 const estimate = z.discriminatedUnion('kind', [
   estimated,
+  estimatedCo2,
   z.strictObject({
     kind: z.literal('unavailable'),
     reason: text,
@@ -62,6 +70,18 @@ export const planDisplaySchema = z.strictObject({
     .max(12),
   recommendation: z.discriminatedUnion('kind', [
     z.strictObject({
+      kind: z.literal('recommended_co2'),
+      gas: z.literal('CO2'),
+      unit: z.literal('kgCO2'),
+      routeId: text,
+      estimate: estimatedCo2,
+      baseline: estimatedCo2,
+      baselineDistanceMeters: meters,
+      fastestSeconds: seconds,
+      limitSeconds: z.number().nonnegative().max(691200),
+      avoidedKg: z.number(),
+    }),
+    z.strictObject({
       kind: z.literal('recommended'),
       routeId: text,
       estimate: estimated,
@@ -86,7 +106,7 @@ export const planDisplaySchema = z.strictObject({
     licence: z.url().max(2048),
     attribution: z.string().min(1).max(2000),
   }),
-  calculationStatus: z.literal('indicative_demo'),
+  calculationStatus: z.enum(['indicative_demo', 'approved']),
   unsupportedModes: z.tuple([z.literal('cab'), z.literal('electric_car')]),
   outcomes: z
     .array(
@@ -145,18 +165,31 @@ export function projectPlanDisplay(
           })
         : [],
     recommendation:
-      recommendation.kind === 'recommended'
+      recommendation.kind === 'recommended_co2'
         ? {
             kind: recommendation.kind,
+            gas: recommendation.gas,
+            unit: recommendation.unit,
             routeId: recommendation.route.id,
             estimate: recommendation.estimate,
             baseline: recommendation.baseline,
             baselineDistanceMeters: recommendation.baselineDistanceMeters,
             fastestSeconds: recommendation.fastestSeconds,
             limitSeconds: recommendation.limitSeconds,
-            avoidedKgCo2e: recommendation.avoidedKgCo2e,
+            avoidedKg: recommendation.avoidedKg,
           }
-        : recommendation,
+        : recommendation.kind === 'recommended'
+          ? {
+              kind: recommendation.kind,
+              routeId: recommendation.route.id,
+              estimate: recommendation.estimate,
+              baseline: recommendation.baseline,
+              baselineDistanceMeters: recommendation.baselineDistanceMeters,
+              fastestSeconds: recommendation.fastestSeconds,
+              limitSeconds: recommendation.limitSeconds,
+              avoidedKgCo2e: recommendation.avoidedKgCo2e,
+            }
+          : recommendation,
     factors: response.factors,
     geographySource: response.geographySource,
     calculationStatus: response.calculationStatus,
@@ -263,6 +296,9 @@ export function routeSnapshots(
         durationSeconds,
       })),
       basis: {
+        ...(response.factorRelease
+          ? { factorRelease: response.factorRelease }
+          : {}),
         factorVersions: response.factors.map((factor) => factor.id),
         factorStatus: applicable ? response.calculationStatus : 'unavailable',
         earningRuleVersion: 'initial-50-cap-2000-v1',

@@ -1,3 +1,6 @@
+import { fileURLToPath } from 'node:url';
+import { parseComparison } from '../../src/features/routes/api.ts';
+import { projectPlanDisplay } from '../journeys/planning.ts';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import { once } from 'node:events';
@@ -151,6 +154,9 @@ test('registered route HTTP authenticates persisted sessions before spending; re
     assert.equal(result.status, 200);
     const text = await result.text();
     const payload = JSON.parse(text);
+    const decoded = parseComparison(payload);
+    assert.equal(decoded.calculationStatus, 'indicative_demo');
+    assert.equal(payload.factorRelease, undefined);
     assert.equal(payload.result.source.kind, 'fixture');
     assert.equal(payload.result.routes[0].mode, 'car');
     assert.equal(payload.recommendation.kind, 'recommended');
@@ -204,11 +210,47 @@ test('registered route HTTP authenticates persisted sessions before spending; re
     const resumed = await createSession(pool, a.id);
     const unavailable = await request(resumed.token);
     assert.equal(unavailable.status, 200);
-    assert.deepEqual((await unavailable.json()).result, {
+    const unavailablePayload = await unavailable.json();
+    assert.equal(
+      parseComparison(unavailablePayload).calculationStatus,
+      'indicative_demo',
+    );
+    assert.deepEqual(unavailablePayload.result, {
       kind: 'unavailable',
       reason: 'live_not_configured',
     });
     assert.equal(calls, beforeRevoke);
+    // Explicit reviewed configuration is staged for the compatible native client.
+    // It is never selected merely because the factor artifact is bundled.
+    await close(api);
+    api = createApi({
+      pool,
+      env: {
+        ...auth,
+        AMR_ROUTES_SYNTHETIC: 'true',
+        AMR_GOOGLE_ROUTES_ENDPOINT: `${providerBase}/directions/v2:computeRoutes`,
+        JOURNEY_FACTOR_RELEASE_FILE: fileURLToPath(
+          new URL(
+            '../awards/factors/cag-surface-access-co2-v1.json',
+            import.meta.url,
+          ),
+        ),
+      },
+    });
+    base = await listen(api);
+    const configured = await request(resumed.token);
+    assert.equal(configured.status, 200);
+    const co2 = await configured.json();
+    assert.equal(co2.calculationStatus, 'approved');
+    assert.equal(co2.factorRelease.version, 'cag-surface-access-co2-v1');
+    assert.equal(co2.estimates[0].estimate.kind, 'estimated_co2');
+    assert.equal(co2.estimates[0].estimate.gas, 'CO2');
+    assert.equal(co2.estimates[0].estimate.unit, 'kgCO2');
+    assert.equal(co2.recommendation.kind, 'recommended_co2');
+    assert.equal(
+      projectPlanDisplay(co2).recommendation.kind,
+      'recommended_co2',
+    );
     const balances = await pool.query(
       'SELECT balance FROM app.profiles WHERE principal_id = ANY($1::uuid[])',
       [[a.id, b.id]],

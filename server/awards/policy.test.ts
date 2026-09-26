@@ -38,6 +38,7 @@ test('incompatible factor methods remain unavailable instead of producing a nume
 test('full award sums supported assessed legs without per-leg rounding or planned-distance substitution', () => {
   const journey = awardProjection(1);
   assert.ok(journey.basis.calculation.kind === 'available');
+  assert.ok('kgCo2ePerPassengerKm' in journey.basis.calculation.factors[1]);
   journey.basis.calculation.factors[1].kgCo2ePerPassengerKm = 1;
   journey.assessedLegs = {
     kind: 'available',

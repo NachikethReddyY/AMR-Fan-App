@@ -1,3 +1,8 @@
+import {
+  loadAwardRelease,
+  loadFactorRelease,
+  fingerprint as releaseFingerprint,
+} from '../awards/readiness.ts';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { transaction } from '../database/index.ts';
@@ -42,21 +47,51 @@ function fingerprint(value: unknown) {
 export function createJourneyService({
   pool,
   env = process.env,
-  policy = candidatePolicy,
+  awardConfig = loadAwardRelease(env.JOURNEY_AWARD_RELEASE_FILE),
+  factorConfig = loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ??
+    awardConfig,
+  policy = awardConfig?.policy ?? candidatePolicy,
   clock = Date.now,
-  queryRoutes = createRouteQuery({ env }),
+  queryRoutes = createRouteQuery({
+    env,
+    factors: factorConfig?.factors,
+    factorRelease: factorConfig?.release,
+    calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
+  }),
 }: {
   pool: Pool;
   env?: Record<string, string | undefined>;
   policy?: unknown;
+  awardConfig?: ReturnType<typeof loadAwardRelease>;
+  factorConfig?: ReturnType<typeof loadFactorRelease>;
   clock?: () => number;
   queryRoutes?: ReturnType<typeof createRouteQuery>;
 }) {
+  if (
+    awardConfig &&
+    factorConfig &&
+    awardConfig.release.factorFingerprint !==
+      factorConfig.release.factorFingerprint
+  )
+    throw new Error(
+      'Physical and independent factor releases must use the same dataset.',
+    );
   const requestedPolicy = parse(policySchema, policy);
-  const retainedPolicy = {
-    ...requestedPolicy,
-    version: `journey-assessment-v1-${fingerprint(requestedPolicy).slice(0, 32)}`,
-  };
+  if (
+    requestedPolicy.calibration === 'physical_validated' &&
+    (!awardConfig ||
+      releaseFingerprint(requestedPolicy) !==
+        awardConfig.release.policyFingerprint)
+  )
+    throw new Error(
+      'Physical calibration requires matching retained release evidence.',
+    );
+  const retainedPolicy = awardConfig
+    ? requestedPolicy
+    : {
+        ...requestedPolicy,
+        version: `journey-assessment-v1-${fingerprint(requestedPolicy).slice(0, 32)}`,
+      };
   if (
     env.JOURNEY_FIXTURES_ENABLED &&
     !['true', 'false'].includes(env.JOURNEY_FIXTURES_ENABLED)
@@ -273,7 +308,7 @@ export function createJourneyService({
       evidenceRevision: 0,
       assessment: {
         version: retainedPolicy.version,
-        calibration: 'unvalidated',
+        calibration: retainedPolicy.calibration,
         revision: 0,
         status: 'unfinished',
         reasons: ['not_started'],
@@ -451,12 +486,18 @@ export function createJourneyService({
           state: 'active',
           earningPolicy,
           policy: retainedPolicy,
+          awardRelease: awardConfig?.release ?? null,
+          awardPolicy:
+            !awardConfig && journey.basis.factorRelease
+              ? { kind: 'provisional', version: 'planned-endpoints-v1' }
+              : { kind: 'physical', version: 'assessed-evidence-v1' },
           startedAtMs: now,
           captureSessionId: input.captureSessionId,
           assessment: {
             ...journey.assessment,
             revision: journey.assessment.revision + 1,
             version: retainedPolicy.version,
+            calibration: retainedPolicy.calibration,
             reasons: ['missing_start', 'missing_arrival'],
           },
         };

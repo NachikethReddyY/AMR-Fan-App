@@ -38,6 +38,80 @@ const routeEvidenceSchema = z.strictObject({
   ]),
   geographyVersion: version,
 });
+const evidenceReference = z.strictObject({
+  reference: z.string().min(1).max(500),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+const co2eFactorEvidenceSchema = evidenceReference.extend({
+  boundary: z.literal('use_phase_co2e'),
+  baseline: z.literal('single_occupant_ice'),
+  compatibility: z.string().min(1).max(2000),
+  units: z
+    .array(
+      z.strictObject({
+        factorId: version,
+        sourceValue: z.number().nonnegative().max(100),
+        sourceUnit: z.enum(['kgCO2e/vehicle-km', 'kgCO2e/passenger-km']),
+        occupants: z.number().positive().max(1000),
+      }),
+    )
+    .min(1)
+    .max(16),
+});
+const co2FactorEvidenceSchema = evidenceReference.extend({
+  boundary: z.literal('published_surface_access'),
+  datasetVersion: z.literal('cag-surface-access-co2-v1'),
+  baseline: z.literal('single_occupant_car'),
+  gas: z.literal('CO2'),
+  unit: z.literal('kgCO2/passenger-km'),
+  compatibility: z.string().min(1).max(2000),
+  units: z
+    .array(
+      z.strictObject({
+        factorId: version,
+        sourceValue: z.number().nonnegative().max(100),
+        sourceUnit: z.enum(['kgCO2/vehicle-km', 'kgCO2/passenger-km']),
+        publishedUnit: z.enum([
+          'kgCO2e/vehicle-km',
+          'kgCO2e/passenger-km',
+          'kgCO2/passenger-km',
+        ]),
+        occupants: z.number().positive().max(1000),
+      }),
+    )
+    .min(1)
+    .max(16),
+});
+export const factorEvidenceSchema = z.discriminatedUnion('boundary', [
+  co2eFactorEvidenceSchema,
+  co2FactorEvidenceSchema,
+]);
+export const factorReleaseSchema = z.strictObject({
+  version,
+  factorFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  geographyVersion: version,
+  factorEvidence: factorEvidenceSchema,
+});
+const factorMetadataSchema = z.strictObject({
+  id: version,
+  mode,
+  geography: z.literal('Singapore'),
+  period: z.string().min(1).max(160),
+  source: z.url().max(2048),
+  method: z.string().min(1).max(2000),
+  assumptions: z.string().max(2000),
+  status: z.enum(['indicative_demo', 'approved']),
+});
+export const emissionFactorSchema = z.union([
+  factorMetadataSchema.extend({
+    kgCo2ePerPassengerKm: z.number().nonnegative().max(100),
+  }),
+  factorMetadataSchema.extend({
+    gas: z.literal('CO2'),
+    unit: z.literal('kgCO2/passenger-km'),
+    kgPerPassengerKm: z.number().nonnegative().max(100),
+  }),
+]);
 export const routeSchema = z.strictObject({
   routeId: z.string().min(1).max(160),
   routeEvidence: routeEvidenceSchema,
@@ -63,6 +137,7 @@ export const routeSchema = z.strictObject({
   basis: z.strictObject({
     factorVersions: z.array(version).max(128),
     factorStatus: z.enum(['indicative_demo', 'approved', 'unavailable']),
+    factorRelease: factorReleaseSchema.optional(),
     earningRuleVersion: version,
     calculation: z.discriminatedUnion('kind', [
       z.strictObject({
@@ -87,22 +162,7 @@ export const routeSchema = z.strictObject({
           distanceMeters: z.number().positive().max(1_000_000),
           durationSeconds: z.number().positive().max(604800),
         }),
-        factors: z
-          .array(
-            z.strictObject({
-              id: version,
-              mode,
-              kgCo2ePerPassengerKm: z.number().nonnegative().max(100),
-              geography: z.literal('Singapore'),
-              period: z.string().min(1).max(160),
-              source: z.url().max(2048),
-              method: z.string().min(1).max(2000),
-              assumptions: z.string().max(2000),
-              status: z.enum(['indicative_demo', 'approved']),
-            }),
-          )
-          .min(1)
-          .max(16),
+        factors: z.array(emissionFactorSchema).min(1).max(16),
         earningRule: z.strictObject({
           version,
           pointsPerKg: z.number().nonnegative().max(1000000),
@@ -115,7 +175,7 @@ export const routeSchema = z.strictObject({
 export type RouteSnapshot = z.infer<typeof routeSchema>;
 export const policySchema = z.strictObject({
   version,
-  calibration: z.literal('unvalidated'),
+  calibration: z.enum(['unvalidated', 'physical_validated']),
   accuracyMeters: z.number().positive().max(50),
   endpointMeters: z.number().positive().max(100),
   endpointFreshnessMs: z.number().int().positive().max(30000),
@@ -153,7 +213,7 @@ export const storedSampleSchema = z.strictObject({
 });
 export const assessmentSchema = z.strictObject({
   version,
-  calibration: z.literal('unvalidated'),
+  calibration: z.enum(['unvalidated', 'physical_validated']),
   revision: z.number().int().nonnegative(),
   status: z.enum([
     'unfinished',
@@ -203,6 +263,35 @@ export const assessedLegsSchema = z.discriminatedUnion('kind', [
     ]),
   }),
 ]);
+// Server deployment evidence, never accepted from journey/settlement HTTP input.
+export const awardReleaseSchema = z.strictObject({
+  version,
+  assessmentEngine: z.literal('journey-assessment-v1'),
+  policyFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  factorFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  geographyVersion: version,
+  supportedModes: z.array(mode).min(1).max(7),
+  distanceMethods: z
+    .array(z.literal('gps_single_mode_lower_bound'))
+    .min(1)
+    .max(1),
+  factorEvidence: factorEvidenceSchema,
+  physicalEvidence: z.strictObject({
+    ios: evidenceReference,
+    android: evidenceReference,
+  }),
+});
+export type AwardRelease = z.infer<typeof awardReleaseSchema>;
+export const awardPolicySchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('provisional'),
+    version: z.literal('planned-endpoints-v1'),
+  }),
+  z.strictObject({
+    kind: z.literal('physical'),
+    version: z.literal('assessed-evidence-v1'),
+  }),
+]);
 export const summarySchema = z.strictObject({
   id,
   profileId: id,
@@ -213,6 +302,8 @@ export const summarySchema = z.strictObject({
   routeEvidence: routeEvidenceSchema,
   selectedLegs: routeSchema.shape.legs,
   assessedLegs: assessedLegsSchema,
+  awardRelease: awardReleaseSchema.nullable().optional(),
+  awardPolicy: awardPolicySchema.optional(),
   earningPolicy: earningPolicySchema.nullable(),
   policy: policySchema,
   preparedAtMs: timestamp,

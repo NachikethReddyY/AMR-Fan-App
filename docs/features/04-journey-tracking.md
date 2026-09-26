@@ -64,3 +64,13 @@ authority and acceptance of rule versions; #8 does not calculate or grant points
 | Fan starts a real journey, travels with the phone locked or another app open, and arrives | Location evidence supports assessment and a recorded journey outcome on each supported physical platform. A simulated replay cannot satisfy this check. |
 | Start or arrival was not recorded                                                         | Do not grant the GPS fallback; the accepted prerequisite is missing.                                                                                    |
 | The fan stops tracking or denies required permission                                      | Stop or do not begin collection; retain a truthful incomplete/insufficient-evidence outcome and apply the documented award eligibility rules.           |
+
+The [physical field protocol](../operations/journey-award-release.md#physical-field-protocol)
+defines the observations needed before a versioned policy release. The server can
+retain reviewed calibration references at Start; no physical evidence is supplied,
+and simulator results cannot select the physically validated variant.
+
+The separately approved provisional points variant retains planned route estimates
+and recorded endpoints before physical validation. It does not label the journey
+or mode verified. Start's client fields remain `requestId` and `captureSessionId`;
+policy and factor evidence are server-owned retained values.

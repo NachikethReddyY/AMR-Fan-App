@@ -1,3 +1,6 @@
+import { factorValue } from '../../../src/features/routes/emissions.ts';
+import { fingerprint } from '../readiness.ts';
+import type { AwardRelease } from '../../journeys/contracts.ts';
 import { randomUUID } from 'node:crypto';
 import {
   candidatePolicy,
@@ -59,7 +62,7 @@ export function awardProjection(baselineKg = 2.4): JourneySettlementProjection {
       legs: route.legs,
     },
     earningPolicy,
-    policy: candidatePolicy,
+    policy: structuredClone(candidatePolicy),
     startedAtMs: 1000,
     finishedAtMs: 301000,
     finishReason: 'arrival',
@@ -83,4 +86,48 @@ export function awardProjection(baselineKg = 2.4): JourneySettlementProjection {
       revision: 2,
     },
   };
+}
+
+// Deliberately synthetic release metadata for trusted server/DB tests only.
+// This helper is never imported by the production composition root.
+export function awardReleaseFixture(route: ReturnType<typeof awardRoute>) {
+  if (route.basis.calculation.kind !== 'available')
+    throw new Error('Fixture basis required.');
+  const policy = {
+    ...candidatePolicy,
+    calibration: 'physical_validated' as const,
+    maxSpeedMpsByMode: { bus: 30 },
+  };
+  const factors = route.basis.calculation.factors.map((f) => ({
+    ...f,
+    status: 'approved' as const,
+  }));
+  const proof = {
+    reference: 'SYNTHETIC test only, not physical calibration',
+    sha256: 'a'.repeat(64),
+  };
+  const release: AwardRelease = {
+    version: 'synthetic-accounting-release-v1',
+    assessmentEngine: 'journey-assessment-v1',
+    policyFingerprint: fingerprint(policy),
+    factorFingerprint: fingerprint(factors),
+    geographyVersion: route.routeEvidence.geographyVersion,
+    supportedModes: ['bus'],
+    distanceMethods: ['gps_single_mode_lower_bound'],
+    factorEvidence: {
+      ...proof,
+      boundary: 'use_phase_co2e',
+      baseline: 'single_occupant_ice',
+      compatibility: 'Synthetic arithmetic only.',
+      units: factors.map((f) => ({
+        factorId: f.id,
+        sourceValue: factorValue(f),
+        sourceUnit:
+          f.mode === 'car' ? 'kgCO2e/vehicle-km' : 'kgCO2e/passenger-km',
+        occupants: 1,
+      })),
+    },
+    physicalEvidence: { ios: proof, android: proof },
+  };
+  return { policy, factors, release };
 }

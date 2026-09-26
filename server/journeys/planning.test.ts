@@ -1,8 +1,13 @@
+import { loadDefaultFactorRelease } from '../awards/factors.ts';
+import {
+  estimateRoute,
+  singaporeFactors,
+} from '../../src/features/routes/emissions.ts';
+import { recommendRoute } from '../../src/features/routes/recommendation.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { boundarySource } from '../routes/geography.ts';
 import type { RouteQueryResult } from '../routes/query.ts';
-import { singaporeFactors } from '../../src/features/routes/emissions.ts';
 import { planSchema, projectPlanDisplay, routeSnapshots } from './planning.ts';
 
 function comparison(): RouteQueryResult {
@@ -169,4 +174,105 @@ test('legacy receipts have explicitly absent display; provider failure has no fa
     kind: 'unavailable',
     reason: 'no_routes',
   });
+});
+
+test('prepared route retains reviewed factor provenance from the single comparison response', () => {
+  const response = comparison();
+  assert.ok(response.result.kind === 'routes');
+  const bus = response.result.routes[0];
+  const car = {
+    ...bus,
+    id: 'baseline',
+    mode: 'car' as const,
+    legs: [{ ...bus.legs[0], mode: 'car' as const }],
+  };
+  response.result.routes.push(car);
+  response.estimates.push({
+    routeId: car.id,
+    estimate: response.estimates[0].estimate,
+  });
+  response.result.evidence = [bus, car].map((route) => ({
+    routeId: route.id,
+    primaryMode: route.mode === 'car' ? 'DRIVE' : 'TRANSIT',
+    geometry: {
+      kind: 'provider',
+      encoding: 'google-polyline5',
+      start: { latitude: 1.3, longitude: 103.8 },
+      end: { latitude: 1.31, longitude: 103.8 },
+      points: [
+        { latitude: 1.3, longitude: 103.8 },
+        { latitude: 1.31, longitude: 103.8 },
+      ],
+    },
+    factorApplicability: 'singapore_indicative',
+  }));
+  response.calculationStatus = 'approved';
+  response.factorRelease = {
+    version: 'synthetic-review-v1',
+    factorFingerprint: 'a'.repeat(64),
+    geographyVersion: response.geographySource.id,
+    factorEvidence: {
+      reference: 'Synthetic test only',
+      sha256: 'b'.repeat(64),
+      boundary: 'use_phase_co2e',
+      baseline: 'single_occupant_ice',
+      compatibility: 'Synthetic fixture',
+      units: [
+        {
+          factorId: response.factors[0].id,
+          sourceValue: 0,
+          sourceUnit: 'kgCO2e/passenger-km',
+          occupants: 1,
+        },
+      ],
+    },
+  };
+  const snapshots = routeSnapshots(response);
+  assert.equal(snapshots.length, 2);
+  for (const result of snapshots) {
+    assert.ok(result.kind === 'available');
+    assert.deepEqual(
+      result.snapshot.basis.factorRelease,
+      response.factorRelease,
+    );
+    assert.equal(result.snapshot.basis.factorStatus, 'approved');
+  }
+  const display = projectPlanDisplay(response);
+  assert.equal(display.calculationStatus, 'approved');
+});
+
+test('single comparison projects explicit CO2 display and retains exact factor release', () => {
+  const response = comparison();
+  assert.ok(response.result.kind === 'routes');
+  const config = loadDefaultFactorRelease();
+  const bus = response.result.routes[0];
+  response.result.routes.push({
+    ...bus,
+    id: 'car',
+    mode: 'car',
+    legs: bus.legs.map((leg) => ({ ...leg, mode: 'car' })),
+  });
+  response.factors = config.factors;
+  response.factorRelease = config.release;
+  response.calculationStatus = 'approved';
+  response.estimates = response.result.routes.map((route) => ({
+    routeId: route.id,
+    estimate: estimateRoute(route, config.factors),
+  }));
+  response.recommendation = recommendRoute(
+    response.result.routes,
+    10,
+    config.factors,
+  );
+  const display = projectPlanDisplay(response);
+  assert.equal(display.calculationStatus, 'approved');
+  assert.equal(display.routes[0].estimate.kind, 'estimated_co2');
+  assert.equal(display.recommendation.kind, 'recommended_co2');
+  assert.deepEqual(display.factors, config.factors);
+  const retained = planSchema.parse({
+    kind: 'prepared',
+    display,
+    candidates: [],
+  });
+  assert.deepEqual(retained.display, display);
 });

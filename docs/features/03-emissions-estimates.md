@@ -56,3 +56,25 @@ then stable route ID. The conventional-car baseline uses its own summed leg
 distance for the same requested endpoints. Missing geography or a baseline
 withholds the recommendation without changing route availability. No AI, points
 rounding, persistence or journey award is introduced by this candidate.
+
+The [production release procedure](../operations/journey-award-release.md) records
+primary SEFR source candidates, the unresolved single-driver/boundary gap and the
+server-only factor evidence contract. No numerical dataset has been promoted by
+this change; published defaults remain indicative.
+
+Reviewed factors can be configured independently of physical award release. Impact
+uses actual full-assessed distance estimates; provisional points use a distinct
+retained planned estimate. Neither is measured carbon or verified avoided emissions.
+
+## Accepted CO2 factor variant, 26 September 2026
+
+The user accepted CAG FY2023/24 published surface-access factors for clearly
+labelled CO2 estimates and provisional points: .1901 car vehicle-km, .0441 bus
+passenger-km and .0578 MRT passenger-km, with a neutral single-occupant car baseline.
+This version supersedes the ICE/CO2e requirement only for this explicit variant.
+It makes no ICE-specific, Singapore fleet-average, lifecycle or all-GHG claim.
+The source's original CO2e labels remain discrepant provenance; the application
+uses CO2 with the disclosed CO2-focus limitation. Walking/cycling zero is only
+motorized operational energy, excluding food, manufacture and infrastructure.
+Legacy CO2e records retain their units. See the [release contract](../operations/journey-award-release.md)
+for exact gas/unit fields, retained evidence and the physical validation boundary.

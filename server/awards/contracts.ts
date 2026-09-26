@@ -19,6 +19,13 @@ const exactKg = z
   .regex(/^(0|[1-9]\d*)(\.\d+)?$/);
 export const calculationSchema = z.strictObject({
   arithmeticVersion: z.literal('floor-decimal-v1'),
+  measurement: z
+    .strictObject({
+      version: z.literal('cag-surface-access-co2-v1'),
+      gas: z.literal('CO2'),
+      unit: z.literal('kgCO2'),
+    })
+    .optional(),
   baselineKg: exactKg,
   journeyKg: exactKg,
   savingsKg: exactKg,
@@ -26,6 +33,11 @@ export const calculationSchema = z.strictObject({
 });
 export const decisionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('full'), calculation: calculationSchema }),
+  z.strictObject({
+    kind: z.literal('provisional'),
+    calculation: calculationSchema,
+    assessedCalculation: calculationSchema.nullable(),
+  }),
   z.strictObject({
     kind: z.literal('fallback'),
     calculation: calculationSchema,
@@ -39,11 +51,22 @@ export const decisionSchema = z.discriminatedUnion('kind', [
 ]);
 export const policyResultSchema = z.strictObject({
   decision: decisionSchema,
-  // The integrated journey schema currently admits only unvalidated calibration.
-  productionCredit: z.strictObject({
-    kind: z.literal('unavailable'),
-    reasons: z.array(z.string()).min(1),
-  }),
+  productionCredit: z.discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('unavailable'),
+      reasons: z.array(z.string()).min(1),
+    }),
+    z.strictObject({
+      kind: z.literal('provisional'),
+      policyVersion: z.literal('planned-endpoints-v1'),
+      factorReleaseVersion: z.string().min(1),
+    }),
+    z.strictObject({
+      kind: z.literal('ready'),
+      version: z.literal('journey-award-readiness-v1'),
+      releaseVersion: z.string().min(1),
+    }),
+  ]),
 });
 export type PolicyResult = z.infer<typeof policyResultSchema>;
 
@@ -68,12 +91,19 @@ export const receiptSchema = z.strictObject({
   finishReason: summarySchema.shape.finishReason,
   mode: summarySchema.shape.mode,
   policy: summarySchema.shape.policy,
+  awardRelease: summarySchema.shape.awardRelease,
+  awardPolicy: summarySchema.shape.awardPolicy,
   result: policyResultSchema,
 });
 export type AwardReceipt = z.infer<typeof receiptSchema>;
 export const outcomeSchema = z.strictObject({
   receipt: receiptSchema,
-  creditContext: z.enum(['production_unavailable', 'synthetic_test']),
+  creditContext: z.enum([
+    'production_unavailable',
+    'production',
+    'provisional',
+    'synthetic_test',
+  ]),
   targetPoints: points,
   creditedPoints: points,
   cumulativeAutomaticCredit: points.max(2000),

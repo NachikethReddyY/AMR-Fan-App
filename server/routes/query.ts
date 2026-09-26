@@ -4,8 +4,10 @@ import { createRouteProvider, routeInput } from './provider.ts';
 import {
   estimateRoute,
   singaporeFactors,
+  type EmissionFactor,
 } from '../../src/features/routes/emissions.ts';
 import { recommendRoute } from '../../src/features/routes/recommendation.ts';
+import type { RouteSnapshot } from '../journeys/contracts.ts';
 import { boundarySource } from './geography.ts';
 
 type Actor = Awaited<ReturnType<typeof authenticateSession>>;
@@ -14,7 +16,15 @@ type Actor = Awaited<ReturnType<typeof authenticateSession>>;
 // authenticateSession boundary, never deserialized from the route request.
 export function createRouteQuery({
   env = process.env,
-}: { env?: Record<string, string | undefined> } = {}) {
+  factors = singaporeFactors,
+  calculationStatus = 'indicative_demo',
+  factorRelease,
+}: {
+  env?: Record<string, string | undefined>;
+  factors?: readonly EmissionFactor[];
+  factorRelease?: RouteSnapshot['basis']['factorRelease'];
+  calculationStatus?: 'indicative_demo' | 'approved';
+} = {}) {
   const provider = createRouteProvider(env);
   let windowStart = Date.now();
   const accounts = new Map<string, number>();
@@ -39,7 +49,7 @@ export function createRouteQuery({
             );
             const estimate =
               evidence?.factorApplicability === 'singapore_indicative'
-                ? estimateRoute(route, singaporeFactors)
+                ? estimateRoute(route, factors)
                 : ({
                     kind: 'unavailable',
                     reason:
@@ -60,20 +70,26 @@ export function createRouteQuery({
               kind: 'unavailable',
               reason: 'factor_applicability_unverified',
             } as const)
-          : recommendRoute(
-              result.routes,
-              parsed.data.extraMinutes,
-              singaporeFactors,
-            );
+          : recommendRoute(result.routes, parsed.data.extraMinutes, factors);
     return {
       query: parsed.data,
       result,
       estimates,
       recommendation,
-      factors: singaporeFactors,
+      factors,
       geographySource: boundarySource,
       unsupportedModes: ['cab', 'electric_car'] as const,
-      calculationStatus: 'indicative_demo' as const,
+      calculationStatus,
+      ...(factorRelease
+        ? {
+            factorRelease: {
+              version: factorRelease.version,
+              factorFingerprint: factorRelease.factorFingerprint,
+              geographyVersion: factorRelease.geographyVersion,
+              factorEvidence: factorRelease.factorEvidence,
+            },
+          }
+        : {}),
     };
   };
 }

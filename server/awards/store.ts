@@ -11,6 +11,8 @@ import { executeSettlement, type SettlementArgs } from './operation.ts';
 import { readPhotoPreliminary } from '../activity/claims.ts';
 
 export function settleJourneyAward(args: SettlementArgs) {
+  // Keep the original request-intent discriminator for replay compatibility.
+  // The locked receipt's readiness now determines actual production credit.
   return executeSettlement(args, 'production_unavailable');
 }
 
