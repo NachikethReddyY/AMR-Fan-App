@@ -78,10 +78,28 @@ non-loopback or non-synthetic builds reject this adapter. Native storage uses th
 same key, serialization, SecureStore calls and accessibility setting as before.
 The ignored local proof bridge preserves the API's origin and auth guards.
 
-Interactive web proof is blocked before React mounts: the unchanged NativeWind/
-react-native-css web resolver wraps React Native Web's internal FlatList, producing
-a circular import and `Cannot read properties of undefined (reading 'default')`.
-No shared Metro/Babel/dependency correction or production web support is included.
-All new native/manual gates remain held; web exports are not a substitute.
+The local web repair excludes only React Native Web's own package files from
+NativeWind's web import rewriting in Babel and Metro. Expo still transforms those
+files; application web styling and native resolution/transforms remain active.
+The focused resolver/transform regression checks mixed platform callers in one
+Babel process, native output equality and application styling transforms.
+
+AccountPanel and PointsTextProvider also skip the bold-text query/subscription
+only when web does not provide `AccessibilityInfo.isBoldTextEnabled`. Their native
+query, initial value, change listener and cleanup are preserved and tested. An
+unsupported web capability supplies no evidence about native accessibility.
+
+The owned synthetic browser mounted and exercised sign-in, current server balance,
+real/demo switching, History pagination and the Redemption offer list. Account
+and Rewards screenshots show the existing styling and four bottom labels. The
+proof bridge required a flex root for its generated HTML; that is not product UI.
+Initial Home content was not visibly established by its screenshot.
+
+The next action selected a content offer for review. T3 timed out while waiting
+for confirmation, then reported no automation host and instructed no retry.
+No confirmation was clicked. Purchase/retained content/retry, paid submission,
+route comparison and official reports remain interactively unverified. No browser
+fallback ran after cleanup. All new native/manual gates remain held; exports are
+not a substitute for UI observation.
 
 Edited by gpt-6-astra through Codex (T3 Code).
