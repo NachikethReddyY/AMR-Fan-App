@@ -176,6 +176,7 @@ Native proof is pending.
 Edited by gpt-6-astra through Codex (T3 Code).
 
 ### Email resend cooldown, 2026-09-26
+
 The native confirmation screen allowed a resend six seconds after signup.
 Supabase rejected it with 429 and 51 seconds remaining. Add a visible local
 60-second countdown and prevent duplicate dispatch; provider limits remain
