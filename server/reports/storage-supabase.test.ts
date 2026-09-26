@@ -445,3 +445,123 @@ test('legacy source inventory retains initial timestamp and deletion is bounded 
   f.setMalformed();
   await assert.rejects(store.list(), { status: 503 });
 });
+
+test('cleanup reaches expired and saved originals beyond1000 without deletion shifting offsets', async () => {
+  const { sweepSources } = await import('./retention.ts');
+  const entries = new Map(
+    Array.from({ length: 2005 }, (_, index) => {
+      const id = `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
+      return [
+        id + '.pdf',
+        { id, createdAt: index === 0 || index >= 2000 ? 0 : 10000 },
+      ] as const;
+    }),
+  );
+  const savedId = entries.get('00000000-0000-4000-8000-0000000007cf.pdf')!.id;
+  const offsets: number[] = [];
+  let deleting = false;
+  const transport: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/bucket/amr-report-originals'))
+      return Response.json({
+        id: 'amr-report-originals',
+        public: false,
+        file_size_limit: 10485760,
+      });
+    if (url.endsWith('/object/list/amr-report-originals')) {
+      assert.equal(
+        deleting,
+        false,
+        'snapshot must finish before deletion changes offsets',
+      );
+      const body = JSON.parse(String(init?.body));
+      assert.equal(body.limit, 1000);
+      assert.deepEqual(body.sortBy, { column: 'name', order: 'asc' });
+      offsets.push(body.offset);
+      return Response.json(
+        [...entries]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .slice(body.offset, body.offset + body.limit)
+          .map(([name, entry]) => ({
+            name,
+            created_at: new Date(entry.createdAt).toISOString(),
+          })),
+      );
+    }
+    if (init?.method === 'DELETE') {
+      deleting = true;
+      for (const name of JSON.parse(String(init.body)).prefixes)
+        entries.delete(name);
+      return Response.json([]);
+    }
+    return new Response(null, {
+      status: entries.has(url.split('/').pop()!) ? 200 : 404,
+    });
+  };
+  const storage = await createSupabaseStorage({
+    credential,
+    exclusive,
+    transport,
+  });
+  await sweepSources({
+    storage,
+    expiresBefore: new Date(5000),
+    saved: async (ids) => ids.filter((id) => id === savedId),
+  });
+  assert.deepEqual(offsets, [0, 1000, 2000]);
+  assert.equal(entries.size, 1998);
+  assert.ok(
+    [...entries.values()].every(
+      (entry) => entry.createdAt > 5000 && entry.id !== savedId,
+    ),
+  );
+});
+
+test('incomplete or nonprogressing inventory fails before cleanup deletes anything', async (t) => {
+  const { sweepSources } = await import('./retention.ts');
+  const page = Array.from({ length: 1000 }, (_, index) => ({
+    name: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}.pdf`,
+    created_at: '2026-01-01T00:00:00Z',
+  }));
+  for (const failure of ['repeated page', 'provider failure'] as const) {
+    await t.test(failure, async () => {
+      let lists = 0,
+        deletes = 0;
+      let deadline: AbortSignal | null | undefined;
+      const transport: typeof fetch = async (input, init) => {
+        if (String(input).endsWith('/bucket/amr-report-originals'))
+          return Response.json({
+            id: 'amr-report-originals',
+            public: false,
+            file_size_limit: 10485760,
+          });
+        if (init?.method === 'DELETE') {
+          deletes++;
+          return Response.json([]);
+        }
+        lists++;
+        if (lists === 1) deadline = init?.signal;
+        else
+          assert.equal(init?.signal, deadline, 'all pages share one deadline');
+        return lists === 1 || failure === 'repeated page'
+          ? Response.json(page)
+          : new Response(null, { status: 503 });
+      };
+      const storage = await createSupabaseStorage({
+        credential,
+        exclusive,
+        transport,
+      });
+      await assert.rejects(
+        sweepSources({
+          storage,
+          expiresBefore: new Date('2026-02-01'),
+          saved: async (ids) => ids,
+        }),
+        { status: 503 },
+      );
+      assert.equal(lists, 2);
+      assert.equal(deletes, 0);
+    });
+  }
+});

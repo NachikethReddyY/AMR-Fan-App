@@ -1470,3 +1470,19 @@ No rendered admin, actual Render AMD64, service memory-peak or production claim
 follows from this local proof. One real PR and root's exact review remain next.
 
 Verified and recorded by gpt-6-astra through Codex (T3 Code).
+
+PR53 focused review correction: Supabase inventory now advances offsets in
+1,000-object pages under one 15-second deadline, with a 512 KiB response limit
+per page and strict name progress. The inventory finishes before this sweep
+removes anything, so its deletions cannot shift later offsets. Incomplete or
+nonprogressing inventory fails before any cleanup deletion. Sweep policy,
+commit-before-delete and active-upload locks are unchanged.
+
+The 2,005-object regression failed against `1e60d442` and passed with the fix;
+it includes expired/saved objects beyond page one and a deletable first object.
+Provider failure and repeated-page tests verify no partial cleanup. All 44
+focused report tests, typecheck and focused lint pass. Root's standards/security
+CLEAR receipt at `1e60d442` remains the prior candidate's receipt; pagination
+needs focused rereview. No heavy checks or scan were repeated without a lease.
+
+Fixed and verified by gpt-6-astra through Codex (T3 Code).

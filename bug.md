@@ -543,3 +543,13 @@ production bulk deletion; runtime deployment and idle scheduling remain owned by
 root. Send blockers to root rather than ask the user again.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+PR53 review correction: cleanup inspected only the first 1,000 name-sorted
+legacy objects. This can delay expiry, or starve later expired/saved objects
+when new lower-sorted arrivals continue. Fetch the full bounded-page inventory
+before deletion changes offsets; reject repeated/out-of-order pages and preserve
+active-upload locks, durable commit ordering and expiry. A 2,005-object test
+fails before the fix and passes afterward. No remote storage or heavy fixture ran.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

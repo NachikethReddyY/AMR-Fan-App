@@ -154,43 +154,49 @@ export async function createSupabaseStorage({
   }
   return {
     async list() {
-      const response = await request(
-        `/object/list/${bucket}`,
-        AbortSignal.timeout(15000),
-        {
+      const signal = AbortSignal.timeout(15000);
+      const entries: Awaited<ReturnType<SourceStorage['list']>> = [];
+      let previous = '';
+      // Finish the inventory before callers delete: deletion would shift offsets.
+      for (let offset = 0; ; offset += 1000) {
+        signal.throwIfAborted();
+        const response = await request(`/object/list/${bucket}`, signal, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prefix: '',
             limit: 1000,
-            offset: 0,
+            offset,
             sortBy: { column: 'name', order: 'asc' },
           }),
-        },
-      );
-      if (!response.ok) {
-        await response.body?.cancel();
-        throw unavailable();
-      }
-      let rows: unknown;
-      try {
-        rows = JSON.parse((await bounded(response, 512 * 1024)).toString());
-      } catch {
-        throw unavailable();
-      }
-      if (!Array.isArray(rows) || rows.length > 1000) throw unavailable();
-      return rows.map((entry: unknown) => {
-        const row = record(entry);
-        if (
-          typeof row.name !== 'string' ||
-          !/^[a-f0-9-]{36}\.pdf$/.test(row.name) ||
-          typeof row.created_at !== 'string'
-        )
+        });
+        if (!response.ok) {
+          await response.body?.cancel();
           throw unavailable();
-        const createdAt = Date.parse(row.created_at);
-        if (!Number.isFinite(createdAt)) throw unavailable();
-        return { id: uuid(row.name.slice(0, -4)), createdAt };
-      });
+        }
+        let rows: unknown;
+        try {
+          rows = JSON.parse((await bounded(response, 512 * 1024)).toString());
+        } catch {
+          throw unavailable();
+        }
+        if (!Array.isArray(rows) || rows.length > 1000) throw unavailable();
+        for (const entry of rows) {
+          const row = record(entry);
+          if (
+            typeof row.name !== 'string' ||
+            !/^[a-f0-9-]{36}\.pdf$/.test(row.name) ||
+            typeof row.created_at !== 'string'
+          )
+            throw unavailable();
+          if (row.name <= previous) throw unavailable();
+          previous = row.name;
+          const createdAt = Date.parse(row.created_at);
+          if (!Number.isFinite(createdAt)) throw unavailable();
+          entries.push({ id: uuid(row.name.slice(0, -4)), createdAt });
+        }
+        if (rows.length < 1000) return entries;
+      }
     },
     async remove(id) {
       id = uuid(id);
