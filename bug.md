@@ -743,3 +743,17 @@ Failure-first recorder/runtime and DOM regressions pass; affected device proof
 is in progress.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: suspended recorder authority after asynchronous waits
+
+Independent review found Finish dispatched after suspension during native stop,
+and queued restore could re-adopt suspended credentials. A bounded recorder-only
+audit reproduced the same missing guard after durable batch/Resume writes and
+old capture publication during restore waits. Known 401 also waited for native
+stop before hiding capture. Recheck the existing epoch after queue/storage/native
+waits, adopt restored context only after validated reads, and reuse synchronous
+invalidation for 401. Preserve local Finish and original retry identities.
+Failure-first stop/write tests and protected recovery cases pass; final exact-head
+review and current native recovery proof remain pending.
+
+Fixed by gpt-6-astra through Codex (T3 Code).

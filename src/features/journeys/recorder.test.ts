@@ -1,3 +1,4 @@
+import { AccountError } from '../account/api';
 import { createRecorder, type StoredCapture } from './recorder';
 import type { Journey } from './contracts';
 import type { JourneyApi } from './api';
@@ -564,5 +565,239 @@ test('identity invalidation clears a suspended capture before successor restore 
     profileId: '00000000-0000-4000-8000-000000000006',
   });
   expect(await x.store.read()).toBeNull();
+  expect(x.api.finish).not.toHaveBeenCalled();
+});
+
+test('suspension during final native stop prevents Finish dispatch until restored with its original key', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  let release: (() => void) | undefined;
+  let stops = 0;
+  x.location.stop.mockImplementation(async () => {
+    if (++stops === 3)
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+  });
+  const finishing = r.finish('arrival');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!release) throw new Error('Native stop did not start');
+  const intent = (await x.store.read())?.finish;
+  r.suspendNetwork();
+  release();
+  await finishing;
+  expect(x.api.finish).not.toHaveBeenCalled();
+  await r.restore(ctx);
+  await r.retry();
+  expect(x.api.finish).toHaveBeenCalledTimes(1);
+  expect(x.api.finish.mock.calls[0]?.[2]).toBe(intent?.requestId);
+});
+
+test('restore waiting behind a capture-store write cannot revive suspended network authority', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  r.suspendNetwork();
+  let release: (() => void) | undefined;
+  const write = x.store.write;
+  jest.spyOn(x.store, 'write').mockImplementationOnce(async (value) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await write(value);
+  });
+  const finishing = r.finish('arrival');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!release) throw new Error('Finish write did not start');
+  const restoring = r.restore(ctx).then(() => r.retry());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  r.suspendNetwork();
+  release();
+  await Promise.all([finishing, restoring]);
+  const intent = (await x.store.read())?.finish;
+  expect(intent).not.toBeNull();
+  expect(x.api.finish).not.toHaveBeenCalled();
+  await r.restore(ctx);
+  await r.retry();
+  expect(x.api.finish).toHaveBeenCalledTimes(1);
+  expect(x.api.finish.mock.calls[0]?.[2]).toBe(intent?.requestId);
+});
+
+test.each(['read', 'isRunning'] as const)(
+  'restore cannot adopt context after suspension during %s',
+  async (boundary) => {
+    const x = setup(),
+      r = x.create();
+    await r.begin(ctx, journey);
+    r.suspendNetwork();
+    let release: (() => void) | undefined;
+    const wait = () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    if (boundary === 'read') {
+      const read = x.store.read;
+      jest.spyOn(x.store, 'read').mockImplementationOnce(async () => {
+        await wait();
+        return read();
+      });
+    } else
+      x.location.isRunning.mockImplementationOnce(async () => {
+        await wait();
+        return true;
+      });
+    const restoring = r.restore(ctx);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (!release) throw new Error('Restore boundary not reached');
+    r.suspendNetwork();
+    release();
+    await restoring;
+    await r.finish('arrival');
+    expect(x.api.finish).not.toHaveBeenCalled();
+    const intent = (await x.store.read())?.finish;
+    await r.restore(ctx);
+    await r.retry();
+    expect(x.api.finish.mock.calls[0]?.[2]).toBe(intent?.requestId);
+  },
+);
+
+test('suspension during durable batch write prevents evidence dispatch and preserves its retry key', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  x.setNow(1200);
+  await r.collect([sample]);
+  let release: (() => void) | undefined;
+  const write = x.store.write;
+  jest.spyOn(x.store, 'write').mockImplementationOnce(async (value) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await write(value);
+  });
+  const syncing = r.retry();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!release) throw new Error('Batch write did not start');
+  r.suspendNetwork();
+  release();
+  await syncing;
+  expect(x.api.evidence).not.toHaveBeenCalled();
+  const batch = (await x.store.read())?.batch;
+  await r.restore(ctx);
+  await r.retry();
+  expect(x.api.evidence).toHaveBeenCalledTimes(1);
+  expect(x.api.evidence.mock.calls[0]?.[2]).toBe(batch?.requestId);
+});
+
+test('suspension during Resume capture write prevents its authenticated read', async () => {
+  const x = setup(),
+    r = x.create();
+  let release: (() => void) | undefined;
+  const write = x.store.write;
+  jest.spyOn(x.store, 'write').mockImplementationOnce(async (value) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await write(value);
+  });
+  const resuming = r.resume(ctx, {
+    ...journey,
+    state: 'active',
+    startedAtMs: 1000,
+    captureSessionId: 'restored-session',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!release) throw new Error('Resume write did not start');
+  r.suspendNetwork();
+  release();
+  await resuming;
+  expect(x.api.read).not.toHaveBeenCalled();
+  expect(x.location.start).not.toHaveBeenCalled();
+});
+
+test.each(['read', 'isRunning'] as const)(
+  'invalidation during restore %s cannot republish the old capture',
+  async (boundary) => {
+    const x = setup(),
+      r = x.create();
+    await r.begin(ctx, journey);
+    let release: (() => void) | undefined;
+    const wait = () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    if (boundary === 'read') {
+      const read = x.store.read;
+      jest.spyOn(x.store, 'read').mockImplementationOnce(async () => {
+        const c = await read();
+        await wait();
+        return c;
+      });
+    } else
+      x.location.isRunning.mockImplementationOnce(async () => {
+        await wait();
+        return true;
+      });
+    const restoring = r.restore(ctx);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (!release) throw new Error('Restore boundary not reached');
+    const invalidating = r.invalidate();
+    const published: (StoredCapture | null)[] = [];
+    const unsubscribe = r.subscribe(() => {
+      published.push(r.getState().capture);
+    });
+    release();
+    await Promise.all([restoring, invalidating]);
+    unsubscribe();
+    expect(published.every((c) => c === null)).toBe(true);
+    expect(await x.store.read()).toBeNull();
+  },
+);
+
+test('known 401 synchronously hides capture while native stop is pending', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  x.setNow(1200);
+  await r.collect([sample]);
+  x.api.evidence.mockRejectedValueOnce(new AccountError(401, 'expired'));
+  let release: (() => void) | undefined;
+  x.location.stop.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  const syncing = r.retry();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!release) throw new Error('401 cleanup did not start');
+  const visible = r.getState().capture;
+  release();
+  await syncing;
+  expect(visible).toBeNull();
+  expect(await x.store.read()).toBeNull();
+});
+
+test('a suspended Resume response cannot expire or delete the retained capture', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  let reject: ((reason: Error) => void) | undefined;
+  x.api.read.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, fail) => {
+        reject = fail;
+      }),
+  );
+  const resuming = r.resume(ctx);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (!reject) throw new Error('Resume read did not start');
+  r.suspendNetwork();
+  reject(new AccountError(401, 'expired old attempt'));
+  await resuming;
+  expect(r.getState().capture?.journey.id).toBe(journey.id);
+  expect((await x.store.read())?.journey.id).toBe(journey.id);
+  await r.finish('arrival');
   expect(x.api.finish).not.toHaveBeenCalled();
 });

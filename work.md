@@ -1842,3 +1842,21 @@ authorized this journey-only adaptation; account modules are unchanged. Current
 changed-file lint pass. Actual affected iPhone recovery proof remains pending.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native recorder asynchronous authority correction
+
+Corrected the reviewed d162 Finish/queued-restore races and audited only existing
+recorder context adoption and dispatch boundaries. Evidence upload and Resume
+read now recheck authority after durable writes. Restore checks its requested
+epoch within the local queue and after storage/native waits before adopting
+context. Invalidated writes cannot republish capture. Known 401 uses the existing
+synchronous invalidation/serial cleanup barrier; stale rejected requests cannot
+expire a later context. Local Finish intent and retry keys remain intact.
+
+Retained failing-first proof has 7 failures and 25 passes. The corrected focused
+recorder/runtime/storage set has 39 passing cases, including deferred stop/write,
+restore read/status invalidation, and stale 401 recovery. No native module,
+authentication module, provider activation, or signing changes. Exact-head review
+and continued isolated iPhone recovery evidence remain required.
+
+Fixed by gpt-6-astra through Codex (T3 Code).

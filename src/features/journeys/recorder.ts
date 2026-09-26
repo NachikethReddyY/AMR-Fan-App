@@ -111,12 +111,11 @@ export function createRecorder({
   }
   const save = async (c: StoredCapture | null) => {
     await store.write(c);
-    set({ capture: c });
+    if (!invalidated || c === null) set({ capture: c });
   };
   async function failure(error: unknown, token?: string) {
     if (error instanceof AccountError && error.status === 401 && token) {
-      await location.stop();
-      await serial(() => save(null));
+      await invalidate();
       set({
         collecting: false,
         message: 'Sign in again to resume your journey.',
@@ -133,7 +132,10 @@ export function createRecorder({
   async function sync(attempt: number) {
     const context = ctx;
     if (!context) return;
-    const valid = () => attempt === epoch && ctx?.token === context.token;
+    const valid = () =>
+      attempt === epoch &&
+      ctx?.token === context.token &&
+      ctx.profileId === context.profileId;
     // Local writes have their own queue. Never hold it across a network request.
     const change = (fn: (c: StoredCapture) => StoredCapture | null) =>
       serial(async () => {
@@ -217,6 +219,7 @@ export function createRecorder({
                 },
               },
         );
+        if (!valid()) return;
         if (!c || !c.batch) break;
         const batch = c.batch;
         await api.evidence(
@@ -238,6 +241,7 @@ export function createRecorder({
       if (!valid() || !c) return;
       if (c.phase === 'finishing' && c.finish) {
         await location.stop();
+        if (!valid()) return;
         const end = c.finish;
         const journey = await api.finish(
           context,
@@ -296,15 +300,39 @@ export function createRecorder({
         await identityCleanup;
         if (requestedEpoch !== epoch) return;
         set({ busy: true });
-        await action();
+        const pendingAction = action();
+        const actionEpoch = epoch;
+        const actionContext = ctx;
+        try {
+          await pendingAction;
+        } catch (error) {
+          if (actionEpoch === epoch) await failure(error, actionContext?.token);
+        }
       } catch (e) {
-        await failure(e, ctx?.token);
+        if (requestedEpoch === epoch) await failure(e);
       } finally {
         set({ busy: false });
       }
     });
     networkQueue = pending.catch(() => {});
     return pending;
+  }
+  async function invalidate() {
+    ++epoch;
+    ctx = null;
+    invalidated = true;
+    cutoff = now();
+    set({ collecting: false, capture: null, award: null, message: null });
+    // Reserve cleanup before yielding. Successor restore/Start cannot adopt
+    // old data or create a new key until this stop and deletion finish.
+    identityCleanup = serial(async () => {
+      try {
+        await location.stop();
+      } finally {
+        await save(null);
+      }
+    });
+    await identityCleanup.catch((error: unknown) => failure(error));
   }
   return {
     getState: () => state,
@@ -319,29 +347,36 @@ export function createRecorder({
         listeners.delete(f);
       };
     },
-    restore: async (context: Context) =>
-      run(() =>
+    restore: async (context: Context) => {
+      const requestedEpoch = epoch;
+      const valid = () => requestedEpoch === epoch;
+      return run(() =>
         serial(async () => {
-          ctx = context;
-          invalidated = false;
-          const c = await store.read();
+          // The local queue and native/storage waits can outlive authority.
+          if (!valid()) return;
+          let c = await store.read();
+          if (!valid()) return;
           if (
             c &&
             (c.journey.profileId !== context.profileId ||
               c.journey.preciseExpiresAtMs <= now())
           ) {
             await location.stop();
+            if (!valid()) return;
             await save(null);
-            set({ collecting: false });
-          } else {
-            cutoff = c?.finish?.endedAtMs ?? null;
-            set({
-              capture: c,
-              collecting: c?.phase === 'active' && (await location.isRunning()),
-            });
+            if (!valid()) return;
+            c = null;
           }
+          const collecting =
+            c?.phase === 'active' && (await location.isRunning());
+          if (!valid()) return;
+          ctx = context;
+          invalidated = false;
+          cutoff = c?.finish?.endedAtMs ?? null;
+          set({ capture: c, collecting });
         }),
-      ),
+      );
+    },
     begin: async (
       context: Context,
       journey: Journey,
@@ -371,8 +406,9 @@ export function createRecorder({
           return;
         }
         if (attempt !== epoch) return;
-        await serial(() =>
-          save({
+        await serial(async () => {
+          if (attempt !== epoch) return;
+          await save({
             journey,
             selection,
             captureSessionId: uuid(),
@@ -383,8 +419,9 @@ export function createRecorder({
             batch: null,
             finish: null,
             settlement: null,
-          }),
-        );
+          });
+        });
+        if (attempt !== epoch) return;
         set({ award: null });
         await sync(attempt);
       }),
@@ -393,7 +430,12 @@ export function createRecorder({
       serial(async () => {
         if (invalidated) return;
         const c = await store.read();
-        if (!c || c.phase !== 'active' || c.journey.startedAtMs === null)
+        if (
+          invalidated ||
+          !c ||
+          c.phase !== 'active' ||
+          c.journey.startedAtMs === null
+        )
           return;
         if (c.journey.preciseExpiresAtMs <= now()) {
           await location.stop();
@@ -444,11 +486,12 @@ export function createRecorder({
     retry: async () => run(() => sync(epoch)),
     resume: async (context: Context, journey?: Journey) =>
       run(async () => {
+        let c = state.capture;
+        if (c && c.journey.profileId !== context.profileId) return;
         ctx = context;
         invalidated = false;
         cutoff = null;
         const attempt = ++epoch;
-        let c = state.capture;
         if (
           !c &&
           journey?.state === 'active' &&
@@ -466,8 +509,11 @@ export function createRecorder({
             finish: null,
             settlement: null,
           };
-          await serial(() => save(c));
+          await serial(async () => {
+            if (attempt === epoch) await save(c);
+          });
         }
+        if (attempt !== epoch) return;
         if (!c || c.phase !== 'active') {
           await sync(attempt);
           return;
@@ -480,7 +526,11 @@ export function createRecorder({
           fresh.preciseExpiresAtMs <= now()
         ) {
           await location.stop();
-          await serial(() => save(null));
+          if (attempt !== epoch) return;
+          await serial(async () => {
+            if (attempt === epoch) await save(null);
+          });
+          if (attempt !== epoch) return;
           set({
             collecting: false,
             message: 'This journey can no longer record. Refresh its result.',
@@ -503,6 +553,7 @@ export function createRecorder({
         await sync(attempt);
       }),
     finish: async (reason: FinishReason) => {
+      const attempt = epoch;
       const endedAtMs = cutoff ?? now();
       cutoff = endedAtMs;
       set({ collecting: false });
@@ -519,7 +570,8 @@ export function createRecorder({
           });
       });
       await stopped;
-      return run(() => sync(epoch));
+      if (attempt !== epoch) return;
+      return run(() => sync(attempt));
     },
     // Headless task failure has no authority to settle or upload.
     interrupt: async (reason: FinishReason) => {
@@ -538,23 +590,7 @@ export function createRecorder({
       });
       await stopped;
     },
-    invalidate: async () => {
-      ++epoch;
-      ctx = null;
-      invalidated = true;
-      cutoff = now();
-      set({ collecting: false, capture: null, award: null, message: null });
-      // Reserve cleanup before yielding. Successor restore/Start cannot adopt
-      // old data or create a new key until this stop and deletion finish.
-      identityCleanup = serial(async () => {
-        try {
-          await location.stop();
-        } finally {
-          await save(null);
-        }
-      });
-      await identityCleanup.catch((error: unknown) => failure(error));
-    },
+    invalidate,
     clear: async () =>
       run(async () => {
         if (
