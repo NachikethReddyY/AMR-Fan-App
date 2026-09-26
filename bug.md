@@ -434,6 +434,18 @@ so independent photo/journey readers can migrate while AI stays inactive. Omitte
 target remains 0011 with its verified initialization prerequisite. Reject target
 below existing history; no SQL edits, guessed liabilities or production mutation.
 
+## Native participation in Rewards, 2026-09-26
+
+Tracker: #11, #12 and #13. Add shared fan voting and current operation-linked
+participation status to Rewards' existing Redemption and History sections.
+Preserve the 500-point non-refundable submission fee (including rejection),
+minimum 10-point contributions, server authority, exact ranking and original-key
+retries. Selected/fulfilled entries cannot receive contributions; fulfilment
+remains demonstration. No app/auth/dock/backend/photo/travel/admin changes.
+Static option selection goes through the coordinator. Heavy tests/device proof
+await an allocated slot; cloud, providers and CI are excluded. One real PR,
+independent review and coordinator-owned squash; no cross-branch copies.
+
 Recorded by gpt-6-astra through Codex (T3 Code).
 
 ### AWARD-PRODUCTION-001, 2026-09-26
@@ -544,7 +556,6 @@ root. Send blockers to root rather than ask the user again.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
-
 PR53 review correction: cleanup inspected only the first 1,000 name-sorted
 legacy objects. This can delay expiry, or starve later expired/saved objects
 when new lower-sorted arrivals continue. Fetch the full bounded-page inventory
@@ -591,5 +602,23 @@ is "Estimated CO2 avoided". Use only explicit compatible CO2 assessed calculatio
 legacy CO2e and planned provisional calculations cannot enter CO2 totals. Retain
 published-unit discrepancy and neutral one-occupant car scope. No dataset default
 activation or peer source copy. Existing assessment-freshness proof remains required.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Native participation steering: user selected B on 26 September 2026. Contribution
+review temporarily replaces the ranking inside Redemption; cancel and an
+acknowledged result return to ranking. Selection hold resolved. Heavy checks and
+native proof require the coordinator's allocation. One PR remains the endpoint.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Native participation final steering, 27 September 2026: finish frozen-source
+native proof before latest-main refresh; preserve Impact/Home and Reports.
+Root owns final integration and squash. Device/Metro/fixture leases released.
+Observed protected-dock defect: labels split across lines at maximum text
+(Android 3.2, iPhone largest); no letters clipped in retained screenshots.
+Do not redesign dock here. Android keyboard and iPhone largest contribution
+controls remain unverified for combined native integration. Native fixture,
+measurements, screenshots and video paths are recorded in local acceptance proof.
 
 Recorded by gpt-6-astra through Codex (T3 Code).

@@ -68,7 +68,7 @@ export function SubmissionForm() {
       <Text style={styles.title}>Fan submissions</Text>
       <Text>
         Submit a question or activity idea. Each submission costs 500 points,
-        non-refundable even if rejected. Voting is not available here yet.
+        non-refundable even if rejected. Approval is required before voting.
       </Text>
       {parent && (
         <Text>Preparing a new paid resubmission of a rejected entry.</Text>

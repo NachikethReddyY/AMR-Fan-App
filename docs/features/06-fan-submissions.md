@@ -33,6 +33,19 @@ registration are included; shared navigation is unchanged.
 proof and remaining acceptance. #12/#13 remain open pending independent review
 and remaining product integration.
 
+## Native Rewards candidate
+
+The phone candidate now reads the shared ranking in Rewards / Redemption and
+operation-linked current participation in History. The user selected focused
+review B: choosing an eligible entry temporarily replaces the ranking with the
+exact amount and a non-refundable confirmation. Cancel and acknowledged success
+return to ranking. Original request keys survive uncertain outcomes and remounts;
+selected and fulfilled entries expose no new contribution action. The existing
+500-point submission fee, rejection history and four main tabs remain unchanged.
+Ten focused component tests and client contract/controller tests pass. Native
+rendering, real registered API proof and full delivery checks remain pending;
+this is not a deployment or closure of issues #11–#13.
+
 ## Outcome
 
 Fans submit questions or proposed driver/team activities and spend points to choose what is selected for a fan interaction.

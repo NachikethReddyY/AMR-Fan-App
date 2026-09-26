@@ -8,6 +8,8 @@ import { Redemption, GuestRedemption } from '../rewards/Redemption';
 import { ReceiptHistory } from '../rewards/ReceiptDetail';
 import { SubmissionForm } from '../submissions/SubmissionForm';
 import { SubmissionStatus } from '../submissions/SubmissionStatus';
+import { FanVoting } from '../submissions/FanVoting';
+import { ParticipationHistory } from '../submissions/ParticipationHistory';
 import { useProfileContext } from '../account/useResource';
 
 export function RewardsScreen({
@@ -49,6 +51,7 @@ export function RewardsScreen({
             <View key={`${context.token}:${context.profileId}:redemption`}>
               <Redemption />
               <SubmissionForm />
+              <FanVoting />
             </View>
           ) : (
             <GuestRedemption key="guest-catalogue" />
@@ -120,6 +123,7 @@ export function RewardsScreen({
               >
                 <ReceiptHistory />
                 <SubmissionStatus />
+                <ParticipationHistory />
               </View>
             )}
           </>

@@ -1603,3 +1603,114 @@ remain intact. Final CO2 source review and root squash remain pending. No full-a
 native, provider or deployed proof is claimed.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## Native participation client, 2026-09-26
+
+The fan participation client now validates the registered ranking, owner History
+projection and contribution response. Decimal ranking totals and opaque cursors
+remain exact. Contribution confirmation accepts whole points from 10 through the
+server integer limit and rejects selected/fulfilled entries. The existing private
+paid-intent queue retains original request IDs and amounts across lost responses,
+remounts and matching-profile reauthentication. Server roles, prices, eligibility
+and atomic debits remain authoritative; no backend code changed.
+
+Local proof: 38 focused participation/submission/resource tests pass, plus two
+additional History moderation/pagination cases; TypeScript
+check passes. New tests were authored before their implementation. They cover
+malformed/mismatched responses, literal fan text, duplicate confirmation,
+refusals, storage failure and late profile-switch results. These adapter tests
+do not establish actual database charging, deployment or native rendering.
+The frozen offline install used only cached packages. Static alternatives are
+private local evidence pending user selection through the coordinator. UI,
+full/security checks, allocated device proof and real PR delivery remain pending.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+### Selected B native contribution review
+
+User selected B. Rewards now mounts fan voting after the existing paid submission
+form in Redemption, and current participation status after submission moderation
+in History. The existing sections, main navigation and palette are unchanged.
+Selecting an eligible entry replaces only the ranking with its text, exact total,
+amount and explicit non-refundable confirmation. Cancel sends no request. A
+successful receipt returns to ranking and refreshes balance; a failed refresh
+cannot erase that receipt. Unknown outcomes retain the original intent, block a
+new contribution and recover after remount. Refusal reloads current server status.
+History deduplicates operation-linked projections by submission while original
+ledger entries and moderation receipts remain unchanged. Selected/fulfilled
+entries show closed contributions; fulfilment remains labelled demonstration.
+
+Ten focused component tests pass after failing first on absent components;
+focused lint and TypeScript pass. These use controlled adapters and DOM renderers,
+not native proof. Real backend charging, full checks, security and native proof
+await the allocated slot. No cloud, provider, CI or device action ran. The old
+"Voting is not available here yet" copy now states approval is required.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+Native B candidate refreshed onto actual main `188baa44`. Append-only record
+conflicts retained both task histories; no app source conflicted or peer source
+was copied. The task's TODO was restored from its captured stash object and stays
+unstaged. On the refreshed tree, 40 focused API/controller/resource tests, all ten
+component tests, TypeScript and focused lint pass. A registered-HTTP/PostgreSQL
+proof is prepared under the feature testing directory but has not run. Full and
+security checks, services/builds and native proof remain explicitly queued behind
+the migration owner. The local evidence plan describes the synthetic fixture and
+cleanup; no provider, cloud or CI action occurred. Candidate is not yet pushed.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Registered HTTP and complete source gates, 26 September 2026
+
+Rebased onto main `575787768868946dbc34a1bbe0d00298936ecfe9`; append-only record
+conflicts preserved both owners. The prepared actual HTTP/native-adapter fixture
+passed on disposable PostgreSQL 18 and Node 24.20.0, sharing an internal Docker
+network with generated credentials and no host mounts or ports. It proved three
+500-point fees including rejection, exact 10-point replay, a lost 20-point result
+recovered with its original key after selection, refusal of fresh frozen votes,
+selected/fulfilled History, and anonymous/foreign/real-demo isolation. The initial
+container dependency copy missed transitive `xtend` before executing the fixture;
+the complete dependency closure fixed that prerequisite and a fresh run passed.
+Both containers and their network were removed and confirmed absent.
+
+Full `pnpm check` and `pnpm security:check` passed serially. SAST scanned 273 targets
+with zero findings; dependency audit passed the high-severity gate with one
+moderate advisory. Scanner negative fixtures failed as intended. No CI, provider,
+cloud or shared-database operation occurred. The heavy-check lease is released.
+Root separately authorized an exclusive Pixel then iPhone window with existing
+compatible binaries and current JavaScript; native proof remains in progress.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Native participation proof and final refresh, 27 September 2026
+
+PR52 source `04956709` received two independent CLEAR reviews through root.
+Existing Expo Go clients loaded that frozen worktree through current-source Metro
+on Pixel 10 Android 16 and iPhone 17 Pro iOS 26.5. Both showed B review/cancel/confirm,
+selected/fulfilled and rejected History, four tabs and separate empty sample
+profiles. Pixel deliberately lost a committed 10-point response; app restart
+restored the original intent and same-key retry returned its receipt without a
+second debit. iPhone numeric keyboard entry/dismissal and post-confirm restart
+were observed. No native build or provider call occurred.
+
+Android largest 3.2 text kept contribution controls reachable. Existing dock
+labels wrapped without missing letters; iPhone largest labels also wrapped.
+Android keyboard visibility and iPhone largest contribution controls remain
+unverified. The latter's History remained scrollable with direct swipes after the
+standard automation scroll stalled. Screenshots, videos, exact layout measurements,
+logs and fixture entry are retained in `.evidence/native-participation/`.
+Both original text settings were restored, synthetic sessions signed out and
+recordings stopped. Pixel remained booted; iPhone returned to shutdown. Owned
+Metro/API ports 58079/58242 have no listeners; disposable PG/Node/network were
+removed and verified absent. All device/Metro/fixture leases are released.
+
+Rebased onto main `a92b9d28b8b7298e0a4e569081084878909fe06c`. Participation source,
+Rewards wiring and its component tests remain byte-identical to native-tested
+`04956709`; App/Impact and API/Reports match current main. Forty focused client
+and ten component tests, typecheck and affected lint pass. An initial wrong Node
+runner failed module resolution before execution; the repository Jest runner
+passed. Prior full/security/HTTP receipts remain valid prior-base evidence, with
+no broad rerun under root's resource limit. Combined native integration and root
+squash remain separate gates; CI remains paused.
+
+Verified by gpt-6-astra through Codex (T3 Code).
