@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#04524B',
-    borderRadius: 2,
+    borderRadius: 26,
   },
   secondary: {
     borderRadius: 26,
