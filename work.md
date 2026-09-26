@@ -9,22 +9,6 @@
 
 Corrected by gpt-6-astra through Codex (T3 Code).
 
-PR48 integrated refresh: PR43 merged as
-`026b4d70f9ab1eb4ef2b1731db88e1162feda1fb`; the corrected budget was rebased onto
-that actual main commit without copying peer source. Append-only record conflicts
-preserve both owners; TODO was restored byte-for-byte from a private file copy,
-without the shared stash stack. Adapter, SQL and tests match the fourteen-case
-PG-proven version byte-for-byte. Full `pnpm check` and `pnpm security:check` pass.
-The earlier route responsiveness case passes in 190 ms; earlier red evidence
-remains unchanged. Proof is in `p2-main-check.log`, `p2-main-security.log` and
-`p2-cleanup.txt` under the existing evidence path. Exact owned red/green container
-and network IDs were confirmed absent. The heavy slot is released. Migration
-0011 SHA256 is `be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`;
-runtime grants are unchanged. Final-head P2 re-review and any root merge turn
-remain pending; no provider, cloud, shared database or CI action occurred.
-
-Verified by gpt-6-astra through Codex (T3 Code).
-
 ## 2026-09-25: worktree namespace and database configuration corrections
 
 - Tracking: INFRA-001, PR #23. Reviewer provisioning exposed a failed acceptance criterion: case aliases of the same macOS directory produced different namespace hashes, so credentials provisioned through T3's uppercase path were unavailable to Node's lowercase runtime path. No incorrect reviewer database was provisioned.
@@ -946,3 +930,19 @@ separately reviewed import of liabilities. Main refresh after the route fix,
 integrated gates and exact-head re-review remain pending. No merge is granted.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+PR48 integrated refresh: PR43 merged as
+`026b4d70f9ab1eb4ef2b1731db88e1162feda1fb`; the corrected budget was rebased onto
+that actual main commit without copying peer source. Append-only record conflicts
+preserve both owners; TODO was restored byte-for-byte from a private file copy,
+without the shared stash stack. Adapter, SQL and tests match the fourteen-case
+PG-proven version byte-for-byte. Full `pnpm check` and `pnpm security:check` pass.
+The earlier route responsiveness case passes in 190 ms; earlier red evidence
+remains unchanged. Proof is in `p2-main-check.log`, `p2-main-security.log` and
+`p2-cleanup.txt` under the existing evidence path. Exact owned red/green container
+and network IDs were confirmed absent. The heavy slot is released. Migration
+0011 SHA256 is `be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`;
+runtime grants are unchanged. Final-head P2 re-review and any root merge turn
+remain pending; no provider, cloud, shared database or CI action occurred.
+
+Verified by gpt-6-astra through Codex (T3 Code).
