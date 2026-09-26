@@ -33,6 +33,7 @@ import { serveRewardsAdmin } from '../rewards/admin.ts';
 import { reportRuntime, isReportPath } from '../reports/runtime.ts';
 import { handleReports } from '../reports/http.ts';
 import { serveReportsAdmin } from '../reports/admin.ts';
+import { createAwardsHandler } from '../awards/http.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -91,6 +92,7 @@ export function createApi({
   const queryRoutes = createRouteQuery({ env });
   const journeys = createJourneyService({ pool, env, queryRoutes });
   const reports = reportRuntime(pool, env);
+  const awards = createAwardsHandler({ pool });
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -166,6 +168,13 @@ export function createApi({
         )
           return;
       }
+      const award = await awards({
+        method: req.method,
+        path,
+        token,
+        readBody: () => body(req),
+      });
+      if (award) return send(res, award.status, award.body);
       const submissionResult = await handleSubmissionRequest({
         pool,
         token,

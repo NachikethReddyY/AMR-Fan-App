@@ -50,6 +50,7 @@ jobs:
       - run: pnpm points:test:database
       - run: pnpm route:test:database
       - run: pnpm journey:test:database
+      - run: pnpm awards:test:database
       - run: pnpm submissions:test:database
       - run: pnpm rewards:test:database
       - name: Build the pinned offline report parser
