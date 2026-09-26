@@ -11,6 +11,10 @@ const { JSDOM } = createRequire(require.resolve('jest-environment-jsdom'))(
 );
 const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 const source = readFileSync(new URL('./app.js', import.meta.url), 'utf8');
+const authSource = readFileSync(
+  new URL('../../../auth/admin.js', import.meta.url),
+  'utf8',
+);
 const stamp = '2026-09-26T12:00:00.000001Z';
 const open = {
   id: 'session-a',
@@ -53,6 +57,8 @@ async function page(t, custom = () => undefined) {
   t.after(() => dom.window.close());
   const { window } = dom;
   const calls = [];
+  let accountId = 'admin-a';
+  window.TextDecoder = TextDecoder;
   Object.defineProperty(window.crypto, 'randomUUID', { value: randomUUID });
   window.AbortSignal.timeout = AbortSignal.timeout;
   window.fetch = async (path, options = {}) => {
@@ -64,6 +70,8 @@ async function page(t, custom = () => undefined) {
     calls.push(call);
     const override = await custom(call);
     if (override) return override;
+    if (path === '/v1/dev/session')
+      accountId = options.body.includes('fan-b') ? 'admin-b' : 'admin-a';
     const data =
       path === '/admin/config'
         ? { synthetic: true }
@@ -74,30 +82,42 @@ async function page(t, custom = () => undefined) {
                 id: options.body.includes('fan-b') ? 'admin-b' : 'admin-a',
               },
             }
-          : path === '/v1/admin/session'
-            ? { role: 'admin' }
-            : path.startsWith('/v1/admin/submission-sessions') &&
-                (options.method ?? 'GET') === 'GET'
-              ? { items: [{ session: open, selections: [] }], nextCursor: null }
-              : path.startsWith('/v1/submissions/ranking')
+          : path === '/v1/me'
+            ? { id: accountId }
+            : path === '/v1/admin/session'
+              ? { role: 'admin' }
+              : path.startsWith('/v1/admin/submission-sessions') &&
+                  (options.method ?? 'GET') === 'GET'
                 ? {
-                    items: [
-                      {
-                        id: 'submission-a',
-                        text: malicious,
-                        tag: 'question',
-                        approvedAt: stamp,
-                        rankingPoints: '900719925474099312345',
-                        status: 'backlog',
-                        fulfilment: 'demonstration',
-                      },
-                    ],
+                    items: [{ session: open, selections: [] }],
                     nextCursor: null,
                   }
-                : { signedOut: true };
+                : path.startsWith('/v1/submissions/ranking')
+                  ? {
+                      items: [
+                        {
+                          id: 'submission-a',
+                          text: malicious,
+                          tag: 'question',
+                          approvedAt: stamp,
+                          rankingPoints: '900719925474099312345',
+                          status: 'backlog',
+                          fulfilment: 'demonstration',
+                        },
+                      ],
+                      nextCursor: null,
+                    }
+                  : { signedOut: true };
     return Response.json(data);
   };
-  window.eval(source);
+  window.eval(
+    authSource.replaceAll('export ', '') +
+      '\n' +
+      source.replace(
+        "import { bindPasswordSignIn } from '../../../auth/admin.js';",
+        '',
+      ),
+  );
   const byId = (id) => window.document.getElementById(id);
   async function click(id) {
     const control = byId(id);
@@ -112,7 +132,9 @@ async function page(t, custom = () => undefined) {
   }
   await waitFor(
     () =>
-      !byId('fixtures').hidden || byId('setup').textContent.includes('pending'),
+      !byId('fixtures').hidden ||
+      byId('password-signin')?.hidden === false ||
+      byId('setup').textContent.includes('pending'),
   );
   return { window, byId, calls, click, login };
 }
@@ -543,4 +565,110 @@ test('narrow-width preparation retains shared geometry and wraps long content; n
     css,
     /min-width:\s*\d+[1-9]\d*px|position:\s*fixed|animation/,
   );
+});
+
+test('hosted sign-in uses the shared helper, clears passwords and retains actor-isolated original intent', async (t) => {
+  let identity = 'admin-a';
+  let lost = true;
+  const p = await page(t, (c) => {
+    if (c.path === '/admin/config')
+      return json({
+        synthetic: false,
+        auth: {
+          mode: 'supabase',
+          url: 'https://folakoxsilrfemctvlxj.supabase.co',
+          publishableKey: 'sb_publishable_' + 'fixture'.repeat(3),
+        },
+      });
+    if (c.path.startsWith('https://'))
+      return json({ access_token: 'synthetic-provider-token' });
+    if (c.path === '/v1/session' && c.method === 'POST')
+      return json({ token: 'a'.repeat(43) });
+    if (c.path === '/v1/me') return json({ id: identity });
+    if (c.path === '/v1/admin/submission-sessions' && c.method === 'POST') {
+      if (lost) {
+        lost = false;
+        throw new TypeError('Lost committed response');
+      }
+      return json(open, 201);
+    }
+  });
+  assert.ok(p.byId('password-signin'), 'Hosted sign-in form is registered');
+  assert.equal(p.byId('password-signin').hidden, false);
+  assert.equal(p.byId('fixtures').hidden, true);
+  async function signIn() {
+    p.byId('email').value = 'synthetic@example.test';
+    p.byId('password').value = 'synthetic-password';
+    p.byId('password-signin').dispatchEvent(
+      new p.window.Event('submit', { bubbles: true, cancelable: true }),
+    );
+    assert.equal(p.byId('password').value, '');
+    await waitFor(
+      () => p.byId('workspace').getAttribute('aria-busy') !== 'true',
+    );
+  }
+  await signIn();
+  assert.equal(p.byId('workspace').hidden, false);
+  assert.equal(
+    p.calls.find((c) => c.path === '/v1/admin/session').headers.Authorization,
+    'Bearer ' + 'a'.repeat(43),
+  );
+  await p.click('create');
+  const original = posts(p)[0].value;
+  await p.click('logout');
+  identity = 'admin-b';
+  await signIn();
+  assert.equal(p.byId('retry').hidden, true);
+  await p.click('logout');
+  identity = 'admin-a';
+  await signIn();
+  assert.equal(p.byId('retry').hidden, false);
+  await p.click('retry');
+  assert.deepEqual(posts(p)[1].value, original);
+  assert.equal(p.window.localStorage.length, 0);
+  assert.equal(p.window.sessionStorage.length, 0);
+  assert.ok(
+    p.calls
+      .filter((c) => c.value?.password)
+      .every(
+        (c) =>
+          c.path ===
+          'https://folakoxsilrfemctvlxj.supabase.co/auth/v1/token?grant_type=password',
+      ),
+  );
+});
+
+test('hosted fan denial clears private state and password without trusting provider role', async (t) => {
+  const p = await page(t, (c) => {
+    if (c.path === '/admin/config')
+      return json({
+        synthetic: false,
+        auth: {
+          mode: 'supabase',
+          url: 'https://folakoxsilrfemctvlxj.supabase.co',
+          publishableKey: 'sb_publishable_' + 'fixture'.repeat(3),
+        },
+      });
+    if (c.path.startsWith('https://'))
+      return json({ access_token: 'synthetic', user: { role: 'admin' } });
+    if (c.path === '/v1/session' && c.method === 'POST')
+      return json({ token: 'a'.repeat(43) });
+    if (c.path === '/v1/admin/session')
+      return json({ error: 'Assigned admin access required.' }, 403);
+  });
+  assert.ok(p.byId('password-signin'), 'Hosted sign-in form exists');
+  p.byId('email').value = 'fan@example.test';
+  p.byId('password').value = 'synthetic-password';
+  p.byId('password-signin').dispatchEvent(
+    new p.window.Event('submit', { cancelable: true }),
+  );
+  await waitFor(() => p.byId('workspace').getAttribute('aria-busy') !== 'true');
+  assert.equal(p.byId('workspace').hidden, true);
+  assert.equal(p.byId('password').value, '');
+  assert.equal(
+    p.calls.some((c) => c.path === '/v1/me'),
+    false,
+  );
+  assert.equal(posts(p).length, 0);
+  assert.match(p.byId('message').textContent, /Assigned admin/);
 });

@@ -1,3 +1,5 @@
+import { bindPasswordSignIn } from '../../../auth/admin.js';
+
 (() => {
   const byId = (id) => document.getElementById(id);
   let token = null;
@@ -357,20 +359,24 @@
     renderSessions(sessions.items, false);
     stale = false;
   }
+  async function activate(nextToken) {
+    token = nextToken;
+    await api('/v1/admin/session');
+    const account = await api('/v1/me');
+    actor = account.id;
+    byId('signin').hidden = true;
+    byId('workspace').hidden = false;
+    byId('logout').hidden = false;
+    await refresh();
+    message('');
+  }
   for (const button of document.querySelectorAll('[data-fixture]'))
     button.addEventListener('click', () =>
       work(async () => {
         const session = await api('/v1/dev/session', 'POST', {
           fixture: button.dataset.fixture,
         });
-        token = session.token;
-        await api('/v1/admin/session');
-        actor = session.account.id;
-        byId('signin').hidden = true;
-        byId('workspace').hidden = false;
-        byId('logout').hidden = false;
-        await refresh();
-        message('');
+        await activate(session.token);
       }),
     );
   byId('logout').addEventListener('click', () =>
@@ -417,9 +423,11 @@
     try {
       const config = await api('/admin/config');
       byId('fixtures').hidden = !config.synthetic;
-      byId('setup').textContent = config.synthetic
-        ? ''
-        : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
+      bindPasswordSignIn(config.auth, { work, onSession: activate });
+      byId('setup').textContent =
+        config.synthetic || config.auth?.mode === 'supabase'
+          ? ''
+          : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
     } catch {
       byId('setup').textContent =
         'Sign-in is unavailable. Reload to try again.';

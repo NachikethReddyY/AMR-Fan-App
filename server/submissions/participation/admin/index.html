@@ -17,6 +17,27 @@
       <section id="signin" aria-labelledby="signin-title">
         <h2 id="signin-title">Sign in</h2>
         <p id="setup">Checking sign-in availability…</p>
+        <form id="password-signin" hidden>
+          <label for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="username"
+            maxlength="254"
+            required
+          />
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            maxlength="1024"
+            required
+          />
+          <button type="submit">Sign in</button>
+        </form>
         <div id="fixtures" hidden>
           <p>
             Local test accounts. Admin access requires a server-assigned role.
