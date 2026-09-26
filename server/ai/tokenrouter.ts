@@ -95,6 +95,24 @@ function readUsage(value: unknown): Usage {
   };
 }
 
+function containsConfiguredKey(value: unknown, key: string): boolean {
+  const pending: unknown[] = [value];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current === 'string') {
+      if (current.includes(key)) return true;
+    } else if (Array.isArray(current)) {
+      for (const item of current) pending.push(item);
+    } else if (current !== null && typeof current === 'object') {
+      for (const [name, item] of Object.entries(current)) {
+        if (name.includes(key)) return true;
+        pending.push(item);
+      }
+    }
+  }
+  return false;
+}
+
 /** Server-only preparation. Not wired to any product caller or shared budget controller. */
 export function createTokenRouter(input: unknown) {
   const parsed = configuration.safeParse(input);
@@ -159,7 +177,8 @@ export function createTokenRouter(input: unknown) {
         return fail('invalid-output', usage);
       try {
         const decoded: unknown = JSON.parse(content);
-        if (JSON.stringify(decoded).includes(config.TOKENROUTER_API_KEY))
+        // Compare decoded names/values; serializing again hides quotes and backslashes.
+        if (containsConfiguredKey(decoded, config.TOKENROUTER_API_KEY))
           return fail('invalid-output', usage);
         const candidate = outputSchema.safeParse(decoded);
         if (!candidate.success) return fail('invalid-output', usage);

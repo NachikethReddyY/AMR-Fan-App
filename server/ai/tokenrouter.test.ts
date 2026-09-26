@@ -211,6 +211,95 @@ test('JSON-escaped key reflection is rejected and known key in source is not tra
   assert.equal(f.calls(), 1);
 });
 
+// In-process fixtures exercise accepted key characters without real credentials or HTTP.
+function syntheticContent(t: TestContext, key: string, content: string) {
+  let calls = 0;
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (url: unknown, init: RequestInit) => {
+      assert.equal(url, endpoint);
+      assert.equal(
+        new Headers(init.headers).get('authorization'),
+        `Bearer ${key}`,
+      );
+      calls += 1;
+      return Response.json(
+        completion({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: { role: 'assistant', content },
+            },
+          ],
+        }),
+      );
+    },
+  );
+  return { calls: () => calls };
+}
+
+const reflectedOutput = z.strictObject({
+  text: z.string().optional(),
+  items: z.array(z.record(z.string(), z.string())).optional(),
+});
+for (const [shape, key] of [
+  ['plain', 'fixture-secret-only'],
+  ['quote', 'fixture-secret"only'],
+  ['backslash', 'fixture-secret\\only'],
+] as const) {
+  for (const [location, value] of [
+    ['direct value', { text: key }],
+    ['nested array value', { items: [{ text: `prefix ${key} suffix` }] }],
+    ['nested object key', { items: [{ [`prefix ${key} suffix`]: 'safe' }] }],
+  ] as const) {
+    test(`rejects configured ${shape} key in decoded ${location}`, async (t) => {
+      const f = syntheticContent(t, key, JSON.stringify(value));
+      const result = await createTokenRouter({
+        ...config,
+        TOKENROUTER_API_KEY: key,
+      }).complete(input, reflectedOutput);
+      assert.deepEqual(result, {
+        kind: 'unavailable',
+        reason: 'invalid-output',
+        reviewRequired: true,
+        usage: { kind: 'missing' },
+      });
+      assert.equal(f.calls(), 1);
+    });
+  }
+
+  test(`accepted ${shape} key still permits a benign candidate`, async (t) => {
+    const value = {
+      text: 'A "quoted" label \\ with a path',
+      items: [{ safe: 'ok' }],
+    };
+    const f = syntheticContent(t, key, JSON.stringify(value));
+    const result = await createTokenRouter({
+      ...config,
+      TOKENROUTER_API_KEY: key,
+    }).complete(input, reflectedOutput);
+    assert.equal(result.kind, 'candidate');
+    assert.deepEqual(result.value, value);
+    assert.equal(result.reviewRequired, true);
+    assert.equal(f.calls(), 1);
+  });
+}
+
+test('rejects a Unicode-escaped configured key in a decoded object name', async (t) => {
+  const f = syntheticContent(
+    t,
+    config.TOKENROUTER_API_KEY,
+    '{"items":[{"synthetic-\\u006fnly":"safe"}]}',
+  );
+  const result = await createTokenRouter(config).complete(
+    input,
+    reflectedOutput,
+  );
+  assert.equal(reason(result), 'invalid-output');
+  assert.equal(f.calls(), 1);
+});
+
 test('usage is retained for rejected untrusted output while raw provider content is discarded', async (t) => {
   await fixture(t, (_req, res) => {
     res.setHeader('content-type', 'application/json');
@@ -247,6 +336,21 @@ test('usage is retained for rejected untrusted output while raw provider content
 
 for (const [name, response] of [
   ['wrong model', completion({ model: 'gpt-6-luna' })],
+  [
+    'refusal alongside valid content',
+    completion({
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: {
+            role: 'assistant',
+            content: '{"status":"review"}',
+            refusal: 'Cannot provide this result.',
+          },
+        },
+      ],
+    }),
+  ],
   [
     'tool call',
     completion({
