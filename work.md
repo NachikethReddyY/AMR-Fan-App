@@ -1814,3 +1814,18 @@ without deleting the installed app or its data. Root owns the internal install
 identity decision; no device journey success is claimed at this checkpoint.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### Native journey device corrections
+
+Actual internal Pixel proof found Android AESSealedData.fromCombined rejects
+stored base64 strings at its ByteArray bridge. Decode ciphertext to bytes before
+native decryption; encryption/key storage and Start ordering are unchanged. The
+adapter regression fails before the correction and passes afterward, together
+with 21 recorder cases. Device retry recovered the original encrypted intent
+and sent one exact two-field Start without another provider request. Its first
+location callback exposed TaskManager's missing RECEIVE_BOOT_COMPLETED manifest
+permission. Added that required Android permission; rebuilt callback/finish and
+iOS proof remain pending. The .nativeproof suffix is generated-only and protects
+the existing installed app/data. All temporary diagnostics were removed.
+
+Edited by gpt-6-astra through Codex (T3 Code).

@@ -50,7 +50,12 @@ export const captureStore: CaptureStore = {
       return null;
     }
     const bytes = await aesDecryptAsync(
-      AESSealedData.fromCombined(row.ciphertext),
+      // Android requires bytes despite the shared API accepting base64 strings.
+      AESSealedData.fromCombined(
+        Uint8Array.from(atob(row.ciphertext), (character) =>
+          character.charCodeAt(0),
+        ),
+      ),
       encryptionKey,
     );
     return captureSchema.parse(JSON.parse(new TextDecoder().decode(bytes)));

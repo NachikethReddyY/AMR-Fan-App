@@ -711,3 +711,18 @@ The recorder enforces cleanup and receipt boundaries independent of React.
 Geometry review found no blocking issue. Device proof remains a separate gate.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: actual Android storage and job scheduling
+
+The internal Pixel build reproduced two native integration failures missed by
+pure recorder tests. Expo Crypto's Android fromCombined bridge rejects a base64
+string despite the public type accepting it. The adapter now decodes stored
+ciphertext to bytes before native decryption; its failure-first regression
+preserves validated capture recovery. After that correction the retained intent
+sent exactly one Start with the unchanged two-field input. The first native
+location callback then crashed because TaskManager persists its job without a
+manifest boot permission. Explicit RECEIVE_BOOT_COMPLETED is required; no other
+permissions or production identity changes. Actual rebuilt callback/finish proof
+remains pending. Temporary diagnostics are removed, with no raw data in source.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
