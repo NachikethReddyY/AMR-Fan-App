@@ -1603,6 +1603,7 @@ remain intact. Final CO2 source review and root squash remain pending. No full-a
 native, provider or deployed proof is claimed.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
 ## Native participation client, 2026-09-26
 
 The fan participation client now validates the registered ranking, owner History
@@ -1678,5 +1679,38 @@ moderate advisory. Scanner negative fixtures failed as intended. No CI, provider
 cloud or shared-database operation occurred. The heavy-check lease is released.
 Root separately authorized an exclusive Pixel then iPhone window with existing
 compatible binaries and current JavaScript; native proof remains in progress.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Native participation proof and final refresh, 27 September 2026
+
+PR52 source `04956709` received two independent CLEAR reviews through root.
+Existing Expo Go clients loaded that frozen worktree through current-source Metro
+on Pixel 10 Android 16 and iPhone 17 Pro iOS 26.5. Both showed B review/cancel/confirm,
+selected/fulfilled and rejected History, four tabs and separate empty sample
+profiles. Pixel deliberately lost a committed 10-point response; app restart
+restored the original intent and same-key retry returned its receipt without a
+second debit. iPhone numeric keyboard entry/dismissal and post-confirm restart
+were observed. No native build or provider call occurred.
+
+Android largest 3.2 text kept contribution controls reachable. Existing dock
+labels wrapped without missing letters; iPhone largest labels also wrapped.
+Android keyboard visibility and iPhone largest contribution controls remain
+unverified. The latter's History remained scrollable with direct swipes after the
+standard automation scroll stalled. Screenshots, videos, exact layout measurements,
+logs and fixture entry are retained in `.evidence/native-participation/`.
+Both original text settings were restored, synthetic sessions signed out and
+recordings stopped. Pixel remained booted; iPhone returned to shutdown. Owned
+Metro/API ports 58079/58242 have no listeners; disposable PG/Node/network were
+removed and verified absent. All device/Metro/fixture leases are released.
+
+Rebased onto main `a92b9d28b8b7298e0a4e569081084878909fe06c`. Participation source,
+Rewards wiring and its component tests remain byte-identical to native-tested
+`04956709`; App/Impact and API/Reports match current main. Forty focused client
+and ten component tests, typecheck and affected lint pass. An initial wrong Node
+runner failed module resolution before execution; the repository Jest runner
+passed. Prior full/security/HTTP receipts remain valid prior-base evidence, with
+no broad rerun under root's resource limit. Combined native integration and root
+squash remain separate gates; CI remains paused.
 
 Verified by gpt-6-astra through Codex (T3 Code).
