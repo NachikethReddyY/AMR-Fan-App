@@ -275,7 +275,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
             {state.kind === 'signedOut' && confirmationEmail && (
               <>
                 <Text style={styles.body}>
-                  Enter the code sent to {confirmationEmail}.
+                  Enter the 8-digit code sent to {confirmationEmail}.
                 </Text>
                 {state.error && (
                   <Text accessibilityLiveRegion="polite" style={styles.body}>
@@ -291,7 +291,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                   autoComplete="one-time-code"
                   textContentType="oneTimeCode"
                   autoCorrect={false}
-                  maxLength={10}
+                  maxLength={8}
                   style={styles.input}
                   returnKeyType="done"
                   onSubmitEditing={() => {

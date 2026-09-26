@@ -188,26 +188,33 @@ test('confirmation code posts email/token/type only and parses a provider sessio
 });
 test('invalid code input is rejected before request; invalid or expired provider codes do not echo response', async () => {
   const { auth, request } = fixture();
-  for (const code of ['', 'abc123', '12345', '1'.repeat(11)])
+  for (const code of [
+    '',
+    'abc123',
+    '12345',
+    '123456',
+    '1234567',
+    '1'.repeat(9),
+  ])
     await expect(auth.verifyCode('fan@example.test', code)).rejects.toThrow(
       'code',
     );
-  await expect(auth.verifyCode('invalid', '123456')).rejects.toThrow('email');
+  await expect(auth.verifyCode('invalid', '12345678')).rejects.toThrow('email');
   expect(request).not.toHaveBeenCalled();
   for (const error_code of ['otp_expired', 'validation_failed'])
     await expect(
       fixture(
         { error_code, message: 'PRIVATE_PROVIDER_RESPONSE' },
         403,
-      ).auth.verifyCode('fan@example.test', '123456'),
+      ).auth.verifyCode('fan@example.test', '12345678'),
     ).rejects.toThrow(
       'The code is invalid or expired. Request a new code and try again.',
     );
   await expect(
-    fixture({}, 429).auth.verifyCode('fan@example.test', '123456'),
+    fixture({}, 429).auth.verifyCode('fan@example.test', '12345678'),
   ).rejects.toThrow('Wait');
   await expect(
-    fixture({}).auth.verifyCode('fan@example.test', '123456'),
+    fixture({}).auth.verifyCode('fan@example.test', '12345678'),
   ).rejects.toThrow('Invalid sign-in response');
 });
 test('resend uses signup endpoint contract without password or session, and handles throttling', async () => {
@@ -230,7 +237,7 @@ test('verification outage is distinct from expired code and network failures rev
   await expect(
     fixture({ message: 'PRIVATE_PROVIDER_RESPONSE' }, 500).auth.verifyCode(
       'fan@example.test',
-      '123456',
+      '12345678',
     ),
   ).rejects.toThrow('Could not confirm your email');
   const request = jest.fn<typeof fetch>(async () => {
@@ -239,7 +246,7 @@ test('verification outage is distinct from expired code and network failures rev
   await expect(
     createSupabaseAuth({ config, request }).verifyCode(
       'fan@example.test',
-      '123456',
+      '12345678',
     ),
   ).rejects.toThrow('Account connection unavailable');
 });

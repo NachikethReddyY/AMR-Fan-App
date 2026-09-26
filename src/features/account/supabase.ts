@@ -36,8 +36,8 @@ export function validateEmail(email: string) {
 export function validateConfirmation(email: string, code: string) {
   const address = validateEmail(email);
   const token = code.trim();
-  if (!/^[0-9]{6,10}$/.test(token))
-    throw new Error('Enter the confirmation code from your email.');
+  if (!/^[0-9]{8}$/.test(token))
+    throw new Error('Enter the 8-digit code from your email.');
   return { email: address, token, type: 'email' as const };
 }
 export function validateCredentials(email: string, password: string) {

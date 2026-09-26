@@ -34,7 +34,7 @@ function setup(value: unknown = providerResponse, status = 200) {
 }
 test('verification exchanges only validated provider access token for an app session', async () => {
   const { flow, api } = setup();
-  expect(await flow.verify('fan@example.test', '123456')).toMatchObject({
+  expect(await flow.verify('fan@example.test', '12345678')).toMatchObject({
     ...session,
     provider: { accessToken: 'fixture-access' },
   });
@@ -43,7 +43,7 @@ test('verification exchanges only validated provider access token for an app ses
 test('failed app exchange revokes the newly verified provider session', async () => {
   const { flow, api, request } = setup();
   api.signIn.mockRejectedValue(new Error('app unavailable'));
-  await expect(flow.verify('fan@example.test', '123456')).rejects.toThrow(
+  await expect(flow.verify('fan@example.test', '12345678')).rejects.toThrow(
     'app unavailable',
   );
   expect(request.mock.calls.at(-1)?.[0]).toBe(
