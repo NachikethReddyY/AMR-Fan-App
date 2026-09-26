@@ -156,7 +156,14 @@ export function createApi({
         (await serveReportsAdmin(path, res, adminAuth.mode === 'supabase'))
       )
         return;
-      if (req.method === 'GET' && (await serveParticipationAdmin(path, res)))
+      if (
+        req.method === 'GET' &&
+        (await serveParticipationAdmin(
+          path,
+          res,
+          adminAuth.mode === 'supabase',
+        ))
+      )
         return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });

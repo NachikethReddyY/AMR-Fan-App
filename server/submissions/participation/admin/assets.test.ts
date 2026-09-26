@@ -67,3 +67,25 @@ test('participation assets have an exact public allowlist, same-origin CSP and n
     );
   }
 });
+
+test('hosted participation CSP permits only the inherited fixed sign-in provider', async () => {
+  const server = createServer(async (req, res) => {
+    await serveParticipationAdmin(req.url ?? '/', res, true);
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/admin/participation/`,
+    );
+    assert.equal(
+      response.headers.get('content-security-policy'),
+      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://folakoxsilrfemctvlxj.supabase.co; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    );
+  } finally {
+    server.close();
+    await once(server, 'close');
+  }
+});

@@ -53,3 +53,145 @@ test('actual createApi serves participation admin assets', async () => {
     );
   }
 });
+
+test('hosted sign-in registers the shared helper and current admin authority on participation routes', async () => {
+  const { randomUUID } = await import('node:crypto');
+  const { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } =
+    await import('jose');
+  const { createSupabaseVerifier, SUPABASE_ISSUER, SUPABASE_URL } =
+    await import('../../../auth/supabase.ts');
+  const { passwordSession } = await import('../../../auth/admin.js');
+  const { assignRole } = await import('../../../accounts/store.ts');
+  const { migrate } = await import('../../../database/migrate.ts');
+  const pool = createDatabase();
+  const keys = await generateKeyPair('ES256');
+  const now = Math.floor(Date.now() / 1000);
+  const jwt = await new SignJWT({
+    iss: SUPABASE_ISSUER,
+    aud: 'authenticated',
+    sub: randomUUID(),
+    iat: now,
+    exp: now + 300,
+    role: 'authenticated',
+    is_anonymous: false,
+    session_id: randomUUID(),
+    user_metadata: { role: 'admin' },
+  })
+    .setProtectedHeader({ alg: 'ES256', kid: 'local-participation' })
+    .sign(keys.privateKey);
+  const server = createApi({
+    pool,
+    env: {
+      NODE_ENV: 'test',
+      AUTH_PROVIDER: 'supabase',
+      AUTH_DEV_ENABLED: 'false',
+      SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_' + 'fixture'.repeat(3),
+    },
+    verifyIdentity: createSupabaseVerifier(
+      createLocalJWKSet({
+        keys: [
+          { ...(await exportJWK(keys.publicKey)), kid: 'local-participation' },
+        ],
+      }),
+    ),
+  });
+  try {
+    await migrate(pool);
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const base = `http://127.0.0.1:${address.port}`;
+    const config = await (await fetch(base + '/admin/config')).json();
+    assert.equal(config.synthetic, false);
+    const html = await fetch(base + '/admin/participation/');
+    assert.match(
+      html.headers.get('content-security-policy') ?? '',
+      /connect-src 'self' https:\/\/folakoxsilrfemctvlxj\.supabase\.co;/,
+    );
+    assert.match(await html.text(), /id="password-signin"/);
+    const app = await (
+      await fetch(base + '/admin/participation/app.js')
+    ).text();
+    const helperImport = app.match(
+      /import \{ bindPasswordSignIn \} from '([^']+)'/,
+    );
+    assert.ok(helperImport);
+    const helper = new URL(
+      helperImport[1],
+      base + '/admin/participation/app.js',
+    );
+    assert.equal(helper.pathname, '/auth/admin.js');
+    assert.equal(
+      await (await fetch(helper)).text(),
+      await readFile(
+        new URL('../../../auth/admin.js', import.meta.url),
+        'utf8',
+      ),
+    );
+    let providerCalls = 0;
+    const token = await passwordSession(
+      config.auth,
+      'synthetic@example.test',
+      'synthetic-only',
+      async (input, init) => {
+        if (
+          String(input) ===
+          SUPABASE_URL + '/auth/v1/token?grant_type=password'
+        ) {
+          providerCalls++;
+          assert.deepEqual(JSON.parse(String(init?.body)), {
+            email: 'synthetic@example.test',
+            password: 'synthetic-only',
+          });
+          return Response.json({
+            access_token: jwt,
+            refresh_token: 'discarded',
+          });
+        }
+        assert.equal(input, '/v1/session');
+        assert.equal(init?.body, undefined);
+        return fetch(base + input, init);
+      },
+    );
+    assert.equal(providerCalls, 1);
+    const headers = {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    };
+    const requestId = randomUUID();
+    const create = () =>
+      fetch(base + '/v1/admin/submission-sessions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ requestId }),
+      });
+    assert.equal((await create()).status, 403);
+    const account = await (await fetch(base + '/v1/me', { headers })).json();
+    await assignRole(
+      pool,
+      account.id,
+      'admin',
+      'Owned hosted participation fixture',
+    );
+    const original = await create();
+    assert.equal(original.status, 201);
+    const receipt = await original.json();
+    assert.deepEqual(await (await create()).json(), receipt);
+    await assignRole(
+      pool,
+      account.id,
+      'fan',
+      'Owned hosted participation role revocation',
+    );
+    assert.equal((await create()).status, 403);
+    await fetch(base + '/v1/session', { method: 'DELETE', headers });
+    assert.equal((await create()).status, 401);
+  } finally {
+    if (server.listening) {
+      server.close();
+      await once(server, 'close');
+    }
+    await pool.end();
+  }
+});
