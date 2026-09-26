@@ -871,3 +871,401 @@ test('multimodal evidence cannot fabricate assessed leg distances and duplicate 
   });
   assert.deepEqual(repeated.assessment, finished.assessment);
 });
+
+test('old preparation receipt replays without display enrichment or provider spend and its ID still starts', async () => {
+  const account = await ensureAccount(pool, { issuer, subject: 'a' });
+  const prepared = await journeys.prepare(
+    token,
+    { profileId, requestId: randomUUID() },
+    routeFixture(),
+  );
+  const input = {
+    profileId,
+    requestId: randomUUID(),
+    query: {
+      origin: 'Legacy origin',
+      destination: 'Legacy destination',
+      modes: ['WALK'],
+      extraMinutes: 0,
+    },
+  };
+  const legacy = {
+    kind: 'prepared',
+    candidates: [
+      { kind: 'prepared', routeId: 'legacy-route', journey: prepared },
+    ],
+  };
+  await pool.query(
+    'INSERT INTO app.journey_plans(principal_id,request_id,profile_id,fingerprint,result) VALUES ($1,$2,$3,$4,$5)',
+    [
+      account.id,
+      input.requestId,
+      profileId,
+      createHash('sha256')
+        .update(JSON.stringify({ action: 'plan', input }))
+        .digest('hex'),
+      legacy,
+    ],
+  );
+  const service = createJourneyService({
+    pool,
+    env,
+    queryRoutes: async () => {
+      assert.fail('Legacy replay must not reacquire comparison');
+    },
+  });
+  assert.deepEqual(await service.preparePlan(token, input), legacy);
+  const start = { requestId: randomUUID(), captureSessionId: randomUUID() };
+  const active = await service.start(token, prepared.id, start);
+  assert.equal(active.id, prepared.id);
+  assert.equal(active.state, 'active');
+  assert.deepEqual(await service.start(token, prepared.id, start), active);
+  assert.deepEqual(await service.preparePlan(token, input), legacy);
+  await assert.rejects(
+    service.preparePlan(token, {
+      ...input,
+      query: { ...input.query, extraMinutes: 1 },
+    }),
+    { status: 409 },
+  );
+});
+
+test('discovery pages multiple active journeys after reconnect without local IDs or read-side writes', async (t) => {
+  const account = await ensureAccount(pool, { issuer, subject: 'discovery' });
+  const profile = account.profiles.find((p) => p.kind === 'real');
+  assert.ok(profile);
+  const auth = (await createSession(pool, account.id)).token;
+  let now = Date.now();
+  const service = createJourneyService({ pool, env, clock: () => now });
+  const prepared = [];
+  for (let i = 0; i < 3; i++)
+    prepared.push(
+      await service.prepare(
+        auth,
+        { profileId: profile.id, requestId: randomUUID() },
+        routeFixture(now),
+      ),
+    );
+  const active = [];
+  for (const item of prepared.slice(0, 2))
+    active.push(
+      await service.start(auth, item.id, {
+        requestId: randomUUID(),
+        captureSessionId: randomUUID(),
+      }),
+    );
+  now += 8 * 86400000;
+  // Listing expired rows must not run the detail-read cleanup or rewrite assessments.
+  const before = (
+    await pool.query(
+      'SELECT id, summary, snapshot, precise_expires_at FROM app.journeys WHERE profile_id=$1 ORDER BY id',
+      [profile.id],
+    )
+  ).rows;
+  const reconnected = createDatabase();
+  try {
+    const restored = createJourneyService({
+      pool: reconnected,
+      env,
+      clock: () => now,
+    });
+    const page = await restored.listOwned(auth, profile.id, {
+      state: 'active',
+      limit: '1',
+    });
+    assert.equal(page.items.length, 1);
+    assert.equal(page.asOfMs, now);
+    assert.ok(page.nextCursor);
+    const next = await restored.listOwned(auth, profile.id, {
+      state: 'active',
+      limit: 1,
+      before: page.nextCursor,
+    });
+    assert.equal(next.nextCursor, null);
+    const expected = active
+      .map((item) => item.id)
+      .sort()
+      .reverse();
+    assert.deepEqual(
+      [...page.items, ...next.items].map((item) => item.id),
+      expected,
+    );
+    assert.ok(page.items[0].preciseExpiresAtMs < page.asOfMs);
+    assert.equal(page.items[0].assessment.status, 'unfinished');
+    assert.equal(page.items[0].assessment.calibration, 'unvalidated');
+    assert.doesNotMatch(
+      JSON.stringify(page),
+      /latitude|longitude|snapshot|factor|captureSessionId|selectedLegs/,
+    );
+    const recent = await restored.listOwned(auth, profile.id);
+    assert.deepEqual(
+      recent.items.map((item) => item.id),
+      prepared
+        .map((item) => item.id)
+        .sort()
+        .reverse(),
+    );
+    assert.deepEqual(
+      (
+        await pool.query(
+          'SELECT id, summary, snapshot, precise_expires_at FROM app.journeys WHERE profile_id=$1 ORDER BY id',
+          [profile.id],
+        )
+      ).rows,
+      before,
+    );
+    const discovered = await restored.read(auth, page.items[0].id);
+    assert.equal(
+      discovered.captureSessionId,
+      active.find((item) => item.id === discovered.id)?.captureSessionId,
+    );
+    assert.equal(discovered.state, 'active');
+    t.diagnostic(
+      JSON.stringify({
+        activeDiscovered: 2,
+        recentDiscovered: 3,
+        noListWrites: true,
+      }),
+    );
+  } finally {
+    await reconnected.end();
+  }
+});
+
+test('discovery enforces current owner/session, strict bounds and profile/view cursor binding', async () => {
+  const owner = await ensureAccount(pool, {
+    issuer,
+    subject: 'discovery-auth',
+  });
+  const other = await ensureAccount(pool, {
+    issuer,
+    subject: 'discovery-foreign-admin',
+  });
+  const profile = owner.profiles.find((p) => p.kind === 'real');
+  const demo = owner.profiles.find((p) => p.kind === 'demo');
+  const foreignProfile = other.profiles.find((p) => p.kind === 'real');
+  assert.ok(profile && demo && foreignProfile);
+  await pool.query("UPDATE app.principals SET role='admin' WHERE id=$1", [
+    other.id,
+  ]);
+  const auth = (await createSession(pool, owner.id)).token;
+  const foreign = (await createSession(pool, other.id)).token;
+  for (let i = 0; i < 22; i++)
+    await journeys.prepare(
+      auth,
+      { profileId: profile.id, requestId: randomUUID() },
+      routeFixture(),
+    );
+  assert.equal((await journeys.listOwned(auth, profile.id)).items.length, 20);
+  assert.equal(
+    (await journeys.listOwned(auth, profile.id, { limit: '50' })).items.length,
+    22,
+  );
+  assert.deepEqual((await journeys.listOwned(auth, demo.id)).items, []);
+  await assert.rejects(journeys.listOwned('', profile.id), { status: 401 });
+  await assert.rejects(journeys.listOwned(foreign, profile.id), {
+    status: 404,
+  });
+  await assert.rejects(journeys.listOwned(auth, foreignProfile.id), {
+    status: 404,
+  });
+  await assert.rejects(journeys.listOwned(auth, randomUUID()), { status: 404 });
+  for (const raw of [
+    { state: 'finished' },
+    { owner: owner.id },
+    { limit: 0 },
+    { limit: 51 },
+    { limit: 1.5 },
+    { limit: true },
+    { limit: '01' },
+    { limit: '1e1' },
+    { limit: ' 2' },
+    { limit: ['2'] },
+    { before: '' },
+    { before: 'a'.repeat(513) },
+    { before: 'invalid-json' },
+    { before: Buffer.from('{}').toString('base64url') },
+  ])
+    await assert.rejects(journeys.listOwned(auth, profile.id, raw), {
+      status: 400,
+    });
+  const first = await journeys.listOwned(auth, profile.id, { limit: 1 });
+  assert.ok(first.nextCursor);
+  await assert.rejects(
+    journeys.listOwned(auth, profile.id, {
+      state: 'active',
+      before: first.nextCursor,
+    }),
+    { status: 400 },
+  );
+  await assert.rejects(
+    journeys.listOwned(auth, demo.id, { before: first.nextCursor }),
+    { status: 400 },
+  );
+  const cursor = JSON.parse(
+    Buffer.from(first.nextCursor, 'base64url').toString('utf8'),
+  );
+  for (const altered of [
+    { ...cursor, version: 2 },
+    { ...cursor, preparedAtMs: -1 },
+    { ...cursor, extra: true },
+  ])
+    await assert.rejects(
+      journeys.listOwned(auth, profile.id, {
+        before: Buffer.from(JSON.stringify(altered)).toString('base64url'),
+      }),
+      { status: 400 },
+    );
+  const revoked = await createSession(pool, owner.id);
+  await pool.query(
+    'UPDATE app.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1',
+    [createHash('sha256').update(revoked.token).digest('hex')],
+  );
+  await assert.rejects(journeys.listOwned(revoked.token, profile.id), {
+    status: 401,
+  });
+  const expired = await createSession(pool, owner.id);
+  await pool.query(
+    "UPDATE app.sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE token_hash=$1",
+    [createHash('sha256').update(expired.token).digest('hex')],
+  );
+  await assert.rejects(journeys.listOwned(expired.token, profile.id), {
+    status: 401,
+  });
+});
+
+test('discovery keyset keeps tied preparations stable while newer rows arrive and finish remains authoritative', async () => {
+  const account = await ensureAccount(pool, {
+    issuer,
+    subject: 'discovery-order',
+  });
+  const profile = account.profiles.find((p) => p.kind === 'real');
+  assert.ok(profile);
+  const auth = (await createSession(pool, account.id)).token;
+  let now = Date.now();
+  const service = createJourneyService({ pool, env, clock: () => now });
+  const rows = [];
+  for (let i = 0; i < 5; i++) {
+    const prepared = await service.prepare(
+      auth,
+      { profileId: profile.id, requestId: randomUUID() },
+      routeFixture(now),
+    );
+    rows.push(
+      await service.start(auth, prepared.id, {
+        requestId: randomUUID(),
+        captureSessionId: randomUUID(),
+      }),
+    );
+  }
+  const first = await service.listOwned(auth, profile.id, { limit: 2 });
+  assert.ok(first.nextCursor);
+  now++;
+  const newer = await service.prepare(
+    auth,
+    { profileId: profile.id, requestId: randomUUID() },
+    routeFixture(now),
+  );
+  const ids = first.items.map((item) => item.id);
+  let before: string | null = first.nextCursor;
+  while (before) {
+    const page = await service.listOwned(auth, profile.id, {
+      limit: 2,
+      before,
+    });
+    ids.push(...page.items.map((item) => item.id));
+    before = page.nextCursor;
+  }
+  assert.deepEqual(
+    ids,
+    rows
+      .map((item) => item.id)
+      .sort()
+      .reverse(),
+  );
+  assert.equal(
+    (await service.listOwned(auth, profile.id)).items[0].id,
+    newer.id,
+  );
+  const target = rows[0];
+  const [, finished] = await Promise.all([
+    service.listOwned(auth, profile.id, { state: 'active' }),
+    service.finish(auth, target.id, {
+      requestId: randomUUID(),
+      captureSessionId: target.captureSessionId,
+      endedAtMs: now,
+      reason: 'stopped',
+    }),
+  ]);
+  assert.equal((await service.read(auth, target.id)).state, 'finished');
+  assert.equal(
+    (await service.listOwned(auth, profile.id, { state: 'active' })).items
+      .length,
+    4,
+  );
+  const current = (await service.listOwned(auth, profile.id)).items.find(
+    (item) => item.id === target.id,
+  );
+  assert.equal(current?.state, 'finished');
+  assert.equal(current?.assessment.revision, finished.assessment.revision);
+});
+
+test('discovery rejects a session that expires behind an unchanged authority row or owned-profile lock', async () => {
+  const account = await ensureAccount(pool, {
+    issuer,
+    subject: 'discovery-expiry',
+  });
+  const profile = account.profiles.find((p) => p.kind === 'real');
+  assert.ok(profile);
+  for (const target of ['session', 'profile']) {
+    const auth = (await createSession(pool, account.id)).token;
+    const hash = createHash('sha256').update(auth).digest('hex');
+    const lock = await pool.connect();
+    let pending: Promise<void> | undefined;
+    try {
+      await pool.query(
+        "UPDATE app.sessions SET expires_at=clock_timestamp()+interval '1 second' WHERE token_hash=$1",
+        [hash],
+      );
+      await lock.query('BEGIN');
+      const blocker = await lock.query<{ pid: number }>(
+        'SELECT pg_backend_pid() AS pid',
+      );
+      if (target === 'session')
+        await lock.query(
+          'SELECT token_hash FROM app.sessions WHERE token_hash=$1 FOR UPDATE',
+          [hash],
+        );
+      else
+        await lock.query('SELECT id FROM app.profiles WHERE id=$1 FOR UPDATE', [
+          profile.id,
+        ]);
+      pending = assert.rejects(journeys.listOwned(auth, profile.id), {
+        status: 401,
+      });
+      let waiting = false;
+      for (let i = 0; i < 100; i++) {
+        const result = await pool.query(
+          'SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid))',
+          [blocker.rows[0].pid],
+        );
+        if (result.rowCount) {
+          waiting = true;
+          break;
+        }
+        await pool.query('SELECT pg_sleep(0.01)');
+      }
+      assert.ok(waiting, `discovery waits on ${target} lock`);
+      await lock.query(
+        'SELECT pg_sleep(GREATEST(0,EXTRACT(EPOCH FROM (expires_at-clock_timestamp())))+0.05) FROM app.sessions WHERE token_hash=$1',
+        [hash],
+      );
+      await lock.query('COMMIT');
+      await pending;
+    } finally {
+      await lock.query('ROLLBACK');
+      lock.release();
+      await pending;
+    }
+  }
+});

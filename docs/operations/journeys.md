@@ -8,7 +8,7 @@ collection, awards and deployment remain separate work.
 ## Authority and retained data
 
 `createJourneyService({pool, env, policy, clock, queryRoutes})` supplies `preparePlan`, internal `prepare`, `start`,
-`appendEvidence`, `finish`, `read` and server-only `cleanup`. The optional clock
+`appendEvidence`, `finish`, `read`, `listOwned` and server-only `cleanup`. The optional clock
 exists for controlled tests and is refused in production. Each fan operation
 accepts a session token, validates it against the account session store, holds
 that session against concurrent revocation, locks the owned profile and journey,
@@ -36,6 +36,34 @@ The receipt contains no query text or coordinates. The internal `prepare(token,
 {profileId, requestId}, serverRoute)` remains available for controlled domain tests,
 and is not an HTTP input path.
 
+### Phone comparison from one preparation
+
+Related to #8; route/comparison dependencies #6 and #7, parent tracker #3.
+This is partial server work, with native, physical and live-provider acceptance
+still pending. No issue closure is implied.
+
+New preparation receipts include optional `display` version 1. It retains the
+same server result's routes, provider total durations (including transit waits),
+nonprecise legs, estimates, recommendation, mode outcomes, factors and provenance.
+The phone displays `display.routes` and joins a selected row by `routeId` to this
+same receipt's `candidates`, then starts that candidate's persisted `journey.id`.
+Comparison-only routes remain visible when geometry or tracking bounds prevent
+preparation. Display availability is not Start eligibility or an award.
+
+Do not query routes separately and match a later preparation by position or ID.
+Replays and Start do not query the provider again. A changed search uses a new
+request ID and requires confirmation of the newly displayed candidate. The
+projection has at most 12 routes, 128 legs per route and four mode outcomes;
+it stores no origin/destination, coordinates, geometry or leg descriptions.
+Old receipts replay unchanged with `display` absent, explicitly meaning full
+comparison unavailable. They are not enriched, migrated or given replacement IDs.
+
+Future earning-basis publication must use the same caller transaction to lock
+and compare the accepted basis at Start. A new Start with a stale required basis
+must return a distinguishable 409 for refresh and confirmation; an already
+successful replay keeps its original receipt. That separate integration is not
+implemented by this display change.
+
 The immutable expiring snapshot retains validated query binding, decoded geometry,
 provider endpoints and ordered legs. Nonprecise summaries retain source,
 primary request mode, factor applicability and geography dataset version, factor
@@ -52,6 +80,7 @@ no live Google call is part of local proof.
 | Start selected candidate | `POST /v1/journeys/:id/start` | `requestId`, `captureSessionId` |
 | Append evidence | `POST /v1/journeys/:id/evidence` | `requestId`, `captureSessionId`, `samples` |
 | Finish | `POST /v1/journeys/:id/finish` | `requestId`, `captureSessionId`, `endedAtMs`, `reason` |
+| Discover active/recent journeys | `GET /v1/profiles/:profileId/journeys` | no body; optional `state=active`, `limit`, `before` query |
 | Current state / assessment | `GET /v1/journeys/:id` or `.../:id/assessment` | none |
 
 All routes use existing session, origin, content type and rate controls. General
@@ -65,6 +94,45 @@ Evidence and finish require the same owner and capture session. The fixture
 route switch `JOURNEY_FIXTURES_ENABLED=true` is allowed only in explicit test or
 development environments and is rejected in production. Fixture route provenance
 remains visible on every summary. Synthetic traces do not prove real travel.
+
+## Phone restart discovery
+
+`listOwned(token, profileId, query = {})` reads current owner-scoped summaries.
+The strict query accepts only `state: 'active'` or omitted (recent), `limit`
+(default 20, integer or decimal string 1–50) and optional `before` (opaque cursor,
+maximum 512 characters). It returns `{profileId, asOfMs, items, nextCursor}`.
+Items contain only `id`, `state`, `mode`, `source`, preparation/Start/finish/precise
+expiry timestamps, and assessment status/version/revision/calibration. Exported
+`JourneyList` and `journeyListSchema` define the caller response.
+
+Recent means all existing states ordered by immutable preparation time and ID,
+both descending. The cursor binds that tuple to profile and active/recent view;
+it conveys no authority. Multiple active journeys remain separate. Refresh starts
+at the first page; newly prepared rows do not move into an older page, while a
+concurrent finish can remove a row from the active view. Fetch detail by discovered
+ID to reconcile current state and capture session. There is no single-active rule,
+implicit Start, cancellation, reconstructed GPS or automatic native collection.
+
+The new discovery read uses the existing journey `authorized` helper unchanged.
+After that helper acquires and validates the session row, `listOwned` locks the
+owned profile and calls its supplied `current()` guard before reading summaries;
+the helper retains its existing final check. This defines the new read boundary
+only. Existing journey methods and points authorization semantics are unchanged.
+Anonymous/expired/revoked sessions receive 401; foreign or missing profiles receive 404, including for admins;
+invalid input or a mismatched cursor receives 400. An empty owned view succeeds.
+The query selects no snapshots or raw samples and performs no application writes,
+cleanup or retention extension. Expired active rows retain their state and original
+expiry; discovery does not make them recordable again.
+
+The authenticated `GET /v1/profiles/:profileId/journeys` is registered under the
+existing origin, rate, error and no-store controls. It rejects duplicate search
+keys, then passes bearer token, path ID and the search-parameter object to
+`journeys.listOwned`. The service rejects unknown keys. Existing known-ID GET and
+prepare dispatch are unchanged. Registered HTTP tests cover recovery after an API
+process restart, multiple active records, pagination, ownership, current authority
+and no read-side cleanup. Passive DAST covers reachable public/diagnostic routes;
+it does not authenticate as a fan or replace these authorization tests. Phone
+integration and physical platform proof remain pending.
 
 ## Evidence and retry contract
 

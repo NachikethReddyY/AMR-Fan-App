@@ -6,6 +6,10 @@ import { ApiError } from '../accounts/types.ts';
 import { authenticateSession } from '../auth/session.ts';
 import {
   candidatePolicy,
+  journeyListCursorSchema,
+  journeyListInput,
+  journeyListItemSchema,
+  type JourneyList,
   earningPolicy,
   batchSchema,
   finishSchema,
@@ -26,6 +30,7 @@ import { createRouteQuery } from '../routes/query.ts';
 import {
   planInput,
   planSchema,
+  projectPlanDisplay,
   routeSnapshots,
   type JourneyPlan,
 } from './planning.ts';
@@ -343,10 +348,11 @@ export function createJourneyService({
           !fixturesAllowed
         )
           throw new ApiError(403, 'Synthetic journey routes are disabled.');
+        const display = projectPlanDisplay(response);
         const result: JourneyPlan =
           response.result.kind === 'unavailable'
-            ? { kind: 'unavailable', reason: response.result.reason }
-            : { kind: 'prepared', candidates: [] };
+            ? { kind: 'unavailable', reason: response.result.reason, display }
+            : { kind: 'prepared', candidates: [], display };
         if (result.kind === 'prepared')
           for (const candidate of routeSnapshots(response)) {
             result.candidates.push(
@@ -592,6 +598,72 @@ export function createJourneyService({
           finishReason: input.reason,
         });
         return record(client, principalId, input.requestId, hash, result);
+      });
+    },
+    async listOwned(
+      token: string,
+      rawProfileId: unknown,
+      raw: unknown = {},
+    ): Promise<JourneyList> {
+      const profileId = parse(id, rawProfileId);
+      const input = parse(journeyListInput, raw);
+      const view = input.state ?? 'recent';
+      let cursor: ReturnType<typeof journeyListCursorSchema.parse> | undefined;
+      if (input.before) {
+        let decoded: unknown;
+        try {
+          const bytes = Buffer.from(input.before, 'base64url');
+          if (bytes.toString('base64url') !== input.before)
+            throw new Error('Noncanonical cursor');
+          decoded = JSON.parse(bytes.toString('utf8'));
+        } catch {
+          throw new ApiError(400, 'Invalid journey cursor.');
+        }
+        cursor = parse(journeyListCursorSchema, decoded);
+        if (cursor.profileId !== profileId || cursor.view !== view)
+          throw new ApiError(400, 'Journey cursor does not match this view.');
+      }
+      return authorized(token, async (client, principalId, current) => {
+        await lockOwnedProfile(client, principalId, profileId);
+        await current();
+        // Summary-only read: do not call owned(), which also purges expired precision.
+        const rows = await client.query<{ item: unknown }>(
+          `SELECT jsonb_build_object(
+             'id', id, 'state', summary->'state', 'mode', summary->'mode', 'source', summary->'source',
+             'preparedAtMs', summary->'preparedAtMs', 'startedAtMs', summary->'startedAtMs',
+             'finishedAtMs', summary->'finishedAtMs', 'preciseExpiresAtMs', summary->'preciseExpiresAtMs',
+             'assessment', jsonb_build_object('status', summary->'assessment'->'status',
+               'version', summary->'assessment'->'version', 'revision', summary->'assessment'->'revision',
+               'calibration', summary->'assessment'->'calibration')) AS item
+           FROM app.journeys WHERE profile_id=$1
+             AND ($2::text IS NULL OR summary->>'state'=$2)
+             AND ($3::bigint IS NULL OR ((summary->>'preparedAtMs')::bigint, id) < ($3::bigint, $4::uuid))
+           ORDER BY (summary->>'preparedAtMs')::bigint DESC, id DESC LIMIT $5`,
+          [
+            profileId,
+            input.state ?? null,
+            cursor?.preparedAtMs ?? null,
+            cursor?.id ?? null,
+            input.limit + 1,
+          ],
+        );
+        const items = rows.rows
+          .slice(0, input.limit)
+          .map((row) => parse(journeyListItemSchema, row.item));
+        const last = items.at(-1);
+        const nextCursor =
+          rows.rows.length > input.limit && last
+            ? Buffer.from(
+                JSON.stringify({
+                  version: 1,
+                  profileId,
+                  view,
+                  preparedAtMs: last.preparedAtMs,
+                  id: last.id,
+                }),
+              ).toString('base64url')
+            : null;
+        return { profileId, asOfMs: clock(), items, nextCursor };
       });
     },
     async read(token: string, rawId: unknown) {
