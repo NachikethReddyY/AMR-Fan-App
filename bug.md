@@ -197,3 +197,13 @@ Latest native proof and final build remain pending.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+## PR28-REFRESH: resolve conflicts with current main
+
+Tracker: [PR #28](https://github.com/NachikethReddyY/AMR-Fan-App/pull/28).
+Integrate current `main` into the published mobile branch without rewriting its
+history. Preserve the phone's public native auth examples and current main's
+server-only Supabase configuration. Keep both branches' steering and work records.
+The separate account worktree has unpublished commits and local edits; leave it
+untouched. Native interaction remains subject to its existing acceptance hold.
+
+Edited by gpt-6-sol through Codex (T3 Code).

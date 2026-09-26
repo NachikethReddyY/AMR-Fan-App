@@ -585,3 +585,25 @@ This is a bounded visual correction. Final user APK waits for the separately
 owned, frozen photo-entry integration and remaining acceptance.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+## PR28 main refresh, 2026-09-26
+
+Resolved current `origin/main` against PR #28's published head in this thread checkout.
+The three conflicts were `.env.example`, `bug.md` and `work.md`. The environment
+example retains native public OIDC identifiers and the server-only Supabase and
+report storage settings. Both branches' records remain. No product source needed
+a manual conflict resolution. The separate account worktree and its unpublished
+commits and edits were not changed.
+
+While local verification ran, another writer published merge `955b9a1` with the
+same two parents. GitHub then reported PR #28 mergeable. Its product tree matches
+the locally verified resolution; only record text and spacing differ. This checkout
+was aligned to the published merge without replacing its history.
+
+Frozen install, full `pnpm check`, `pnpm security:check` and production Expo
+export for iOS and Android passed. Security scanning found no source issues;
+the dependency audit retains one moderate advisory and no high or critical
+findings. No device or browser was used, so native interaction remains unverified
+in this refresh. Existing PR28 acceptance holds remain open.
+
+Verified by gpt-6-sol through Codex (T3 Code).
