@@ -1,0 +1,42 @@
+# Preparation only. Do not apply before auth, hosted parser, billing and review gates.
+services:
+  - type: web
+    name: amr-api-demo
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: .
+    repo: https://github.com/NachikethReddyY/AMR-Fan-App
+    branch: main
+    autoDeployTrigger: off
+    buildCommand: corepack enable && pnpm install --prod --frozen-lockfile --ignore-scripts
+    startCommand: API_HOST=0.0.0.0 API_PORT="$PORT" pnpm api:start
+    healthCheckPath: /health
+    numInstances: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.20.0
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_DEV_ENABLED
+        value: false
+      - key: AUTH_PROVIDER
+        value: supabase
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_ORIGIN
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: REPORT_STORAGE_PROVIDER
+        value: supabase
+      - key: SUPABASE_STORAGE_KEY
+        sync: false
+      - key: REPORT_PARSER_MODE
+        sync: false
+      - key: REPORT_PARSER_IMAGE
+        sync: false
+      - key: LUNA_REPORT_EXTRACTION_ENABLED
+        value: false
+      - key: LAYA_ADVISORY_ENABLED
+        value: false
