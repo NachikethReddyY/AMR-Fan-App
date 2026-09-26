@@ -12,6 +12,9 @@ import {
 // This test only runs inside the owned, labelled disposable fixture container.
 if (process.env.AMR_OPS123_DISPOSABLE !== 'true')
   throw new Error('Disposable container required.');
+const initialization = {
+  aiBudgetInitialization: 'verified-no-prior-spend-or-inflight',
+};
 const password = await readFile('/run/amr-test/password', 'utf8');
 const pool = new pg.Pool({
   host: '127.0.0.1',
@@ -45,7 +48,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
     );
     await q('CREATE SCHEMA app');
     await assert.rejects(
-      bootstrapDatabase(deployer, password.trim()),
+      bootstrapDatabase(deployer, password.trim(), initialization),
       /collision/i,
     );
     assert.equal(
@@ -60,14 +63,14 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
     await q('DROP SCHEMA app');
     await q(`CREATE ROLE ${OWNER} NOLOGIN`);
     await assert.rejects(
-      bootstrapDatabase(deployer, password.trim()),
+      bootstrapDatabase(deployer, password.trim(), initialization),
       /collision/i,
     );
     await q(`DROP ROLE ${OWNER}`);
     await q(`CREATE FUNCTION public.ops123_fail() RETURNS event_trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture late migration failure'; END $$;
       CREATE EVENT TRIGGER ops123_fail ON ddl_command_start WHEN TAG IN ('CREATE TABLE') EXECUTE FUNCTION public.ops123_fail()`);
     await assert.rejects(
-      bootstrapDatabase(deployer, password.trim()),
+      bootstrapDatabase(deployer, password.trim(), initialization),
       /fixture late migration failure/,
     );
     await q(
@@ -87,7 +90,8 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       true,
     );
     assert.equal(
-      (await bootstrapDatabase(deployer, password.trim())).state,
+      (await bootstrapDatabase(deployer, password.trim(), initialization))
+        .state,
       'created',
     );
     assert.equal(
@@ -99,7 +103,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
         'SELECT name,checksum FROM public.schema_migrations ORDER BY name',
       )
     ).rows;
-    assert.equal(history.length, 9);
+    assert.equal(history.length, 11);
     assert.equal(
       (
         await q(
@@ -151,7 +155,8 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       }
     }
     assert.equal(
-      (await bootstrapDatabase(deployer, password.trim())).state,
+      (await bootstrapDatabase(deployer, password.trim(), initialization))
+        .state,
       'unchanged',
     );
     assert.deepEqual(
@@ -235,7 +240,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
               `${grantee}: real runtime schema/table creation reproduced and rolled back`,
             );
             await assert.rejects(
-              bootstrapDatabase(deployer, password.trim()),
+              bootstrapDatabase(deployer, password.trim(), initialization),
               /effective database CREATE/i,
             );
             assert.equal(
@@ -267,7 +272,8 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
             await q(`REVOKE CREATE ON DATABASE postgres FROM ${grantee}`);
           }
           assert.equal(
-            (await bootstrapDatabase(deployer, password.trim())).state,
+            (await bootstrapDatabase(deployer, password.trim(), initialization))
+              .state,
             'unchanged',
           );
         },
@@ -277,7 +283,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       "UPDATE public.schema_migrations SET checksum=repeat('0',64) WHERE name='0008_journey_awards.sql'",
     );
     await assert.rejects(
-      bootstrapDatabase(deployer, password.trim()),
+      bootstrapDatabase(deployer, password.trim(), initialization),
       /checksum/i,
     );
     assert.equal((await q('SELECT id FROM public.peer_data')).rows[0].id, 17);
@@ -288,7 +294,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
     ]);
     await q(`GRANT UPDATE(role) ON app.principals TO ${RUNTIME}`);
     await assert.rejects(
-      bootstrapDatabase(deployer, password.trim()),
+      bootstrapDatabase(deployer, password.trim(), initialization),
       /privilege collision/i,
     );
     await q(`REVOKE UPDATE(role) ON app.principals FROM ${RUNTIME}`);
@@ -305,7 +311,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
         )
       ).rows[0].acl;
       await assert.rejects(
-        bootstrapDatabase(deployer, password.trim()),
+        bootstrapDatabase(deployer, password.trim(), initialization),
         /effective database CREATE/i,
       );
       assert.equal(

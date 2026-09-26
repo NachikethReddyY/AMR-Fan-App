@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
@@ -13,8 +14,14 @@ import {
 } from '../../server/auth/supabase.ts';
 import { passwordSession } from '../../server/auth/admin.js';
 import { bootstrapDatabase } from './supabase-database.mjs';
+import { createJourneyService } from '../../server/journeys/store.ts';
+import { routeFixture } from '../../server/journeys/fixtures.ts';
+import { readJourneyAward } from '../../server/awards/store.ts';
 if (process.env.AMR_OPS123_DISPOSABLE !== 'true')
   throw new Error('Owned disposable fixture only.');
+const initialization = {
+  targetMigration: '0010_photo_activity.sql',
+};
 const password = (await readFile('/run/amr-test/password', 'utf8')).trim();
 const admin = new pg.Pool({
   host: '127.0.0.1',
@@ -41,10 +48,23 @@ async function close(server) {
     server.close((e) => (e ? reject(e) : resolve())),
   );
 }
-test('real HTTP email/password exchange, DB-owned roles, replay denial and conditional CSP', async () => {
+test('target 0010 serves real HTTP and award reads with AI tables absent', async () => {
   let api, provider;
   try {
-    await bootstrapDatabase(admin, password);
+    assert.deepEqual(await bootstrapDatabase(admin, password, initialization), {
+      state: 'created',
+      migrations: 10,
+    });
+    const noAiTables = async () =>
+      assert.equal(
+        (
+          await admin.query(
+            "SELECT count(*)::int n FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='app' AND c.relname LIKE 'ai_cost_%'",
+          )
+        ).rows[0].n,
+        0,
+      );
+    await noAiTables();
     const keys = await generateKeyPair('ES256'),
       now = Math.floor(Date.now() / 1000);
     const subject = '33333333-3333-4333-8333-333333333333';
@@ -117,6 +137,51 @@ test('real HTTP email/password exchange, DB-owned roles, replay denial and condi
     assert.equal(me.role, 'fan');
     assert.equal(me.profiles.length, 2);
     assert.ok(me.profiles.every((p) => p.balance === 0));
+    const realProfile = me.profiles.find((profile) => profile.kind === 'real');
+    assert.ok(realProfile);
+    const photoPath = `/v1/profiles/${realProfile.id}/activity`;
+    const availability = await fetch(base + photoPath + '/availability', {
+      headers: auth,
+    });
+    assert.equal(availability.status, 200);
+    assert.deepEqual(await availability.json(), {
+      kind: 'unavailable',
+      creditedPoints: 0,
+    });
+    assert.equal(
+      (
+        await fetch(base + photoPath + '/photos', {
+          method: 'POST',
+          headers: auth,
+        })
+      ).status,
+      503,
+    );
+    const journeys = createJourneyService({
+      pool,
+      env: { NODE_ENV: 'test', JOURNEY_FIXTURES_ENABLED: 'true' },
+    });
+    const journey = await journeys.prepare(
+      session,
+      { profileId: realProfile.id, requestId: randomUUID() },
+      routeFixture(),
+    );
+    const award = await readJourneyAward({
+      pool,
+      token: session,
+      journeyId: journey.id,
+    });
+    assert.equal(award.cumulativeAutomaticCredit, 0);
+    assert.equal(award.latestReceipt, null);
+    assert.deepEqual(await bootstrapDatabase(admin, password, initialization), {
+      state: 'unchanged',
+      migrations: 10,
+    });
+    await assert.rejects(
+      bootstrapDatabase(admin, password),
+      /AI budget initialization requires/,
+    );
+    await noAiTables();
     assert.equal(
       (await fetch(base + '/v1/dev/session', { method: 'POST' })).status,
       404,

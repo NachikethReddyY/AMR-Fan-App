@@ -362,3 +362,28 @@ fails. Route-main refresh is local only, with scheduled gates and root review
 pending. No blanket exception, scanner suppression or cloud action.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+# DEPLOY-010-011: extend guarded retained-database upgrades
+
+Unlinked migration-tool follow-up after PR44, 26 September 2026. The bootstrap
+is fixed at nine migrations. Extend only the deployment runner, tests and docs
+for retained eight/nine histories through finalized photo 0010 and AI budget
+0011, after their SQL reaches main. Preserve exact ordered checksums, prior
+ledger timestamps, roles, passwords, ACLs and data. Apply pending DDL and scoped
+grants under the existing advisory transaction lock; collisions or failed
+validation roll back the entire upgrade. Photo requires SELECT/INSERT only.
+The AI owner supplies the final privilege contract. Heavy database proof waits
+for the root lease. No SQL edits, production migration, deployment, Actions,
+provider calls or shared database access are authorized here.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+DEPLOY-010-011 scope correction: independent review found missing retained
+participation column REFERENCES and grant-option refusal. Validate these before
+pending DDL without repairing existing ACLs. Historical provider spend also
+invalidates an assumed zero budget: the user authorized an explicit 0010 target
+so independent photo/journey readers can migrate while AI stays inactive. Omitted
+target remains 0011 with its verified initialization prerequisite. Reject target
+below existing history; no SQL edits, guessed liabilities or production mutation.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
