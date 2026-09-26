@@ -115,3 +115,15 @@ The actual API owner-shutdown check also passes. No shared process is signalled.
 Tracker #4; reviewer evidence and repeated author proof remain private.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## PR24-001: update route comparison branch with main
+
+Request: resolve PR [#24](https://github.com/NachikethReddyY/AMR-Fan-App/pull/24)
+conflicts with `main`, preserve both branches' intent, verify builds and push.
+Rebased onto `f51a25c`; retained the upstream shared route implementation and
+strict parser tests, with the original phone screen unchanged. Frozen install,
+`pnpm check`, `pnpm security:check`, and iOS/Android Expo exports passed.
+The verified branch is ready for the authorized push. Existing local `TODO.md`
+work stays outside commits.
+
+Edited by gpt-6-astra through Codex (T3 Code).

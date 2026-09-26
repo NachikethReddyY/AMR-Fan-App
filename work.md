@@ -1,5 +1,27 @@
 # Work record
 
+## 2026-09-26: rebase PR #24 onto main
+
+- Tracking: PR24-001; [PR #24](https://github.com/NachikethReddyY/AMR-Fan-App/pull/24), supporting issue #6.
+- Rebased `feat/6-route-options` from `82dccb6` onto `main` at `f51a25c`.
+  Resolved three add/add conflicts by retaining main's shared route parser and
+  tests, which already include this branch's strict mode fixes and explicit
+  `.ts` imports for server callers. Git dropped the already-integrated fix commit.
+- Protected behavior: the route model matches main; the App and Travel screen
+  match the previous PR head byte for byte. Main's backend work is unchanged.
+  Preserved existing local `TODO.md` edits outside commits.
+- Proof: frozen-lockfile installation, `pnpm check`, `pnpm security:check` and
+  `CI=1 pnpm exec expo export --platform ios --platform android --output-dir .evidence/pr-24-rebase/export`
+  passed with Node 24.20.0 and pnpm 12.6.0. The existing moderate dependency
+  advisory remains visible. Raw proof stays in ignored `.evidence/pr-24-rebase/`.
+- Limits: native compilation and interactive UI were not tested. No backend
+  behavior changed; database integration and DAST were not repeated. Hosted
+  checks will run after push; this task ends at verified branch delivery.
+- Delivery: rebase and push authorized. Prepared for an explicit-lease push to
+  the existing PR branch; no PR merge or deployment requested.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: execute the database CLI through casing aliases
 
 - Tracking: INFRA-001, PR #23, independent review R1. The prior correction failed the actual CLI execution criterion: the entry guard canonicalized argv but compared it with an unnormalized module path, so an uppercase absolute script alias exited successfully without running the command. Namespace helper tests did not prove CLI execution.
