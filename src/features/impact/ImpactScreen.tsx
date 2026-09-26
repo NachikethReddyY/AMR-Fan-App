@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   summary: {
     padding: 20,
     gap: 12,
-    backgroundColor: '#10241C',
+    backgroundColor: '#004A4D',
     borderRadius: 12,
   },
   community: { gap: 12, paddingVertical: 12 },

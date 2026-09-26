@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
   },
   summary: {
-    backgroundColor: '#04524B',
+    backgroundColor: '#004A4D',
     padding: 20,
     marginHorizontal: -20,
     marginBottom: 20,

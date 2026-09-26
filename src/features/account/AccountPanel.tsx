@@ -80,7 +80,13 @@ function Action({
     </Pressable>
   );
 }
-export function AccountPanel({ compact = false }: { compact?: boolean }) {
+export function AccountPanel({
+  compact = false,
+  onOpenChange,
+}: {
+  compact?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const { controller, state } = useAccount();
   const { controller: history } = useHistory();
   const [bold, setBold] = useState(false);
@@ -139,6 +145,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
     setPassword('');
     setAuthError('');
     setOpen(false);
+    onOpenChange?.(false);
   }
   async function submitEmail() {
     try {
@@ -194,6 +201,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
             }
             onPress={() => {
               setOpen(true);
+              onOpenChange?.(true);
               void history.refresh();
             }}
             style={({ pressed }) => [
@@ -209,6 +217,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
             label={profile ? `${profile.displayName}, account` : 'Sign in'}
             onPress={() => {
               setOpen(true);
+              onOpenChange?.(true);
               void history.refresh();
             }}
           />
@@ -610,7 +619,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modal: { flex: 1, backgroundColor: '#091410' },
+  modal: { flex: 1, backgroundColor: '#081310' },
   section: {
     marginHorizontal: 20,
     paddingVertical: 24,
@@ -663,7 +672,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#04524B',
+    backgroundColor: '#004A4D',
     borderRadius: 26,
   },
   secondary: {

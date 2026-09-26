@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import { Onboarding } from './features/onboarding/Onboarding';
 import { useCallback, useState } from 'react';
 import {
   NavigationContainer,
@@ -53,7 +54,7 @@ const Tab = createBottomTabNavigator<Tabs>();
 function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   return (
     <View style={[styles.tabIcon, focused && styles.selectedTabIcon]}>
-      <Icon color={focused ? '#04524B' : '#E0E0DC'} size={22} strokeWidth={2} />
+      <Icon color={focused ? '#CEDC00' : '#ADBDB3'} size={22} strokeWidth={2} />
     </View>
   );
 }
@@ -229,96 +230,108 @@ function AccountNavigation() {
   return (
     <AccountProvider>
       <PointsProvider>
-        <NavigationContainer
-          theme={{
-            ...DarkTheme,
-            colors: { ...DarkTheme.colors, background: '#091410' },
-          }}
-        >
-          <Tab.Navigator
-            screenOptions={{
-              headerShown: false,
-              tabBarActiveTintColor: '#FFFFFF',
-              tabBarInactiveTintColor: '#E0E0DC',
-              ...(largeLabels
-                ? {
-                    tabBarLabel: ({ color, children }) => (
-                      <Text
-                        style={{
-                          color,
-                          fontSize: 12,
-                          lineHeight: 14,
-                          textAlign: 'center',
-                          paddingHorizontal: 2,
-                          maxWidth: '100%',
-                        }}
-                        accessibilityElementsHidden
-                        importantForAccessibility="no"
-                        onLayout={({ nativeEvent }) => {
-                          const { height } = nativeEvent.layout;
-                          setLabelHeights((previous) =>
-                            previous[children] === height
-                              ? previous
-                              : { ...previous, [children]: height },
-                          );
-                        }}
-                      >
-                        {children}
-                      </Text>
-                    ),
-                  }
-                : {}),
-              tabBarStyle: {
-                backgroundColor: '#04524B',
-                borderTopColor: '#3D3D3D',
-                ...(largeLabels
-                  ? { height: 44 + labelHeight + insets.bottom }
-                  : {}),
-              },
+        <Onboarding>
+          <NavigationContainer
+            theme={{
+              ...DarkTheme,
+              colors: { ...DarkTheme.colors, background: '#081310' },
             }}
           >
-            <Tab.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={House} focused={focused} />
-                ),
+            <Tab.Navigator
+              safeAreaInsets={{ bottom: 0 }}
+              screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: '#CEDC00',
+                tabBarInactiveTintColor: '#ADBDB3',
+                tabBarLabelPosition: 'below-icon',
+                ...(largeLabels
+                  ? {
+                      tabBarLabel: ({ color, children }) => (
+                        <Text
+                          style={{
+                            color,
+                            fontSize: 12,
+                            lineHeight: 14,
+                            textAlign: 'center',
+                            paddingHorizontal: 2,
+                            maxWidth: '100%',
+                          }}
+                          accessibilityElementsHidden
+                          importantForAccessibility="no"
+                          onLayout={({ nativeEvent }) => {
+                            const { height } = nativeEvent.layout;
+                            setLabelHeights((previous) =>
+                              previous[children] === height
+                                ? previous
+                                : { ...previous, [children]: height },
+                            );
+                          }}
+                        >
+                          {children}
+                        </Text>
+                      ),
+                    }
+                  : {}),
+                tabBarStyle: {
+                  backgroundColor: '#14221C',
+                  borderColor: '#344C40',
+                  borderWidth: 1,
+                  borderTopWidth: 1,
+                  borderTopColor: '#344C40',
+                  borderRadius: 32,
+                  marginHorizontal: 16,
+                  marginBottom: Math.max(insets.bottom, 8) + 8,
+                  marginTop: 8,
+                  paddingTop: 6,
+                  paddingBottom: 8,
+                  height: largeLabels ? 48 + labelHeight : 68,
+                  elevation: 0,
+                },
               }}
-            />
-            <Tab.Screen
-              name="Travel"
-              component={TravelScreen}
-              options={{
-                tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Route} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Rewards"
-              component={RewardsScreen}
-              options={{
-                tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Gift} focused={focused} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Impact"
-              component={ImpactScreen}
-              options={{
-                tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
-                tabBarIcon: ({ focused }) => (
-                  <TabIcon Icon={Leaf} focused={focused} />
-                ),
-              }}
-            />
-          </Tab.Navigator>
-        </NavigationContainer>
+            >
+              <Tab.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={House} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Travel"
+                component={TravelScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Route} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Rewards"
+                component={RewardsScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Gift} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="Impact"
+                component={ImpactScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Leaf} focused={focused} />
+                  ),
+                }}
+              />
+            </Tab.Navigator>
+          </NavigationContainer>
+        </Onboarding>
       </PointsProvider>
     </AccountProvider>
   );
@@ -342,8 +355,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectedTabIcon: { backgroundColor: '#D8DBD8' },
-  screen: { flex: 1, backgroundColor: '#091410' },
+  selectedTabIcon: { backgroundColor: '#26382B' },
+  screen: { flex: 1, backgroundColor: '#081310' },
   content: { minHeight: '100%' },
   brandHeader: {
     marginHorizontal: 20,
@@ -355,7 +368,7 @@ const styles = StyleSheet.create({
   brandCopy: { flex: 1 },
   brandName: { fontSize: 22, lineHeight: 28, fontFamily: 'Geist_600SemiBold' },
   balancePanel: {
-    backgroundColor: '#10241C',
+    backgroundColor: '#004A4D',
     marginHorizontal: 20,
     padding: 20,
     gap: 12,

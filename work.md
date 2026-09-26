@@ -501,3 +501,15 @@ configuration; all main scripts and PDF dependency remain intact. Root is frozen
 and released at this commit. Native interaction remains held.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Selected walkthrough and floating dock, 2026-09-26
+
+Implemented the selected short introduction, account/name setup and top completion
+line, with reduced-motion support. Keeps completed navigation mounted during
+session refresh; guest sign-in still requests a name. Applied the accepted
+#081310 background, #004A4D controls/cards and dark inset four-tab dock.
+Four component regressions and the full pnpm check pass. Native animation,
+large-text layout and installed-build interaction remain unverified for this
+new slice. Earlier native receipts describe earlier code only.
+
+Edited by gpt-6-astra through Codex (T3 Code).

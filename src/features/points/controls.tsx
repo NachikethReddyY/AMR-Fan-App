@@ -86,9 +86,7 @@ export function Action({
       {Icon && (
         <Icon
           size={20}
-          color={
-            accent && !disabled ? '#102017' : quiet ? '#CEDC00' : '#F5F5F3'
-          }
+          color={quiet ? '#CEDC00' : '#F5F5F3'}
           accessible={false}
         />
       )}
@@ -104,11 +102,11 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 48,
-    backgroundColor: '#04524B',
+    backgroundColor: '#004A4D',
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 2,
+    borderRadius: 26,
     flexDirection: 'row',
     gap: 10,
   },
@@ -126,8 +124,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   quietLabel: { color: '#CEDC00', textAlign: 'left' },
-  accent: { backgroundColor: '#CEDC00', borderRadius: 26 },
-  accentLabel: { color: '#102017' },
+  accent: { backgroundColor: '#004A4D', borderRadius: 26 },
+  accentLabel: { color: '#F5F5F3' },
   disabled: { backgroundColor: '#3A3A3A' },
   label: {
     color: '#F5F5F3',

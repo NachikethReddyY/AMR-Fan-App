@@ -165,3 +165,12 @@ unchanged account/tab lineage. Small-iPhone largest Dynamic Type, actual VoiceOv
 and live OIDC remain mandatory pending gates. This does not close #4 or #5.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## UI-DOCK-028: reconcile bottom navigation with selected design
+
+Related to #4 and PR28. The user selected a dark rounded floating dock for the
+four existing Home, Travel, Rewards and Impact destinations. Replace the green
+full-width bar, preserve account/navigation state and allow large labels to wrap.
+Native proof is pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
