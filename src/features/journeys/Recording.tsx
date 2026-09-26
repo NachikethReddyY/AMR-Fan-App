@@ -12,7 +12,7 @@ export function Recording({
 }: {
   state: ReturnType<Recorder['getState']>;
   recorder: Recorder;
-  context: Context;
+  context: Context | null;
   onPlan: () => void;
 }) {
   const c = state.capture;
@@ -83,9 +83,9 @@ export function Recording({
               {c.phase === 'active' && !state.collecting && (
                 <Action
                   label="Resume recording"
-                  disabled={state.busy}
+                  disabled={state.busy || !context}
                   onPress={() => {
-                    void recorder.resume(context);
+                    if (context) void recorder.resume(context);
                   }}
                 />
               )}
@@ -135,7 +135,7 @@ export function Recording({
       <Action
         label={finished ? 'Refresh assessment and points' : 'Retry sync'}
         secondary
-        disabled={state.busy}
+        disabled={state.busy || !context}
         onPress={() => {
           void recorder.retry();
         }}
@@ -143,7 +143,7 @@ export function Recording({
       {finished && state.award && (
         <Action
           label="Plan another journey"
-          disabled={state.busy}
+          disabled={state.busy || !context}
           onPress={() => {
             onPlan();
             void recorder.clear();

@@ -1,5 +1,6 @@
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
+import { Platform } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { api } from '../account/native-auth';
 import { createJourneyApi } from './api';
@@ -29,6 +30,14 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(
   journeyTask,
   async ({ data, error }) => {
     if (error) {
+      // Expo exports NSError's domain only inside its description. Core Location
+      // keeps trying after locationUnknown; no sample or Finish is created here.
+      if (
+        Platform.OS === 'ios' &&
+        error.code === 0 &&
+        /^Error Domain=kCLErrorDomain Code=0(?:\s|$)/.test(error.message)
+      )
+        return;
       await recorder.interrupt('interrupted');
       return;
     }

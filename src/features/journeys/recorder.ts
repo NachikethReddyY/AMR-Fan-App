@@ -308,6 +308,11 @@ export function createRecorder({
   }
   return {
     getState: () => state,
+    // Keep the local capture available to Stop while account authority refreshes.
+    suspendNetwork: () => {
+      ++epoch;
+      ctx = null;
+    },
     subscribe: (f: () => void) => {
       listeners.add(f);
       return () => {

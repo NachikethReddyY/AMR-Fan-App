@@ -1829,3 +1829,16 @@ iOS proof remain pending. The .nativeproof suffix is generated-only and protects
 the existing installed app/data. All temporary diagnostics were removed.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Native iOS transient errors and offline Finish
+
+Scoped iOS code0/kCLErrorDomain to its documented transient locationUnknown
+behavior, awaiting valid callbacks without generating samples or Finish. Native
+account refresh now suspends recorder dispatch while preserving local Stop and
+Finish intent; authenticated restore resumes the original request. Explicit
+identity invalidation continues to hide/delete old capture synchronously. Root
+authorized this journey-only adaptation; account modules are unchanged. Current
+29focused recorder/storage/runtime and4Recording DOM checks, typecheck and
+changed-file lint pass. Actual affected iPhone recovery proof remains pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).

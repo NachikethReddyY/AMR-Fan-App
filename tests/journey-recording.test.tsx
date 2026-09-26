@@ -201,3 +201,29 @@ test('finished unacknowledged settlement keeps retry and withholds planning', as
   expect(labels).toContain('Refresh assessment and points');
   expect(labels).not.toContain('Plan another journey');
 });
+
+test('offline account refresh keeps local Stop available but disables network and Resume actions', async () => {
+  const x = setup();
+  const finish = jest.spyOn(x.recorder, 'finish').mockResolvedValue();
+  await act(async () =>
+    root.render(
+      <Recording
+        {...x}
+        state={{ ...x.state, busy: false, collecting: false }}
+        context={null}
+        onPlan={() => {}}
+      />,
+    ),
+  );
+  const buttons = [...host.querySelectorAll('button')];
+  const stop = buttons.find((b) => b.textContent === 'Stop recording');
+  expect(stop?.disabled).toBe(false);
+  expect(buttons.find((b) => b.textContent === 'Retry sync')?.disabled).toBe(
+    true,
+  );
+  expect(
+    buttons.find((b) => b.textContent === 'Resume recording')?.disabled,
+  ).toBe(true);
+  await act(async () => stop?.click());
+  expect(finish).toHaveBeenCalledWith('stopped');
+});

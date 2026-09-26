@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import * as Location from 'expo-location';
-import { useSessionController } from '../account/provider';
+import { useAccount, useSessionController } from '../account/provider';
 import { useProfileContext } from '../account/useResource';
 import { bindJourneySession, recorder } from './runtime';
 import { journeyTask } from './location';
@@ -18,7 +18,11 @@ export function JourneySession() {
     });
     function syncIdentity() {
       const state = session.getState();
-      if (state.kind !== 'signedIn') return;
+      if (state.kind !== 'signedIn') {
+        identity = null;
+        recorder.suspendNetwork();
+        return;
+      }
       const profile = state.account.profiles.find(
         (p) => p.kind === state.selected,
       );
@@ -26,7 +30,9 @@ export function JourneySession() {
       const next = `${state.token}:${profile.id}`;
       if (next === identity) return;
       identity = next;
-      void recorder.restore({ token: state.token, profileId: profile.id });
+      void recorder
+        .restore({ token: state.token, profileId: profile.id })
+        .then(() => recorder.retry());
     }
     const unsubscribe = session.subscribe(syncIdentity);
     syncIdentity();
@@ -72,8 +78,12 @@ export function JourneySession() {
 }
 export function useJourneyRecorder() {
   const ctx = useProfileContext();
+  const { state: account } = useAccount();
   const state = useSyncExternalStore(recorder.subscribe, recorder.getState);
-  const owned = ctx && state.capture?.journey.profileId === ctx.profileId;
+  const owned =
+    (ctx && state.capture?.journey.profileId === ctx.profileId) ||
+    ((account.kind === 'loading' || account.kind === 'unavailable') &&
+      state.capture !== null);
   return {
     recorder,
     ctx,

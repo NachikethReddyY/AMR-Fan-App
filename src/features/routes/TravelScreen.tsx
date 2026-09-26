@@ -241,7 +241,7 @@ export function TravelScreen() {
       extraMinutes,
     });
   }
-  if (context && recording.state.capture)
+  if (recording.state.capture)
     return (
       <Recording
         state={recording.state}

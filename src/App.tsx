@@ -1,4 +1,7 @@
-import { JourneySession } from './features/journeys/provider';
+import {
+  JourneySession,
+  useJourneyRecorder,
+} from './features/journeys/provider';
 import { PhotoActivitySession } from './features/activity/PhotoActivitySession';
 import { usePhotoActivity } from './features/activity/usePhotoActivity';
 import { StatusBar } from 'expo-status-bar';
@@ -207,10 +210,13 @@ function HomeScreen({ navigation }: BottomTabScreenProps<Tabs, 'Home'>) {
 }
 function TravelScreen() {
   const ctx = useProfileContext();
+  const recording = useJourneyRecorder();
   return (
     <Screen>
-      {ctx ? (
-        <TravelComparison key={`${ctx.token}:${ctx.profileId}`} />
+      {ctx || recording.state.capture ? (
+        <TravelComparison
+          key={ctx ? `${ctx.token}:${ctx.profileId}` : 'local-capture'}
+        />
       ) : (
         <View style={styles.section}>
           <Text style={styles.muted}>Sign in to compare routes.</Text>

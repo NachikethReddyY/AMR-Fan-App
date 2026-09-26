@@ -726,3 +726,20 @@ permissions or production identity changes. Actual rebuilt callback/finish proof
 remains pending. Temporary diagnostics are removed, with no raw data in source.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: iOS transient location and offline controls
+
+Actual iOS Core Location delivered temporary locationUnknown followed by a valid
+callback; treating all task errors as terminal stopped the capture first. Ignore
+only iOS numeric0 with NSError's kCLErrorDomain description. Other errors still
+interrupt, and no location is invented. Expo exposes the domain only in message.
+
+Foreground account refresh while the fixture was offline hid the retained
+capture. Root authorized a journey-only correction: suspend network authority
+while account state loads/is unavailable, keep local Arrived/Stop visible, and
+resume dispatch only after matching authenticated restore. Logout/profile/401
+invalidation still synchronously removes the capture. No auth module changes.
+Failure-first recorder/runtime and DOM regressions pass; affected device proof
+is in progress.
+
+Fixed by gpt-6-astra through Codex (T3 Code).

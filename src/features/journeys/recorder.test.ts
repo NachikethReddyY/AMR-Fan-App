@@ -529,3 +529,40 @@ test('unacknowledged settlement survives clear and replacement, then retries its
   await r.clear();
   expect(await x.store.read()).toBeNull();
 });
+
+test('transient account refresh retains local Finish while suspending dispatch until authenticated restore', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  r.suspendNetwork();
+  await r.finish('arrival');
+  const intent = (await x.store.read())?.finish;
+  expect(intent).not.toBeNull();
+  expect(r.getState().capture?.phase).toBe('finishing');
+  expect(x.api.finish).not.toHaveBeenCalled();
+  await r.retry();
+  expect(x.api.finish).not.toHaveBeenCalled();
+  await r.restore(ctx);
+  await r.retry();
+  expect(x.api.finish).toHaveBeenCalledTimes(1);
+  expect(x.api.finish.mock.calls[0]?.[2]).toBe(intent?.requestId);
+  expect(x.api.finish.mock.calls[0]?.[4]).toBe(intent?.endedAtMs);
+});
+
+test('identity invalidation clears a suspended capture before successor restore and callbacks', async () => {
+  const x = setup(),
+    r = x.create();
+  await r.begin(ctx, journey);
+  r.suspendNetwork();
+  const invalidating = r.invalidate();
+  expect(r.getState().capture).toBeNull();
+  await invalidating;
+  await r.collect([]);
+  await r.finish('arrival');
+  await r.restore({
+    ...ctx,
+    profileId: '00000000-0000-4000-8000-000000000006',
+  });
+  expect(await x.store.read()).toBeNull();
+  expect(x.api.finish).not.toHaveBeenCalled();
+});
