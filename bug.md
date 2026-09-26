@@ -193,7 +193,8 @@ infrastructure thread; this mobile change does not mutate cloud configuration.
 Transport recording/progress and camera capture are absent from the current
 phone build. Guest catalogue source exists but requires backend deployment of
 405739286063f77fdd50def2e02ddfb9da914239. No future camera control is added.
-Latest native proof and final build remain pending.
+Password-only synthetic signup/name and normal/largest navigation now pass on
+Pixel and iPhone 17 Pro. Final user build still waits for reviewed photo integration.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 

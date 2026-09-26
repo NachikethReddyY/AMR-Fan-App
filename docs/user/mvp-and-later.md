@@ -16,8 +16,9 @@ supersede older planning examples.
   without a reason and a product decision.
 - Define first-launch completion, entry into Home and later-launch behavior.
   The selected short walkthrough and name step are implemented locally.
-  Completed setup restores the app without repeating the walkthrough; native
-  acceptance of the current build remains pending.
+  Completed setup restores the app without repeating the walkthrough.
+  Pixel and iPhone 17 Pro synthetic signup/name and normal/largest-text
+  navigation passed; live hosted signup remains unverified.
 
 ## Explicitly planned for later
 
@@ -34,7 +35,7 @@ unfinished required work into a future-feature promise.
 | Item | Current status | Presentation wording |
 | --- | --- | --- |
 | Password-only accounts | Confirmation UI removed. Infrastructure owner reports hosted auto-confirmation enabled; no existing account was changed. | Existing sign-in has prior Pixel proof. Latest live signup remains unverified without the user-selected account credentials. |
-| Onboarding | Selected short walkthrough, name step and animated progress are implemented; current native acceptance is pending. | Onboarding is part of the MVP, not a later feature. |
+| Onboarding | Selected walkthrough, automatic signup-to-name transition and saved name passed on Pixel and iPhone 17 Pro with synthetic accounts. | Onboarding is implemented; live hosted signup remains unverified. |
 | Photo-based awards | Latest user allows a 50-point no-location award and fan-entered endpoints for a bus photo. Immediate credit, top-up and daily-limit decisions remain pending with the owning work. | Do not promise automatic credit or publish unsettled rules. This is ongoing work, not an agreed deferral. |
 | Real reward fulfilment | Real voucher inventory, merchandise fulfilment, tree allocation and driver outcomes need separate arrangements. Existing demonstrations are not proof of fulfilment. | Distinguish the app experience from fulfilled real-world rewards. |
 

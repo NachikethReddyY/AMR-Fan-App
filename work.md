@@ -607,3 +607,46 @@ findings. No device or browser was used, so native interaction remains unverifie
 in this refresh. Existing PR28 acceptance holds remain open.
 
 Verified by gpt-6-sol through Codex (T3 Code).
+
+### PR28 password-only native proof, 2026-09-26
+
+Source f3acfab passed sequential Pixel Android 16 and iPhone 17 Pro iOS 26.5
+observation. Synthetic signup immediately exchanged provider and app sessions,
+closed Account, requested a name, and entered Home at zero server points. Both
+platforms passed sheet close/reopen, all four destinations and largest supported
+text. iPhone draft text survived live Dynamic Type changes. Pixel cold restart
+restored the synthetic session. Logout removed both synthetic accounts' access;
+guest catalogue displayed existing stored test offers through the actual local
+API. These fixtures are not live email, Maps, AI, fulfilment or real journey proof.
+
+The b119106 internal ARM64 APK was signed, installed without data reset, and shown
+in the Pixel panel with walkthrough and hosted unavailable states. Its observed
+white dock margin prompted f3acfab, proved on both native development platforms.
+A separate f3acfab internal APK was built with embedded hosted configuration,
+verified signature and 16 KiB alignment. Final user APK remains held for the
+separately reviewed photo integration. No photo source, package or lock changes
+were copied from its unfrozen candidate.
+
+Two independent review axes cleared b119106 and the one-line f3acfab correction.
+Full repository and security checks passed on the corrected authentication slice;
+62 focused state/auth/catalogue cases passed afterward. Local evidence under
+`.evidence/password-only/` includes real MP4s, screenshots, build receipts and
+cleanup. The synthetic service reports two signups, two exchanges, two logouts,
+all owned sessions revoked, pool closed and all four ports released. Android
+scale 1.0 and iPhone large restored; no iPad or real-account credentials used.
+Small-iPhone/VoiceOver and live signup remain unverified.
+
+Before push, remote PR28 had advanced to 25a79f7 with main integration and records.
+Merged it without rewriting history; conflicts were only the two append-only
+records, both preserved. Product tree remains identical to reviewed f3acfab.
+Hosted CI remains paused, with no Actions query, rerun or merge.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+The f3acfab internal APK was subsequently installed on Pixel without uninstall
+or data reset. Its embedded release bundle opens Home and all four tabs with the
+corrected dark dock margins; new screenshots and a recording confirm this exact
+artifact. It remains an internal checkpoint, not the final photo-enabled APK.
+Both device sessions are now closed and available for coordinated photo proof.
+
+Verified by gpt-6-astra through Codex (T3 Code).
