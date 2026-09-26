@@ -12,24 +12,28 @@ const points = Array.from({ length: 2048 }, (_, i) =>
     ? { latitude: 1.34, longitude: 103.85 }
     : { latitude: 1.29, longitude: 103.8 },
 );
-let encoded = '';
-const previous = [0, 0];
-for (const point of points) {
-  for (const [index, coordinate] of [
-    point.latitude,
-    point.longitude,
-  ].entries()) {
-    const next = Math.round(coordinate * 1e5);
-    const delta = next - previous[index];
-    previous[index] = next;
-    let value = delta < 0 ? -delta * 2 - 1 : delta * 2;
-    while (value >= 32) {
-      encoded += String.fromCharCode((value % 32) + 95);
-      value = Math.floor(value / 32);
+function encode(shape: typeof points) {
+  let encoded = '';
+  const previous = [0, 0];
+  for (const point of shape) {
+    for (const [index, coordinate] of [
+      point.latitude,
+      point.longitude,
+    ].entries()) {
+      const next = Math.round(coordinate * 1e5);
+      const delta = next - previous[index];
+      previous[index] = next;
+      let value = delta < 0 ? -delta * 2 - 1 : delta * 2;
+      while (value >= 32) {
+        encoded += String.fromCharCode((value % 32) + 95);
+        value = Math.floor(value / 32);
+      }
+      encoded += String.fromCharCode(value + 63);
     }
-    encoded += String.fromCharCode(value + 63);
   }
+  return encoded;
 }
+const encoded = encode(points);
 const modes = ['DRIVE', 'TRANSIT', 'WALK', 'BICYCLE'];
 const bodies = new Map(
   modes.map((mode) => [
@@ -62,19 +66,20 @@ const bodies = new Map(
   ]),
 );
 
-test('maximum accepted four-mode query preserves all geometry while servicing a 10ms heartbeat', async () => {
+test('maximum accepted four-mode query preserves all geometry while servicing a 10ms heartbeat', async (t) => {
   assert.deepEqual(
     [...bodies.values()].map((body) => Buffer.byteLength(body)),
     [65220, 90180, 64836, 65988],
   );
   let calls = 0;
+  let cancellationBody: string | null = null;
   const upstream = createServer(async (req, res) => {
     calls++;
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const { travelMode } = JSON.parse(Buffer.concat(chunks).toString());
     res.setHeader('Content-Type', 'application/json');
-    res.end(bodies.get(travelMode));
+    res.end(cancellationBody ?? bodies.get(travelMode));
   });
   let lastBeat = performance.now();
   const delays: number[] = [];
@@ -94,17 +99,21 @@ test('maximum accepted four-mode query preserves all geometry while servicing a 
       AMR_GOOGLE_ROUTES_ENDPOINT: `http://127.0.0.1:${address.port}/directions/v2:computeRoutes`,
       AMR_ROUTES_TIMEOUT_MS: '5000',
     };
+    const queryStarted = performance.now();
+    const queryCpu = process.cpuUsage();
     const result = await createRouteProvider(env).search({
       origin: points[0],
       destination: points.at(-1),
       modes,
       extraMinutes: 1440,
     });
+    const queryElapsedMs = performance.now() - queryStarted;
+    const queryCpuMicros = process.cpuUsage(queryCpu);
     await delay(25);
     assert.equal(calls, 4);
     assert.equal(result.kind, 'routes');
     if (result.kind !== 'routes') return;
-    assert.equal(result.routes.length, 12);
+    assert.equal(result.routes.length, 12, JSON.stringify(result.outcomes));
     assert.equal(result.source.kind, 'fixture');
     for (const [index, evidence] of result.evidence.entries()) {
       assert.equal(evidence.routeId, result.routes[index].id);
@@ -121,9 +130,45 @@ test('maximum accepted four-mode query preserves all geometry while servicing a 
     assert.ok(delays.length > 0);
     const maximum = Math.max(...delays);
     assert.ok(maximum <= 50, `Maximum heartbeat delay: ${maximum}ms`);
+    t.diagnostic(
+      JSON.stringify({
+        queryElapsedMs,
+        queryCpuMicros,
+        maximumHeartbeatDelayMs: maximum,
+        outcomes: result.outcomes,
+      }),
+    );
 
     // A separate one-mode request expires during CPU work, after its body has
     // arrived. The provider must await normalization before releasing its slot.
+    // Use distinct vertices for the cancellation workload. Repeated geometry
+    // now legitimately finishes before 25ms on some machines.
+    const distinct = Array.from({ length: 2048 }, (_, i) => ({
+      latitude: 1.29 + i / 100000,
+      longitude: 103.85,
+    }));
+    cancellationBody = JSON.stringify({
+      routes: [
+        {
+          distanceMeters: 20000,
+          duration: '6000s',
+          polyline: { encodedPolyline: encode(distinct) },
+          legs: [
+            {
+              startLocation: { latLng: distinct[0] },
+              endLocation: { latLng: distinct.at(-1) },
+              steps: [
+                {
+                  travelMode: 'DRIVE',
+                  distanceMeters: 20000,
+                  staticDuration: '6000s',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
     const timed = createRouteProvider({
       ...env,
       AMR_ROUTES_TIMEOUT_MS: '25',

@@ -779,6 +779,7 @@ DB/scanner resources are removed. No shared services, devices, providers, cloud
 resources or CI APIs were used. Review and merge remain coordinator-owned.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-26: OneMap routing completion candidate
 
 Related [#6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6) and #7;
@@ -828,3 +829,31 @@ this contract requires coordinated multipart geometry work; no fake connecting
 path is supplied. This server PR does not close #6 or claim live product completion.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+## Routing responsiveness diagnostic, 2026-09-26
+
+Existing PR43 owns this focused correction. No live provider, device, shared
+PostgreSQL, cloud or Actions work was used. Exact main `726efbb` was extracted into
+an OS temporary directory and instrumented only with aggregate timers/counters.
+The reported full-gate timeout did not reproduce in the isolated run.
+
+| Metric                                                   | Before         | After         | Evidence and limit                                        |
+| -------------------------------------------------------- | -------------- | ------------- | --------------------------------------------------------- |
+| Polygon containment calls, twelve maximum repeated paths | 49,164         | 48            | One instrumented run each; exact same provider bodies     |
+| Per-mode normalization elapsed                           | 1,181–1,585 ms | 49–61 ms      | Single cold process each; concurrent mode timings overlap |
+| Complete test elapsed                                    | 2,874 ms       | 220 ms        | Includes heartbeat and separate cancellation request      |
+| Returned routes / points per route                       | 12 / 2,048     | 12 / 2,048    | Every coordinate compared against fixture                 |
+| Provider deadline / maximum heartbeat delay requirement  | 5,000 / 50 ms  | 5,000 / 50 ms | Unchanged, both checks pass                               |
+
+The correction caches successful exact point and directed-segment checks within
+one bounded geometry evaluation, at most 2,050 points and 2,049 segments. It does
+not simplify a route, persist coordinate caches, add provider retries or increase
+a deadline. Focused geography/normalization/responsiveness checks passed ten tests,
+including sea crossing, boundary, loops, duplicates and CPU cancellation. The
+separate cancellation fixture now uses distinct points to preserve expensive work.
+These synthetic, single-sample measurements establish removed repeated work,
+not a production latency claim. Full local verification follows on the isolated
+candidate. Phone capture/leg-attribution work is preserved separately and is not
+part of this performance commit.
+
+Edited by gpt-6-astra through Codex (T3 Code).

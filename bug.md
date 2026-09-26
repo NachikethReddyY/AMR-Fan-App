@@ -266,6 +266,7 @@ no HTTP body decoding, inference or live credit. Infrastructure retains the
 merge is a separate manager-owned turn. No CI queries or device/provider actions.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## ONEMAP-001: finish the Singapore routing adapter
 
 Related [#6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6) and #7;
@@ -284,5 +285,23 @@ Live blocker: the manager/infra owner must assign a confirmed OneMap account's
 email/password through the existing private-file configuration, then authorize
 live validation and deployment. No account or credentials were invented or used.
 Google billing, phone changes and cloud/database mutation remain outside scope.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## ROUTE-RESP-001: repeated geometry consumes provider deadline
+
+Related to #6; diagnostic steering is unlinked. The full local gate reported
+six of twelve routes, then all modes timing out, under the unchanged five-second
+per-mode deadline. The isolated fixture passed locally, so that failure was not
+reproduced in this diagnostic. Instrumenting exact main `726efbb` identified
+49,164 polygon-containment calls for twelve identical alternating paths.
+Each mode spent 1.18–1.59 seconds in normalization in that single baseline run.
+
+Each bounded geometry check now reuses successful exact-coordinate and directed
+segment checks. It preserves the original geometry, all traversals, cancellation,
+provider deadlines and the 50 ms heartbeat requirement. The same instrumented
+main fixture required 48 containment calls after the change. The CPU cancellation
+regression now uses distinct coordinates because repeated geometry can finish
+before its 25 ms deadline. Native journey work and its unselected UI remain separate.
 
 Edited by gpt-6-astra through Codex (T3 Code).
