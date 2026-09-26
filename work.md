@@ -1646,3 +1646,37 @@ await the allocated slot. No cloud, provider, CI or device action ran. The old
 "Voting is not available here yet" copy now states approval is required.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+Native B candidate refreshed onto actual main `188baa44`. Append-only record
+conflicts retained both task histories; no app source conflicted or peer source
+was copied. The task's TODO was restored from its captured stash object and stays
+unstaged. On the refreshed tree, 40 focused API/controller/resource tests, all ten
+component tests, TypeScript and focused lint pass. A registered-HTTP/PostgreSQL
+proof is prepared under the feature testing directory but has not run. Full and
+security checks, services/builds and native proof remain explicitly queued behind
+the migration owner. The local evidence plan describes the synthetic fixture and
+cleanup; no provider, cloud or CI action occurred. Candidate is not yet pushed.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Registered HTTP and complete source gates, 26 September 2026
+
+Rebased onto main `575787768868946dbc34a1bbe0d00298936ecfe9`; append-only record
+conflicts preserved both owners. The prepared actual HTTP/native-adapter fixture
+passed on disposable PostgreSQL 18 and Node 24.20.0, sharing an internal Docker
+network with generated credentials and no host mounts or ports. It proved three
+500-point fees including rejection, exact 10-point replay, a lost 20-point result
+recovered with its original key after selection, refusal of fresh frozen votes,
+selected/fulfilled History, and anonymous/foreign/real-demo isolation. The initial
+container dependency copy missed transitive `xtend` before executing the fixture;
+the complete dependency closure fixed that prerequisite and a fresh run passed.
+Both containers and their network were removed and confirmed absent.
+
+Full `pnpm check` and `pnpm security:check` passed serially. SAST scanned 273 targets
+with zero findings; dependency audit passed the high-severity gate with one
+moderate advisory. Scanner negative fixtures failed as intended. No CI, provider,
+cloud or shared-database operation occurred. The heavy-check lease is released.
+Root separately authorized an exclusive Pixel then iPhone window with existing
+compatible binaries and current JavaScript; native proof remains in progress.
+
+Verified by gpt-6-astra through Codex (T3 Code).
