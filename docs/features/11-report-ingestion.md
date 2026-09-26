@@ -12,6 +12,7 @@ An admin uploads a sustainability report, gets its supported details prefilled a
 
 - Report upload and extraction are required in the POC. Replace the earlier manual-only plan while retaining human review.
 - Extract all supported structured details: category/name, value, unit, reporting period, source document/page, evidence text and whether a figure is a target, result, annual total, cumulative value or estimate.
+- Hosted processing is required. Hold uploaded PDFs only for transient processing; retain durable page-labelled text and source provenance. Delete pre-existing originals after extraction text saves successfully and expire failed legacy uploads under an explicit policy.
 - Retain extraction/model version metadata. Missing or unsupported fields stay missing and are flagged for review. Do not invent numbers, provenance, reviewers or approval times.
 - An assigned admin reviews and can correct candidates before approving them. Approval identity and time come from that action.
 - Pending/rejected candidates cannot appear as official dashboard facts. Failed extraction preserves previously approved data and exposes the failure for admin follow-up.
@@ -23,7 +24,7 @@ An admin uploads a sustainability report, gets its supported details prefilled a
 
 ## Before implementation
 
-Choose supported report formats, upload limits, extraction schema/provider and storage/retention against a representative report. Use authorized source material and confirm any real provider data transfer before processing. These decisions do not remove the accepted review step.
+The accepted format is a text-layer PDF up to 10 MiB/100 pages, with durable text and transient originals. Prove the hosted parser and extraction schema/provider against representative authorized reports. Use authorized source material and confirm any real provider data transfer before processing. These decisions do not remove the accepted review step.
 
 ## Acceptance cases
 

@@ -51,7 +51,7 @@ async function api(path, method = 'GET', value, pdf = false) {
     method,
     credentials: 'omit',
     cache: 'no-store',
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(pdf ? 65000 : 20000),
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(value === undefined
@@ -65,9 +65,7 @@ async function api(path, method = 'GET', value, pdf = false) {
     const data = await response.json();
     throw new Error(data.error ?? 'Request failed.');
   }
-  return response.headers
-    .get('content-type')
-    ?.includes('application/octet-stream')
+  return response.headers.get('content-type')?.includes('text/plain')
     ? response.blob()
     : response.json();
 }
@@ -136,7 +134,7 @@ function showPage() {
   );
   byId('source').textContent = page?.text.trim()
     ? page.text
-    : 'This page has no usable text layer. Review the original PDF; automatic extraction cannot read this page.';
+    : 'This page has no usable text layer. Check your original PDF; automatic extraction cannot read this page.';
 }
 function selectRevision() {
   const id = byId('candidate').value;
@@ -259,9 +257,7 @@ byId('upload-form').addEventListener('submit', (event) => {
     await refreshReports();
     byId('report').value = reserved.id;
     await openReport(reserved.id);
-    message(
-      'Source retained. Review the extracted page text before approving any figure.',
-    );
+    message('Page text saved. Review it before approving any figure.');
   });
 });
 byId('download').addEventListener('click', () =>
@@ -270,7 +266,7 @@ byId('download').addEventListener('click', () =>
     const url = URL.createObjectURL(blob),
       anchor = window.document.createElement('a');
     anchor.href = url;
-    anchor.download = 'report.pdf';
+    anchor.download = 'report.txt';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }),

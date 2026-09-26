@@ -153,6 +153,57 @@ export async function createSupabaseStorage({
     return bytes;
   }
   return {
+    async list() {
+      const response = await request(
+        `/object/list/${bucket}`,
+        AbortSignal.timeout(15000),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prefix: '',
+            limit: 1000,
+            offset: 0,
+            sortBy: { column: 'name', order: 'asc' },
+          }),
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw unavailable();
+      }
+      let rows: unknown;
+      try {
+        rows = JSON.parse((await bounded(response, 512 * 1024)).toString());
+      } catch {
+        throw unavailable();
+      }
+      if (!Array.isArray(rows) || rows.length > 1000) throw unavailable();
+      return rows.map((entry: unknown) => {
+        const row = record(entry);
+        if (
+          typeof row.name !== 'string' ||
+          !/^[a-f0-9-]{36}\.pdf$/.test(row.name) ||
+          typeof row.created_at !== 'string'
+        )
+          throw unavailable();
+        const createdAt = Date.parse(row.created_at);
+        if (!Number.isFinite(createdAt)) throw unavailable();
+        return { id: uuid(row.name.slice(0, -4)), createdAt };
+      });
+    },
+    async remove(id) {
+      id = uuid(id);
+      const signal = AbortSignal.timeout(15000);
+      const response = await request(`/object/${bucket}`, signal, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: [`${uuid(id)}.pdf`] }),
+      });
+      await response.body?.cancel();
+      if (!response.ok) throw unavailable();
+      if (await original(id, signal)) throw unavailable();
+    },
     async get(id, expectedHash) {
       uuid(id);
       if (!/^[a-f0-9]{64}$/.test(expectedHash))
@@ -224,7 +275,7 @@ export async function createSupabaseStorage({
         return { sha256, bytes: bytes.length };
       });
     },
-    // Atomic object uploads have no local partial files. Never delete originals.
+    // Atomic uploads have no partial files. Retention removes saved/expired originals explicitly.
     async cleanupIncomplete() {},
   };
 }

@@ -112,8 +112,8 @@ export async function handleReports({
     if (match[2] === 'source' && req.method === 'GET') {
       const bytes = await reports.source(token, id);
       res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="report-${id}.pdf"`,
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="report-${id}.txt"`,
         'Content-Length': bytes.length,
       });
       res.end(bytes);
@@ -126,7 +126,7 @@ export async function handleReports({
       send(
         res,
         200,
-        await reports.upload(token, id, await readBytes(req, MAX_FILE_BYTES)),
+        await reports.upload(token, id, () => readBytes(req, MAX_FILE_BYTES)),
       );
       return true;
     }

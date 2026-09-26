@@ -23,6 +23,7 @@ test('real createApi registers the authenticated report listing', async () => {
       NODE_ENV: 'test',
       AUTH_DEV_ENABLED: 'true',
       API_HOST: '127.0.0.1',
+      REPORT_FAILED_UPLOAD_TTL_SECONDS: '3600',
       REPORT_STORAGE_ROOT: process.env.REPORT_TEST_STORAGE,
       REPORT_PARSER_MODE: process.env.REPORT_PARSER_IMAGE ? 'docker' : 'native',
       REPORT_PARSER_IMAGE: process.env.REPORT_PARSER_IMAGE,

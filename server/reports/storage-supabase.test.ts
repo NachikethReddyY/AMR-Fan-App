@@ -43,9 +43,15 @@ function fixture() {
           : Array.from(files, ([name, bytes]) => ({
               name,
               id: name,
+              created_at: '2026-09-26T00:00:00Z',
               metadata: { size: bytes.length },
             })),
       );
+    if (init?.method === 'DELETE') {
+      const body = JSON.parse(String(init.body));
+      for (const name of body.prefixes) files.delete(name);
+      return Response.json([]);
+    }
     const name = url.split('/').pop()!;
     if (init?.method === 'POST') {
       if (files.has(name)) return new Response('', { status: 409 });
@@ -418,4 +424,24 @@ test('real HTTP missing-key envelopes allow first upload; other errors never upl
       server.close((error) => (error ? reject(error) : resolve())),
     );
   }
+});
+
+test('legacy source inventory retains initial timestamp and deletion is bounded and idempotent', async () => {
+  const f = fixture();
+  const store = await createSupabaseStorage({
+    credential,
+    exclusive,
+    transport: f.transport,
+  });
+  const id = randomUUID();
+  await store.put(id, Buffer.from('%PDF-1.7 synthetic cleanup'));
+  assert.deepEqual(await store.list(), [
+    { id, createdAt: Date.parse('2026-09-26T00:00:00Z') },
+  ]);
+  await store.remove(id);
+  await store.remove(id);
+  assert.equal(f.files.size, 0);
+  await assert.rejects(store.remove('../foreign'), { status: 400 });
+  f.setMalformed();
+  await assert.rejects(store.list(), { status: 503 });
 });

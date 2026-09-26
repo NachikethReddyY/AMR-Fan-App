@@ -29,6 +29,7 @@ const env = {
   NODE_ENV: 'test',
   AUTH_DEV_ENABLED: 'true',
   API_HOST: '127.0.0.1',
+  REPORT_FAILED_UPLOAD_TTL_SECONDS: '3600',
   REPORT_STORAGE_ROOT: root,
   REPORT_PARSER_MODE: 'docker',
   REPORT_PARSER_IMAGE: image,
@@ -224,7 +225,8 @@ test('registered upload/correction/approval retains exact source; concurrent ret
   const bytes = await fetch(base + `/v1/admin/reports/${doc.id}/source`, {
     headers: { Authorization: `Bearer ${admin}` },
   });
-  assert.deepEqual(Buffer.from(await bytes.arrayBuffer()), doc.bytes);
+  const retained = await bytes.text();
+  assert.match(retained, /Page 1\n/);
   await stop();
   await start();
   assert.deepEqual(
@@ -234,7 +236,7 @@ test('registered upload/correction/approval retains exact source; concurrent ret
   const again = await fetch(base + `/v1/admin/reports/${doc.id}/source`, {
     headers: { Authorization: `Bearer ${admin}` },
   });
-  assert.deepEqual(Buffer.from(await again.arrayBuffer()), doc.bytes);
+  assert.equal(await again.text(), retained);
 });
 test('registered parser and readiness failures preserve existing approved dashboard data', async () => {
   const before = (await json('/v1/impact/official', 'GET', undefined, fan))
