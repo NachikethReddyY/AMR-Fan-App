@@ -143,6 +143,84 @@ Exact peer handoff, not edits in this slice:
   `TOKENROUTER_API_KEY`, `TOKENROUTER_ENABLED=false`. No root patch or dependency
   is needed for this preparation. The other AI flags remain unchanged/off.
 
+## Jev submission moderation preparation
+
+`server/ai/jev-moderation.ts` defines an internal normalized result contract, not
+a claimed Jev gateway response format. `prepareJevModeration({text})` validates
+at most 1,600 characters and returns unavailable/protocol-unverified without
+network I/O. There is no enable switch until a reviewed provider mapping exists,
+and no Luna fallback. `validateModerationResult(source, result)` is a pure
+boundary for a future trusted server mapper. It validates the normalized shape,
+not the truth of the model's judgment.
+
+An assessment carries `harmful`, `benign` or `uncertain`, separate risk codes,
+nullable confidence and `reviewRequired:true`. Harmful requires at least one of
+targeted humiliation, harassment, threats or private-data abuse plus a unique
+literal source quote; code derives its UTF-16 offsets. Benign/uncertain have no
+asserted risks. Confidence is finite in [0,1] or absent/null and never determines
+the verdict: high-confidence benign is not harmful. No numerical enforcement
+threshold is selected. `unavailable` is distinct from all three verdicts; invalid
+responses and provider failures do not invent harm. Outputs have no fee, balance,
+approval, voting, delete or storage-operation fields.
+
+Project product correction for parent #3 and #11/#12/#13: a harmful question or
+activity pays the **same normal 500-point non-refundable submission fee**, not
+an extra penalty. Only explicit submit with `confirmedFee:500` and sufficient
+balance commits the fee. Typing, editing and provider retries do not charge.
+Successful same-key replay preserves the paid pending/rejected receipt without
+a second debit. A new paid resubmission keeps the existing confirmation and
+new-request semantics. The suggested pre-charge harmful-content block was not
+accepted and must not be implemented.
+
+The accepted harmful outcome prevents voting and retains the submission and
+reason. Uncertain or unavailable stays pending admin review; benign never grants
+approval or voting eligibility by itself. Existing assigned-admin approval is
+still required before voting. Previously paid/voted records retain their data
+and contributions for authorized review, without automatic deletion, hiding,
+extra debit or refund. This preparation performs none of those state changes.
+
+Exact transactional handoff, read at main
+`95e5be89060ff130c63019deb935c25ef1c93194`:
+
+- `server/submissions/contracts.ts` already validates explicit `confirmedFee:500`.
+  `server/submissions/http.ts` sends explicit POST submissions to
+  `createSubmission` in `server/submissions/index.ts`.
+- `createSubmission` uses `runPointsOperation` with the request ID and exact
+  text/tag/fee/resubmission intent, returns the normal `-SUBMISSION_FEE` delta,
+  and creates the retained pending record. Preserve this one fee path for every
+  semantic outcome. No model call belongs inside its locked transaction.
+- `server/points/index.ts:runPointsOperation` authenticates, serializes the request
+  key, locks the profile, checks stored replay before `perform`, and commits only
+  an affordable delta together with History and the stored outcome. Provider
+  retries or review must never call it to charge the same submission again.
+- After successful submission commit, a separately owned integration can attach
+  a bounded screening result to the retained submission outside the points
+  transaction, keyed by submission and model/policy version. Same-key submit
+  replay must remain independent of screening availability. Durable scheduling,
+  reason storage and retry ownership are not implemented by this AI contract.
+- `moderateSubmission` currently requires a current assigned admin and a pending
+  record, with its own decision replay key. The owner must preserve that authority
+  while integrating harmful/uncertain/unavailable results; the model cannot call
+  this operation or forge the admin identity. Reason storage and reviewed-state
+  integration need explicit peer-owned changes, not a cast of this result.
+- Voting/selection owners (#12/#13) must recheck current moderation/approval
+  transactionally so harmful or pending content cannot accept votes. No such
+  integration is claimed here; do not infer a points/DB regression pass from
+  these pure AI tests.
+
+`server/ai/evaluation/jev-moderation-prospective.json` contains 24 newly authored,
+unevaluated English cases: eight harmful (two per risk), ten benign context
+controls and six uncertain cases. It covers criticism, negation, quoted
+condemnation, harmless profanity and injection. Nine additional integration
+scenarios state the fee/replay/review requirements but are not transaction tests.
+The contract tests validate shapes, spans, confidence separation and lack of
+side effects; feeding expected fixtures through a validator is not measured
+classification accuracy. Report per-risk false positives and missed harms,
+uncertainty/failure rates, sample sizes and language limits before a quality
+decision. Use a new preregistered unseen holdout for actual evaluation; preserve
+all earlier Laya/Luna fixtures and scores unchanged. No production language
+coverage, confidence threshold or model accuracy is established.
+
 ## Reproducible native MPS service
 
 Primary [Laya source](https://github.com/NandhaKishorM/laya/tree/4066d5d5fbf08b66c6757ddeedbd797bd7655bc0)
