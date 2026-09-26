@@ -1006,3 +1006,161 @@ full/security/DAST/browser gates and affected independent review remain schedule
 by root. No push, merge, deployment or Render settings change occurred.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: photo and AI migration-tool preflight
+
+- Tracking: DEPLOY-010-011, unlinked. Clean starting branch `fix/deploy-photo-ai-migrations` at `1dd01419`; read the old infrastructure handoff without touching its resources.
+- Six lightweight tests pass for invalid ordered history, checksum drift, unknown suffix, lock-before-read and rollback before any mutation. Draft PostgreSQL cases now cover retained eight/nine histories through eleven and late budget-migration rollback, but are unexecuted pending finalized SQL on main and the root's database-test lease.
+- AI owner supplied table/column-only grant design; frozen SQL/checksum remain pending. Photo requires SELECT/INSERT only. Runner, SQL, AI and photo implementation files remain unchanged.
+- Offline frozen install from cached packages, focused ESLint, syntax and diff checks pass. No heavy database test, shared database access, Actions, provider, device, cloud, production migration, commit, push or PR occurred. Root received the lease request and dependency report; it retains serialized squash authority.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+Migration-tool light preparation now uses merged photo main `726efbb47d7ad394325b2487a0f7a067e23dd21b`.
+The 0010 checksum matches `122ca4c3833b831febdec2eff8839e67625407cdccf4ae43e0e3a1bddbde03b1`.
+The runner draft supports exact eight/nine/ten prefixes, validates retained grants
+before pending DDL, and applies photo SELECT/INSERT-only grants. A ten-entry
+history regression failed before this change and passes now. Syntax, focused
+lint and history tests pass; PostgreSQL proof is still unverified and held.
+AI 0011 is frozen at `43d6cd70a58de0bc9fcc88ea27529120a7e62a989715396c43363d66c3b40e3f`,
+but will enter the runner only after it lands on main. No heavy checks or scanners
+were run. Photo and AI source files were not edited.
+
+A concurrent worktree selected this task's stash with bare `stash pop`; that
+owner reported recovery without changing this worktree. The shared stash
+`ae7b052dc0303410f44502ab35eff692241313b6` remains intact. Failed criterion:
+worktree-safe stash selection. Project lesson proposed, not guidance edited:
+use exact stash object hashes during concurrent work, never indices or bare pop.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+Further light preparation aligns the database-test draft with actual main's ten
+migrations. Added real-runtime photo insert/select and denied update/delete/truncate
+cases; concurrent lock wait, late photo-DDL rollback, exact retained column/function
+ACL preservation, and replay refusal for photo column/PUBLIC/grant-option drift.
+These PostgreSQL cases are authored but unexecuted. Ten light history tests and
+focused lint/syntax/diff checks still pass. The operating procedure distinguishes
+this unverified ten-migration draft from the historical nine-migration release and
+records the frozen AI contract without importing its unmerged SQL. No heavy gate,
+scanner, database connection or external delivery occurred.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+0011 dependency correction: independent PR48 review found that a contradictory
+charge within its bound released uncertain exposure. The AI owner is adding a
+persistent disputed state with the full hold retained and admission suspended.
+The SQL CHECK enum changes, so the previously recorded `43d6` checksum is obsolete
+and must not be implemented or treated as frozen. Final review, checksum and
+merge remain pending; no new columns or grants are expected. Updated the active
+operating contract only; 0010 runner preparation remains unchanged. Root's queue
+is route gate, budget PG rerun, then migration-tool full-chain proof. No database,
+heavy gate, scanner, SQL edit or unmerged-file copy occurred. This is a one-off
+upstream contract correction, not a shared guidance change.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Migration-tool main refresh: PR48 is merged at
+`188baa44acf870db4aeb72258a0de01f093aea22`; SQL 0011 bytes match final SHA256
+`be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`.
+Restored only this task's exact stash object, preserving both append-only record
+histories. The runner draft now supports the full chain with exact AI table/column
+grants. First-time 0011 initialization requires the explicit protected-config
+assertion `aiBudgetInitialization=verified-no-prior-spend-or-inflight`; absence
+refuses before pending DDL or fresh roles. Existing liabilities require a separate
+reviewed import; this tool cannot import, reset or enable paid calls.
+
+Fifteen lightweight tests cover malformed histories, retained-prefix acceptance,
+pre-DDL participation drift and missing/invalid initialization assertions. The
+PostgreSQL draft covers retained 8/9/10 upgrades, a late 0011 rollback, exact
+runtime AI writes/denials and preservation of suspended exposure above $10 on
+replay. It remains unexecuted pending root's heavy lease after Impact. No SQL,
+AI implementation or photo implementation file was edited; no DB/full/scanner,
+provider/cloud/Actions or publication action occurred.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+## Migration-tool isolated verification, 2026-09-26
+
+Under the root's sole heavy lease, the pinned PG17/Node24 fixture passed all
+23 tests without skips. Three retained histories (8, 9 and 10) reached the exact
+11-file checksum ledger. Two real non-superuser deployers waited on the same
+advisory lock, then returned one upgrade and one unchanged replay. Late 0011 DDL
+failure rolled back pending objects/history. Prior role identities/passwords,
+table/column/function ACLs, rows and ledger timestamps remained unchanged.
+Actual runtime photo and AI operations passed their narrow grants; forbidden
+writes, ownership escalation, PUBLIC grants and grant options were refused.
+Replay preserved disputed-call receipts and suspended exposure above $10.
+First initialization without the explicit assertion left retained state unchanged.
+
+Full `pnpm check` and serial `pnpm security:check` passed. Source secret/SAST scans
+reported zero findings across the snapshot (262 SAST targets, four rules); audit
+retains one moderate advisory, no high/critical findings. This proves local
+fixture behavior, not production spend history or deployment. The assertion must
+come from actual account history/in-flight evidence, never presumed zero spend.
+The all-or-nothing runner has no 0010-only option or liability import/reset.
+
+Initial fixture failures were a missing imported source directory and an incomplete
+grant/revoke test pair. Both were repaired; red evidence remains. All owned
+container/network/image IDs were confirmed absent after cleanup; no shared DB,
+host mounts/ports, provider, cloud or CI call occurred. Heavy lease was released.
+Evidence: `.evidence/photo-ai-migration-tool/pg-first.txt`, `pg-proof.txt`,
+`full-check.txt`, `security.txt` and exact cleanup receipts.
+
+Final inspection found one missing forbidden privilege: PostgreSQL MAINTAIN.
+Added exact runtime ACL rejection and a GRANT MAINTAIN replay regression. Focused
+syntax/lint/format/diff checks pass; SQL checksums are unchanged. Root queued the
+failing-first/corrected retained-history PG rerun after admin's lease. No fixture
+has restarted, and no final-head DB proof or PR completion is claimed yet.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+Retained-participation review finding confirmed: column REFERENCES and runtime
+grant options on tables, columns, functions and the sequence were not validated.
+The narrow fix reuses exact table/column checks and validates sequence/function
+ACLs. Five failing-first PostgreSQL subcases are prepared to prove rejection
+before pending DDL, preserving ACLs and ledger. MAINTAIN refusal remains included.
+
+The user then authorized explicit targetMigration 0010 to migrate independent
+features without assuming zero provider liabilities. Strict targets are 0010 and
+0011; omission preserves 0011. The 0010 path loads/applies/validates only its exact
+prefix, grants no AI access, requires no initialization assertion and refuses an
+existing eleven-entry ledger. Seven light target tests failed before the change;
+all 22 lightweight tests now pass with syntax/lint/format/diff checks. PostgreSQL
+cases are authored for 8/9→10, 8/9/10→11 and actual API/award reads with AI tables
+absent. No production zero-spend assertion was supplied or inferred.
+
+Released a newly granted slot immediately because target10 database tests were
+still being authored; no fixture started. Root was notified once source/proof
+preparation was ready, queued after awards. Earlier test evidence remains intact.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+## Migration-tool final target and ACL proof, 2026-09-26
+
+Rebased only through actual main `e2f95534814b7e6289ba24f01aa20a919ed1514a`.
+Both owners' record conflicts are preserved; SQL and application source are
+unchanged. PR46's origin allowlist introduces no AI-startup dependency.
+
+| Acceptance                   | Observed evidence                                                                                                                               | Limit                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Retained migration targets   | Five PG17 cases: 8/9→10 and 8/9/10→11, exact ordered checksums and replay                                                                       | Disposable fixtures only                                    |
+| Retained authority and state | Role/password identities, old table/column/function ACLs, ledger timestamps and rows preserved; concurrent lock wait and late-DDL rollback pass | No live database inspected                                  |
+| ACL regressions              | Fifteen retained table/column/sequence/function drift subcases and MAINTAIN cases fail against preceding validators; all corrected tests pass   | Existing unrelated ACL contracts remain unchanged           |
+| Inactive AI compatibility    | Real current API photo GET200 unavailable/POST503, actual journey award read at target10, no AI tables                                          | No provider dispatch or deployment                          |
+| Accounting protection        | Invalid/missing first-init assertion refuses; target below ledger refuses; replay preserves disputed receipts and suspended exposure above $10  | Historical account liabilities remain unresolved            |
+| Final checks                 | 47/47 fixture tests, focused lint/format/syntax, agent validation, diff checks and security pass                                                | Earlier full app check retained, no duplicate full app gate |
+
+The first refreshed run found a REFERENCES test using nonexistent `id`; corrected
+to `points_operation_id`. Prior red/green receipts remain. Final red uses the
+same new tests with only the preceding validators restored inside the owned
+container; corrected source then passes all 47. No migration SQL was changed.
+Security has no source findings and retains one existing moderate dependency
+advisory. All owned container/network/image IDs were confirmed absent and the
+heavy slot was explicitly released to root. No shared DB, host mounts/ports,
+provider, cloud, CI, production migration or deployment occurred.
+
+Proof: `.evidence/photo-ai-migration-tool/acl-target-red-corrected-fixture.txt`,
+`acl-target-green.txt`, `final-security.txt` and `final-cleanup.json`.
+Verified source is ready for one PR and root's independent exact-head review.
+
+Verified by gpt-6-astra through Codex (T3 Code).

@@ -6,7 +6,80 @@ No cloud mutation has been performed by this candidate.
 
 ## Guarded database bootstrap
 
-### Reviewed participation upgrade preparation
+### Photo and AI upgrade targets
+
+The runner supports the explicit 0001–0011 chain from merged main
+`e2f95534814b7e6289ba24f01aa20a919ed1514a`. Retained histories must match an exact
+ordered prefix of eight, nine, ten or eleven migrations, including every checksum.
+The existing advisory transaction lock covers history inspection, validation,
+pending DDL, scoped grants and new ledger entries. Retained ACL drift is refused
+before any pending migration; old grants are not repaired. Replay changes no data,
+roles, passwords, grants or ledger rows.
+
+Photo 0010 SHA256 is
+`122ca4c3833b831febdec2eff8839e67625407cdccf4ae43e0e3a1bddbde03b1`.
+Runtime receives only SELECT/INSERT on `app.photo_activity_claims`, with no
+new sequence rights, UPDATE, DELETE, PUBLIC grant or grant option. Existing
+participation grants remain scoped to their original columns and objects.
+
+AI 0011 is merged with SHA256
+`be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`.
+It includes the reviewed disputed-call state. The runtime grants match the
+[AI owner's contract](../ai/cost-store.md):
+
+- SELECT on `ai_cost_budget`, `ai_cost_operations` and `ai_cost_calls`.
+- INSERT only on operations `(operation_id,scope,fingerprint,reservation,rate_expires_at_ms)`
+  and calls `(operation_id,call_id,reserved_nano_usd,accounted_nano_usd)`.
+- UPDATE only on budget `(committed_nano_usd,suspended)` and calls
+  `(state,accounted_nano_usd,bound_exceeded)`.
+- No budget INSERT, operations UPDATE, DELETE, TRUNCATE, new function/sequence
+  rights, PUBLIC grants, ownership, owner membership or grant option.
+
+The migration seeds the sole fixed-$10 budget row. Committed exposure can exceed
+$10 while suspended after a late bound violation; the tool must preserve that
+exposure and the immutable admission cap, not clamp or reset accounting.
+
+Before first applying 0011, the protected config must explicitly contain
+`"aiBudgetInitialization": "verified-no-prior-spend-or-inflight"`. This is an
+operator assertion, not automated proof. Supply it only after verifying the
+shared scope has no prior provider spend or in-flight calls. Without it the
+transaction refuses before pending DDL or role creation. Existing liabilities
+require a separately reviewed import procedure; this tool implements no import
+or zero-reset override. Complete eleven-migration replay needs no initialization
+assertion and never resets existing accounting. No provider is enabled by migration.
+
+The optional protected-config field `targetMigration` accepts exactly
+`"0010_photo_activity.sql"` or `"0011_ai_cost_store.sql"`. Omission still selects
+0011. For explicit 0010, fresh setup or retained eight/nine histories apply only
+0001–0010; an exact ten-entry replay returns unchanged. SQL loading, grants and
+validation stop at that target. No AI table, grant or budget initialization occurs,
+and no zero-spend assertion is needed or consumed. An eleven-entry ledger with a
+ten target is refused, never downgraded. Invalid target values fail before connecting.
+
+Each chosen target remains atomic. The 0011 path keeps the initialization
+prerequisite above; missing evidence prevents all its pending migrations. Actual
+account history includes prior spend, while project-key filtering does not prove
+scope ownership or the absence of pending liabilities. Do not set the assertion
+for production without authoritative evidence. No inference during these tasks
+establishes historical zero spend. The 0010 target can unblock independent features
+while AI remains inactive. It neither establishes nor imports AI liabilities.
+
+Run `node scripts/deploy/testing/run-isolated.mjs` under the coordinated heavy
+lease. Its pinned PG17/Node24 fixture uses generated credentials, one private
+internal network, no published ports and no host mounts. Forty-seven tests pass
+on this main base: exact retained 8/9→10 and 8/9/10→11 upgrades, lock serialization,
+late-DDL rollback, runtime permissions, preserved roles/passwords/ACLs/data and
+liability replay. The actual API and journey award reader work at 0010 with all
+AI tables absent; photo inference remains unavailable. New participation
+REFERENCES/grant-option and MAINTAIN regressions fail against the preceding
+validators and pass with the correction. Final affected static/security checks
+pass. An earlier full app check passed before these runner-only corrections;
+it was not repeated under the bounded verification scope. Earlier failures and
+proof remain separate in local evidence.
+This preparation does not authorize production migration or deployment. The
+historical procedure below records the prior nine-migration release only.
+
+### Historical reviewed participation upgrade preparation
 
 The next release starts from merged `09b61e9213d4d08d986621439f9f16c453cc87d7`.
 The deployment command now supports exactly migrations 0001–0009. A retained

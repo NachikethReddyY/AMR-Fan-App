@@ -18,6 +18,8 @@ const migrationNames = [
   '0007_reports.sql',
   '0008_journey_awards.sql',
   '0009_submission_participation.sql',
+  '0010_photo_activity.sql',
+  '0011_ai_cost_store.sql',
 ];
 const participationTables = [
   'fan_submission_contributions',
@@ -30,10 +32,59 @@ const participationFunctions = [
   'close_interaction_once',
   'resolve_selection_once',
 ];
+const photoTables = {
+  photo_activity_claims: { insert: true, update: [] },
+};
+const aiTables = {
+  ai_cost_budget: { insert: [], update: ['committed_nano_usd', 'suspended'] },
+  ai_cost_operations: {
+    insert: [
+      'operation_id',
+      'scope',
+      'fingerprint',
+      'reservation',
+      'rate_expires_at_ms',
+    ],
+    update: [],
+  },
+  ai_cost_calls: {
+    insert: [
+      'operation_id',
+      'call_id',
+      'reserved_nano_usd',
+      'accounted_nano_usd',
+    ],
+    update: ['state', 'accounted_nano_usd', 'bound_exceeded'],
+  },
+};
+const migrationPrivileges = [
+  {
+    count: 9,
+    grant: grantParticipation,
+    verify: verifyParticipationPrivileges,
+  },
+  {
+    count: 10,
+    grant: grantPhoto,
+    verify: (client) => verifyTablePrivileges(client, photoTables),
+  },
+  {
+    count: 11,
+    grant: grantAi,
+    verify: (client) => verifyTablePrivileges(client, aiTables),
+  },
+];
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const databaseCreateRefusal =
   'Runtime has effective database CREATE. Have the database owner review direct and PUBLIC grants before retrying; bootstrap will not revoke shared rights.';
+const aiInitializationRefusal =
+  'AI budget initialization requires aiBudgetInitialization=verified-no-prior-spend-or-inflight. Verify no prior provider spend or in-flight calls; otherwise obtain a separately reviewed liability import before retrying. No budget is reset or imported by this tool.';
+
+function requireAiInitialization(options) {
+  if (options?.aiBudgetInitialization !== 'verified-no-prior-spend-or-inflight')
+    throw new Error(aiInitializationRefusal);
+}
 
 export function deploymentConnection(input) {
   if (
@@ -68,12 +119,22 @@ export function deploymentConnection(input) {
   };
 }
 
-/** Atomic setup only; never resets, rotates passwords, seeds or rewrites migrations. */
-export async function bootstrapDatabase(pool, runtimePassword) {
+/** Atomic setup only; no resets, password rotation or rewriting applied migrations. */
+export async function bootstrapDatabase(pool, runtimePassword, options = {}) {
   if (!/^[A-Za-z0-9_-]{48,128}$/.test(runtimePassword))
     throw new Error('Invalid runtime credential.');
+  const target =
+    options.targetMigration === undefined
+      ? '0011_ai_cost_store.sql'
+      : options.targetMigration;
+  if (!['0010_photo_activity.sql', '0011_ai_cost_store.sql'].includes(target))
+    throw new Error('Invalid migration target.');
+  const targetCount = migrationNames.indexOf(target) + 1;
+  const privileges = migrationPrivileges.filter(
+    (step) => step.count <= targetCount,
+  );
   const migrations = await Promise.all(
-    migrationNames.map(async (name) => {
+    migrationNames.slice(0, targetCount).map(async (name) => {
       const sql = await readFile(
         new URL(`../../server/database/migrations/${name}`, import.meta.url),
         'utf8',
@@ -99,7 +160,8 @@ export async function bootstrapDatabase(pool, runtimePassword) {
         )
       ).rows;
       if (
-        ![8, migrations.length].includes(history.length) ||
+        history.length < 8 ||
+        history.length > migrations.length ||
         history.some(
           (m, i) =>
             m.name !== migrations[i].name ||
@@ -108,25 +170,35 @@ export async function bootstrapDatabase(pool, runtimePassword) {
       )
         throw new Error('Migration checksum collision.');
       await verifyPrivileges(client);
-      if (history.length === 8) {
+      // Validate retained ACLs before applying anything; never repair old grants.
+      for (const step of privileges)
+        if (history.length >= step.count) await step.verify(client);
+      if (history.length < migrations.length) {
+        if (targetCount === 11 && history.length < 11)
+          requireAiInitialization(options);
         await client.query(`SET LOCAL ROLE ${OWNER}`);
-        const { name, sql, checksum } = migrations[8];
-        await client.query(sql);
-        await grantParticipation(client);
-        await client.query(
-          'INSERT INTO public.schema_migrations(name,checksum) VALUES($1,$2)',
-          [name, checksum],
-        );
+        for (let index = history.length; index < migrations.length; index++) {
+          const { name, sql, checksum } = migrations[index];
+          await client.query(sql);
+          await privileges
+            .find((step) => step.count === index + 1)
+            .grant(client);
+          await client.query(
+            'INSERT INTO public.schema_migrations(name,checksum) VALUES($1,$2)',
+            [name, checksum],
+          );
+        }
         await client.query('RESET ROLE');
         await verifyPrivileges(client);
       }
-      await verifyParticipationPrivileges(client);
+      for (const step of privileges) await step.verify(client);
       await client.query('COMMIT');
       return {
-        state: history.length === 8 ? 'upgraded' : 'unchanged',
+        state: history.length < migrations.length ? 'upgraded' : 'unchanged',
         migrations: migrations.length,
       };
     }
+    if (targetCount === 11) requireAiInitialization(options);
     await client.query(
       `CREATE ROLE ${OWNER} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
     );
@@ -169,13 +241,13 @@ export async function bootstrapDatabase(pool, runtimePassword) {
     await client.query(
       `REVOKE INSERT,UPDATE,DELETE ON app.principals,app.role_assignments FROM ${RUNTIME}; GRANT INSERT(issuer,subject),UPDATE(subject) ON app.principals TO ${RUNTIME}; REVOKE ALL ON public.schema_migrations FROM PUBLIC,${RUNTIME}`,
     );
-    await grantParticipation(client);
+    for (const step of privileges) await step.grant(client);
     await client.query('RESET ROLE');
     await client.query(
       `REVOKE CREATE ON SCHEMA public FROM ${OWNER}; REVOKE CREATE ON DATABASE ${pg.escapeIdentifier((await client.query('SELECT current_database() AS name')).rows[0].name)} FROM ${OWNER}`,
     );
     await verifyPrivileges(client);
-    await verifyParticipationPrivileges(client);
+    for (const step of privileges) await step.verify(client);
     await client.query('COMMIT');
     return { state: 'created', migrations: migrations.length };
   } catch (error) {
@@ -183,6 +255,95 @@ export async function bootstrapDatabase(pool, runtimePassword) {
     throw error;
   } finally {
     client.release();
+  }
+}
+
+async function grantPhoto(client) {
+  const denied = ['PUBLIC', RUNTIME];
+  for (const name of ['anon', 'authenticated'])
+    if (
+      (await client.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [name]))
+        .rowCount
+    )
+      denied.push(name);
+  await client.query(
+    `REVOKE ALL ON app.photo_activity_claims FROM ${denied.join(',')};
+     GRANT SELECT,INSERT ON app.photo_activity_claims TO ${RUNTIME}`,
+  );
+}
+
+async function grantAi(client) {
+  const denied = ['PUBLIC', RUNTIME];
+  for (const name of ['anon', 'authenticated'])
+    if (
+      (await client.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [name]))
+        .rowCount
+    )
+      denied.push(name);
+  await client.query(
+    `REVOKE ALL ON app.ai_cost_budget,app.ai_cost_operations,app.ai_cost_calls FROM ${denied.join(',')};
+     GRANT SELECT ON app.ai_cost_budget,app.ai_cost_operations,app.ai_cost_calls TO ${RUNTIME};
+     GRANT INSERT(operation_id,scope,fingerprint,reservation,rate_expires_at_ms) ON app.ai_cost_operations TO ${RUNTIME};
+     GRANT INSERT(operation_id,call_id,reserved_nano_usd,accounted_nano_usd) ON app.ai_cost_calls TO ${RUNTIME};
+     GRANT UPDATE(committed_nano_usd,suspended) ON app.ai_cost_budget TO ${RUNTIME};
+     GRANT UPDATE(state,accounted_nano_usd,bound_exceeded) ON app.ai_cost_calls TO ${RUNTIME}`,
+  );
+}
+
+// Effective column rights catch column grants that table-level checks omit.
+async function verifyTablePrivileges(client, tables, label = 'Table') {
+  for (const [table, permissions] of Object.entries(tables)) {
+    const name = `app.${table}`;
+    const rights = (
+      await client.query(
+        `SELECT has_table_privilege($1,$2,'SELECT') AS read,
+       has_table_privilege($1,$2,'INSERT') AS insert,
+       has_table_privilege($1,$2,'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS elevated`,
+        [RUNTIME, name],
+      )
+    ).rows[0];
+    if (
+      !rights.read ||
+      rights.insert !== (permissions.insert === true) ||
+      rights.elevated
+    )
+      throw new Error(`${label} privilege collision: ${name}.`);
+    const columns = (
+      await client.query(
+        `SELECT a.attname,
+       has_column_privilege($1,a.attrelid,a.attnum,'INSERT') AS insert,
+       has_column_privilege($1,a.attrelid,a.attnum,'UPDATE') AS update,
+       has_column_privilege($1,a.attrelid,a.attnum,'REFERENCES') AS references
+       FROM pg_attribute a WHERE a.attrelid=$2::regclass AND a.attnum>0 AND NOT a.attisdropped`,
+        [RUNTIME, name],
+      )
+    ).rows;
+    if (
+      columns.some(
+        (column) =>
+          column.insert !==
+            (permissions.insert === true ||
+              permissions.insert.includes(column.attname)) ||
+          column.update !== permissions.update.includes(column.attname) ||
+          column.references,
+      )
+    )
+      throw new Error(`${label} privilege collision: ${name}.`);
+    const unsafe = await client.query(
+      `SELECT 1 FROM (
+         SELECT acl.* FROM pg_class c,
+           LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl WHERE c.oid=$2::regclass
+         UNION ALL
+         SELECT acl.* FROM pg_attribute a, LATERAL aclexplode(a.attacl) acl
+           WHERE a.attrelid=$2::regclass AND a.attnum>0 AND NOT a.attisdropped
+       ) rights WHERE grantee=0
+         OR grantee IN (SELECT oid FROM pg_roles WHERE rolname IN ('anon','authenticated'))
+         OR (grantee=(SELECT oid FROM pg_roles WHERE rolname=$1)
+           AND (is_grantable OR privilege_type NOT IN ('SELECT','INSERT','UPDATE')))`,
+      [RUNTIME, name],
+    );
+    if (unsafe.rowCount)
+      throw new Error(`${label} privilege collision: ${name}.`);
   }
 }
 
@@ -212,43 +373,28 @@ async function grantParticipation(client) {
 }
 
 async function verifyParticipationPrivileges(client) {
-  for (const table of participationTables) {
-    const permissions = (
-      await client.query(
-        `SELECT has_table_privilege($1,$2,'SELECT') AS read,
-       has_table_privilege($1,$2,'INSERT') AS insert,
-       has_table_privilege($1,$2,'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS elevated`,
-        [RUNTIME, `app.${table}`],
-      )
-    ).rows[0];
-    if (!permissions.read || !permissions.insert || permissions.elevated)
-      throw new Error('Participation privilege collision.');
-  }
-  const columns = {
-    fan_interaction_sessions: ['closed_by', 'closed_at', 'closed_action_id'],
-    fan_submission_selections: [
-      'status',
-      'resolved_by',
-      'resolved_at',
-      'reason',
-      'resolved_action_id',
-    ],
-  };
-  for (const table of participationTables) {
-    const rows = (
-      await client.query(
-        `SELECT a.attname,has_column_privilege($1,a.attrelid,a.attnum,'UPDATE') AS allowed
-       FROM pg_attribute a WHERE a.attrelid=$2::regclass AND a.attnum>0 AND NOT a.attisdropped`,
-        [RUNTIME, `app.${table}`],
-      )
-    ).rows;
-    if (
-      rows.some(
-        (row) => row.allowed !== (columns[table] ?? []).includes(row.attname),
-      )
-    )
-      throw new Error('Participation privilege collision.');
-  }
+  await verifyTablePrivileges(
+    client,
+    {
+      fan_submission_contributions: { insert: true, update: [] },
+      fan_submission_admin_actions: { insert: true, update: [] },
+      fan_interaction_sessions: {
+        insert: true,
+        update: ['closed_by', 'closed_at', 'closed_action_id'],
+      },
+      fan_submission_selections: {
+        insert: true,
+        update: [
+          'status',
+          'resolved_by',
+          'resolved_at',
+          'reason',
+          'resolved_action_id',
+        ],
+      },
+    },
+    'Participation',
+  );
   const sequence = (
     await client.query(
       `SELECT has_sequence_privilege($1,'app.fan_interaction_sessions_sequence_seq','USAGE') AS usage,
@@ -259,6 +405,21 @@ async function verifyParticipationPrivileges(client) {
   ).rows[0];
   if (!sequence.usage || !sequence.read || sequence.write)
     throw new Error('Participation privilege collision.');
+  const unsafeAcl = await client.query(
+    `SELECT 1 FROM (
+       SELECT acl.* FROM pg_class c,
+         LATERAL aclexplode(COALESCE(c.relacl,acldefault('S',c.relowner))) acl
+         WHERE c.oid='app.fan_interaction_sessions_sequence_seq'::regclass
+       UNION ALL
+       SELECT acl.* FROM pg_proc p,
+         LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl
+         WHERE p.oid=ANY($2::regprocedure[])
+     ) rights WHERE grantee=0
+       OR grantee IN (SELECT oid FROM pg_roles WHERE rolname IN ('anon','authenticated'))
+       OR (grantee=(SELECT oid FROM pg_roles WHERE rolname=$1) AND is_grantable)`,
+    [RUNTIME, participationFunctions.map((name) => `app.${name}()`)],
+  );
+  if (unsafeAcl.rowCount) throw new Error('Participation privilege collision.');
   for (const name of participationFunctions) {
     const fn = (
       await client.query(
@@ -378,8 +539,9 @@ async function main() {
   const pool = new pg.Pool(deploymentConnection(input));
   try {
     process.stdout.write(
-      JSON.stringify(await bootstrapDatabase(pool, input.runtimePassword)) +
-        '\n',
+      JSON.stringify(
+        await bootstrapDatabase(pool, input.runtimePassword, input),
+      ) + '\n',
     );
   } finally {
     await pool.end();
@@ -393,8 +555,9 @@ if (
 ) {
   main().catch((error) => {
     process.stderr.write(
-      error instanceof Error && error.message === databaseCreateRefusal
-        ? databaseCreateRefusal + '\n'
+      error instanceof Error &&
+        [databaseCreateRefusal, aiInitializationRefusal].includes(error.message)
+        ? error.message + '\n'
         : 'Database preparation refused or failed; no credentials are printed.\n',
     );
     process.exitCode = 1;
