@@ -2,6 +2,8 @@ import * as AuthSession from 'expo-auth-session';
 import { privateStorage } from './storage';
 import { createAccountApi } from './api';
 import type { StoredSession } from './session';
+import { parseStoredSession } from './stored-session';
+import { createSupabaseAuth } from './supabase';
 
 const dev = __DEV__;
 export const localSignInEnabled =
@@ -12,24 +14,7 @@ export const storage = {
   read: async (): Promise<StoredSession | null> => {
     const raw = await privateStorage.read(storageKey);
     if (!raw) return null;
-    const value: unknown = JSON.parse(raw);
-    if (
-      value &&
-      typeof value === 'object' &&
-      'kind' in value &&
-      'token' in value &&
-      typeof value.token === 'string'
-    ) {
-      if (value.kind === 'revoking')
-        return { kind: 'revoking', token: value.token };
-      if (
-        value.kind === 'active' &&
-        'selected' in value &&
-        (value.selected === 'real' || value.selected === 'demo')
-      )
-        return { kind: 'active', token: value.token, selected: value.selected };
-    }
-    throw new Error('Stored sign-in could not be read.');
+    return parseStoredSession(raw);
   },
   write: async (value: StoredSession) =>
     privateStorage.write(storageKey, JSON.stringify(value)),
@@ -84,4 +69,35 @@ export async function signInWithProvider() {
     discovery,
   );
   return api.signIn(tokens.accessToken);
+}
+
+// The fixture origin is usable only in a development bundle and only on loopback.
+// It never changes the trusted production project or sends real credentials.
+const fixtureUrl = process.env.EXPO_PUBLIC_AUTH_FIXTURE_URL;
+export const syntheticEmailAuth = dev && Boolean(fixtureUrl);
+export const emailAuth = createSupabaseAuth({
+  config: () => api.request('/admin/config'),
+  development: dev,
+  fixtureUrl,
+});
+export async function authenticateEmail(
+  mode: 'signIn' | 'signUp',
+  email: string,
+  password: string,
+) {
+  const result =
+    mode === 'signUp'
+      ? await emailAuth.signUp(email, password)
+      : {
+          kind: 'session' as const,
+          provider: await emailAuth.signIn(email, password),
+        };
+  if (result.kind === 'confirmation') return result;
+  try {
+    const session = await api.signIn(result.provider.accessToken);
+    return { ...session, provider: result.provider };
+  } catch (error) {
+    await emailAuth.revoke(result.provider);
+    throw error;
+  }
 }

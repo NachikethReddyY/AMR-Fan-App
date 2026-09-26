@@ -430,24 +430,23 @@ test('expired sessions clear storage and return to sign-in', async () => {
   expect(controller.getState().kind).toBe('signedOut');
   expect(f.stored).toBeNull();
 });
-test('logout hides data immediately; offline revocation survives restart and cannot resume identity', async () => {
+test('offline logout clears local credentials and cannot restore identity after restart', async () => {
   const f = fixture();
-  const controller = createSessionController(f.api, f.storage);
-  await controller.signIn(() => f.api.signIn('access'));
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(() => f.api.signIn('access'));
   f.api.logout = async () => {
     throw new Error('offline');
   };
-  await controller.logout();
-  expect(controller.getState().kind).toBe('unavailable');
-  expect(f.stored?.kind).toBe('revoking');
-  const next = createSessionController(f.api, f.storage);
-  await next.resume();
-  expect(next.getState().kind).toBe('unavailable');
-  expect(f.api.resume).not.toHaveBeenCalled();
-  f.api.logout = async () => {};
-  await next.resume();
-  expect(next.getState().kind).toBe('signedOut');
+  await c.logout();
+  expect(c.getState()).toMatchObject({
+    kind: 'signedOut',
+    error: expect.stringContaining('could not be confirmed'),
+  });
   expect(f.stored).toBeNull();
+  const restarted = createSessionController(f.api, f.storage);
+  await restarted.resume();
+  expect(restarted.getState().kind).toBe('signedOut');
+  expect(f.api.resume).not.toHaveBeenCalled();
 });
 
 test('a session that cannot be stored is revoked and never displayed', async () => {
@@ -459,4 +458,233 @@ test('a session that cannot be stored is revoked and never displayed', async () 
   await controller.signIn(() => f.api.signIn('access'));
   expect(controller.getState().kind).toBe('signedOut');
   expect(f.api.logout).toHaveBeenCalledWith('token');
+});
+
+const providerIdentity = {
+  accessToken: 'access',
+  refreshToken: 'refresh',
+  expiresAt: 1,
+  subject: '11111111-1111-4111-8111-111111111111',
+};
+test('provider refresh rotates durable credentials once, preserves demo and restores on restart', async () => {
+  const f = fixture();
+  await f.storage.write({
+    kind: 'active',
+    token: 'A',
+    selected: 'demo',
+    provider: providerIdentity,
+  });
+  const lifecycle = {
+    refresh: jest.fn(async () => ({
+      ...providerIdentity,
+      refreshToken: 'next',
+      expiresAt: Date.now() + 3600000,
+    })),
+    revoke: jest.fn(async () => {}),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  await c.resume();
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', selected: 'demo' });
+  expect(f.stored).toMatchObject({ provider: { refreshToken: 'next' } });
+  await createSessionController(f.api, f.storage, lifecycle).resume();
+  expect(lifecycle.refresh).toHaveBeenCalledTimes(1);
+});
+test('late refresh cannot overwrite replacement identity, and logout revokes rotated provider credentials', async () => {
+  const f = fixture();
+  const result = deferred<typeof providerIdentity>();
+  const entered = deferred<void>();
+  await f.storage.write({
+    kind: 'active',
+    token: 'A',
+    selected: 'real',
+    provider: providerIdentity,
+  });
+  const lifecycle = {
+    refresh: jest.fn(async () => {
+      entered.resolve();
+      return result.promise;
+    }),
+    revoke: jest.fn(async () => {}),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  const first = c.resume();
+  await entered.promise;
+  const logout = c.logout();
+  result.resolve({ ...providerIdentity, refreshToken: 'rotated' });
+  await Promise.all([first, logout]);
+  expect(lifecycle.revoke).toHaveBeenCalledWith(
+    expect.objectContaining({ refreshToken: 'rotated' }),
+  );
+  expect(f.stored).toBeNull();
+  expect(c.getState().kind).toBe('signedOut');
+});
+test('API401 never refreshes or exchanges a revoked app session', async () => {
+  const f = fixture();
+  await f.storage.write({
+    kind: 'active',
+    token: 'A',
+    selected: 'real',
+    provider: providerIdentity,
+  });
+  f.api.resume = async () => {
+    throw new AccountError(401, 'expired');
+  };
+  const lifecycle = {
+    refresh: jest.fn(async () => providerIdentity),
+    revoke: jest.fn(async () => {}),
+  };
+  await createSessionController(f.api, f.storage, lifecycle).resume();
+  expect(lifecycle.refresh).not.toHaveBeenCalled();
+  expect(f.stored).toBeNull();
+});
+test('provider logout failure still clears credentials after app-session revocation', async () => {
+  const f = fixture();
+  const lifecycle = {
+    refresh: async () => providerIdentity,
+    revoke: jest.fn(async (): Promise<void> => {
+      throw new Error('offline');
+    }),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  await c.signIn(async () => ({
+    ...identity('A'),
+    provider: providerIdentity,
+  }));
+  await c.logout();
+  expect(f.api.logout).toHaveBeenCalledWith('A');
+  expect(lifecycle.revoke).toHaveBeenCalledWith(providerIdentity);
+  expect(f.stored).toBeNull();
+  expect(c.getState().kind).toBe('signedOut');
+});
+test('failed app revocation still attempts provider logout and clears only its own generation', async () => {
+  const f = fixture();
+  const release = deferred<void>();
+  const entered = deferred<void>();
+  const lifecycle = {
+    refresh: async () => providerIdentity,
+    revoke: jest.fn(async () => {}),
+  };
+  f.api.logout = async () => {
+    entered.resolve();
+    await release.promise;
+    throw new Error('offline');
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  await c.signIn(async () => ({
+    ...identity('A'),
+    provider: providerIdentity,
+  }));
+  const logout = c.logout();
+  await entered.promise;
+  await c.signIn(async () => identity('B'));
+  release.resolve();
+  await logout;
+  expect(lifecycle.revoke).toHaveBeenCalledWith(providerIdentity);
+  expect(f.stored).toMatchObject({ kind: 'active', token: 'B' });
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'B' });
+});
+
+test('delayed provider refresh and replacement sign-in persist only the replacement after restart', async () => {
+  const f = fixture();
+  const release = deferred<typeof providerIdentity>();
+  const entered = deferred<void>();
+  await f.storage.write({
+    kind: 'active',
+    token: 'A',
+    selected: 'demo',
+    provider: providerIdentity,
+  });
+  const lifecycle = {
+    refresh: async () => {
+      entered.resolve();
+      return release.promise;
+    },
+    revoke: async () => {},
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  const first = c.resume();
+  await entered.promise;
+  const replacement = c.signIn(async () => ({
+    ...identity('B'),
+    provider: {
+      ...providerIdentity,
+      refreshToken: 'B',
+      expiresAt: Date.now() + 3600000,
+    },
+  }));
+  release.resolve({ ...providerIdentity, refreshToken: 'A-next' });
+  await Promise.all([first, replacement]);
+  expect(f.stored).toMatchObject({
+    token: 'B',
+    provider: { refreshToken: 'B' },
+  });
+  const restarted = createSessionController(f.api, f.storage, lifecycle);
+  await restarted.resume();
+  expect(restarted.getState()).toMatchObject({ token: 'B', kind: 'signedIn' });
+});
+test('late created provider session after logout is revoked and never published', async () => {
+  const f = fixture();
+  const release = deferred<Session & { provider: typeof providerIdentity }>();
+  const lifecycle = {
+    refresh: async () => providerIdentity,
+    revoke: jest.fn(async () => {}),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  const first = c.signIn(() => release.promise);
+  await c.logout();
+  release.resolve({ ...identity('A'), provider: providerIdentity });
+  await first;
+  expect(f.stored).toBeNull();
+  expect(lifecycle.revoke).toHaveBeenCalledWith(providerIdentity);
+});
+test('profile selection retains provider credentials and confirmation creates no app session', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(async () => ({
+    ...identity('A'),
+    provider: providerIdentity,
+  }));
+  await c.select('demo');
+  expect(f.stored).toMatchObject({
+    selected: 'demo',
+    provider: providerIdentity,
+  });
+  const fresh = fixture();
+  const other = createSessionController(fresh.api, fresh.storage);
+  await other.signIn(async () => ({ kind: 'confirmation' }));
+  expect(fresh.stored).toBeNull();
+  expect(other.getState()).toMatchObject({
+    kind: 'signedOut',
+    error: expect.stringContaining('confirmation'),
+  });
+});
+test('logout still revokes both sessions when persisting revocation intent fails', async () => {
+  const f = fixture();
+  const lifecycle = {
+    refresh: async () => providerIdentity,
+    revoke: jest.fn(async () => {}),
+  };
+  const c = createSessionController(f.api, f.storage, lifecycle);
+  await c.signIn(async () => ({
+    ...identity('A'),
+    provider: providerIdentity,
+  }));
+  f.storage.write = async () => {
+    throw new Error('write unavailable');
+  };
+  await c.logout();
+  expect(f.api.logout).toHaveBeenCalledWith('A');
+  expect(lifecycle.revoke).toHaveBeenCalledWith(providerIdentity);
+  expect(f.stored).toBeNull();
+});
+test('changing authentication intent clears stale confirmation copy without touching a session', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(async () => ({ kind: 'confirmation' }));
+  c.dismissSignInMessage();
+  expect(c.getState()).toEqual({ kind: 'signedOut', error: null });
+  await c.signIn(async () => identity('A'));
+  c.dismissSignInMessage();
+  expect(c.getState()).toMatchObject({ kind: 'signedIn', token: 'A' });
+  expect(f.stored?.token).toBe('A');
 });

@@ -4,9 +4,20 @@ import {
   type AccountApi,
   type Session,
 } from './api.ts';
+import type { ProviderSession } from './supabase.ts';
+export type AuthenticatedSession = Session & { provider?: ProviderSession };
+export type ProviderLifecycle = {
+  refresh: (session: ProviderSession) => Promise<ProviderSession>;
+  revoke: (session: ProviderSession) => Promise<void>;
+};
 export type StoredSession =
-  | { kind: 'active'; token: string; selected: 'real' | 'demo' }
-  | { kind: 'revoking'; token: string };
+  | {
+      kind: 'active';
+      token: string;
+      selected: 'real' | 'demo';
+      provider?: ProviderSession;
+    }
+  | { kind: 'revoking'; token: string; provider?: ProviderSession };
 type Storage = {
   read: () => Promise<StoredSession | null>;
   write: (value: StoredSession) => Promise<void>;
@@ -23,7 +34,11 @@ export type SessionState =
       selected: 'real' | 'demo';
     };
 
-export function createSessionController(api: AccountApi, storage: Storage) {
+export function createSessionController(
+  api: AccountApi,
+  storage: Storage,
+  provider?: ProviderLifecycle,
+) {
   let state: SessionState = { kind: 'loading' };
   let generation = 0;
   let storageQueue = Promise.resolve();
@@ -56,9 +71,32 @@ export function createSessionController(api: AccountApi, storage: Storage) {
       if (!(error instanceof AccountError && error.status === 401)) throw error;
     }
   }
-  async function revoke(token: string, attempt: number) {
-    await revokeToken(token);
-    await clear(attempt, { kind: 'signedOut', error: null });
+  async function revokeCredentials(session: {
+    token: string;
+    provider?: ProviderSession;
+  }) {
+    const results = await Promise.allSettled([
+      revokeToken(session.token),
+      (async () => {
+        if (!session.provider) return;
+        if (!provider) throw new Error('Provider sign-out is unavailable.');
+        await provider.revoke(session.provider);
+      })(),
+    ]);
+    if (results.some((result) => result.status === 'rejected'))
+      throw new Error('Remote sign-out could not be confirmed.');
+  }
+  async function revoke(session: StoredSession, attempt: number) {
+    let error: string | null = null;
+    try {
+      await revokeCredentials(session);
+    } catch {
+      error =
+        'Signed out on this device. Remote sign-out could not be confirmed.';
+    }
+    // Local logout never retains reusable credentials after a remote failure.
+    // A crash during I/O retains only a non-resumable revocation intent.
+    await clear(attempt, { kind: 'signedOut', error });
   }
   async function resume() {
     const attempt = ++generation;
@@ -67,9 +105,25 @@ export function createSessionController(api: AccountApi, storage: Storage) {
       const stored = await withStorage(() => storage.read());
       if (attempt !== generation) return;
       if (!stored) return set({ kind: 'signedOut', error: null });
-      if (stored.kind === 'revoking')
-        return await revoke(stored.token, attempt);
+      if (stored.kind === 'revoking') return await revoke(stored, attempt);
       const account = await api.resume(stored.token);
+      // Never renew an API401: only refresh the provider after the server has
+      // confirmed the existing app session. Rotate privately within the same
+      // storage queue so a waiting logout reads the newest refresh credential.
+      const credentials = stored.provider;
+      if (credentials && credentials.expiresAt <= Date.now() + 60000) {
+        await withStorage(async () => {
+          if (attempt !== generation) return;
+          if (!provider) throw new Error('Provider refresh is unavailable.');
+          const next = await provider.refresh(credentials);
+          try {
+            await storage.write({ ...stored, provider: next });
+          } catch (error) {
+            await provider.revoke(next);
+            throw error;
+          }
+        });
+      }
       if (attempt === generation)
         set({
           kind: 'signedIn',
@@ -95,13 +149,26 @@ export function createSessionController(api: AccountApi, storage: Storage) {
         });
     }
   }
-  async function signIn(authenticate: () => Promise<Session>) {
+  async function signIn(
+    authenticate: () => Promise<
+      AuthenticatedSession | { kind: 'confirmation' }
+    >,
+  ) {
     const attempt = ++generation;
     set({ kind: 'loading' });
     try {
       const session = await authenticate();
+      if ('kind' in session) {
+        if (attempt === generation)
+          set({
+            kind: 'signedOut',
+            error:
+              'Check your email for a confirmation link, then return here to sign in. If an account already exists, sign in instead.',
+          });
+        return;
+      }
       if (attempt !== generation) {
-        await revokeToken(session.token);
+        await revokeCredentials(session);
         return;
       }
       let published;
@@ -113,6 +180,7 @@ export function createSessionController(api: AccountApi, storage: Storage) {
               kind: 'active',
               token: session.token,
               selected: 'real',
+              ...(session.provider ? { provider: session.provider } : {}),
             });
           } catch (error) {
             // A rejected storage call may still have changed the stored value.
@@ -132,10 +200,10 @@ export function createSessionController(api: AccountApi, storage: Storage) {
           return true;
         });
       } catch (error) {
-        await revokeToken(session.token);
+        await revokeCredentials(session);
         throw error;
       }
-      if (!published) await revokeToken(session.token);
+      if (!published) await revokeCredentials(session);
     } catch (error) {
       if (attempt === generation)
         set({
@@ -160,17 +228,35 @@ export function createSessionController(api: AccountApi, storage: Storage) {
           set({ kind: 'signedOut', error: null });
           return null;
         }
-        await storage.write({ kind: 'revoking', token: stored.token });
-        return stored.token;
+        const pending: StoredSession = {
+          kind: 'revoking',
+          token: stored.token,
+          ...(stored.provider ? { provider: stored.provider } : {}),
+        };
+        try {
+          await storage.write(pending);
+        } catch {
+          // A failed intent write must not skip either remote revocation.
+          // Clear now if possible; the final generation-safe clear retries it.
+          await storage.clear().catch(() => {});
+        }
+        return pending;
       });
       if (token) await revoke(token, attempt);
     } catch {
-      if (attempt === generation)
-        set({
-          kind: 'unavailable',
-          message:
-            'Sign-out is pending. Reconnect and retry to revoke this session.',
+      try {
+        await clear(attempt, {
+          kind: 'signedOut',
+          error:
+            'Signed out on this device. Remote sign-out could not be confirmed.',
         });
+      } catch {
+        if (attempt === generation)
+          set({
+            kind: 'unavailable',
+            message: 'Could not clear sign-in. Retry signing out.',
+          });
+      }
     }
   }
   async function expire(token: string) {
@@ -192,6 +278,9 @@ export function createSessionController(api: AccountApi, storage: Storage) {
   }
   return {
     getState: () => state,
+    dismissSignInMessage: () => {
+      if (state.kind === 'signedOut') set({ kind: 'signedOut', error: null });
+    },
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => {
@@ -210,10 +299,15 @@ export function createSessionController(api: AccountApi, storage: Storage) {
       try {
         await withStorage(async () => {
           if (attempt !== generation) return;
+          const stored = await storage.read();
+          if (attempt !== generation) return;
           await storage.write({
             kind: 'active',
             token: current.token,
             selected,
+            ...(stored?.token === current.token && stored.provider
+              ? { provider: stored.provider }
+              : {}),
           });
           if (attempt === generation) set({ ...current, selected });
         });

@@ -14,7 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserRound } from 'lucide-react-native';
 import { useAccount } from './provider';
-import { api, localSignInEnabled, signInWithProvider } from './native-auth';
+import {
+  api,
+  localSignInEnabled,
+  authenticateEmail,
+  syntheticEmailAuth,
+} from './native-auth';
+import { validateCredentials } from './supabase';
 import { Balance } from '../points/Balance';
 import { useHistory } from '../points/provider';
 
@@ -72,6 +78,10 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
     return () => listener.remove();
   }, []);
   const [open, setOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
   const [editOwner, setEditOwner] = useState<{
     token: string;
     profileId: string;
@@ -96,6 +106,27 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
       }),
     [controller],
   );
+  function close() {
+    setPassword('');
+    setAuthError('');
+    setOpen(false);
+  }
+  async function submitEmail() {
+    try {
+      validateCredentials(email, password);
+    } catch (error) {
+      setAuthError(
+        error instanceof Error ? error.message : 'Check your details.',
+      );
+      return;
+    }
+    setAuthError('');
+    const submitted = password;
+    setPassword('');
+    await controller.signIn(() =>
+      authenticateEmail(authMode, email, submitted),
+    );
+  }
   async function save() {
     setSaving(true);
     setError('');
@@ -149,14 +180,14 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
         visible={open}
         animationType="none"
         presentationStyle="pageSheet"
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={close}
       >
         <SafeAreaView style={styles.modal}>
           <ScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.section}
           >
-            <Action secondary label="Close" onPress={() => setOpen(false)} />
+            <Action secondary label="Close" onPress={close} />
             <Text style={styles.title}>Your account</Text>
             {state.kind === 'loading' && (
               <Text accessibilityLiveRegion="polite" style={styles.body}>
@@ -186,10 +217,72 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                     {state.error}
                   </Text>
                 )}
+                {syntheticEmailAuth && (
+                  <Text style={styles.caption}>
+                    Synthetic email/password fixture. No email is sent.
+                  </Text>
+                )}
+                <Text style={styles.body}>Email</Text>
+                <TextInput
+                  accessibilityLabel="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  maxLength={254}
+                  style={styles.input}
+                />
+                <Text style={styles.body}>Password</Text>
+                <TextInput
+                  accessibilityLabel="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  autoComplete={
+                    authMode === 'signUp' ? 'new-password' : 'current-password'
+                  }
+                  textContentType={
+                    authMode === 'signUp' ? 'newPassword' : 'password'
+                  }
+                  maxLength={1024}
+                  style={styles.input}
+                  returnKeyType="go"
+                  onSubmitEditing={() => {
+                    void submitEmail();
+                  }}
+                />
+                {authError ? (
+                  <Text accessibilityLiveRegion="polite" style={styles.body}>
+                    {authError}
+                  </Text>
+                ) : null}
                 <Action
-                  label="Sign in with email"
+                  label={
+                    authMode === 'signUp'
+                      ? 'Create account'
+                      : 'Sign in with email'
+                  }
                   onPress={() => {
-                    void controller.signIn(signInWithProvider);
+                    void submitEmail();
+                  }}
+                />
+                <Action
+                  secondary
+                  label={
+                    authMode === 'signUp'
+                      ? 'Already have an account? Sign in'
+                      : 'Create an account'
+                  }
+                  onPress={() => {
+                    setAuthMode(authMode === 'signUp' ? 'signIn' : 'signUp');
+                    setPassword('');
+                    setAuthError('');
+                    controller.dismissSignInMessage();
                   }}
                 />
                 {localSignInEnabled && (
@@ -303,6 +396,13 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                           .catch(() =>
                             setError('Could not switch profiles. Try again.'),
                           );
+                      }}
+                    />
+                    <Action
+                      secondary
+                      label="Refresh session"
+                      onPress={() => {
+                        void controller.resume();
                       }}
                     />
                     <Action

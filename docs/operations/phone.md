@@ -107,12 +107,12 @@ iPhone 17 Pro observations cover account isolation, History pagination, reward
 receipts/content, paid submission and synthetic route comparison. Approved
 figures render on both native platforms after the timestamp correction.
 Small-iPhone largest Dynamic Type and actual VoiceOver remain mandatory and
-unverified. Live OIDC and Google/provider configuration remain external limits.
+unverified. Hosted Supabase email/password and Google/provider configuration remain external limits.
 
 Metro and Babel use the accepted baseline configuration. Native SecureStore,
 accessibility queries/subscriptions and four-tab navigation remain protected.
 C changes only the owned presentation described above. The six prepared native dependencies include `expo-web-browser` for
-native OIDC authentication; that dependency does not create a fan web product.
+the retained OIDC preparation; email/password uses direct Auth HTTP. That dependency does not create a fan web product.
 
 Earlier synthetic browser experiments remain private historical evidence. They
 do not establish native functionality, visual acceptance or accessibility.
@@ -135,5 +135,37 @@ History pagination and route selection were checked. iPhone live size changes
 preserve an unsaved name draft, edited route query and selected route. This is
 simulator/emulator development-client proof, not a standalone release build or
 physical journey proof. No new paid transaction was required for this restyle.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## Native email/password checkpoint
+
+The account panel uses the fixed project's public Supabase configuration from
+`GET /admin/config`. Direct Auth requests implement email/password sign-up,
+sign-in, refresh and `logout?scope=local`; no SDK or dependency was added. An
+unavailable, foreign-project or secret-key configuration fails closed. The
+accepted backend candidate must be integrated before production configuration
+and verification are available in this phone branch.
+
+A confirmation response creates no AMR session. After provider sign-in, the app
+exchanges the access token at `POST /v1/session`; the server owns account identity,
+roles and profiles. Native SecureStore keeps provider credentials beside the
+opaque AMR session in one serialized record. Passwords are never persisted.
+Foreground resume and explicit Refresh session first validate the existing AMR
+session, then rotate expiring provider credentials. An AMR401 signs out; it does
+not silently exchange a provider token to recreate revoked authority.
+
+Logout attempts both AMR session revocation and Supabase local-session logout,
+including when one fails. Local credentials clear generation-safely after the
+attempts. Partial remote failure is visible; it does not claim server revocation
+succeeded. A crash during the attempt leaves non-resumable revocation intent.
+A delayed old completion cannot clear a replacement session. The seven-day AMR
+session and provider token lifetimes are separate.
+
+Development-only loopback Auth fixtures are explicitly labelled and rejected
+outside development. They preserve fixed production-project configuration
+validation and do not establish hosted signup, email delivery or SMTP readiness.
+See the [native acceptance and video protocol](native-acceptance.md) for the
+whole-feature gaps and recording requirements. No fan web adapter was added.
 
 Edited by gpt-6-astra through Codex (T3 Code).

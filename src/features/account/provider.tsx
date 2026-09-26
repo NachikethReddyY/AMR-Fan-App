@@ -11,7 +11,7 @@ import {
   Geist_400Regular,
   Geist_600SemiBold,
 } from '@expo-google-fonts/geist';
-import { api, storage } from './native-auth';
+import { api, storage, emailAuth } from './native-auth';
 import { createSessionController } from './session';
 
 const Context = createContext<ReturnType<
@@ -22,7 +22,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     Geist_400Regular,
     Geist_600SemiBold,
   });
-  const [controller] = useState(() => createSessionController(api, storage));
+  const [controller] = useState(() =>
+    createSessionController(api, storage, emailAuth),
+  );
   useEffect(() => {
     void controller.resume();
     const listener = AppState.addEventListener('change', (state) => {
