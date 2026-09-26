@@ -265,6 +265,18 @@ no HTTP body decoding, inference or live credit. Infrastructure retains the
 0010 hosted upgrader. Deployment must wait for that reviewed migration and grants;
 merge is a separate manager-owned turn. No CI queries or device/provider actions.
 
+## AI-BUDGET-001: durable shared USD admission
+
+Related to parent #3 and merged PR45. Implement the existing `AiCostStore`
+contract with one PostgreSQL budget shared across development and hosted callers.
+The ceiling remains $10; no provider, rate, credential or hosted database is
+enabled. Migration `0011_ai_cost_store.sql` is reserved by the coordinator;
+photo work owns `0010`. Acceptance covers concurrent admission, restart/replay,
+immutable fingerprints/rates, per-stage claims, partial completion, unknown-spend
+holds and persistent suspension after bound violations. Isolated PostgreSQL and
+heavy gates wait for the coordinator's explicit slot grant. Deliver one reviewed
+inactive PR; the coordinator owns the squash turn. CI remains paused.
+
 Recorded by gpt-6-astra through Codex (T3 Code).
 
 ## ONEMAP-001: finish the Singapore routing adapter

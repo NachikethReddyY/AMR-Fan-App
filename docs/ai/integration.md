@@ -1,8 +1,9 @@
 # TokenRouter integration handoff
 
 This is an offline server preparation for parent #3 and the route, activity,
-report and submission owners. It contains no activated gateway caller, shared
-budget database, photo endpoint or APK integration. Historical quality gates and
+report and submission owners. The [durable cost-store adapter](cost-store.md)
+is implemented but not provisioned or activated. There is no activated gateway
+caller, photo endpoint or APK integration here. Historical quality gates and
 disabled defaults in [runtime](runtime.md) remain in force.
 
 ## Contract evidence, 26 September 2026
@@ -94,7 +95,8 @@ any other billed output. Fixed fees, rounding, surcharges and gateway failover
 must be included conservatively or admission must stay unavailable. Parsing a
 rate card does not verify these facts.
 
-The DB owner implements `AiCostStore`:
+The PostgreSQL adapter implements `AiCostStore` as described in
+[shared AI cost storage](cost-store.md):
 
 1. `reserve(reservation)` atomically checks the one shared budget across development
    and deployed callers. Count prior actual spend, uncertain spend and outstanding

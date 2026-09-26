@@ -857,3 +857,30 @@ candidate. Phone capture/leg-attribution work is preserved separately and is not
 part of this performance commit.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: durable shared AI USD store
+
+Implemented the PR45 store seam for parent #3. One PostgreSQL budget-row lock
+serializes reservations, claims, cancellation and accounting. Exact replays do
+not dispatch; changed fingerprints/quotes fail. Unknown spend stays held across
+process exit, and bound violations persistently suspend admission. Configuration
+requires an explicit shared database URL with no per-worktree fallback. No
+provider, price, cloud database, API route or paid request was enabled.
+
+Eleven isolated PostgreSQL 17 cases pass, including separate processes, cap
+races, lock-wait expiry, partial two-stage recovery, rollback and exact runtime
+column grants. Six initial behavioral tests failed against the stub before the
+implementation. Each fixture owned one disposable container/internal network,
+with no host ports/mounts or shared credentials, and removed its resources.
+The initial chain was 0001–0009 plus independent 0011. Main now includes photo
+0010; integrated-chain verification follows the rebase. Typecheck passed.
+Independent read-only source review found no actionable issues.
+
+The first full gate stopped on bug-record formatting, repaired locally. The next
+reached the unchanged route responsiveness fixture, where the 5-second deadline
+returned six routes instead of twelve under load. A focused rerun and final
+full/security gates remain pending; no threshold was changed. Raw proof remains
+local under `.evidence/ai-cost-store/`. CI is paused and was not queried. The
+coordinator owns eventual squash merge; publication follows completed checks.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
