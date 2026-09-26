@@ -52,6 +52,12 @@ sources are labelled. Missing optional fields stay missing. No numeric totals
 are calculated from those figures. Personal/community travel impact remains
 unavailable in this phone candidate.
 
+The official-record adapter normalizes explicit PostgreSQL approval timestamps
+to ISO timestamps before native parsing. Invalid dates and timestamps without a
+timezone fail validation. Literal figures and source evidence remain unchanged.
+This corrects the native Hermes rejection of PostgreSQL's space-separated date
+format. Related to #19, #20 and parent #3.
+
 ## Proof and limits
 
 The phone tests cover durable retry/restart, stale confirmations, ownership,
@@ -70,8 +76,10 @@ listener and pool and revokes its sessions. It does not prove rendered UI.
 
 Native static Android/iOS exports pass; they do not establish interaction,
 Dynamic Type, screen-reader output or physical-device behavior. Prior Android
-account/tab evidence carries only where lineage is unchanged. New rewards,
-submissions, Travel, official Impact and balance/History need native observation.
+account/tab evidence carries only where lineage is unchanged. Bounded Pixel and
+iPhone 17 Pro observations cover account isolation, History pagination, reward
+receipts/content, paid submission and synthetic route comparison. Approved
+figures render on both native platforms after the timestamp correction.
 Small-iPhone largest Dynamic Type and actual VoiceOver remain mandatory and
 unverified. Live OIDC and Google/provider configuration remain external limits.
 
@@ -82,7 +90,9 @@ native OIDC authentication; that dependency does not create a fan web product.
 
 Earlier synthetic browser experiments remain private historical evidence. They
 do not establish native functionality, visual acceptance or accessibility.
-Device observation is pending an exclusive device allocation. All partial issues
-remain open and this candidate remains on mandatory native UI HOLD.
+Live Dynamic Type clipping on mounted iPhone text is still under correction;
+relaunching is not an accepted remedy. All partial issues remain open and this
+candidate remains on mandatory native UI HOLD. Hosted CI is paused by the user
+to save build minutes; local proof does not imply hosted gates passed.
 
 Edited by gpt-6-astra through Codex (T3 Code).

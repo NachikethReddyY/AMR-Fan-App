@@ -43,3 +43,28 @@ test('official adapter uses only authenticated approved endpoint and never subst
   expect(request).toHaveBeenCalledWith('/v1/impact/official', 'A');
   expect(result.items).toHaveLength(1);
 });
+
+test.each([
+  ['2026-09-26 03:28:30.71819+00', '2026-09-26T03:28:30.718+00:00'],
+  ['2026-09-26 03:28:30+00', '2026-09-26T03:28:30.000+00:00'],
+  ['2026-09-26 11:28:30.7+08:00', '2026-09-26T11:28:30.700+08:00'],
+  ['2026-09-26T03:28:30.718Z', '2026-09-26T03:28:30.718Z'],
+])('approval timestamp %s becomes an explicit ISO instant', (raw, expected) => {
+  const result = parseOfficial([{ ...row, approvedAt: raw }])[0];
+  expect(result.approvedAt).toBe(expected);
+  expect(result.fields).toEqual(row.fields);
+  expect(result.evidence).toEqual(row.evidence);
+});
+
+test.each([
+  '2026-09-26 03:28:30',
+  '2026-02-30 03:28:30+00',
+  '2026-09-26 25:28:30+00',
+  '2026-09-26 03:28:30+99',
+  'yesterday',
+])(
+  'invalid or timezone-free approval timestamp %s fails closed',
+  (approvedAt) => {
+    expect(() => parseOfficial([{ ...row, approvedAt }])).toThrow();
+  },
+);
