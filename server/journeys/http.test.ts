@@ -9,10 +9,11 @@ import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
-import { fork, type ChildProcess } from 'node:child_process';
+import { execFile, fork, type ChildProcess } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createJourneyService } from './store.ts';
 import { planSchema, type JourneyPlan } from './planning.ts';
-import { summarySchema } from './contracts.ts';
+import { journeyListSchema, summarySchema } from './contracts.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
@@ -257,8 +258,83 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
       409,
     );
 
+    const another = plan.candidates.find(
+      (candidate) => candidate.routeId === 'google-car-0',
+    );
+    assert.ok(another && another.kind === 'prepared');
+    assert.equal(
+      (
+        await post(`/v1/journeys/${another.journey.id}/start`, {
+          requestId: randomUUID(),
+          captureSessionId: randomUUID(),
+        })
+      ).status,
+      200,
+    );
     await stop();
     await boot();
+    // Actual API registration remains outside this allocation: do not simulate a GET handler.
+    const discoveryHttp = await fetch(
+      `${base}/v1/profiles/${profileId}/journeys?state=active`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    assert.equal(
+      discoveryHttp.status,
+      404,
+      'Shared GET registration is still pending',
+    );
+    // Fresh process has no journey ID. Only the restored session/profile are supplied.
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import { createDatabase } from './server/database/index.ts';
+      import { createJourneyService } from './server/journeys/store.ts';
+      const pool = createDatabase();
+      try {
+        const result = await createJourneyService({ pool }).listOwned(
+          process.env.TEST_JOURNEY_SESSION, process.env.TEST_JOURNEY_PROFILE, { state: 'active' });
+        process.stdout.write(JSON.stringify(result));
+      } finally { await pool.end(); }
+    `,
+      ],
+      {
+        env: {
+          ...process.env,
+          TEST_JOURNEY_SESSION: token,
+          TEST_JOURNEY_PROFILE: profileId,
+        },
+        timeout: 10000,
+      },
+    );
+    const discovered = journeyListSchema.parse(JSON.parse(stdout));
+    assert.deepEqual(
+      discovered.items.map((item) => item.id).sort(),
+      [active.id, another.journey.id].sort(),
+    );
+    const restoredWalk = discovered.items.find((item) => item.mode === 'walk');
+    assert.ok(restoredWalk);
+    assert.deepEqual(
+      await (
+        await fetch(`${base}/v1/journeys/${restoredWalk.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ).json(),
+      active,
+    );
+    assert.equal(calls, 2);
+    t.diagnostic(
+      JSON.stringify({
+        registrationStatus: discoveryHttp.status,
+        discoveredInFreshProcess: discovered.items.length,
+        providerCallsAfterRestart: calls,
+        displayBytes: Buffer.byteLength(JSON.stringify(plan.display)),
+      }),
+    );
     const get = (suffix = '', auth = token) =>
       fetch(`${base}/v1/journeys/${active.id}${suffix}`, {
         headers: { Authorization: `Bearer ${auth}` },

@@ -8,7 +8,7 @@ collection, awards and deployment remain separate work.
 ## Authority and retained data
 
 `createJourneyService({pool, env, policy, clock, queryRoutes})` supplies `preparePlan`, internal `prepare`, `start`,
-`appendEvidence`, `finish`, `read` and server-only `cleanup`. The optional clock
+`appendEvidence`, `finish`, `read`, `listOwned` and server-only `cleanup`. The optional clock
 exists for controlled tests and is refused in production. Each fan operation
 accepts a session token, validates it against the account session store, holds
 that session against concurrent revocation, locks the owned profile and journey,
@@ -93,6 +93,44 @@ Evidence and finish require the same owner and capture session. The fixture
 route switch `JOURNEY_FIXTURES_ENABLED=true` is allowed only in explicit test or
 development environments and is rejected in production. Fixture route provenance
 remains visible on every summary. Synthetic traces do not prove real travel.
+
+## Phone restart discovery (service ready, GET registration pending)
+
+`listOwned(token, profileId, query = {})` reads current owner-scoped summaries.
+The strict query accepts only `state: 'active'` or omitted (recent), `limit`
+(default 20, integer or decimal string 1–50) and optional `before` (opaque cursor,
+maximum 512 characters). It returns `{profileId, asOfMs, items, nextCursor}`.
+Items contain only `id`, `state`, `mode`, `source`, preparation/Start/finish/precise
+expiry timestamps, and assessment status/version/revision/calibration. Exported
+`JourneyList` and `journeyListSchema` define the caller response.
+
+Recent means all existing states ordered by immutable preparation time and ID,
+both descending. The cursor binds that tuple to profile and active/recent view;
+it conveys no authority. Multiple active journeys remain separate. Refresh starts
+at the first page; newly prepared rows do not move into an older page, while a
+concurrent finish can remove a row from the active view. Fetch detail by discovered
+ID to reconcile current state and capture session. There is no single-active rule,
+implicit Start, cancellation, reconstructed GPS or automatic native collection.
+
+The new discovery read uses the existing journey `authorized` helper unchanged.
+After that helper acquires and validates the session row, `listOwned` locks the
+owned profile and calls its supplied `current()` guard before reading summaries;
+the helper retains its existing final check. This defines the new read boundary
+only. Existing journey methods and points authorization semantics are unchanged. Anonymous/expired/revoked sessions
+receive 401; foreign or missing profiles receive 404, including for admins;
+invalid input or a mismatched cursor receives 400. An empty owned view succeeds.
+The query selects no snapshots or raw samples and performs no application writes,
+cleanup or retention extension. Expired active rows retain their state and original
+expiry; discovery does not make them recordable again.
+
+Shared API owner handoff: register exactly one authenticated
+`GET /v1/profiles/:profileId/journeys`, under the existing origin, rate, error and
+no-store controls. Reject duplicate search keys, then pass bearer token, path ID
+and the search-parameter object to `journeys.listOwned`. Unknown query keys are
+rejected by the service. Existing known-ID GET and prepare dispatch are unchanged.
+The actual API currently returns 404 for this collection path. Service tests and
+fresh-process recovery prove the owned implementation; they do not replace the
+pending registered HTTP authorization matrix, combined DAST or phone proof.
 
 ## Evidence and retry contract
 

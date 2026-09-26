@@ -6,6 +6,12 @@ Status: accepted product behavior. A local server lifecycle and prototype eviden
 assessment are implemented through authenticated HTTP; native collection remains
 pending. Physical-platform acceptance below has not been executed.
 
+Related to #8, route/comparison dependencies #6 and #7, parent tracker #3.
+The server preparation receipt now supplies the same nonprecise comparison used
+for persisted selection. Owner-scoped active/recent discovery is implemented in
+the journey service; its collection GET registration and phone integration remain
+pending. Existing known-ID reads and old preparation receipts remain valid.
+
 The [server journey procedure](../operations/journeys.md) records persisted
 ownership, retry, evidence, retention and test interfaces. Its versioned
 prototype rules can return positive or negative assessments independently of

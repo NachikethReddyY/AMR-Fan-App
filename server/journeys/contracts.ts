@@ -233,6 +233,60 @@ export const summarySchema = z.strictObject({
   assessment: assessmentSchema,
 });
 export type Journey = z.infer<typeof summarySchema>;
+// Cursor is a page boundary, never authority; every read still checks the profile owner.
+export const journeyListCursorSchema = z.strictObject({
+  version: z.literal(1),
+  profileId: id,
+  view: z.enum(['active', 'recent']),
+  preparedAtMs: timestamp,
+  id,
+});
+export const journeyListInput = z.strictObject({
+  state: z.literal('active').optional(),
+  limit: z
+    .union([
+      z.number().int().min(1).max(50),
+      z
+        .string()
+        .regex(/^[1-9][0-9]?$/)
+        .transform(Number)
+        .pipe(z.number().max(50)),
+    ])
+    .default(20),
+  before: z
+    .string()
+    .min(1)
+    .max(512)
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional(),
+});
+export const journeyListItemSchema = summarySchema
+  .pick({
+    id: true,
+    state: true,
+    mode: true,
+    source: true,
+    preparedAtMs: true,
+    startedAtMs: true,
+    finishedAtMs: true,
+    preciseExpiresAtMs: true,
+  })
+  .extend({
+    assessment: assessmentSchema.pick({
+      status: true,
+      version: true,
+      revision: true,
+      calibration: true,
+    }),
+  });
+export const journeyListSchema = z.strictObject({
+  profileId: id,
+  asOfMs: timestamp,
+  items: z.array(journeyListItemSchema).max(50),
+  nextCursor: journeyListInput.shape.before.unwrap().nullable(),
+});
+export type JourneyList = z.infer<typeof journeyListSchema>;
+
 export const prepareSchema = z.strictObject({ profileId: id, requestId: id });
 export const startSchema = z.strictObject({
   requestId: id,
