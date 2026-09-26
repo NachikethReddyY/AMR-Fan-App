@@ -5,12 +5,32 @@
     "version": "0.1.0",
     "icon": "./assets/branding/fan-icon-v1.png",
     "android": {
-      "package": "xyz.theynr.amrfanapp"
+      "package": "xyz.theynr.amrfanapp",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+      ]
     },
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "platforms": ["ios", "android"],
     "scheme": "amrfan",
-    "plugins": ["expo-secure-store", "expo-web-browser", "expo-font"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow AMR Fan to take a photo of your activity.",
+          "photosPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

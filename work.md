@@ -650,3 +650,16 @@ artifact. It remains an internal checkpoint, not the final photo-enabled APK.
 Both device sessions are now closed and available for coordinated photo proof.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: PR28 reviewed photo client integration
+
+- Imported only the reviewed photo client and tests from `ca71166bce7d576f943af36e67a5cc2551c848ae`, plus Expo SDK 57 image-picker/file-system dependencies. No server award hook, migration, sharp dependency or API registration is included.
+- Home now opens the system camera and review flow. Its captured identity survives ordinary session refresh; session-controller intent notifications close private drafts before logout, replacement sign-in, profile switch or confirmed expiry. Actual Home blur closes the flow. Availability 401 uses the existing matching-token expiry guard.
+- Camera/library/audio configuration is camera-only. Checks can only GET availability with current authority; no photo or description is transmitted, and no live AI or credit is enabled.
+- Focused proof: six failing-first identity cases now pass, 50 session/camera unit tests and 14 photo component tests pass. These use controlled adapters and do not establish native camera behavior. Full local checks, security checks, frozen install and iOS/Android exports passed. The first full run hit the existing 40 ms AI transport fixture deadline under simultaneous native compilation; the complete rerun after compilation passed without source changes. Native evidence pending. Node 24.20.0 is available and used.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

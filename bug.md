@@ -208,3 +208,15 @@ The separate account worktree has unpublished commits and local edits; leave it
 untouched. Native interaction remains subject to its existing acceptance hold.
 
 Edited by gpt-6-sol through Codex (T3 Code).
+
+## PR28 photo client integration, 2026-09-26
+
+- User steering: integrate reviewed client candidate `ca71166bce7d576f943af36e67a5cc2551c848ae` into [PR28](https://github.com/NachikethReddyY/AMR-Fan-App/pull/28). Keep server hooks/migrations and live AI outside this slice.
+- Acceptance: reachable Home camera entry, camera-only permissions, same-account refresh preserves capture/draft, explicit logout/switch/known expiry and Home blur clear it, loading cannot authorize checks. Sequential Pixel/iPhone proof uses synthetic scenery only.
+- Status: local integration and focused tests pass; complete checks and native proof pending. No live photo upload or points claim exists.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

@@ -53,6 +53,9 @@ export function createSessionController(
     );
     return result;
   }
+  const identityListeners = new Set<() => void>();
+  const invalidateIdentity = () =>
+    identityListeners.forEach((listener) => listener());
   const listeners = new Set<() => void>();
   const set = (next: SessionState) => {
     state = next;
@@ -135,6 +138,7 @@ export function createSessionController(
     } catch (error) {
       if (attempt !== generation) return;
       if (error instanceof AccountError && error.status === 401) {
+        invalidateIdentity();
         try {
           await clear(attempt, { kind: 'signedOut', error: error.message });
           return;
@@ -151,6 +155,7 @@ export function createSessionController(
     }
   }
   async function signIn(authenticate: () => Promise<AuthenticatedSession>) {
+    invalidateIdentity();
     const attempt = ++generation;
     authenticationGeneration = attempt;
     set({ kind: 'loading' });
@@ -207,6 +212,7 @@ export function createSessionController(
     }
   }
   async function logout() {
+    invalidateIdentity();
     const attempt = ++generation;
     set({ kind: 'loading' });
     try {
@@ -252,6 +258,7 @@ export function createSessionController(
   }
   async function expire(token: string) {
     if (state.kind !== 'signedIn' || state.token !== token) return;
+    invalidateIdentity();
     const attempt = ++generation;
     set({ kind: 'loading' });
     try {
@@ -269,6 +276,13 @@ export function createSessionController(
   }
   return {
     getState: () => state,
+    // Explicit loss of identity must close private drafts before loading hides its cause.
+    subscribeIdentityInvalidation: (listener: () => void) => {
+      identityListeners.add(listener);
+      return () => {
+        identityListeners.delete(listener);
+      };
+    },
     cancelSignIn: () => {
       if (
         state.kind !== 'signedOut' &&
@@ -293,7 +307,8 @@ export function createSessionController(
     logout,
     expire,
     select: async (selected: 'real' | 'demo') => {
-      if (state.kind !== 'signedIn') return;
+      if (state.kind !== 'signedIn' || state.selected === selected) return;
+      invalidateIdentity();
       const current = state;
       const attempt = ++generation;
       set({ kind: 'loading' });

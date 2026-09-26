@@ -1,3 +1,5 @@
+import { PhotoActivitySession } from './features/activity/PhotoActivitySession';
+import { usePhotoActivity } from './features/activity/usePhotoActivity';
 import { StatusBar } from 'expo-status-bar';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { useCallback, useState } from 'react';
@@ -68,12 +70,24 @@ function Home({
   onRewards: () => void;
   onImpact: () => void;
 }) {
+  const { controller: accountController } = useAccount();
+  const photo = usePhotoActivity(accountController);
   const { controller } = useHistory();
   useFocusEffect(
     useCallback(() => {
       void controller.refresh();
     }, [controller]),
   );
+  if (photo.owner) {
+    return (
+      <PhotoActivitySession
+        owner={photo.owner}
+        session={accountController}
+        onClose={photo.close}
+        check={photo.check}
+      />
+    );
+  }
   return (
     <>
       <View style={styles.balancePanel}>
@@ -82,6 +96,12 @@ function Home({
         <Action quiet label="History" icon={ChevronRight} onPress={onRewards} />
       </View>
       <View style={styles.homeContent}>
+        <Action
+          label="Photo activity"
+          disabled={!photo.canOpen}
+          onPress={photo.open}
+        />
+        {photo.cleanupError ? <Text>{photo.cleanupError}</Text> : null}
         <View style={styles.travelEntry}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
             Your next journey

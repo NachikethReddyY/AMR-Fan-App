@@ -755,3 +755,58 @@ test('late password error cannot replace a newer sign-in error', async () => {
   expect(c.getState()).not.toMatchObject({ error: 'old sign-in failed' });
   expect(f.stored).toBeNull();
 });
+
+test.each(['logout', 'switch', 'expire', 'signIn'] as const)(
+  'photo identity invalidates before %s publishes loading',
+  async (operation) => {
+    const f = fixture();
+    const c = createSessionController(f.api, f.storage);
+    await c.signIn(async () => identity('A'));
+    const observed: string[] = [];
+    c.subscribeIdentityInvalidation(() => observed.push(c.getState().kind));
+    const pending =
+      operation === 'logout'
+        ? c.logout()
+        : operation === 'switch'
+          ? c.select('demo')
+          : operation === 'expire'
+            ? c.expire('A')
+            : c.signIn(async () => identity('B'));
+    expect(observed).toEqual(['signedIn']);
+    await pending;
+  },
+);
+
+test('same-account refresh, same-profile selection and stale expiry retain photo identity', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(async () => identity('A'));
+  f.api.resume = async () => identity('A').account;
+  const invalidated = jest.fn();
+  const unsubscribe = c.subscribeIdentityInvalidation(invalidated);
+  await c.resume();
+  await c.select('real');
+  await c.expire('old-token');
+  expect(invalidated).not.toHaveBeenCalled();
+  unsubscribe();
+  await c.logout();
+  expect(invalidated).not.toHaveBeenCalled();
+});
+
+test('resume authorization failure invalidates before asynchronous credential cleanup', async () => {
+  const f = fixture();
+  const c = createSessionController(f.api, f.storage);
+  await c.signIn(async () => identity('A'));
+  const cleanup = deferred<void>();
+  f.storage.clear = () => cleanup.promise;
+  const invalidated = jest.fn();
+  c.subscribeIdentityInvalidation(invalidated);
+  f.api.resume = async () => {
+    throw new AccountError(401, 'Expired');
+  };
+  const pending = c.resume();
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+  expect(invalidated).toHaveBeenCalledTimes(1);
+  cleanup.resolve();
+  await pending;
+});

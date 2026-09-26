@@ -59,3 +59,20 @@ Update this map when adding an entry point or integration. Record hard-to-revers
 accepted tradeoffs in `docs/adr/` and link them here.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+## Disabled photo client
+
+Home offers Photo activity to a signed-in real profile. The system camera opens
+before description entry. Capture bytes and draft text stay on the phone and are
+cleared after checks, retake, close, Home navigation blur, or identity invalidation.
+Same-account foreground refresh keeps the flow mounted and blocks checks while
+loading. Explicit logout, replacement sign-in, profile switching and confirmed
+expiry notify draft owners before the controller publishes loading.
+
+The client can only GET authenticated activity availability. It cannot upload
+photos, call an AI provider or award points. The photo backend, API registration
+and accounting migration are not included in PR28's client integration. A missing
+endpoint remains an honest failure; local availability fixtures do not establish
+hosted readiness. Expo camera access excludes microphone and photo-library access.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
