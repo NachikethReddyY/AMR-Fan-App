@@ -124,3 +124,20 @@ parser's separate anonymous scan returned zero alerts; it does not change this
 admin scan's failed status or establish hosted parser readiness.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+
+### Reports rebase through Awards main
+
+The pagination correction rebases through actual main
+`458cae125437692c03d036139063c4a99bae2c5d`. The original failed scan and its
+image/source hashes above remain unchanged historical evidence. Main's Awards
+commit changes only award/factor configuration imports and route/journey
+construction in `server/api/app.ts`; this report branch preserves that file
+exactly. Its new SHA-256 is
+`5306e324a52ea84d1a03990b650ddb8a4746e6b20f744b6d52c634136d17a3cf`.
+The other eight listed HTML/helper/session sources retain their scanned hashes.
+This is source equivalence evidence, not a fresh scan or automatic extension of
+the disposition. Root reviews the inherited API delta with the pagination fix
+before merge; no unrelated login or scanner code was changed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

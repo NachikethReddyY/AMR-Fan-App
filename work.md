@@ -1486,3 +1486,14 @@ CLEAR receipt at `1e60d442` remains the prior candidate's receipt; pagination
 needs focused rereview. No heavy checks or scan were repeated without a lease.
 
 Fixed and verified by gpt-6-astra through Codex (T3 Code).
+
+PR53 pagination rebase: actual main `458cae125437692c03d036139063c4a99bae2c5d`
+is now the base. Both owners' append-only records and main's expanded Awards
+script are preserved. Report source is byte-identical to the corrected source
+before rebase; API/Awards source is byte-identical to main. Forty-four focused
+report tests, typecheck and agent/docs validation pass after rebase. The original
+full/security/Linux/DAST receipts remain prior-source evidence, with no heavy
+rerun. The inherited Awards API hash change is separately recorded in the DAST
+exception document for root's focused review. Merge remains held.
+
+Rebased and verified by gpt-6-astra through Codex (T3 Code).
