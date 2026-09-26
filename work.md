@@ -1624,3 +1624,25 @@ private local evidence pending user selection through the coordinator. UI,
 full/security checks, allocated device proof and real PR delivery remain pending.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+### Selected B native contribution review
+
+User selected B. Rewards now mounts fan voting after the existing paid submission
+form in Redemption, and current participation status after submission moderation
+in History. The existing sections, main navigation and palette are unchanged.
+Selecting an eligible entry replaces only the ranking with its text, exact total,
+amount and explicit non-refundable confirmation. Cancel sends no request. A
+successful receipt returns to ranking and refreshes balance; a failed refresh
+cannot erase that receipt. Unknown outcomes retain the original intent, block a
+new contribution and recover after remount. Refusal reloads current server status.
+History deduplicates operation-linked projections by submission while original
+ledger entries and moderation receipts remain unchanged. Selected/fulfilled
+entries show closed contributions; fulfilment remains labelled demonstration.
+
+Ten focused component tests pass after failing first on absent components;
+focused lint and TypeScript pass. These use controlled adapters and DOM renderers,
+not native proof. Real backend charging, full checks, security and native proof
+await the allocated slot. No cloud, provider, CI or device action ran. The old
+"Voting is not available here yet" copy now states approval is required.
+
+Implemented by gpt-6-astra through Codex (T3 Code).

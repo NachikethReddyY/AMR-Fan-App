@@ -605,3 +605,10 @@ published-unit discrepancy and neutral one-occupant car scope. No dataset defaul
 activation or peer source copy. Existing assessment-freshness proof remains required.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+Native participation steering: user selected B on 26 September 2026. Contribution
+review temporarily replaces the ranking inside Redemption; cancel and an
+acknowledged result return to ranking. Selection hold resolved. Heavy checks and
+native proof require the coordinator's allocation. One PR remains the endpoint.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
