@@ -14,8 +14,9 @@ supersede older planning examples.
 - Ask for a display name during onboarding. Do not add other personal details
   without a reason and a product decision.
 - Define first-launch completion, entry into Home and later-launch behavior.
-  The current app opens Home and restores saved sessions; the new explanatory
-  onboarding layout still needs selection and implementation.
+  The selected short walkthrough and name step are implemented locally.
+  Completed setup restores the app without repeating the walkthrough; native
+  acceptance of the current build remains pending.
 
 ## Explicitly planned for later
 
@@ -31,8 +32,8 @@ unfinished required work into a future-feature promise.
 
 | Item | Current status | Presentation wording |
 | --- | --- | --- |
-| Email confirmation codes | Native source and controlled tests implemented. Hosted project uses eight digits with a one-hour expiry. Default free email provider rejected the custom template; custom SMTP configuration is still needed. | Code confirmation is implemented locally; hosted activation and device proof are pending. |
-| Onboarding | Purpose, earning explanation and name-only profile are required. Layout selection and native implementation are pending. | Onboarding is part of the MVP, not a later feature. |
+| Email confirmation codes | Native source and controlled tests implemented. Hosted project uses eight digits with a one-hour expiry. Custom Resend SMTP is configured; the test confirmation email is recorded delivered. | Sign-in worked on Pixel; new-account code completion remains unverified. |
+| Onboarding | Selected short walkthrough, name step and animated progress are implemented; current native acceptance is pending. | Onboarding is part of the MVP, not a later feature. |
 | Photo-based awards | Latest user allows a 50-point no-location award and fan-entered endpoints for a bus photo. Immediate credit, top-up and daily-limit decisions remain pending with the owning work. | Do not promise automatic credit or publish unsettled rules. This is ongoing work, not an agreed deferral. |
 | Real reward fulfilment | Real voucher inventory, merchandise fulfilment, tree allocation and driver outcomes need separate arrangements. Existing demonstrations are not proof of fulfilment. | Distinguish the app experience from fulfilled real-world rewards. |
 

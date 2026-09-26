@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
@@ -39,6 +39,7 @@ export function Onboarding({ children }: { children: React.ReactNode }) {
   const [namedAccount, setNamedAccount] = useState<string | null>(null);
   const [checkedAccount, setCheckedAccount] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const draftOwner = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const accountId = state.kind === 'signedIn' ? state.account.id : null;
@@ -66,8 +67,11 @@ export function Onboarding({ children }: { children: React.ReactNode }) {
       .read(`amr.onboarding.account.${accountId}`)
       .then((value) => {
         if (!active) return;
-        setName('');
-        setError('');
+        if (draftOwner.current !== accountId) {
+          setName('');
+          setError('');
+          draftOwner.current = accountId;
+        }
         setNamedAccount(value === 'done' ? accountId : null);
         if (value === 'done') setEntered(true);
         setCheckedAccount(accountId);

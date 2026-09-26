@@ -189,3 +189,25 @@ test('guest browsing still asks a newly signed-in account for its name', async (
   await render();
   expect(element.textContent).toContain('What should we call you?');
 });
+
+test('unfinished name survives same-account foreground refresh but clears for another account', async () => {
+  mockRead.mockImplementation(async (key) =>
+    key.includes('introduction') ? 'done' : null,
+  );
+  mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'one' };
+  await render();
+  const input = element.querySelector('input');
+  if (!input) throw new Error('Name absent');
+  await act(async () => {
+    input.value = 'Draft Name';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  mockState = { kind: 'loading' };
+  await render();
+  mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'two' };
+  await render();
+  expect(element.querySelector('input')?.value).toBe('Draft Name');
+  mockState = { kind: 'signedIn', account: { id: 'b' }, token: 'three' };
+  await render();
+  expect(element.querySelector('input')?.value).toBe('');
+});

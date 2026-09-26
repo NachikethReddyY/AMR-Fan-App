@@ -524,3 +524,14 @@ account or provider rate limit changed. Native display and inbox delivery
 remain separate acceptance checks.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Onboarding draft review correction, 2026-09-26
+
+Independent standards and specification reviews found the same defect: a
+foreground session refresh cleared an unfinished name. Reproduced with a
+failing component test, then retained the draft for its account while clearing
+it on an actual account change. Five onboarding component cases and typecheck
+pass. Native proof remains pending.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
