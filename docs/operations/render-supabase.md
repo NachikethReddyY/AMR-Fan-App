@@ -7,20 +7,20 @@ No cloud mutation has been performed by this candidate.
 ## Guarded database bootstrap
 
 Target only existing project `folakoxsilrfemctvlxj` (AMRF app, Free, Mumbai,
-PostgreSQL17). Read-only inventory found no app schema or migration ledger,
+PostgreSQL 17). Read-only inventory found no app schema or migration ledger,
 zero auth users, and zero storage buckets/objects. Recheck before provisioning.
 
 `node scripts/deploy/supabase-database.mjs prepare --config PRIVATE_JSON`
-accepts a regular file0600 in a directory0700 outside the checkout. Its fields
+accepts a regular file mode 0600 in a directory mode 0700 outside the checkout. Its fields
 are `projectRef`, `connectionString`, and `runtimePassword`. Generate a random
 48–128 character base64url runtime password in private storage, never in a shell
 argument, evidence, repository or chat. The connection must name this project's
-`postgres` administrator through its Mumbai IPv4 session pooler on port5432.
+`postgres` administrator through its Mumbai IPv4 session pooler on port 5432.
 TLS certificate verification stays enabled. Supply a trusted CA through the
 Node trust configuration if needed, never `rejectUnauthorized:false`.
 
 The bootstrap takes an advisory transaction lock, creates `amr_migration_owner`
-NOLOGIN and `amr_api` LOGIN, applies existing migrations0001–0008 byte unchanged,
+NOLOGIN and `amr_api` LOGIN, applies existing migrations 0001–0008 byte unchanged,
 and records checksums atomically. The administrator retains membership needed
 to maintain the owner role; runtime has no memberships. Runtime cannot create
 persistent schemas/tables, alter migration history, assign staff roles, or
@@ -65,15 +65,17 @@ first administrator remain pending.
 Hosted PDF processing is required. Neither macOS sandbox-exec nor the current
 host-Docker child adapter works unchanged on Render. A separate owner is testing
 hosted credential-free isolation. No local-publish substitute, unsafe fallback,
-report disablement or PDF deletion is authorized here. API memory fit, Render
-private repository access and no-spend billing controls remain unverified.
+report disablement or PDF deletion is authorized here. API memory fit and Render
+no-spend billing controls remain unverified. The separate synthetic hosted parser
+experiment is accepted in principle; activation still requires its independent
+policy/protocol/image gate and verified billing controls.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
 
 ## Private source storage
 
 Set `REPORT_STORAGE_PROVIDER=supabase` only with a private
-`amr-report-originals` bucket whose file limit is exactly10485760 bytes.
+`amr-report-originals` bucket whose file limit is exactly 10485760 bytes.
 `SUPABASE_STORAGE_KEY` accepts only a server-side legacy service_role JWT whose
 project claim matches the fixed target. Provider verification is performed by
 the authenticated bucket request; local claim parsing prevents misconfiguration,
@@ -82,7 +84,7 @@ privilege and must never reach a browser, phone or parser process.
 
 The adapter uses the fixed HTTPS Storage API, refuses redirects, bounds response
 bytes and deadlines, serializes inventory/upload through a database transaction
-advisory lock, enforces256MiB/1000-object capacity, writes without upsert, and
+advisory lock, enforces 256 MiB/1000-object capacity, writes without upsert, and
 reads back the committed hash. A lost response is recoverable by same-hash retry.
 Startup never deletes objects. Existing hashes, page evidence, revisions and
 approvals remain in PostgreSQL. Bucket creation is pending independent review;
@@ -110,7 +112,7 @@ The browser may offer its own password manager; the app implements no persistenc
 ## Prepared Render service
 
 `render.yaml` describes one Free Node web service in Singapore, at repository
-root, Node24.20.0 and pnpm12.6.0. It uses the frozen lock without install scripts,
+root, Node 24.20.0 and pnpm 12.6.0. It uses the frozen lock without install scripts,
 `API_HOST=0.0.0.0 API_PORT="$PORT" pnpm api:start`, and `/health`. The existing
 API Dockerfile remains an isolated scanner fixture, never the deployment image.
 Health is liveness after initial database startup validation, not complete report
@@ -120,24 +122,25 @@ create/deploy now. Missing parser configuration is a blocker, not a shipped
 placeholder feature. A separately hosted parser may require a reviewed manifest
 change after its owner proves the execution boundary.
 
-Render CLI2.28.0 is authenticated; workspace `tea-darket17lnhs73dois9g` is selected,
+Render CLI 2.28.0 is authenticated; workspace `tea-darket17lnhs73dois9g` is selected,
 with zero projects/services at read-only inventory. GitHub admin access to the
-private repository is verified, but Render GitHub-app authorization is not.
+private repository is verified. After the user connected GitHub in Render, the
+one authorized repeat Blueprint validation returned `valid: true`, proposing
+`amr-api-demo` with one action. This proves source resolution, not deployment.
 Render billing/payment method and overage controls are also unverified: do not
 create compute until the no-spend requirement is established. Free web compute
-is512MiB/0.1CPU;750 monthly hours are shared across services. Sleeping after15 idle
+is 512 MiB/0.1 CPU; 750 monthly hours are shared across services. Sleeping after 15 idle
 minutes is not a spending control. No keep-awake polling is proposed. Supabase
-Free has500MB database/1GB object storage; no upgrade/add-on is authorized.
+Free has 500 MB database/1 GB object storage; no upgrade/add-on is authorized.
 
 API idle/peak RSS is unmeasured. No claim of capacity, hosted parser readiness,
-rendered admin accessibility or live human login is made by local fixture tests.
+complete admin accessibility or live human login is made by local fixture tests.
 CLI/API metadata reads are not cloud deployment proof. GitHub Actions stays off.
 
 Primary references: [Render Free](https://render.com/docs/free),
 [Render blueprint](https://render.com/docs/blueprint-spec),
 [Supabase sessions](https://supabase.com/docs/guides/database/connecting-to-postgres),
 [Supabase private storage](https://supabase.com/docs/guides/storage/buckets/fundamentals).
-
 
 ## Dashboard gates before any Render creation
 
@@ -157,10 +160,10 @@ In **Account Settings > Account Security > Git Deployment Credentials**, inspect
 GitHub account. Use GitHub's installed Render app configuration to confirm access
 to the private `NachikethReddyY/AMR-Fan-App` repository. If access is absent, the
 human must grant that exact repository, then rerun Blueprint validation. Keep
-repository visibility private. Current validation says `branch main could not be
-found`; it does not establish whether installation access or another Render
-source-resolution problem is responsible. Do not work around it by publishing
-source or using an unknown registry.
+repository visibility private. The first validation could not resolve `main`; the single retry after the user
+confirmed connection returned `valid: true`. Preserve that private connection.
+Do not work around future access failures by publishing source or using an
+unknown registry.
 
 For the separately accepted synthetic parser experiment, require an explicit
 independent PASS covering the actual protocol/image and isolation assertions.
@@ -174,5 +177,14 @@ publication or service creation is part of this candidate.
 Validation limit: stock `pnpm check` reaches an existing unformatted ignored
 Supabase CLI cache (`supabase/.temp/linked-project.json`). The cache and local link
 are preserved; the candidate's tracked/non-ignored source set is checked with
-Prettier separately, followed by every remaining check stage. Browser interaction
-and live Supabase login remain unverified until their own proof grants.
+Prettier separately, followed by every remaining check stage.
+
+Browser proof used the actual four admin asset sets at 1280×800 with a loopback
+HTTP fixture and an intercepted synthetic provider response. Each page passed
+failed-login, non-admin denial, admin workspace and logout cases; password fields
+cleared, local/session storage stayed empty and no runtime errors appeared.
+This proves client behavior with synthetic responses. Real PostgreSQL API tests
+separately prove server-owned roles, identity replay and production auth guards.
+Live Supabase authentication/storage and full accessibility auditing remain
+unverified. All owned browser/server/database fixtures were closed and removed;
+the retained shared PostgreSQL service and Supabase local link were untouched.
