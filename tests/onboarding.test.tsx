@@ -1,6 +1,12 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, jest, test } from '@jest/globals';
+import { createEmailFlow } from '../src/features/account/email-flow';
+import {
+  createSessionController,
+  type StoredSession,
+} from '../src/features/account/session';
+import type { AccountApi } from '../src/features/account/api';
 import { Onboarding } from '../src/features/onboarding/Onboarding';
 
 let mockState: { kind: string; account?: { id: string }; token?: string };
@@ -210,4 +216,81 @@ test('unfinished name survives same-account foreground refresh but clears for an
   mockState = { kind: 'signedIn', account: { id: 'b' }, token: 'three' };
   await render();
   expect(element.querySelector('input')?.value).toBe('');
+});
+
+test('immediate password signup persists provider and app sessions then enters name setup', async () => {
+  mockRead.mockImplementation(async (key) =>
+    key.includes('introduction') ? 'done' : null,
+  );
+  await render();
+  const account = {
+    id: 'new-fan',
+    role: 'fan' as const,
+    profiles: [
+      { id: 'real', kind: 'real' as const, displayName: 'Fan', balance: 0 },
+      { id: 'demo', kind: 'demo' as const, displayName: 'Fan', balance: 0 },
+    ],
+  };
+  const api: AccountApi = {
+    signIn: jest.fn(async () => ({
+      token: 'app-session',
+      expiresAt: '2030-01-01',
+      account,
+    })),
+    syntheticSignIn: async () => {
+      throw new Error('Unused');
+    },
+    resume: async () => account,
+    logout: async () => {},
+    rename: async () => account.profiles[0],
+    history: async () => ({
+      profile: account.profiles[0],
+      balance: 0,
+      entries: [],
+      nextCursor: null,
+    }),
+  };
+  let stored: StoredSession | null = null;
+  const controller = createSessionController(api, {
+    read: async () => stored,
+    write: async (value) => {
+      stored = value;
+    },
+    clear: async () => {
+      stored = null;
+    },
+  });
+  const provider = {
+    accessToken: 'provider-access',
+    refreshToken: 'provider-refresh',
+    expiresAt: 2000000000000,
+    subject: '11111111-1111-4111-8111-111111111111',
+  };
+  const auth = {
+    signUp: jest.fn(async () => ({ kind: 'session' as const, provider })),
+    signIn: async () => provider,
+    refresh: async () => provider,
+    revoke: async () => {},
+  };
+  await controller.signIn(() =>
+    createEmailFlow(auth, api).authenticate(
+      'signUp',
+      'fixture@example.test',
+      'fixture-password',
+    ),
+  );
+  expect(api.signIn).toHaveBeenCalledWith('provider-access');
+  expect(stored).toMatchObject({
+    kind: 'active',
+    token: 'app-session',
+    provider: {
+      accessToken: 'provider-access',
+      refreshToken: 'provider-refresh',
+    },
+  });
+  mockState = controller.getState();
+  await render();
+  expect(element.textContent).toContain('What should we call you?');
+  expect(element.textContent).not.toContain('App content');
+  expect(element.textContent).not.toContain('Confirm email');
 });

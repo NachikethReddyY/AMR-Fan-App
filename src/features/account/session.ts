@@ -25,7 +25,7 @@ type Storage = {
 };
 export type SessionState =
   | { kind: 'loading' }
-  | { kind: 'signedOut'; error: string | null; confirmationEmail?: string }
+  | { kind: 'signedOut'; error: string | null }
   | { kind: 'unavailable'; message: string }
   | {
       kind: 'signedIn';
@@ -150,28 +150,12 @@ export function createSessionController(
         });
     }
   }
-  async function signIn(
-    authenticate: () => Promise<
-      AuthenticatedSession | { kind: 'confirmation'; email: string }
-    >,
-  ) {
-    const confirmationEmail =
-      state.kind === 'signedOut' ? state.confirmationEmail : undefined;
+  async function signIn(authenticate: () => Promise<AuthenticatedSession>) {
     const attempt = ++generation;
     authenticationGeneration = attempt;
     set({ kind: 'loading' });
     try {
       const session = await authenticate();
-      if ('kind' in session) {
-        if (attempt === generation)
-          set({
-            kind: 'signedOut',
-            error:
-              'Enter the confirmation code from your email. If you already confirmed your email, return to sign in.',
-            confirmationEmail: session.email,
-          });
-        return;
-      }
       if (attempt !== generation) {
         await revokeCredentials(session);
         return;
@@ -213,7 +197,6 @@ export function createSessionController(
       if (attempt === generation)
         set({
           kind: 'signedOut',
-          ...(confirmationEmail ? { confirmationEmail } : {}),
           error:
             error instanceof Error
               ? error.message

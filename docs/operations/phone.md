@@ -147,7 +147,12 @@ unavailable, foreign-project or secret-key configuration fails closed. The
 accepted backend candidate must be integrated before production configuration
 and verification are available in this phone branch.
 
-A confirmation response creates no AMR session. After provider sign-in, the app
+Signup and sign-in use email and password without MFA or a confirmation-code
+step, per the 26 September decision. Hosted signup requires auto-confirmation.
+This accepts unproven email ownership; server identity still comes from the
+validated provider subject, never the entered email. A provider response without
+a session fails closed and creates no AMR session. Existing unconfirmed accounts
+are not modified by the phone. After provider sign-in, the app
 exchanges the access token at `POST /v1/session`; the server owns account identity,
 roles and profiles. Native SecureStore keeps provider credentials beside the
 opaque AMR session in one serialized record. Passwords are never persisted.

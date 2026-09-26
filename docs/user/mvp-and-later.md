@@ -9,8 +9,9 @@ supersede older planning examples.
 
 - Explain what AMR Fan is, how fans earn and use points, and how to use Home,
   Travel, Rewards and Impact. Keep the explanation short and practical.
-- Keep account creation and sign-in distinct. Confirm email inside the app with
-  an eight-digit code while retaining email and password authentication.
+- Keep account creation and sign-in distinct. Both use email and password.
+  The user explicitly removed MFA and email confirmation codes; new signup
+  proceeds to the name step when the provider issues a session.
 - Ask for a display name during onboarding. Do not add other personal details
   without a reason and a product decision.
 - Define first-launch completion, entry into Home and later-launch behavior.
@@ -32,7 +33,7 @@ unfinished required work into a future-feature promise.
 
 | Item | Current status | Presentation wording |
 | --- | --- | --- |
-| Email confirmation codes | Native source and controlled tests implemented. Hosted project uses eight digits with a one-hour expiry. Custom Resend SMTP is configured; the test confirmation email is recorded delivered. | Sign-in worked on Pixel; new-account code completion remains unverified. |
+| Password-only accounts | Confirmation UI removed. Infrastructure owner reports hosted auto-confirmation enabled; no existing account was changed. | Existing sign-in has prior Pixel proof. Latest live signup remains unverified without the user-selected account credentials. |
 | Onboarding | Selected short walkthrough, name step and animated progress are implemented; current native acceptance is pending. | Onboarding is part of the MVP, not a later feature. |
 | Photo-based awards | Latest user allows a 50-point no-location award and fan-entered endpoints for a bus photo. Immediate credit, top-up and daily-limit decisions remain pending with the owning work. | Do not promise automatic credit or publish unsettled rules. This is ongoing work, not an agreed deferral. |
 | Real reward fulfilment | Real voucher inventory, merchandise fulfilment, tree allocation and driver outcomes need separate arrangements. Existing demonstrations are not proof of fulfilment. | Distinguish the app experience from fulfilled real-world rewards. |

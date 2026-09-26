@@ -31,12 +31,9 @@ import {
   api,
   localSignInEnabled,
   authenticateEmail,
-  verifyEmailCode,
-  resendEmailCode,
-  emailCodeWait,
   syntheticEmailAuth,
 } from './native-auth';
-import { validateCredentials, validateConfirmation } from './supabase';
+import { validateCredentials } from './supabase';
 import { Balance } from '../points/Balance';
 import { useHistory } from '../points/provider';
 
@@ -102,25 +99,14 @@ export function AccountPanel({
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
-  const confirmationEmail =
-    state.kind === 'signedOut' ? state.confirmationEmail : undefined;
-  const [code, setCode] = useState('');
-  const [resendWait, setResendWait] = useState(0);
-  useEffect(() => {
-    if (!confirmationEmail) return;
-    const update = () => setResendWait(emailCodeWait(confirmationEmail));
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [confirmationEmail]);
   const authHeading = useRef<NativeText>(null);
   const focusAuthHeading = useRef(false);
   useEffect(() => {
-    if (!focusAuthHeading.current && !confirmationEmail) return;
+    if (!focusAuthHeading.current) return;
     focusAuthHeading.current = false;
     if (authHeading.current)
       AccessibilityInfo.sendAccessibilityEvent(authHeading.current, 'focus');
-  }, [authMode, confirmationEmail]);
+  }, [authMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -150,7 +136,6 @@ export function AccountPanel({
   );
   function close() {
     controller.cancelSignIn();
-    setCode('');
     setPassword('');
     setAuthError('');
     setOpen(false);
@@ -170,21 +155,6 @@ export function AccountPanel({
     setPassword('');
     await controller.signIn(() =>
       authenticateEmail(authMode, email, submitted),
-    );
-  }
-  async function submitCode() {
-    if (!confirmationEmail) return;
-    try {
-      validateConfirmation(confirmationEmail, code);
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Check your code.');
-      return;
-    }
-    const submitted = code;
-    setCode('');
-    setAuthError('');
-    await controller.signIn(() =>
-      verifyEmailCode(confirmationEmail, submitted),
     );
   }
   async function save() {
@@ -253,11 +223,9 @@ export function AccountPanel({
                 style={styles.title}
               >
                 {state.kind === 'signedOut'
-                  ? confirmationEmail
-                    ? 'Confirm email'
-                    : authMode === 'signUp'
-                      ? 'Create account'
-                      : 'Sign in'
+                  ? authMode === 'signUp'
+                    ? 'Create account'
+                    : 'Sign in'
                   : 'Your account'}
               </Text>
               <Pressable
@@ -290,76 +258,11 @@ export function AccountPanel({
                 />
               </>
             )}
-            {state.kind === 'signedOut' && confirmationEmail && (
-              <>
-                <Text style={styles.body}>
-                  Enter the 8-digit code sent to {confirmationEmail}.
-                </Text>
-                {state.error && (
-                  <Text accessibilityLiveRegion="polite" style={styles.body}>
-                    {state.error}
-                  </Text>
-                )}
-                <Text style={styles.body}>Confirmation code</Text>
-                <TextInput
-                  accessibilityLabel="Confirmation code"
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  autoComplete="one-time-code"
-                  textContentType="oneTimeCode"
-                  autoCorrect={false}
-                  maxLength={8}
-                  style={styles.input}
-                  returnKeyType="done"
-                  onSubmitEditing={() => {
-                    void submitCode();
-                  }}
-                />
-                {authError ? (
-                  <Text accessibilityLiveRegion="polite" style={styles.body}>
-                    {authError}
-                  </Text>
-                ) : null}
-                <Action
-                  label="Confirm email"
-                  onPress={() => {
-                    void submitCode();
-                  }}
-                />
-                <Action
-                  secondary
-                  label={
-                    resendWait > 0 ? `Resend in ${resendWait}s` : 'Resend code'
-                  }
-                  disabled={resendWait > 0}
-                  onPress={() => {
-                    setCode('');
-                    setAuthError('');
-                    void controller.signIn(() =>
-                      resendEmailCode(confirmationEmail),
-                    );
-                  }}
-                />
-                <Action
-                  secondary
-                  label="Back to sign in"
-                  onPress={() => {
-                    focusAuthHeading.current = true;
-                    setAuthMode('signIn');
-                    setCode('');
-                    setPassword('');
-                    setAuthError('');
-                    controller.cancelSignIn();
-                  }}
-                />
-              </>
-            )}
-            {state.kind === 'signedOut' && !confirmationEmail && (
+            {state.kind === 'signedOut' && (
               <>
                 <Text style={styles.body}>
                   {authMode === 'signUp'
-                    ? 'Choose an email and password for your new account. We will email you a code to confirm your address.'
+                    ? 'Choose an email and password for your new account.'
                     : 'Enter your email and password to sign in to your account.'}
                 </Text>
                 {state.error && (
@@ -433,7 +336,6 @@ export function AccountPanel({
                     setAuthMode(authMode === 'signUp' ? 'signIn' : 'signUp');
                     setPassword('');
                     setAuthError('');
-                    setCode('');
                     controller.cancelSignIn();
                   }}
                 />

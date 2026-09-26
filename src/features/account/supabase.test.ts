@@ -169,84 +169,14 @@ test('validated public configuration lets provider logout proceed when the app A
   expect(configuration).toHaveBeenCalledTimes(1);
 });
 
-test('confirmation code posts email/token/type only and parses a provider session', async () => {
-  const { auth, request } = fixture();
-  expect(
-    (await auth.verifyCode(' fan@example.test ', ' 12345678 ')).subject,
-  ).toBe(signed.user.id);
-  expect(request.mock.calls[0][0]).toBe(`${origin}/auth/v1/verify`);
-  expect(JSON.parse(String(request.mock.calls[0][1]?.body))).toEqual({
-    email: 'fan@example.test',
-    token: '12345678',
-    type: 'email',
-  });
-  expect(request.mock.calls[0][1]).toMatchObject({
-    method: 'POST',
-    redirect: 'error',
-    credentials: 'omit',
-  });
-});
-test('invalid code input is rejected before request; invalid or expired provider codes do not echo response', async () => {
-  const { auth, request } = fixture();
-  for (const code of [
-    '',
-    'abc123',
-    '12345',
-    '123456',
-    '1234567',
-    '1'.repeat(9),
-  ])
-    await expect(auth.verifyCode('fan@example.test', code)).rejects.toThrow(
-      'code',
-    );
-  await expect(auth.verifyCode('invalid', '12345678')).rejects.toThrow('email');
-  expect(request).not.toHaveBeenCalled();
-  for (const error_code of ['otp_expired', 'validation_failed'])
-    await expect(
-      fixture(
-        { error_code, message: 'PRIVATE_PROVIDER_RESPONSE' },
-        403,
-      ).auth.verifyCode('fan@example.test', '12345678'),
-    ).rejects.toThrow(
-      'The code is invalid or expired. Request a new code and try again.',
-    );
-  await expect(
-    fixture({}, 429).auth.verifyCode('fan@example.test', '12345678'),
-  ).rejects.toThrow('Wait');
-  await expect(
-    fixture({}).auth.verifyCode('fan@example.test', '12345678'),
-  ).rejects.toThrow('Invalid sign-in response');
-});
-test('resend uses signup endpoint contract without password or session, and handles throttling', async () => {
-  const { auth, request } = fixture({});
-  await auth.resendCode(' fan@example.test ');
-  expect(request.mock.calls[0][0]).toBe(`${origin}/auth/v1/resend`);
-  expect(JSON.parse(String(request.mock.calls[0][1]?.body))).toEqual({
-    email: 'fan@example.test',
-    type: 'signup',
-  });
-  await expect(
-    fixture({}, 429).auth.resendCode('fan@example.test'),
-  ).rejects.toThrow('Wait');
-  await expect(
-    fixture({}, 400).auth.resendCode('fan@example.test'),
-  ).rejects.toThrow('Could not resend');
-});
-
-test('verification outage is distinct from expired code and network failures reveal no provider details', async () => {
-  await expect(
-    fixture({ message: 'PRIVATE_PROVIDER_RESPONSE' }, 500).auth.verifyCode(
-      'fan@example.test',
-      '12345678',
-    ),
-  ).rejects.toThrow('Could not confirm your email');
+test('password network failures reveal no provider details', async () => {
   const request = jest.fn<typeof fetch>(async () => {
     throw new Error('PRIVATE_NETWORK_DETAILS');
   });
   await expect(
-    createSupabaseAuth({ config, request }).verifyCode(
+    createSupabaseAuth({ config, request }).signIn(
       'fan@example.test',
-      '12345678',
+      'synthetic',
     ),
   ).rejects.toThrow('Account connection unavailable');
 });

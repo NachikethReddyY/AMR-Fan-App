@@ -535,3 +535,26 @@ pass. Native proof remains pending.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
 
+### Password-only account flow, 2026-09-26
+
+PR28 now removes confirmation-code/resend controls, exports and session state.
+Signup requires an immediate validated provider session before the AMR exchange;
+a provider still requiring confirmation returns an error without local authority.
+Existing password sign-in, cancellation, stale completion revocation, private
+session persistence and account/profile ownership remain unchanged. No hosted
+configuration or existing account was modified by this implementation.
+
+The inherited failing-first signup test reproduced the old confirmation result.
+Focused auth/session checks and an integrated signup-to-name component case pass.
+The latter runs the email flow and session controller, stubs provider I/O and
+secure storage, and observes name setup before app entry. It does not establish
+hosted signup. Full checks and exact installed-native proof follow separately.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Full serial `pnpm check` and `pnpm security:check` passed for this slice. Secret
+and source scans reported no findings; dependency audit retained one moderate
+advisory and no high/critical findings. Hosted CI remains paused and was not
+queried. Installed-native acceptance follows this source checkpoint.
+
+Verified by gpt-6-astra through Codex (T3 Code).

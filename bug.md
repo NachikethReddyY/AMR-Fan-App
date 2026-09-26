@@ -180,3 +180,20 @@ The native confirmation screen allowed a resend six seconds after signup.
 Supabase rejected it with 429 and 51 seconds remaining. Add a visible local
 60-second countdown and prevent duplicate dispatch; provider limits remain
 authoritative. Original email delivery is a separate unresolved check.
+
+## PR28 password-only signup, 2026-09-26
+
+Related to #4 and PR28. The user explicitly removed MFA and email confirmation
+codes. New signup must exchange an immediate provider session, ask for a name,
+and enter the app; password sign-in remains separate. No existing account,
+password, points or session is reset. An unexpected confirmation-required
+provider response fails closed. Hosted auto-confirmation is owned by the
+infrastructure thread; this mobile change does not mutate cloud configuration.
+
+Transport recording/progress and camera capture are absent from the current
+phone build. Guest catalogue source exists but requires backend deployment of
+405739286063f77fdd50def2e02ddfb9da914239. No future camera control is added.
+Latest native proof and final build remain pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+

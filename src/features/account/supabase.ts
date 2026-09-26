@@ -33,13 +33,6 @@ export function validateEmail(email: string) {
   if (!parsed.success) throw new Error('Enter a valid email address.');
   return parsed.data;
 }
-export function validateConfirmation(email: string, code: string) {
-  const address = validateEmail(email);
-  const token = code.trim();
-  if (!/^[0-9]{8}$/.test(token))
-    throw new Error('Enter the 8-digit code from your email.');
-  return { email: address, token, type: 'email' as const };
-}
 export function validateCredentials(email: string, password: string) {
   const address = validateEmail(email);
   if (!password || password.length > 1024)
@@ -140,16 +133,6 @@ export function createSupabaseAuth({
         [401, 403, 404].includes(response.status)
       )
         throw new AccountError(401, 'Provider session is no longer available.');
-      if (path === 'verify')
-        throw new Error(
-          [400, 401, 403].includes(response.status)
-            ? 'The code is invalid or expired. Request a new code and try again.'
-            : 'Could not confirm your email. Try again in a moment.',
-        );
-      if (path === 'resend')
-        throw new Error(
-          'Could not resend the code. Wait a moment and try again.',
-        );
       if (path === 'signup')
         throw new Error(
           'Could not create an account. Check your details and password requirements, then try again.',
@@ -200,11 +183,6 @@ export function createSupabaseAuth({
       if (!z.object({ id: z.uuid() }).safeParse(value).success)
         throw new Error('Invalid sign-up response.');
       return { kind: 'confirmation', email: validateEmail(email) };
-    },
-    verifyCode: async (email: string, code: string) =>
-      parse(await send('verify', validateConfirmation(email, code))),
-    resendCode: async (email: string): Promise<void> => {
-      await send('resend', { email: validateEmail(email), type: 'signup' });
     },
     refresh,
     revoke: async (session: ProviderSession) => {
