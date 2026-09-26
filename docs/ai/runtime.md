@@ -93,21 +93,14 @@ No prices, cost estimate or budget meter are invented here. Schema validation
 alone does not prove source meaning; report grounding and admin approval remain
 required. `store:false` does not establish provider retention guarantees.
 
-The [official TokenRouter setup](https://www.tokenrouter.com/docs/openclaw-setup/)
-confirms the base and OpenAI-compatible chat path. On 26 September, direct access
-to the public [catalog](https://www.tokenrouter.com/models/) showed zero models
-and the exact Luna page returned 404, while an indexed copy listed text support
-and $0.10 input/$0.50 output per million tokens. This conflict does not verify
-current price, account availability, image support or enforced token limits.
-TokenRouter's [cost guide](https://www.tokenrouter.com/blog/can-tokenrouter-reduce-llm-api-costs/)
-documents `/v1/models`. The manager authorized one bounded authenticated
-`GET https://api.tokenrouter.com/v1/models`: 10 seconds, at most 1 MiB, no redirect
-or retry, sanitized records for only the two allowed model IDs. The expected
-OpenAI-compatible envelope is `object: "list", data: [{id,...}]`; extended price
-and capability fields must be observed, not assumed. No official account-budget
-endpoint was found, so none is guessed. Infra reports no effective key in the
-named Render service after its direct/env-group checks; no local key or catalog
-request exists in this slice. The parent can resume this lookup after key handoff.
+The [gateway contract and owner handoff](integration.md) records current facts.
+Two separately authorized metadata reads confirmed both exact model IDs: Jev
+uses `system-one`, Luna uses `openai`/`openai-response`, and both carry `Text`
+tags. Catalog entries contain no prices, token limits or budget enforcement.
+The provisioned key and catalog presence do not prove image support, actual
+inference availability or the exact gateway SystemOne path. No live inference
+has run. Upstream-only synthetic mappings and the shared cost-store interface
+are documented there; they do not enable these adapters.
 
 Project role correction: Luna is for report extraction and camera-photo
 observations, not routine decisions.

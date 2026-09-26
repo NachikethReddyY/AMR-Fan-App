@@ -41,6 +41,38 @@ export type RoutePreferenceResult =
       confidence: number | null;
     };
 
+/** Select before remote inference so ineligible options never enter model state. */
+export function prepareRoutePreference(input: unknown) {
+  const snapshot = snapshotSchema.safeParse(input);
+  if (!snapshot.success)
+    return {
+      kind: 'unavailable',
+      reason: 'invalid-input',
+      fallback: 'deterministic',
+    } as const;
+  if (
+    snapshot.data.routes.some(
+      (item) => item.kgCo2e === null || item.points === null,
+    )
+  )
+    return {
+      kind: 'unavailable',
+      reason: 'missing-metrics',
+      fallback: 'deterministic',
+    } as const;
+  const limitSeconds =
+    Math.min(...snapshot.data.routes.map((item) => item.durationSeconds)) +
+    snapshot.data.extraMinutes * 60;
+  return {
+    kind: 'prepared' as const,
+    snapshot: snapshot.data,
+    limitSeconds,
+    eligible: snapshot.data.routes.filter(
+      (item) => item.durationSeconds <= limitSeconds,
+    ),
+  };
+}
+
 /** Normalized internal boundary, not a Jev gateway parser. No I/O or arithmetic from the model. */
 export function validateRoutePreference(
   input: unknown,
@@ -53,23 +85,11 @@ export function validateRoutePreference(
     reason,
     fallback: 'deterministic',
   });
-  const snapshot = snapshotSchema.safeParse(input);
-  if (!snapshot.success) return fail('invalid-input');
-  // Preserve the fastest candidate even if its emissions/points are unknown.
-  if (
-    snapshot.data.routes.some(
-      (item) => item.kgCo2e === null || item.points === null,
-    )
-  )
-    return fail('missing-metrics');
-  const limitSeconds =
-    Math.min(...snapshot.data.routes.map((item) => item.durationSeconds)) +
-    snapshot.data.extraMinutes * 60;
-  const eligible = snapshot.data.routes.filter(
-    (item) => item.durationSeconds <= limitSeconds,
-  );
+  const prepared = prepareRoutePreference(input);
+  if (prepared.kind === 'unavailable') return prepared;
+  const { snapshot, limitSeconds, eligible } = prepared;
   const parsed = preferenceSchema.safeParse(response);
-  if (!parsed.success || parsed.data.snapshotId !== snapshot.data.snapshotId)
+  if (!parsed.success || parsed.data.snapshotId !== snapshot.snapshotId)
     return fail('invalid-output');
   const ids = parsed.data.orderedRouteIds;
   if (ids.length !== eligible.length || new Set(ids).size !== ids.length)
@@ -82,7 +102,7 @@ export function validateRoutePreference(
   }
   return {
     kind: 'preference',
-    snapshotId: snapshot.data.snapshotId,
+    snapshotId: snapshot.snapshotId,
     routes,
     limitSeconds,
     confidence: parsed.data.confidence,
