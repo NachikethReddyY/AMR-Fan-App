@@ -1860,3 +1860,31 @@ authentication module, provider activation, or signing changes. Exact-head revie
 and continued isolated iPhone recovery evidence remain required.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### Native journey final local handoff
+
+Application source 6f18ab54738433d2a3a4c1fe7d4753b0b3e69c71 passes full
+pnpm check (227 native/unit Jest, 39 web cases and all repository Node stages),
+security checks, and final Android/iOS JS exports. Root relayed both independent
+spec and safety CLEAR receipts for that exact source. This final documentation
+update changes no application, test, dependency or native configuration source.
+Main remains e357763181fb594fc643dfa32a3467f80e1f514d, already integrated.
+
+Actual internal Pixel and iPhone builds proved native module linkage. Pixel
+exercised denied permission, encrypted recovery, callbacks and Finish. iPhone
+proved SecureStore onboarding, background callbacks, offline Stop with two queued
+samples, cold restart and same-account reconnect with one Finish, then profile
+switch/logout/successor isolation. Largest-text contribution controls were
+reachable. The video and sanitized screenshots stay local. Original app/data and
+signing identity are preserved; proof APK uses a generated-only suffix.
+
+Raw DAST remains failed exit 2 with 59 passes, alert 10202 on five forms and informational 10031.
+Root accepted the existing narrowly matched disposition for the exact
+scanned d079 source/image; subsequent reviewed additive main code was not scanned.
+Physical calibration, locked callbacks, Android visible numeric keyboard,
+native provisional receipt and populated Impact rendering remain unverified.
+No provider calls, live factor activation, CI query, production release or final
+user APK. Owned fixture/Metro resources are removed, iPhone large text/shutdown
+restored and Pixel remains booted/large. Root owns final reconciliation and merge.
+
+Verified by gpt-6-astra through Codex (T3 Code).

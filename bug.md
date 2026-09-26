@@ -757,3 +757,14 @@ Failure-first stop/write tests and protected recovery cases pass; final exact-he
 review and current native recovery proof remain pending.
 
 Fixed by gpt-6-astra through Codex (T3 Code).
+
+### JOURNEY-NATIVE-001: final acceptance status
+
+Native flow and scoped review corrections are locally verified at 6f18ab5; both
+independent reviewers cleared that source. Simulator offline/restart/Finish and
+identity-isolation proof completed. Physical/locked behavior, visible Android
+numeric keyboard, native provisional receipt and populated Impact remain explicit
+limits. Final documentation and the sole native PR proceed under existing root
+authority; no merge, release or provider activation is implied.
+
+Verified by gpt-6-astra through Codex (T3 Code).

@@ -132,8 +132,8 @@ keys, then passes bearer token, path ID and the search-parameter object to
 prepare dispatch are unchanged. Registered HTTP tests cover recovery after an API
 process restart, multiple active records, pagination, ownership, current authority
 and no read-side cleanup. Passive DAST covers reachable public/diagnostic routes;
-it does not authenticate as a fan or replace these authorization tests. Phone
-integration and physical platform proof remain pending.
+it does not authenticate as a fan or replace these authorization tests. Native
+discovery is integrated; physical platform calibration remains pending.
 
 ## Evidence and retry contract
 
@@ -159,7 +159,7 @@ Valid delayed pre-finish evidence can revise the assessment after finish;
 post-finish collection cannot. Interruption terminally closes that capture
 interval in this slice; another journey needs a new acknowledged Start. Offline
 continuation needs no new Start while the existing capture interval stays open.
-The native durable queue and collection shutdown are separate pending work.
+The native durable queue and collection shutdown are implemented below.
 
 Requests are unique per authenticated principal. The server records a bounded
 non-coordinate result and a canonical payload fingerprint in the mutation
@@ -270,8 +270,11 @@ and requires an explicit Resume. It does not reconstruct missing travel.
 key accessible after the first unlock. The record contains the selected trip,
 bounded sample queue and mutation intents, never authentication tokens. Collection
 and network queues are separate so slow uploads do not delay durable samples or
-Stop. There are at most 4,096 samples, uploaded in batches of 50. Logout/profile
-invalidation stops collection, invalidates delayed responses and removes local
+Stop. Transient account loading/unavailability suspends dispatch while an
+already-bound capture retains local Stop. Authenticated matching restoration is
+required before network retry or Resume. Every network operation rechecks the
+capture generation after asynchronous waits. There are at most 4,096 samples,
+uploaded in batches of 50. Logout/profile invalidation stops collection, invalidates delayed responses and removes local
 ciphertext/key. Expired data is removed on restore, retry or callback; dormant
 and backup storage still need the retention limits below.
 
@@ -281,12 +284,15 @@ journey credit. They are excluded from verified impact. The server controls
 policy/factor releases and top-ups; Start still accepts only request and capture
 session IDs. No native input grants award authority.
 
-New location/SQLite dependencies and config plugins require a new internal native
-build. Expo Go or a JavaScript export alone cannot prove background capture.
-Focused controller/component tests use synthetic adapters; leased native checks
-must cover actual permissions, module linkage, callbacks, offline/restart recovery,
-profile isolation and control accessibility. Emulator movement is simulated and
-cannot satisfy physical iOS/Android locked-travel calibration.
+The location/SQLite dependencies and config plugins were compiled in internal
+Android and iOS builds. Pixel proof covers permission denial, encrypted capture
+recovery, callbacks and Finish. iPhone proof covers SecureStore onboarding,
+background callbacks, offline Stop, cold restart/reconnect, profile/logout
+isolation and largest-text contribution reachability. Device proof uses simulated
+movement; it does not establish physical calibration or locked-phone behavior.
+Native provisional receipt and populated Impact rendering remain unverified;
+registered HTTP and component tests cover their contracts separately. Internal
+proof packages are not final release artifacts.
 
 ## Retention and cleanup
 
@@ -328,16 +334,15 @@ candidate thresholds, malformed/future evidence, unchanged-session-row expiry
 waits and 4,096-sample limits. Raw-row inspection is restricted to persistence,
 immutability and deletion claims. These are synthetic traces, not physical travel.
 
-Migration `0004_journeys.sql` owns this storage and remains unmerged during local
-integration. Only the allocated worktree test database is reset for its changes.
+Migration `0004_journeys.sql` owns this storage and is merged. Only the allocated
+worktree test database is reset for its changes.
 No shared service lifecycle action is required. The CI database job runs the same
 journey command after account, points and route tests. Source security and isolated
 combined API DAST complement authenticated business tests; unauthenticated passive
 crawling does not establish owned-path authorization.
 
-Physical iOS/Android foreground/background/locked-phone, permissions, Stop
-collection and durable local queues remain required for whole issue #8. Native
-integration, real calibration, approved factor publication, production cleanup
-scheduling and backup retention are not proved by this server candidate.
+Physical iOS/Android calibration and locked-phone proof remain required for
+whole issue #8. Simulator integration does not prove real travel, approved factor
+deployment, production cleanup scheduling or backup retention.
 
 Written by gpt-6-astra through Codex (T3 Code).
