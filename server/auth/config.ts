@@ -1,6 +1,7 @@
 type Environment = Record<string, string | undefined>;
 export type AuthConfig =
   | { kind: 'synthetic' }
+  | { kind: 'supabase' }
   | {
       kind: 'oidc';
       issuer: string;
@@ -21,6 +22,9 @@ function httpsUrl(value: string | undefined, name: string) {
 }
 
 export function authConfig(env: Environment = process.env): AuthConfig {
+  if (env.AUTH_PROVIDER && !['oidc', 'supabase'].includes(env.AUTH_PROVIDER)) {
+    throw new Error('AUTH_PROVIDER must be oidc or supabase.');
+  }
   if (!['production', 'development', 'test'].includes(env.NODE_ENV ?? '')) {
     throw new Error(
       'NODE_ENV must explicitly be production, development or test.',
@@ -39,6 +43,21 @@ export function authConfig(env: Environment = process.env): AuthConfig {
       );
     }
     return { kind: 'synthetic' };
+  }
+  if (env.AUTH_PROVIDER === 'supabase') {
+    if (
+      [
+        env.AUTH_ISSUER,
+        env.AUTH_AUDIENCE,
+        env.AUTH_JWKS_URL,
+        env.AUTH_REQUIRED_SCOPE,
+      ].some(Boolean)
+    ) {
+      throw new Error(
+        'Supabase uses a fixed project identity contract; OIDC overrides are not allowed.',
+      );
+    }
+    return { kind: 'supabase' };
   }
   if (!env.AUTH_AUDIENCE?.trim() || !env.AUTH_REQUIRED_SCOPE?.trim()) {
     throw new Error('AUTH_AUDIENCE and AUTH_REQUIRED_SCOPE are required.');

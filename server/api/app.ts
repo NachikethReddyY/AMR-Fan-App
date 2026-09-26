@@ -13,6 +13,7 @@ import {
 import { ApiError, type Identity } from '../accounts/types.ts';
 import { authConfig } from '../auth/config.ts';
 import { createIdentityVerifier } from '../auth/oidc.ts';
+import { createSupabaseVerifier } from '../auth/supabase.ts';
 import {
   authenticateSession,
   createSession,
@@ -98,7 +99,9 @@ export function createApi({
   const verifier =
     config.kind === 'oidc'
       ? (verifyIdentity ?? createIdentityVerifier(config))
-      : null;
+      : config.kind === 'supabase'
+        ? (verifyIdentity ?? createSupabaseVerifier())
+        : null;
   // Fixed global window bounds both memory and authentication/JWKS/DB work.
   let windowStart = Date.now();
   let requests = 0;
