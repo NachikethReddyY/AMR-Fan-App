@@ -461,7 +461,10 @@ export async function listInteractionSessions({
       COALESCE((SELECT jsonb_agg(jsonb_build_object('id',x.id,'sessionId',x.session_id,'submissionId',x.submission_id,
         'rank',x.rank,'rankingPointsAtClose',x.ranking_points::text,'approvedAt',${utc('x.approved_at')},'selectedAt',${utc('x.selected_at')},'status',x.status)
         || CASE WHEN x.status='selected' THEN '{}'::jsonb ELSE jsonb_build_object('resolvedBy',x.resolved_by,'resolvedAt',${utc('x.resolved_at')},'reason',x.reason,'fulfilment','demonstration') END ORDER BY x.rank)
-        FROM app.fan_submission_selections x WHERE x.session_id=s.id),'[]'::jsonb) AS selections
+        FROM app.fan_submission_selections x WHERE x.session_id=s.id),'[]'::jsonb) AS selections,
+      COALESCE((SELECT jsonb_agg(jsonb_build_object('id',f.id,'text',f.text,'tag',f.tag) ORDER BY x.rank)
+        FROM app.fan_submission_selections x JOIN app.fan_submissions f ON f.id=x.submission_id
+        WHERE x.session_id=s.id),'[]'::jsonb) AS content
       FROM app.fan_interaction_sessions s LEFT JOIN app.fan_submission_admin_actions a ON a.id=s.closed_action_id
       WHERE ($1::numeric IS NULL OR s.sequence < $1::numeric) ORDER BY s.sequence DESC LIMIT $2`,
       [page.before ?? null, page.limit + 1],
@@ -469,6 +472,10 @@ export async function listInteractionSessions({
     const items = result.rows.slice(0, page.limit).map((row) => ({
       session: interactionSession.parse(row.session),
       selections: z.array(selection).max(3).parse(row.selections),
+      content: z
+        .array(sharedSubmission.pick({ id: true, text: true, tag: true }))
+        .max(3)
+        .parse(row.content),
     }));
     return {
       items,
