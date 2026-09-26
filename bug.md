@@ -334,3 +334,11 @@ Initialization still requires verified no prior provider spend or
 in-flight calls, or separately reviewed import of existing liabilities.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR48 current verification: after PR43 merged as `026b4d70`, the corrected budget
+branch was rebased onto actual main. Full `pnpm check` and `pnpm security:check`
+now pass, including the earlier route deadline case. The fourteen PostgreSQL
+cases passed with byte-identical adapter, SQL and tests. Earlier red evidence is
+retained. Exact P2 re-review and root merge disposition remain pending.
+
+Verified by gpt-6-astra through Codex (T3 Code).
