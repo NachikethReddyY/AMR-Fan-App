@@ -871,3 +871,61 @@ test('multimodal evidence cannot fabricate assessed leg distances and duplicate 
   });
   assert.deepEqual(repeated.assessment, finished.assessment);
 });
+
+test('old preparation receipt replays without display enrichment or provider spend and its ID still starts', async () => {
+  const account = await ensureAccount(pool, { issuer, subject: 'a' });
+  const prepared = await journeys.prepare(
+    token,
+    { profileId, requestId: randomUUID() },
+    routeFixture(),
+  );
+  const input = {
+    profileId,
+    requestId: randomUUID(),
+    query: {
+      origin: 'Legacy origin',
+      destination: 'Legacy destination',
+      modes: ['WALK'],
+      extraMinutes: 0,
+    },
+  };
+  const legacy = {
+    kind: 'prepared',
+    candidates: [
+      { kind: 'prepared', routeId: 'legacy-route', journey: prepared },
+    ],
+  };
+  await pool.query(
+    'INSERT INTO app.journey_plans(principal_id,request_id,profile_id,fingerprint,result) VALUES ($1,$2,$3,$4,$5)',
+    [
+      account.id,
+      input.requestId,
+      profileId,
+      createHash('sha256')
+        .update(JSON.stringify({ action: 'plan', input }))
+        .digest('hex'),
+      legacy,
+    ],
+  );
+  const service = createJourneyService({
+    pool,
+    env,
+    queryRoutes: async () => {
+      assert.fail('Legacy replay must not reacquire comparison');
+    },
+  });
+  assert.deepEqual(await service.preparePlan(token, input), legacy);
+  const start = { requestId: randomUUID(), captureSessionId: randomUUID() };
+  const active = await service.start(token, prepared.id, start);
+  assert.equal(active.id, prepared.id);
+  assert.equal(active.state, 'active');
+  assert.deepEqual(await service.start(token, prepared.id, start), active);
+  assert.deepEqual(await service.preparePlan(token, input), legacy);
+  await assert.rejects(
+    service.preparePlan(token, {
+      ...input,
+      query: { ...input.query, extraMinutes: 1 },
+    }),
+    { status: 409 },
+  );
+});

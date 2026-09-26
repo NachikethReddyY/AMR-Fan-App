@@ -34,7 +34,7 @@ async function close(server: Server) {
   );
 }
 
-test('HTTP prepare persists owner-bound candidates from the actual route provider once; Start never trusts client geometry', async () => {
+test('HTTP prepare persists owner-bound candidates from the actual route provider once; Start never trusts client geometry', async (t) => {
   const pool = createDatabase();
   const issuer = `urn:amr:journey-http:${randomUUID()}`;
   let calls = 0;
@@ -167,6 +167,26 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
     if (plan.kind !== 'prepared') assert.fail('Expected supported routes.');
     assert.equal(plan.kind, 'prepared');
     assert.equal(plan.candidates.length, 2);
+    assert.ok(plan.display, 'same-preparation comparison display is returned');
+    assert.equal(plan.display.version, 1);
+    assert.deepEqual(
+      plan.display.routes.map((route) => route.routeId),
+      ['google-car-0', 'google-walk-0'],
+    );
+    assert.equal(plan.display.routes[1].durationSeconds, 60);
+    assert.equal(plan.display.routes[1].estimate.kind, 'estimated');
+    assert.equal(plan.display.recommendation.kind, 'recommended');
+    if (plan.display.recommendation.kind === 'recommended') {
+      assert.equal(plan.display.recommendation.routeId, 'google-walk-0');
+      assert.equal(
+        plan.display.recommendation.avoidedKgCo2e,
+        0.18904000000000004,
+      );
+    }
+    assert.doesNotMatch(
+      JSON.stringify(plan),
+      /latitude|longitude|encodedPolyline|Fixture origin|Fixture end|description/,
+    );
     assert.deepEqual(await concurrentPlan.json(), plan);
     assert.equal(calls, 2);
     assert.deepEqual(
@@ -219,10 +239,13 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
     const start = { requestId: randomUUID(), captureSessionId: randomUUID() };
     assert.equal((await post(path, start, foreign)).status, 404);
     assert.equal((await post(path, { ...start, geometry: [] })).status, 400);
+    geometry = 'absent'; // A changed upstream must not change the selected prepared route.
     const started = await post(path, start);
     assert.equal(started.status, 200);
     const active = summarySchema.parse(await started.json());
     assert.equal(active.state, 'active');
+    assert.equal(active.id, selected.journey.id);
+    assert.deepEqual(active.selectedLegs, plan.display.routes[1].legs);
     assert.equal(calls, 2);
     assert.equal(
       (
@@ -415,6 +438,22 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
           candidate.reason === 'missing_geometry',
       ),
     );
+    assert.ok(noGeometry.display);
+    assert.equal(noGeometry.display.routes.length, 2);
+    assert.ok(
+      noGeometry.display.routes.every(
+        (route) => route.availability.kind === 'available',
+      ),
+    );
+    assert.ok(
+      noGeometry.display.routes.every(
+        (route) => route.estimate.kind === 'unavailable',
+      ),
+    );
+    assert.deepEqual(noGeometry.display.recommendation, {
+      kind: 'unavailable',
+      reason: 'factor_applicability_unverified',
+    });
     geometry = 'malformed';
     const malformed = planSchema.parse(
       await (
@@ -426,6 +465,8 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
       ).json(),
     );
     assert.equal(malformed.kind, 'unavailable');
+    assert.equal(malformed.display?.source, null);
+    assert.equal(malformed.display?.fetchedAt, null);
     const foreignRows = await pool.query(
       'SELECT id FROM app.journeys WHERE profile_id=$1',
       [unavailableInput.profileId],
@@ -441,6 +482,15 @@ test('HTTP prepare persists owner-bound candidates from the actual route provide
     await close(upstream);
     await pool.query('DELETE FROM app.principals WHERE issuer=$1', [issuer]);
     await pool.end();
+    t.diagnostic(
+      JSON.stringify({
+        apiPid: api?.pid,
+        apiExitCode: api?.exitCode,
+        upstreamListening: upstream.listening,
+        poolEnded: true,
+        providerCalls: calls,
+      }),
+    );
   }
 });
 

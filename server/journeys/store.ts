@@ -26,6 +26,7 @@ import { createRouteQuery } from '../routes/query.ts';
 import {
   planInput,
   planSchema,
+  projectPlanDisplay,
   routeSnapshots,
   type JourneyPlan,
 } from './planning.ts';
@@ -343,10 +344,11 @@ export function createJourneyService({
           !fixturesAllowed
         )
           throw new ApiError(403, 'Synthetic journey routes are disabled.');
+        const display = projectPlanDisplay(response);
         const result: JourneyPlan =
           response.result.kind === 'unavailable'
-            ? { kind: 'unavailable', reason: response.result.reason }
-            : { kind: 'prepared', candidates: [] };
+            ? { kind: 'unavailable', reason: response.result.reason, display }
+            : { kind: 'prepared', candidates: [], display };
         if (result.kind === 'prepared')
           for (const candidate of routeSnapshots(response)) {
             result.candidates.push(

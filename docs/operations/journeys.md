@@ -36,6 +36,34 @@ The receipt contains no query text or coordinates. The internal `prepare(token,
 {profileId, requestId}, serverRoute)` remains available for controlled domain tests,
 and is not an HTTP input path.
 
+### Phone comparison from one preparation
+
+Related to #8; route/comparison dependencies #6 and #7, parent tracker #3.
+This is partial server work, with native, physical and live-provider acceptance
+still pending. No issue closure is implied.
+
+New preparation receipts include optional `display` version 1. It retains the
+same server result's routes, provider total durations (including transit waits),
+nonprecise legs, estimates, recommendation, mode outcomes, factors and provenance.
+The phone displays `display.routes` and joins a selected row by `routeId` to this
+same receipt's `candidates`, then starts that candidate's persisted `journey.id`.
+Comparison-only routes remain visible when geometry or tracking bounds prevent
+preparation. Display availability is not Start eligibility or an award.
+
+Do not query routes separately and match a later preparation by position or ID.
+Replays and Start do not query the provider again. A changed search uses a new
+request ID and requires confirmation of the newly displayed candidate. The
+projection has at most 12 routes, 128 legs per route and four mode outcomes;
+it stores no origin/destination, coordinates, geometry or leg descriptions.
+Old receipts replay unchanged with `display` absent, explicitly meaning full
+comparison unavailable. They are not enriched, migrated or given replacement IDs.
+
+Future earning-basis publication must use the same caller transaction to lock
+and compare the accepted basis at Start. A new Start with a stale required basis
+must return a distinguishable 409 for refresh and confirmation; an already
+successful replay keeps its original receipt. That separate integration is not
+implemented by this display change.
+
 The immutable expiring snapshot retains validated query binding, decoded geometry,
 provider endpoints and ordered legs. Nonprecise summaries retain source,
 primary request mode, factor applicability and geography dataset version, factor

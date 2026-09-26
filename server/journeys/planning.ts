@@ -4,9 +4,166 @@ import type { RouteQueryResult } from '../routes/query.ts';
 import {
   id,
   routeSchema,
+  sourceSchema,
   summarySchema,
   type RouteSnapshot,
 } from './contracts.ts';
+
+// Durable comparison deliberately excludes addresses, geometry and leg descriptions.
+const text = z.string().min(1).max(160);
+const mode = routeSchema.shape.mode;
+const seconds = z.number().nonnegative().max(604800);
+const meters = z.number().nonnegative().max(20_000_128);
+const estimated = z.strictObject({
+  kind: z.literal('estimated'),
+  kgCo2e: z.number().nonnegative(),
+  factorIds: z.array(text).max(128),
+});
+const estimate = z.discriminatedUnion('kind', [
+  estimated,
+  z.strictObject({
+    kind: z.literal('unavailable'),
+    reason: text,
+    mode: mode.optional(),
+  }),
+]);
+export const planDisplaySchema = z.strictObject({
+  version: z.literal(1),
+  source: sourceSchema.nullable(),
+  fetchedAt: z.iso.datetime().nullable(),
+  modes: routeInput.shape.modes,
+  extraMinutes: routeInput.shape.extraMinutes,
+  routes: z
+    .array(
+      z.strictObject({
+        routeId: text,
+        mode,
+        availability: z.discriminatedUnion('kind', [
+          z.strictObject({ kind: z.literal('available') }),
+          z.strictObject({
+            kind: z.literal('unavailable'),
+            reason: z.string().min(1).max(2000),
+          }),
+        ]),
+        distanceMeters: meters.nullable(),
+        durationSeconds: seconds.nullable(),
+        legs: z
+          .array(
+            z.strictObject({
+              mode,
+              distanceMeters: meters,
+              durationSeconds: seconds,
+            }),
+          )
+          .max(128),
+        estimate,
+      }),
+    )
+    .max(12),
+  recommendation: z.discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('recommended'),
+      routeId: text,
+      estimate: estimated,
+      baseline: estimated,
+      baselineDistanceMeters: meters,
+      fastestSeconds: seconds,
+      limitSeconds: z.number().nonnegative().max(691200),
+      avoidedKgCo2e: z.number(),
+    }),
+    z.strictObject({
+      kind: z.literal('unavailable'),
+      reason: text,
+      fastestSeconds: seconds.optional(),
+      limitSeconds: z.number().nonnegative().max(691200).optional(),
+    }),
+  ]),
+  factors: routeSchema.shape.basis.shape.calculation.options[1].shape.factors,
+  geographySource: z.strictObject({
+    id: text,
+    url: z.url().max(2048),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    licence: z.url().max(2048),
+    attribution: z.string().min(1).max(2000),
+  }),
+  calculationStatus: z.literal('indicative_demo'),
+  unsupportedModes: z.tuple([z.literal('cab'), z.literal('electric_car')]),
+  outcomes: z
+    .array(
+      z.discriminatedUnion('kind', [
+        z.strictObject({
+          mode: routeInput.shape.modes.element,
+          kind: z.literal('available'),
+          count: z.number().int().min(1).max(3),
+        }),
+        z.strictObject({
+          mode: routeInput.shape.modes.element,
+          kind: z.literal('unavailable'),
+          reason: text,
+        }),
+      ]),
+    )
+    .max(4),
+});
+export type JourneyPlanDisplay = z.infer<typeof planDisplaySchema>;
+
+export function projectPlanDisplay(
+  response: RouteQueryResult,
+): JourneyPlanDisplay {
+  const { result, recommendation } = response;
+  return planDisplaySchema.parse({
+    version: 1,
+    source: result.kind === 'routes' ? result.source : null,
+    fetchedAt: result.kind === 'routes' ? result.fetchedAt : null,
+    modes: response.query.modes,
+    extraMinutes: response.query.extraMinutes,
+    routes:
+      result.kind === 'routes'
+        ? result.routes.map((route) => {
+            const item = response.estimates.find(
+              (item) => item.routeId === route.id,
+            );
+            if (!item)
+              throw new Error(
+                'Server route comparison is missing its estimate.',
+              );
+            return {
+              routeId: route.id,
+              mode: route.mode,
+              availability: route.availability,
+              distanceMeters: route.distanceMeters,
+              durationSeconds: route.durationSeconds,
+              legs: route.legs.map(
+                ({ mode, distanceMeters, durationSeconds }) => ({
+                  mode,
+                  distanceMeters,
+                  durationSeconds,
+                }),
+              ),
+              estimate: item.estimate,
+            };
+          })
+        : [],
+    recommendation:
+      recommendation.kind === 'recommended'
+        ? {
+            kind: recommendation.kind,
+            routeId: recommendation.route.id,
+            estimate: recommendation.estimate,
+            baseline: recommendation.baseline,
+            baselineDistanceMeters: recommendation.baselineDistanceMeters,
+            fastestSeconds: recommendation.fastestSeconds,
+            limitSeconds: recommendation.limitSeconds,
+            avoidedKgCo2e: recommendation.avoidedKgCo2e,
+          }
+        : recommendation,
+    factors: response.factors,
+    geographySource: response.geographySource,
+    calculationStatus: response.calculationStatus,
+    unsupportedModes: response.unsupportedModes,
+    outcomes: result.outcomes ?? [],
+  });
+}
 
 export const planInput = z.strictObject({
   profileId: id,
@@ -14,9 +171,14 @@ export const planInput = z.strictObject({
   query: routeInput,
 });
 export const planSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('unavailable'), reason: z.string() }),
+  z.strictObject({
+    kind: z.literal('unavailable'),
+    reason: z.string(),
+    display: planDisplaySchema.optional(),
+  }),
   z.strictObject({
     kind: z.literal('prepared'),
+    display: planDisplaySchema.optional(),
     candidates: z
       .array(
         z.discriminatedUnion('kind', [
