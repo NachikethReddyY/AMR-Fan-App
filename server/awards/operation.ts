@@ -13,6 +13,8 @@ import {
   type AwardOutcome,
 } from './contracts.ts';
 import { calculateJourneyAward } from './policy.ts';
+import { readPhotoPreliminary } from '../activity/claims.ts';
+import { remainingJourneyAward } from '../activity/policy.ts';
 
 export type SettlementArgs = {
   pool: Pool;
@@ -152,11 +154,17 @@ export function executeSettlement(
           : decision.kind === 'fallback'
             ? decision.targetPoints
             : 0;
+      const preliminary = await readPhotoPreliminary(
+        client,
+        profile.id,
+        journeyId,
+      );
       const creditedPoints =
         creditContext === 'synthetic_test'
-          ? Math.max(0, targetPoints - creditedBefore)
+          ? remainingJourneyAward(targetPoints, creditedBefore, preliminary)
           : 0;
-      const cumulativeAutomaticCredit = creditedBefore + creditedPoints;
+      const cumulativeAutomaticCredit =
+        Math.max(creditedBefore, preliminary) + creditedPoints;
       const receiptId = previous?.id ?? randomUUID();
       if (!previous)
         await client.query(

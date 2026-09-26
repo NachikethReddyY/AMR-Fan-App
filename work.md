@@ -691,3 +691,91 @@ stage. Delivery awaits final-head review and the coordinator's serialized squash
 turn; branch protection must pass without bypass.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+### Photo activity original candidate, 2026-09-26
+
+Historical source: `ca71166`. Client delivery subsequently moved to PR 28.
+Current server-only scope and deployment gates are recorded below.
+
+Implemented selected photo-first camera/review/description module with camera-only
+permissions, denial/retake/cancel states, transient capture cleanup and a disabled
+availability check that sends no photo/description. App/auth/dock and production
+API registration remain owned by mobile/infra; exact proposed integration is in
+[photo handoff](docs/internals/photo-activity-integration.md).
+
+Added bounded in-memory image decoding and canonical pixel hashing, immutable
+minimal claim migration 0010, disposable-only synthetic accounting proof and
+same-journey preliminary credit integration. Production activity credit and AI
+remain unavailable. Changed-photo same-action identity and unlinked-photo journey
+matching remain unresolved. A receipt/hash does not establish fraud prevention.
+
+Observed proof: 8 activity PostgreSQL/HTTP tests and 13 existing award PostgreSQL
+tests pass against an owned disposable PostgreSQL 18 container. Test counts are
+not assertion counts. Focused camera/lifecycle tests, full pnpm check and security
+check pass. Native camera/permissions/accessibility remain unverified pending
+PR28's device release. A 16 MP decode peaked at 196.55 MiB RSS on macOS/Node24;
+Render Linux 512 MB whole-process fit remains unverified. No provider calls,
+cloud/shared database changes, CI queries or device use occurred.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Photo SPEC review correction, 2026-09-26
+
+Fixed the proposed signedIn/token mount guard that disposed photos during account
+foreground refresh, and the first-render check callback that retained stale
+session authority. New owned PhotoActivitySession retains the captured account
+identity through loading, blocks requests during loading, checks current session
+authority at dispatch, aborts a pending request on authority/token change, and
+unmounts on logout/expiry/account or profile change. The handoff now requires the
+mobile owner to close immediately before explicit logout/switch/known expiry;
+the current controller's loading state cannot distinguish those from resume.
+No App/auth/dock registration changed.
+
+Ten photo component regressions pass, including same-account refresh, current
+callback/token, late camera return, identity loss and in-flight cancellation.
+Full pnpm check and security check pass. The previous 8 activity database/HTTP
+and 13 award database proofs remain applicable to unchanged accounting; no new
+DB/service/device run occurred. Native system-camera foreground behavior remains
+unverified and assigned to the mobile owner. Added a matching 5-second timeout to
+the second Sharp pipeline; 5 server policy/media tests pass. Per-pipeline timeouts
+are not a hard whole-operation deadline, and HTTP abort does not terminate Sharp.
+
+Failed criterion: refresh continuity without stale authority. Guidance class:
+project. Proposed reusable rule: retain workflow identity through refresh while
+revalidating request authority at dispatch; explicit logout invalidates immediately.
+No shared instruction file changed. Evidence: `.evidence/photo-activity/` files
+session-regression.log, session-full-check.log, review-media.log, review-security.log.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+### Photo server-only delivery, 2026-09-26
+
+Rebased onto PR28 squash `1dd01419ef689cf6e316ef27005f3c4fbf765e5d`.
+The diff contains no client, App/auth/dock, native configuration or identical AI
+assessment changes. Only sharp 0.35.4 is added as a dependency. The real API now
+registers owner/session-checked activity availability (200 unavailable) and photo
+submission (503 unavailable), without reading media or calling a claim writer.
+The new receipt table and existing award hooks support atomic synthetic bus
+top-ups. [Integration contract](docs/internals/photo-activity-integration.md)
+records exact grants and the mandatory migration-before-award-reader deployment
+order. Infrastructure owns the hosted upgrader. Live assessment/credit stays off.
+
+Changed-photo same-action identity and future linkage of unlinked bus photos remain
+activation gates. Receipt IDs and canonical hashes do not solve those problems.
+The original macOS memory sample does not prove Linux 512 MB fit. All original
+ca71166 local evidence and TODO history are retained; native proof belongs to PR28.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+Final server proof: frozen install/full check pass on the PR28 base; nine activity
+DB tests and thirteen unchanged award regressions pass without skips. Security
+source scans have zero findings; one existing moderate dependency advisory remains.
+Standard pre-PR28 passive DAST has three informational admin alerts, no blocking
+findings. The rebased real registered activity API passive scan passes with zero
+alerts and observed 401/200/503/405/409/403 responses. Original and post-rebase
+reports remain separate. The first local ZAP hook mismatch and a post-rebase
+work.md formatting failure were corrected; reruns pass. All owned disposable
+DB/scanner resources are removed. No shared services, devices, providers, cloud
+resources or CI APIs were used. Review and merge remain coordinator-owned.
+
+Verified by gpt-6-astra through Codex (T3 Code).

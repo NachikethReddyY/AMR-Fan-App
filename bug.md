@@ -231,3 +231,38 @@ final user APK remain separate; no media transmission or points were enabled.
 Current main refresh completed; final-head review and serialized squash turn pending.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+# PHOTO-20260926: camera and activity delivery
+
+SPEC review correction: initial integration keyed mounting on signedIn/token,
+which disposed capture during foreground session refresh; the initial check
+callback also retained stale authority. The owned session adapter now retains
+the flow through refresh, blocks requests while loading, reads fresh authority,
+and cancels/clears on identity loss. Handoff requires immediate owner invalidation
+before logout/switch/known expiry because loading alone has no transition reason.
+Native system-camera return proof remains held for the mobile owner.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+Tracker: unlinked. User assigned this isolated photo owner; no tracker mutation requested.
+Photo plus description only; optional bus endpoints, no video/audio. Supported
+assessment with confidence strictly above 0.5 earns 50, without a daily cap.
+Reject duplicate photos/actions/trips; a preliminary bus award reduces only the
+remaining award for the same verified journey. Code owns points. Discard raw
+photos and descriptions; retain minimal decision/dedup metadata only.
+Live AI and production credit remain unavailable pending gateway and shared budget
+contracts. No inference or spend authorized. The user selected photo-first UI; PR28 owns the client and native proof.
+Account/App/dock paths remain outside this server-only PR.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Server-only PR delivery, 2026-09-26
+
+Tracker: unlinked. The user superseded the PR28 publication hold and authorized
+one server-only PR against main. Exclude mobile files/dependencies and the AI
+assessment already merged in PR45. Register an always-disabled activity API;
+no HTTP body decoding, inference or live credit. Infrastructure retains the
+0010 hosted upgrader. Deployment must wait for that reviewed migration and grants;
+merge is a separate manager-owned turn. No CI queries or device/provider actions.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
