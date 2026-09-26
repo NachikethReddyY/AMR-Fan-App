@@ -35,7 +35,7 @@ const deployer = new pg.Pool({
   max: 1,
 });
 const q = (sql, values) => pool.query(sql, values);
-test('bootstrap collision rollback, ownership, replay and actual restricted connections', async () => {
+test('bootstrap collision rollback, ownership, replay and actual restricted connections', async (t) => {
   try {
     await q(
       'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE TABLE public.peer_data(id integer); INSERT INTO public.peer_data VALUES(17)',
@@ -128,6 +128,7 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       "INSERT INTO app.principals(issuer,subject) VALUES('urn:ops123','fan') ON CONFLICT(issuer,subject) DO UPDATE SET subject=excluded.subject",
     );
     for (const sql of [
+      'CREATE SCHEMA ops123_forbidden',
       'CREATE TABLE app.forbidden(id integer)',
       'UPDATE public.schema_migrations SET checksum=checksum',
       "UPDATE app.principals SET role='admin'",
@@ -166,6 +167,112 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
         .rows[0].n,
       1,
     );
+    // PostgreSQL's default PUBLIC TEMP right is separate from persistent DDL.
+    assert.equal(
+      (
+        await runtime.query(
+          "SELECT has_database_privilege(current_user,current_database(),'TEMP') AS temp",
+        )
+      ).rows[0].temp,
+      true,
+    );
+    const temporary = await runtime.connect();
+    try {
+      await temporary.query('BEGIN');
+      await temporary.query('CREATE TEMP TABLE ops123_temp_probe(id integer)');
+    } finally {
+      await temporary.query('ROLLBACK');
+      assert.equal(
+        (
+          await temporary.query(
+            "SELECT to_regclass('pg_temp.ops123_temp_probe') IS NULL AS absent",
+          )
+        ).rows[0].absent,
+        true,
+      );
+      temporary.release();
+    }
+    for (const grantee of [RUNTIME, 'PUBLIC']) {
+      await t.test(
+        `replay rejects effective database CREATE through ${grantee}`,
+        async () => {
+          await q(`GRANT CREATE ON DATABASE postgres TO ${grantee}`);
+          try {
+            const acl = (
+              await q(
+                'SELECT datacl::text AS acl FROM pg_database WHERE datname=current_database()',
+              )
+            ).rows[0].acl;
+            const client = await runtime.connect();
+            try {
+              assert.equal(
+                (await client.query('SELECT current_user AS name')).rows[0]
+                  .name,
+                RUNTIME,
+              );
+              await client.query('BEGIN');
+              await client.query(
+                'CREATE SCHEMA ops123_create_probe; CREATE TABLE ops123_create_probe.proof(id integer); INSERT INTO ops123_create_probe.proof VALUES(1)',
+              );
+              assert.equal(
+                (await client.query('SELECT id FROM ops123_create_probe.proof'))
+                  .rows[0].id,
+                1,
+              );
+            } finally {
+              await client.query('ROLLBACK');
+              client.release();
+            }
+            assert.equal(
+              (
+                await q(
+                  "SELECT to_regnamespace('ops123_create_probe') IS NULL AS absent",
+                )
+              ).rows[0].absent,
+              true,
+            );
+            t.diagnostic(
+              `${grantee}: real runtime schema/table creation reproduced and rolled back`,
+            );
+            await assert.rejects(
+              bootstrapDatabase(deployer, password.trim()),
+              /effective database CREATE/i,
+            );
+            assert.equal(
+              (
+                await q(
+                  'SELECT datacl::text AS acl FROM pg_database WHERE datname=current_database()',
+                )
+              ).rows[0].acl,
+              acl,
+            );
+            assert.deepEqual(
+              (
+                await q(
+                  'SELECT name,checksum FROM public.schema_migrations ORDER BY name',
+                )
+              ).rows,
+              history,
+            );
+            assert.equal(
+              (
+                await runtime.query(
+                  'SELECT count(*)::int n FROM app.principals',
+                )
+              ).rows[0].n,
+              1,
+            );
+          } finally {
+            // Restore only the deliberately added grant in this disposable fixture.
+            await q(`REVOKE CREATE ON DATABASE postgres FROM ${grantee}`);
+          }
+          assert.equal(
+            (await bootstrapDatabase(deployer, password.trim())).state,
+            'unchanged',
+          );
+        },
+      );
+    }
     await q(
       "UPDATE public.schema_migrations SET checksum=repeat('0',64) WHERE name='0008_journey_awards.sql'",
     );
@@ -185,6 +292,54 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       /privilege collision/i,
     );
     await q(`REVOKE UPDATE(role) ON app.principals FROM ${RUNTIME}`);
+    // Fresh setup must also roll back every new role/object if PUBLIC grants CREATE.
+    await q('DROP SCHEMA app CASCADE; DROP TABLE public.schema_migrations');
+    await deployer.query(`REVOKE ALL ON SCHEMA public FROM ${OWNER}`);
+    for (const name of [RUNTIME, OWNER])
+      await q(`DROP OWNED BY ${name} CASCADE; DROP ROLE ${name}`);
+    await q('GRANT CREATE ON DATABASE postgres TO PUBLIC');
+    try {
+      const acl = (
+        await q(
+          'SELECT datacl::text AS acl FROM pg_database WHERE datname=current_database()',
+        )
+      ).rows[0].acl;
+      await assert.rejects(
+        bootstrapDatabase(deployer, password.trim()),
+        /effective database CREATE/i,
+      );
+      assert.equal(
+        (
+          await q(
+            'SELECT count(*)::int n FROM pg_roles WHERE rolname=ANY($1)',
+            [[OWNER, RUNTIME]],
+          )
+        ).rows[0].n,
+        0,
+      );
+      assert.equal(
+        (
+          await q(
+            "SELECT to_regnamespace('app') IS NULL AND to_regclass('public.schema_migrations') IS NULL AS absent",
+          )
+        ).rows[0].absent,
+        true,
+      );
+      assert.equal(
+        (
+          await q(
+            'SELECT datacl::text AS acl FROM pg_database WHERE datname=current_database()',
+          )
+        ).rows[0].acl,
+        acl,
+      );
+      assert.equal((await q('SELECT id FROM public.peer_data')).rows[0].id, 17);
+      t.diagnostic(
+        'Fresh PUBLIC CREATE rejection rolls back roles, migrations and ledger; database ACL and peer data preserved',
+      );
+    } finally {
+      await q('REVOKE CREATE ON DATABASE postgres FROM PUBLIC');
+    }
   } finally {
     await runtime.end();
     await deployer.end();

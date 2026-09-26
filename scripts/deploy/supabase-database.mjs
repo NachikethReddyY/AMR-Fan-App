@@ -20,6 +20,8 @@ const migrationNames = [
 ];
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const databaseCreateRefusal =
+  'Runtime has effective database CREATE. Have the database owner review direct and PUBLIC grants before retrying; bootstrap will not revoke shared rights.';
 
 export function deploymentConnection(input) {
   if (
@@ -155,6 +157,15 @@ export async function bootstrapDatabase(pool, runtimePassword) {
 }
 
 async function verifyPrivileges(client) {
+  if (
+    (
+      await client.query(
+        "SELECT has_database_privilege($1,current_database(),'CREATE') AS create",
+        [RUNTIME],
+      )
+    ).rows[0].create
+  )
+    throw new Error(databaseCreateRefusal);
   const elevated = (
     await client.query(
       `SELECT
@@ -263,9 +274,11 @@ if (
   realpathSync.native(resolve(process.argv[1])) ===
     realpathSync.native(fileURLToPath(import.meta.url))
 ) {
-  main().catch(() => {
+  main().catch((error) => {
     process.stderr.write(
-      'Database preparation refused or failed; no credentials are printed.\n',
+      error instanceof Error && error.message === databaseCreateRefusal
+        ? databaseCreateRefusal + '\n'
+        : 'Database preparation refused or failed; no credentials are printed.\n',
     );
     process.exitCode = 1;
   });

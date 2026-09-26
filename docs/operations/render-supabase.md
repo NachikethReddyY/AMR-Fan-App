@@ -23,7 +23,7 @@ The bootstrap takes an advisory transaction lock, creates `amr_migration_owner`
 NOLOGIN and `amr_api` LOGIN, applies existing migrations0001–0008 byte unchanged,
 and records checksums atomically. The administrator retains membership needed
 to maintain the owner role; runtime has no memberships. Runtime cannot create
-objects, alter migration history, assign staff roles, or insert/update a
+persistent schemas/tables, alter migration history, assign staff roles, or insert/update a
 principal's role. It receives only the application table/function/sequence
 permissions needed by the existing API. Anonymous/authenticated Supabase roles
 receive no app schema access. Existing peer data and Supabase-managed schemas
@@ -34,6 +34,12 @@ role/schema/ledger collisions, checksum drift and elevated runtime privileges
 abort. Later migrations require an explicit reviewed follow-up, not silently
 accepting files beyond the fixed eight. Keep bootstrap credentials off Render;
 only the restricted runtime connection belongs in its server secret store.
+
+Fresh setup and replay reject effective database CREATE, including rights inherited
+from PUBLIC. Bootstrap reports the collision without revoking shared database
+rights; the database owner must review the grant before retrying. Default PUBLIC
+TEMP remains unchanged: runtime can create session-local temporary tables, but
+not persistent schemas/tables. This is distinct from the role CREATEDB flag.
 
 Proof uses one owned PG17 container on an internal network with no published
 ports or host mounts. It includes a non-superuser CREATEROLE administrator,
