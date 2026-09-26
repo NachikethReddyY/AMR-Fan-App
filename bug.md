@@ -221,3 +221,13 @@ Recorded by gpt-6-astra through Codex (T3 Code).
 PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR28 photo integration status: focused/full/security checks and bounded native
+proof complete. Pixel capture/draft/current-identity transitions passed with
+synthetic scenery. iPhone permission/launch/cancel/return/expiry and large text
+passed; its simulator shutter produced no photo, so iOS capture/draft proof remains
+unverified. See `docs/operations/native-acceptance.md`. Live photo backend/AI and
+final user APK remain separate; no media transmission or points were enabled.
+Current main refresh completed; final-head review and serialized squash turn pending.
+
+Verified by gpt-6-astra through Codex (T3 Code).

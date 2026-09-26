@@ -664,3 +664,30 @@ Implemented by gpt-6-astra through Codex (T3 Code).
 PR28 delivery correction, 2026-09-26: the user requires branches to integrate only through file-pr and squash merge to main. Finish the already-imported photo client only; do not copy more branch work. Rebase current main before final review, preserve TODO, report exact reviewed head to the coordinator, then wait for its serialized merge turn. Squash merge is now authorized when applicable gates and branch protection pass, without admin bypass. CI remains paused by the user, so Actions/checks queries, reruns and re-enabling remain prohibited. Live AI and unrelated final APK acceptance do not block this safe disabled-client slice. Classification: project delivery correction; shared guidance unchanged.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Photo integration delivery proof and main refresh
+
+PR28 rebased onto merged main `3d48287b25d2ac058d0408f973b133c8041e2d37` after
+PR44 and PR45. Historical environment/import/document conflicts preserve both
+intents; mobile source/configuration/dependencies remain byte-identical to
+`46de016`. Inherited TODO was restored byte-for-byte. No further feature branch
+work was copied. Both independent source reviews cleared `4634c574`; exact final
+records review follows.
+
+Full serial checks and security passed on the PR44-integrated tree. After PR45's
+server-only AI additions, typecheck passed and the mobile-tree equality check
+requires no new native rebuild. Previous iOS/Android exports, frozen install,
+50 focused session/camera unit tests and 14 component tests remain applicable.
+Native evidence and explicit iPhone capture limits are recorded in
+`docs/operations/native-acceptance.md`. Exact internal APK was installed/shown on
+Pixel; camera proof used synthetic scenery/accounts in Expo Go. No photo upload,
+AI inference or award occurred. All owned device/settings/services are cleaned.
+
+Guest rewards still needs deployment of PR28's public catalogue change, originally
+`405739286063f77fdd50def2e02ddfb9da914239` (rebased equivalent in this PR).
+Photo backend registration, live AI and final user APK acceptance remain separate.
+No Actions/checks API query, cloud mutation or merge has occurred in this proof
+stage. Delivery awaits final-head review and the coordinator's serialized squash
+turn; branch protection must pass without bypass.
+
+Verified by gpt-6-astra through Codex (T3 Code).

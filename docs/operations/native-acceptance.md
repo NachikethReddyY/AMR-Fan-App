@@ -68,3 +68,38 @@ no hosted checks are inferred from local results. Raw evidence is private and
 excluded from commits. This matrix is a status contract, not a release approval.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+## PR28 disabled photo client, 26 September 2026
+
+The installed internal Android APK was built from
+`46de0163dcdb6b1d603f974f13045b87c5badbc9`. Its mobile source, configuration and
+lockfile are byte-identical after the PR45 main refresh at `ce2c561`.
+SHA-256: `8d9cf5757bb32127ae514168b046534338f91ea6dd116ee1394e737106938bcc`.
+This is internal test distribution, not the final accepted user APK.
+
+| Boundary | Result and sample | Evidence and limits |
+| --- | --- | --- |
+| Installed Pixel release | Pass, one ARM64 APK | Signature/alignment verified, installed without data reset, cold-opened and shown; four tabs and normal/largest text observed |
+| Camera permissions | Pass Android manifest; native prompts on both platforms | APK includes camera and excludes microphone/library permissions; interactive camera runs use Expo Go, whose own permission copy differs |
+| Pixel capture lifecycle | Pass, synthetic checkerboard captures | Denial/retry/grant, system-camera return, draft retained through background/foreground, unavailable check, cancel, profile switch, Home blur and logout observed |
+| iPhone 17 Pro | Partial native proof | Denial/Settings, camera launch/cancel/return, largest text and four tabs, then controlled expiry on foreground observed. Simulator gray preview/shutter produced no image; iOS capture/draft retention unverified |
+| No media or awards | Pass for tested fixture and client boundary | One availability request, zero photo POSTs, zero points; client API accepts no media input. Availability was a local fixture, not a deployed photo backend |
+| Live account/provider | Unverified | No real credentials or media used; synthetic sign-in/provider exchange exercised twice. No live AI, photo credits, route provider or hosted photo API claim |
+
+Raw screenshots, actual recordings and receipts remain in ignored
+`.evidence/photo-integration/`. Pixel camera evidence uses current source with
+local synthetic authentication; the exact release APK proof is recorded separately.
+The first Android screenshot named `pixel-photo-draft.png` captured the separate
+signed-out release after a Back action and is not draft evidence. Use
+`pixel-draft-retained.png` and `pixel-draft-lifecycle.mp4` for retention.
+
+Cleanup: restored Pixel font scale 1.0 and iPhone text size large; reset temporary
+Expo Go camera grants; closed both sessions/panels; returned iPhone to its original
+shutdown state and left originally booted Pixel running. iPad untouched. Owned
+Metro/API/provider/route listeners stopped; fresh bind checks passed on all four
+ports. Fixture sessions were revoked and its database pool closed. No app-data
+reset or user-account mutation occurred. JS/native memory cannot be securely
+zeroized; component/adapter tests establish reference/cache cleanup behavior,
+not forensic device-erasure proof.
+
+Verified by gpt-6-astra through Codex (T3 Code).
