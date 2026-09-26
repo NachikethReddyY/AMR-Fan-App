@@ -1562,3 +1562,44 @@ DAST remain queued. No heavy services started; the offered slot was released bec
 the source correction was still in progress. Native rendering remains unverified.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+Impact integrated actual merged awards main `458cae1`. The aggregate now selects
+full assessed or provisional nonnull assessed calculations, requires explicit CO2
+measurement and retained approved factor provenance, and excludes unchanged legacy
+CO2e records. The API and accepted Home/Impact text use CO2 with source values,
+interpreted/published units and release version. No layout or point-credit changes.
+Four new failing-first unit tests cover legacy exclusion, assessed-only provisional
+values, factor provenance and the accepted CAG calculation. All fifteen backend,
+fifteen client and two component cases pass, along with typecheck and affected lint.
+Leased PostgreSQL freshness red/green, registered mixed-unit/timeout HTTP proof and
+scoped passive DAST are in progress; their result is not yet claimed.
+
+Integrated by gpt-6-astra through Codex (T3 Code).
+
+Impact integrated execution: the disposable freshness negative control failed at
+exactly the pending interval, retaining the obsolete 2 kg without the guard.
+Corrected PostgreSQL18/Node24 passed all three cases. Registered HTTP proved
+CO2-only 5/9 kg with a legacy receipt excluded and unchanged, actual lock-induced
+57014 returning503 without totals, and successful recovery. Initial HTTP fixture
+auth configuration failure is retained separately; only the corrected run passes.
+
+Pinned passive ZAP against actual createApi observed11 Impact URLs, passed60
+rules with zero alerts, and verified all seven actor/origin cases. Responses
+passed the strict contribution schema and no-store/nosniff checks with no account
+IDs, coordinates or tokens in aggregates. The initial missing scanner report
+directory failure is retained; correction created it inside the container without
+host mounts. All owned PG/Node/ZAP containers, private networks and copied contexts
+were removed. Full/security checks remain in progress. CI stays paused; native
+rendering, deployment activation and real populated travel remain unverified.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+The final integrated `pnpm check` and `pnpm security:check` pass. Source secret/SAST
+scans found no findings; one existing moderate dependency advisory remains, with
+no high/critical blocker. Scanner positive/negative controls pass. Docker inventory
+confirms no owned Impact containers/networks remain, and the heavy slot is released.
+Evidence is retained privately under `.evidence/impact/`; previous review receipts
+remain intact. Final CO2 source review and root squash remain pending. No full-app,
+native, provider or deployed proof is claimed.
+
+Verified by gpt-6-astra through Codex (T3 Code).

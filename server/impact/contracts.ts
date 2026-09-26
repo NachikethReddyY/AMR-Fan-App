@@ -7,6 +7,7 @@ export const impactReason = z.enum([
   'insufficient_evidence',
   'calculation_unavailable',
   'assessment_pending',
+  'incompatible_measurement',
 ]);
 const exactKg = z
   .string()
@@ -16,7 +17,7 @@ export const impactTotal = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('empty') }),
   z.strictObject({
     kind: z.literal('unavailable'),
-    reasons: z.array(impactReason).min(1).max(6),
+    reasons: z.array(impactReason).min(1).max(7),
   }),
   z.strictObject({
     kind: z.literal('available'),
@@ -31,10 +32,19 @@ export const impactSource = z.strictObject({
   period: z.string().min(1).max(160),
   method: z.string().min(1).max(2000),
   assumptions: z.string().max(2000),
+  releaseVersion: z.string().min(1).max(160),
+  sourceValue: z.number().nonnegative().max(100),
+  sourceUnit: z.enum(['kgCO2/vehicle-km', 'kgCO2/passenger-km']),
+  publishedUnit: z.enum([
+    'kgCO2e/vehicle-km',
+    'kgCO2e/passenger-km',
+    'kgCO2/passenger-km',
+  ]),
+  occupants: z.number().positive().max(1000),
 });
 export const contributionsSchema = z.strictObject({
   period: z.literal('lifetime'),
-  unit: z.literal('kgCO2e'),
+  unit: z.literal('kgCO2'),
   personal: impactTotal,
   community: impactTotal,
   sources: z.array(impactSource).max(100),

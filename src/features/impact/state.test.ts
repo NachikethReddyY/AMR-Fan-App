@@ -74,7 +74,7 @@ test.each([
 test('contribution API validates distinct empty/unavailable states and never replaces errors with zero', async () => {
   const payload = {
     period: 'lifetime',
-    unit: 'kgCO2e',
+    unit: 'kgCO2',
     sources: [],
     validation: [],
     personal: { kind: 'empty' },
@@ -98,7 +98,7 @@ test('contribution API validates distinct empty/unavailable states and never rep
 test('contribution contract preserves exact kg and rejects fake units and malformed values', async () => {
   const payload = {
     period: 'lifetime',
-    unit: 'kgCO2e',
+    unit: 'kgCO2',
     sources: [],
     validation: [],
     personal: {
@@ -116,6 +116,7 @@ test('contribution contract preserves exact kg and rejects fake units and malfor
   };
   expect(parseContributions(payload).personal).toEqual(payload.personal);
   expect(() => parseContributions({ ...payload, unit: 'points' })).toThrow();
+  expect(() => parseContributions({ ...payload, unit: 'kgCO2e' })).toThrow();
   expect(() =>
     parseContributions({
       ...payload,
@@ -144,7 +145,7 @@ test('presentation distinguishes sign-in, loading, empty, blocked, errors and tr
       {
         id,
         period: 'lifetime' as const,
-        unit: 'kgCO2e' as const,
+        unit: 'kgCO2' as const,
         personal,
         community: { kind: 'empty' as const },
         sources: [],
@@ -172,7 +173,7 @@ test('presentation distinguishes sign-in, loading, empty, blocked, errors and tr
         excludedJourneys: 0,
       }),
     ),
-  ).toBe('0 kg CO₂e estimated savings · Lifetime');
+  ).toBe('Estimated CO2 avoided: 0 kg · Lifetime');
 });
 
 test('contribution resource discards an old account response after profile switch and logout', async () => {
@@ -188,7 +189,7 @@ test('contribution resource discards an old account response after profile switc
   await controller.setContext(null);
   complete?.({
     period: 'lifetime',
-    unit: 'kgCO2e',
+    unit: 'kgCO2',
     personal: { kind: 'empty' },
     community: { kind: 'empty' },
     sources: [],

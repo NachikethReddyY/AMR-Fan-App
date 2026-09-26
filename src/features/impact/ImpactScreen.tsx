@@ -31,9 +31,10 @@ export function ImpactScreen() {
       </View>
       <Text style={styles.caption}>
         Lifetime estimates compare recorded journeys with one person driving a
-        conventional car between the same endpoints. Points and official team
-        figures are separate. These are estimates, not measured savings or
-        carbon offsets.
+        car between the same endpoints. Points and official team figures are
+        separate. These are estimates, not measured savings or carbon offsets.
+        Published surface-access factors estimate CO2 only, excluding other
+        greenhouse gases and lifecycle emissions.
       </Text>
       <Action
         secondary
@@ -86,6 +87,11 @@ export function ImpactScreen() {
               </Text>
               <Text>{source.method}</Text>
               <Text>{source.assumptions}</Text>
+              <Text>
+                {source.releaseVersion}: {source.sourceValue}{' '}
+                {source.sourceUnit}. Published unit: {source.publishedUnit};
+                occupants: {source.occupants}.
+              </Text>
             </View>
           ))}
         </>

@@ -585,3 +585,11 @@ authored; real PostgreSQL red/green proof remains queued. This enforces existing
 project guidance in `docs/operations/awards.md`; no shared guidance changed.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact CO2 integration follows merged PR50 at `458cae1`. The user-approved label
+is "Estimated CO2 avoided". Use only explicit compatible CO2 assessed calculations;
+legacy CO2e and planned provisional calculations cannot enter CO2 totals. Retain
+published-unit discrepancy and neutral one-occupant car scope. No dataset default
+activation or peer source copy. Existing assessment-freshness proof remains required.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

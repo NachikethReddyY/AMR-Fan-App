@@ -85,7 +85,7 @@ test('populated estimates keep lifetime units, source disclosure and official fi
       {
         id: 'profile',
         period: 'lifetime',
-        unit: 'kgCO2e',
+        unit: 'kgCO2',
         validation: [],
         personal: {
           kind: 'available',
@@ -102,6 +102,11 @@ test('populated estimates keep lifetime units, source disclosure and official fi
         sources: [
           {
             id: 'fixture-factor',
+            releaseVersion: 'synthetic-v1',
+            sourceValue: 0.1901,
+            sourceUnit: 'kgCO2/vehicle-km',
+            publishedUnit: 'kgCO2e/vehicle-km',
+            occupants: 1,
             source: 'https://example.test/factors',
             period: 'Synthetic period',
             method: 'Synthetic method',
@@ -112,8 +117,8 @@ test('populated estimates keep lifetime units, source disclosure and official fi
     ],
   };
   await act(async () => root.render(<ImpactScreen />));
-  expect(host.textContent).toContain('5 kg CO₂e estimated savings · Lifetime');
-  expect(host.textContent).toContain('9 kg CO₂e estimated savings · Lifetime');
+  expect(host.textContent).toContain('Estimated CO2 avoided: 5 kg · Lifetime');
+  expect(host.textContent).toContain('Estimated CO2 avoided: 9 kg · Lifetime');
   expect(host.textContent).toContain('https://example.test/factors');
   expect(host.textContent).toContain('Synthetic method');
   expect(host.textContent).toContain('1 journeys await');

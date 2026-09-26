@@ -10,6 +10,7 @@ import { ensureAccount, assignRole } from '../accounts/store.ts';
 import { createSession, revokeSession } from '../auth/session.ts';
 import { createJourneyService } from '../journeys/store.ts';
 import { settleJourneyAward } from '../awards/store.ts';
+import { impactRoute } from './testing.ts';
 import { awardRoute } from '../awards/testing/fixtures.ts';
 import { readContributions } from './store.ts';
 import { createApi } from '../api/app.ts';
@@ -42,6 +43,7 @@ async function journey(
   kg: number,
   missing = false,
   fixture = false,
+  legacy = false,
 ) {
   let now = Date.now();
   const service = createJourneyService({
@@ -49,7 +51,7 @@ async function journey(
     env: { NODE_ENV: 'test', JOURNEY_FIXTURES_ENABLED: 'true' },
     clock: () => now,
   });
-  const route = awardRoute(kg, now);
+  const route = legacy ? awardRoute(kg, now) : impactRoute(kg, now);
   // Controlled fixtures exercise configured eligibility, never claim actual travel.
   if (!fixture)
     route.source = { kind: 'live', provider: 'synthetic-impact-policy-test' };
@@ -172,7 +174,7 @@ test('real DB: owned empty, admin privacy, demo exclusion, expiry and anonymous 
   }
 });
 
-test('real DB: configured estimate policy sums 2+3/4 once through replay and evidence upgrade; default displays labelled estimates without credit', async () => {
+test('real DB: configured estimate policy sums 2+3/4 once through replay and evidence upgrade; reads preserve credit and separate CO2 from legacy units', async () => {
   const a = await fan();
   const b = await fan();
   const first = await journey(a, 2);
@@ -258,6 +260,10 @@ test('real DB: configured estimate policy sums 2+3/4 once through replay and evi
       assessmentRevision: updated.assessment.revision,
     },
   });
+  const balanceBeforeRead = await pool.query(
+    'SELECT balance FROM app.profiles WHERE id=$1',
+    [a.profile.id],
+  );
   const after = await read();
   assert.deepEqual(after.personal, {
     kind: 'available',
@@ -284,9 +290,88 @@ test('real DB: configured estimate policy sums 2+3/4 once through replay and evi
   );
   assert.equal(
     balance.rows[0].balance,
-    0,
-    'display policy cannot award points',
+    balanceBeforeRead.rows[0].balance,
+    'impact reads cannot award additional points',
   );
+  const legacy = await journey(a, 99, false, false, true);
+  const retainedBefore = await pool.query(
+    'SELECT receipt FROM app.journey_award_assessments WHERE journey_id=$1',
+    [legacy.args.journeyId],
+  );
+  const server = createApi({
+    pool,
+    env: { NODE_ENV: 'test', AUTH_DEV_ENABLED: 'true', API_HOST: '127.0.0.1' },
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const url = `http://127.0.0.1:${address.port}/v1/profiles/${a.profile.id}/impact`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${a.token}` },
+    });
+    assert.equal(response.status, 200);
+    const result = contributionsSchema.parse(await response.json());
+    assert.equal(result.unit, 'kgCO2');
+    assert.deepEqual(result.personal, {
+      kind: 'available',
+      savingsKg: '5',
+      journeyCount: 2,
+      excludedJourneys: 1,
+    });
+    assert.deepEqual(result.community, {
+      kind: 'available',
+      savingsKg: '9',
+      journeyCount: 3,
+      excludedJourneys: 1,
+    });
+    assert.ok(
+      result.sources.every((source) => source.sourceUnit.startsWith('kgCO2/')),
+    );
+    const retainedAfter = await pool.query(
+      'SELECT receipt FROM app.journey_award_assessments WHERE journey_id=$1',
+      [legacy.args.journeyId],
+    );
+    assert.deepEqual(
+      retainedAfter.rows,
+      retainedBefore.rows,
+      'legacy receipts remain immutable',
+    );
+    const blocker = await pool.connect();
+    try {
+      await blocker.query('BEGIN');
+      await blocker.query(
+        'LOCK TABLE app.journey_award_assessments IN ACCESS EXCLUSIVE MODE',
+      );
+      const timedOut = await fetch(url, {
+        headers: { Authorization: `Bearer ${a.token}` },
+      });
+      assert.equal(
+        timedOut.status,
+        503,
+        'actual PostgreSQL statement timeout is a recoverable error',
+      );
+      assert.equal(timedOut.headers.get('cache-control'), 'no-store');
+      assert.ok(
+        !JSON.stringify(await timedOut.json()).includes('savingsKg'),
+        'no truncated totals',
+      );
+    } finally {
+      await blocker.query('ROLLBACK');
+      blocker.release();
+    }
+    const recovered = await fetch(url, {
+      headers: { Authorization: `Bearer ${a.token}` },
+    });
+    assert.equal(recovered.status, 200);
+    assert.deepEqual(
+      contributionsSchema.parse(await recovered.json()).personal,
+      result.personal,
+    );
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 });
 
 test('real DB: lifetime cursor reads beyond one batch and a qualifying zero stays zero', async () => {

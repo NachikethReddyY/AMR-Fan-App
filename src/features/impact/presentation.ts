@@ -11,6 +11,8 @@ const reasons = {
     'Estimate unavailable: approved emissions factors needed.',
   insufficient_evidence: 'Estimate unavailable: more journey evidence needed.',
   calculation_unavailable: 'Estimate unavailable: calculation data missing.',
+  incompatible_measurement:
+    'Legacy CO2e estimates are excluded from CO2 totals.',
   assessment_pending: 'Estimate unavailable: journey assessment pending.',
 };
 export function contributionText(
@@ -27,5 +29,5 @@ export function contributionText(
   if (total.kind === 'empty') return 'No qualifying journeys yet.';
   if (total.kind === 'unavailable')
     return total.reasons.map((reason) => reasons[reason]).join(' ');
-  return `${total.savingsKg} kg CO₂e estimated savings · Lifetime`;
+  return `Estimated CO2 avoided: ${total.savingsKg} kg · Lifetime`;
 }

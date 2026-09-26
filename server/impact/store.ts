@@ -127,7 +127,7 @@ export async function readContributions({
     });
     return contributionsSchema.parse({
       period: 'lifetime',
-      unit: 'kgCO2e',
+      unit: 'kgCO2',
       personal:
         profile.kind === 'demo'
           ? { kind: 'unavailable', reasons: ['demo_profile'] }

@@ -1,3 +1,4 @@
+import { fingerprint } from '../awards/readiness.ts';
 import type { AwardReceipt } from '../awards/contracts.ts';
 import { add, decimal, decimalString } from '../awards/decimal.ts';
 import type { ImpactSource, ImpactTotal } from './contracts.ts';
@@ -31,11 +32,17 @@ export function classifyReceipt(
       : { kind: 'excluded' };
   if (decision.kind === 'fallback')
     return { kind: 'unavailable', reason: 'insufficient_evidence' };
-  if (decision.kind !== 'full')
+  const assessed =
+    decision.kind === 'full'
+      ? decision.calculation
+      : decision.kind === 'provisional'
+        ? decision.assessedCalculation
+        : null;
+  if (!assessed)
     return { kind: 'unavailable', reason: 'calculation_unavailable' };
   if (
     policy === 'require_readiness' &&
-    receipt.result.productionCredit.kind === 'unavailable'
+    receipt.result.productionCredit.kind !== 'ready'
   )
     return { kind: 'unavailable', reason: 'validation_pending' };
   if (
@@ -49,6 +56,16 @@ export function classifyReceipt(
     receipt.assessedLegs.kind !== 'available'
   )
     return { kind: 'unavailable', reason: 'calculation_unavailable' };
+  if (!assessed.measurement)
+    return { kind: 'unavailable', reason: 'incompatible_measurement' };
+  const release = receipt.basis.factorRelease;
+  if (
+    !release ||
+    release.factorEvidence.boundary !== 'published_surface_access' ||
+    release.factorFingerprint !== fingerprint(calculation.factors)
+  )
+    return { kind: 'unavailable', reason: 'factors_unapproved' };
+  const evidence = release.factorEvidence;
   const usedModes = new Set(
     [...calculation.baseline.legs, ...receipt.assessedLegs.legs].map(
       (leg) => leg.mode,
@@ -59,23 +76,41 @@ export function classifyReceipt(
   );
   if (
     receipt.basis.factorStatus !== 'approved' ||
-    factors.some((factor) => factor.status !== 'approved')
+    [...usedModes].some(
+      (mode) => factors.filter((f) => f.mode === mode).length !== 1,
+    ) ||
+    factors.some(
+      (factor) =>
+        factor.status !== 'approved' ||
+        !('gas' in factor) ||
+        evidence.units.filter((unit) => unit.factorId === factor.id).length !==
+          1,
+    )
   )
     return { kind: 'unavailable', reason: 'factors_unapproved' };
   return {
     kind: 'eligible',
-    savingsKg: decision.calculation.savingsKg,
+    savingsKg: assessed.savingsKg,
     validation:
-      receipt.result.productionCredit.kind === 'unavailable'
+      receipt.result.productionCredit.kind !== 'ready'
         ? 'unvalidated_estimate'
         : 'reviewed_release',
-    sources: factors.map(({ id, source, period, method, assumptions }) => ({
-      id,
-      source,
-      period,
-      method,
-      assumptions,
-    })),
+    sources: factors.map(({ id, source, period, method, assumptions }) => {
+      const unit = evidence.units.find((unit) => unit.factorId === id);
+      if (!unit) throw new Error('Missing retained factor unit.');
+      return {
+        id,
+        source,
+        period,
+        method,
+        assumptions,
+        releaseVersion: release.version,
+        sourceValue: unit.sourceValue,
+        sourceUnit: unit.sourceUnit,
+        publishedUnit: unit.publishedUnit,
+        occupants: unit.occupants,
+      };
+    }),
   };
 }
 
