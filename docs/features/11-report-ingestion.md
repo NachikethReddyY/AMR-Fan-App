@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+Status: accepted product behavior. The real API now registers local PDF upload, immutable provenance, manual corrections and assigned-admin approval/replacement. Registered PostgreSQL/parser and browser paths are verified locally. Automatic extraction quality, production identity/retention/provider deployment and fan Impact integration remain pending. See [report operations](../operations/reports.md). Acceptance cases below remain full-product requirements.
 
 ## Outcome
 

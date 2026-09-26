@@ -1,0 +1,48 @@
+#file,
+#title,
+#report,
+#candidate,
+#replacement {
+  max-width: 100%;
+}
+#upload-form input,
+#review-form input {
+  margin-bottom: 16px;
+}
+#source {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 400px;
+  overflow: auto;
+  border: 1px solid #3d3d3d;
+  padding: 16px;
+  font: inherit;
+  line-height: 1.5;
+}
+#audit,
+#official {
+  list-style: none;
+  padding: 0;
+}
+#audit li,
+#official li {
+  border-top: 1px solid #3d3d3d;
+  padding: 16px 0;
+  overflow-wrap: anywhere;
+}
+#select-form,
+#decision-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+#select-form label,
+#decision-form h2,
+#decision-form label,
+#decision-form textarea {
+  flex-basis: 100%;
+}
+#detail > button {
+  margin-bottom: 24px;
+}
