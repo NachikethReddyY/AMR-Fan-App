@@ -45,7 +45,10 @@ separate approved-report endpoint and reporting periods.
 
 The lifetime read uses the latest retained award assessment for each finished
 real-profile journey in one database snapshot. An assessment replay or later
-points top-up never adds another journey. Savings come from the receipt's exact
+points top-up never adds another journey. The receipt must match the current
+journey assessment version and revision in that snapshot. Newer evidence leaves
+the journey excluded as `assessment_pending` until settlement replaces its
+receipt; this GET never settles it. Savings come from the receipt's exact
 CO2e calculation, never from points, reward purchases, photo activity or tree
 participation. Fixture journeys and demo profiles cannot establish real travel.
 

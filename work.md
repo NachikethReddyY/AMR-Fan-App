@@ -1546,3 +1546,19 @@ isolated proof predates that correction. Native and impact-specific DAST remain
 unverified. Review scope is the impact diff, not a repository-wide audit.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+Impact rebased onto merged admin main `e2f95534814b7e6289ba24f01aa20a919ed1514a`.
+The pre-correction Impact/Home code is byte-equivalent to reviewed `0b14a8b`;
+admin origin/helper registrations and both record histories are preserved.
+Root specification review then identified an assessment-freshness gap. The read
+now selects the current assessment identity with the receipt in its existing
+read-only snapshot and excludes mismatches as `assessment_pending`. The regression
+reads after new evidence but before settlement, checks repeated reads remain
+pending, then expects exactly one replacement contribution after settlement.
+Typecheck, all eleven focused backend tests, changed-file lint, formatting and
+diff checks pass after the rebase and correction. The new database regression has
+not run. Database red/green execution, corrected timeout SQL and scoped endpoint
+DAST remain queued. No heavy services started; the offered slot was released because
+the source correction was still in progress. Native rendering remains unverified.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

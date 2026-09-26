@@ -6,7 +6,12 @@ import { authenticateSession } from '../auth/session.ts';
 import { readOwnedProfile } from '../accounts/store.ts';
 import { ApiError } from '../accounts/types.ts';
 import { transaction } from '../database/index.ts';
-import { id, parse, sourceSchema } from '../journeys/contracts.ts';
+import {
+  assessmentSchema,
+  id,
+  parse,
+  sourceSchema,
+} from '../journeys/contracts.ts';
 import { receiptSchema } from '../awards/contracts.ts';
 import {
   classifyReceipt,
@@ -21,6 +26,7 @@ const rowSchema = z.object({
   journey_id: id,
   state: z.enum(['prepared', 'active', 'finished']),
   source: sourceSchema,
+  assessment: assessmentSchema.pick({ version: true, revision: true }),
   receipt: receiptSchema.nullable(),
 });
 
@@ -59,7 +65,9 @@ export async function readContributions({
     // or ledger entries: a replay/top-up is still one journey contribution.
     await client.query(`DECLARE impact_rows NO SCROLL CURSOR FOR
       SELECT j.id AS journey_id,j.profile_id,j.summary->>'state' AS state,
-        j.summary->'source' AS source,a.receipt
+        j.summary->'source' AS source,
+        jsonb_build_object('version',j.summary->'assessment'->'version',
+          'revision',j.summary->'assessment'->'revision') AS assessment,a.receipt
       FROM app.journeys j
       JOIN app.profiles p ON p.id=j.profile_id AND p.kind='real'
       LEFT JOIN app.journey_award_state s ON s.journey_id=j.id AND s.profile_id=j.profile_id
@@ -85,12 +93,18 @@ export async function readContributions({
         if (
           row.receipt &&
           (row.receipt.journeyId !== row.journey_id ||
-            row.receipt.profileId !== row.profile_id)
+            row.receipt.profileId !== row.profile_id ||
+            row.receipt.assessmentIdentity.journeyId !== row.journey_id)
         )
           throw new Error('Stored impact receipt identity mismatch.');
-        const contribution = row.receipt
-          ? classifyReceipt(row.receipt, policy)
-          : ({ kind: 'unavailable', reason: 'assessment_pending' } as const);
+        // Evidence can advance the journey before its next award settlement.
+        // The read must exclude that old receipt without settling it itself.
+        const contribution =
+          row.receipt &&
+          row.receipt.assessmentIdentity.version === row.assessment.version &&
+          row.receipt.assessmentIdentity.revision === row.assessment.revision
+            ? classifyReceipt(row.receipt, policy)
+            : ({ kind: 'unavailable', reason: 'assessment_pending' } as const);
         community.include(contribution);
         if (row.profile_id === selected) personal.include(contribution);
         if (contribution.kind === 'eligible') {

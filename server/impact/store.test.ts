@@ -191,6 +191,55 @@ test('real DB: configured estimate policy sums 2+3/4 once through replay and evi
   if (before.personal.kind === 'available')
     assert.equal(before.personal.savingsKg, '2');
   await settleJourneyAward(first.args);
+  first.advance();
+  const reassessed = await first.service.appendEvidence(
+    a.token,
+    first.args.journeyId,
+    {
+      requestId: randomUUID(),
+      captureSessionId: first.captureSessionId,
+      samples: [
+        {
+          ...first.samples[0],
+          id: randomUUID(),
+          acquiredAtMs: first.samples[0].acquiredAtMs + 30000,
+          receivedAtMs: first.samples[0].receivedAtMs + 30000,
+          latitude: 1.301,
+        },
+      ],
+    },
+  );
+  assert.ok(
+    reassessed.assessment.revision > first.args.input.assessmentRevision,
+  );
+  const pending = await read();
+  assert.deepEqual(pending.personal, {
+    kind: 'unavailable',
+    reasons: ['assessment_pending', 'insufficient_evidence'],
+  });
+  assert.deepEqual(pending.community, {
+    kind: 'available',
+    savingsKg: '4',
+    journeyCount: 1,
+    excludedJourneys: 2,
+  });
+  // Repeated reads cannot settle the pending assessment.
+  assert.deepEqual((await read()).personal, pending.personal);
+  await settleJourneyAward({
+    ...first.args,
+    input: {
+      ...first.args.input,
+      requestId: randomUUID(),
+      assessmentVersion: reassessed.assessment.version,
+      assessmentRevision: reassessed.assessment.revision,
+    },
+  });
+  assert.deepEqual((await read()).personal, {
+    kind: 'available',
+    savingsKg: '2',
+    journeyCount: 1,
+    excludedJourneys: 1,
+  });
   second.advance();
   const updated = await second.service.appendEvidence(
     a.token,

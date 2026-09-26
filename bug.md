@@ -576,3 +576,12 @@ one bounded isolated DB/full/security slot with owned containers and generated
 credentials only. CI, provider, device and shared DB actions remain prohibited.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact root-review correction: the latest settled receipt could remain visible
+when newer evidence had already advanced the journey assessment. Match the
+current assessment version/revision in the same snapshot and expose mismatches
+as `assessment_pending` until explicit settlement. The interval regression is
+authored; real PostgreSQL red/green proof remains queued. This enforces existing
+project guidance in `docs/operations/awards.md`; no shared guidance changed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
