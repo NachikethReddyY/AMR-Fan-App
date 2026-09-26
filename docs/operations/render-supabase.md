@@ -6,6 +6,69 @@ No cloud mutation has been performed by this candidate.
 
 ## Guarded database bootstrap
 
+### Reviewed participation upgrade preparation
+
+The next release starts from merged `09b61e9213d4d08d986621439f9f16c453cc87d7`.
+The deployment command now supports exactly migrations 0001–0009. A retained
+installation must have the complete, checksum-matching first eight or all nine;
+any other history, ownership collision or runtime privilege drift is refused.
+An eight-migration installation applies only `0009_submission_participation.sql`
+under `amr_migration_owner`, inside the existing advisory-locked transaction.
+DDL, scoped permissions and the new ledger entry commit together or roll back.
+The migration file and existing rows, timestamps, role identities and passwords
+are not rewritten. A nine-migration replay verifies permissions without changes.
+
+The runtime receives SELECT/INSERT on the four new participation tables,
+UPDATE only on session closure and selection resolution columns, USAGE/SELECT
+on the interaction-session identity sequence, and EXECUTE on the three trigger
+functions. It receives no DELETE, TRUNCATE, schema/database CREATE, role-management
+or migration-ledger privileges. Existing table grants are left intact.
+
+After the manager supplies the reviewed final integrated commit:
+
+1. Verify that exact commit includes this upgrade, the reviewed PR28 guest
+   catalogue API and the reviewed admin-origin change. Neither a mobile branch
+   tip nor mutable main is an approved deployment target by itself.
+2. Read the exact project's ledger and restricted runtime privileges. Require
+   unchanged 0001–0008 checksums and migration 0009 SHA256
+   `dae2d00d50e1b93684082519101177984bdaa80af38951d62a1d4382379ff10e`.
+3. At the authorized deployment window, run the command below with the existing
+   protected bootstrap configuration and verified Supabase CA. Keep credentials
+   outside the checkout and off Render. The runtime password is required by the
+   input format but never altered during upgrade or replay. Do not substitute the
+   ordinary development migration command; it does not enforce these role/grant
+   boundaries. Re-read the ninth ledger row and effective runtime permissions.
+4. Keep the existing Render service Free with auto-deploy off. Preserve every
+   existing environment entry. `ADMIN_ORIGIN` remains
+   `https://amr-fan-app.onrender.com`. Only after the stable Vercel production URL
+   and reviewed API allowlist implementation are supplied, add
+   `ADMIN_ADDITIONAL_ORIGIN=https://amr-admin.vercel.app`, the stable production
+   origin reported by the admin owner. No wildcard,
+   preview-pattern or Origin-header stripping is permitted.
+5. Pin and deploy only the final reviewed commit. Retain
+   `674273de2a94d211c8404b736adc68e6a6b9f48a` and its prior release branch for
+   code rollback. An additive migration is retained on code rollback; never
+   drop its tables or restore old data as part of an API rollback.
+6. Verify exact deployed SHA, health, guest catalogue 200, protected unauthenticated
+   denial, same-origin Render admin access and the exact Vercel-origin flow.
+   Admin roles remain server-owned. Prior live proof used only a synthetic fan;
+   no assigned-admin identity is established by this receipt. Keep Supabase
+   autoconfirm and SMTP unchanged. CI remains paused and unverified.
+
+No production migration or deploy is performed by this preparation. Browser UI,
+Vercel origin and the final integrated candidate remain with their owners.
+
+The separate photo candidate proposes `0010_photo_activity.sql`. Its inspected
+table `app.photo_activity_claims` does not collide with 0009 and needs runtime
+SELECT/INSERT only, with no new sequence or UPDATE/DELETE grant. It references
+existing profiles, journeys and points operations and reuses the points-history
+trigger function. The settlement hook requires this table even while photo
+availability is unavailable. That candidate is not frozen: do not apply or copy
+0010 yet. This command remains fixed at nine migrations; a combined photo release
+needs a reviewed explicit tenth-migration extension and serialized API registration.
+
+### Original setup receipt
+
 Target only existing project `folakoxsilrfemctvlxj` (AMRF app, Free, Mumbai,
 PostgreSQL 17). Read-only inventory found no app schema or migration ledger,
 zero auth users, and zero storage buckets/objects. Recheck before provisioning.
@@ -20,7 +83,7 @@ TLS certificate verification stays enabled. Supply a trusted CA through the
 Node trust configuration if needed, never `rejectUnauthorized:false`.
 
 The bootstrap takes an advisory transaction lock, creates `amr_migration_owner`
-NOLOGIN and `amr_api` LOGIN, applies existing migrations 0001–0008 byte unchanged,
+NOLOGIN and `amr_api` LOGIN, applies existing migrations 0001–0009 byte unchanged,
 and records checksums atomically. The administrator retains membership needed
 to maintain the owner role; runtime has no memberships. Runtime cannot create
 persistent schemas/tables, alter migration history, assign staff roles, or
@@ -32,7 +95,7 @@ are untouched. No seed, reset, password rotation or staff assignment occurs.
 A complete matching installation is verified and returned unchanged. Partial
 role/schema/ledger collisions, checksum drift and elevated runtime privileges
 abort. Later migrations require an explicit reviewed follow-up, not silently
-accepting files beyond the fixed eight. Keep bootstrap credentials off Render;
+accepting files beyond the fixed nine. Keep bootstrap credentials off Render;
 only the restricted runtime connection belongs in its server secret store.
 
 Fresh setup and replay reject effective database CREATE, including rights inherited

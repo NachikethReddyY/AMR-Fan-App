@@ -396,3 +396,13 @@ were not rerun for this bounded conflict/build refresh. Existing hosted Actions
 pause is preserved; no CI queries, workflow changes or merge are part of this task.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: prepare retained Supabase participation upgrade
+
+- Tracking: DEPLOY-009, unlinked. Base: `09b61e9213d4d08d986621439f9f16c453cc87d7`. One bounded deployment-tool correction; no mobile, admin-origin guard, migration SQL, dependency or CI edits.
+- Reproduced the existing bootstrap returning unchanged at eight migrations. Added an explicit checksum-guarded eight-to-nine transaction using the existing migration owner, scoped table/column/sequence/function permissions, collision refusal and verified replay. Existing role identities/passwords, prior ledger timestamps, peer rows and existing ACLs are preserved in real PG17 proof.
+- Six isolated bootstrap/API/upgrade tests pass, including restricted real login and writes, role/DDL denial, direct/PUBLIC database CREATE refusal, late DDL failure rollback, object collisions, checksum drift, immutable prior ledger, anon denial and replay. Owned no-host-port/internal-network container, image and network removed. Security gate passes with zero source findings and the existing moderate dependency advisory.
+- Hosted read-only receipt confirms Free Render, auto-deploy off and live674273. Supabase has matching migrations0001–0008, no0009 and a restricted amr_api role. Existing ADMIN_ORIGIN is https://amr-fan-app.onrender.com. Preserve it; pending ADMIN_ADDITIONAL_ORIGIN=https://amr-admin.vercel.app requires the admin owner's reviewed candidate and manager deployment window. Prior hosted identity proof is a synthetic fan only; no admin was assigned.
+- No cloud/config/auth/SMTP mutation, source publication, production migration, deployment or Actions call. Exact integrated guest catalogue and admin-origin candidates remain pending. Evidence: `.evidence/participation-deployment-readiness/`. Full local gate result is recorded in the handoff; an initial unrelated AI40ms timeout test failure is retained honestly.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
