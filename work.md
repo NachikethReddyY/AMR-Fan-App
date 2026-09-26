@@ -1497,3 +1497,40 @@ rerun. The inherited Awards API hash change is separately recorded in the DAST
 exception document for root's focused review. Merge remains held.
 
 Rebased and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: Impact contribution read and phone binding
+
+Personal and community lifetime estimates have a scoped read API and Home/Impact
+bindings on main `026b4d70`. A repeatable database snapshot follows the latest
+assessment per journey. Exact decimal savings do not depend on points, replay
+count or top-up amounts. Full assessed records and approved factors qualify for
+labelled estimates before physical calibration, as accepted by the user. Fixture,
+demo, fallback and insufficient-evidence records cannot inflate those estimates.
+No numerical dataset, physical evidence or production award release was invented.
+
+Home changes are imports, one hook and its two text bindings. Impact retains
+its geometry and separate official figures, with source/method/period disclosure
+and explicit empty, unavailable, loading and error states. No award transaction,
+journey schema, photo, account, Travel or dock code was changed.
+
+| Security dimension            | Status and evidence                                                                                           | Confidence and limit                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Ownership and admin isolation | Pass: isolated real HTTP/PG tests reject anonymous, revoked and cross-account reads, including admin          | High for tested actors; no production accounts used              |
+| Community disclosure          | Pass: strict aggregate/source schema and real response omit profile and journey IDs                           | High for tested response; no privacy claim about other endpoints |
+| Accounting preservation       | Pass: replay and later evidence use one journey; 5 kg personal and 9 kg community fixtures leave balance zero | High for synthetic stored data; no actual travel claim           |
+
+Three isolated PostgreSQL18/Node24 cases passed, including cursor traversal over
+100 records and a qualifying zero. Eight pure backend, fifteen client and two
+component cases pass. Full `pnpm check` passed; the subsequent assessment guard
+passed focused tests, isolated DB, typecheck, lint and formatting. Security checks
+passed with no source findings; the existing dependency audit retains one moderate
+advisory. Owned database containers, internal network and private context were
+removed. Evidence is local under `.evidence/impact/`.
+
+Native rendering and endpoint-specific DAST remain unverified. The existing DAST
+target uses a PostgreSQL version outside the granted PG17/18 fixture scope and
+starts at the unrelated participation admin path. CI is paused by the user.
+No provider/device/cloud/shared-DB/CI action occurred. Approved live numerical
+factors and actual populated journey proof remain upstream activation work.
+
+Implemented by gpt-6-astra through Codex (T3 Code).

@@ -1,0 +1,106 @@
+import { createHash } from 'node:crypto';
+import type { Pool } from 'pg';
+import { z } from 'zod';
+import { authenticateSession } from '../auth/session.ts';
+import { readOwnedProfile } from '../accounts/store.ts';
+import { ApiError } from '../accounts/types.ts';
+import { transaction } from '../database/index.ts';
+import { id, parse, sourceSchema } from '../journeys/contracts.ts';
+import { receiptSchema } from '../awards/contracts.ts';
+import {
+  classifyReceipt,
+  createSummary,
+  estimatePolicy,
+  type EstimatePolicy,
+} from './aggregate.ts';
+import { contributionsSchema, type ImpactSource } from './contracts.ts';
+
+const rowSchema = z.object({
+  profile_id: id,
+  journey_id: id,
+  state: z.enum(['prepared', 'active', 'finished']),
+  source: sourceSchema,
+  receipt: receiptSchema.nullable(),
+});
+
+export async function readContributions({
+  pool,
+  token,
+  profileId,
+  policy = estimatePolicy,
+}: {
+  pool: Pool;
+  token: string;
+  profileId: string;
+  policy?: EstimatePolicy;
+}) {
+  const selected = parse(id, profileId);
+  const actor = await authenticateSession(pool, token);
+  return transaction(pool, async (client) => {
+    // One snapshot prevents a top-up between pages from being counted twice.
+    await client.query(
+      'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY',
+    );
+    const session = await client.query(
+      'SELECT 1 FROM app.sessions WHERE token_hash=$1 AND principal_id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp()',
+      [createHash('sha256').update(token).digest('hex'), actor.principalId],
+    );
+    if (!session.rowCount) throw new ApiError(401, 'Sign in again.');
+    const profile = await readOwnedProfile(client, actor.principalId, selected);
+    const personal = createSummary();
+    const community = createSummary();
+    const sources = new Map<string, ImpactSource>();
+    const validation = new Set<'reviewed_release' | 'unvalidated_estimate'>();
+    // The state table owns the latest receipt. Never sum append-only assessments
+    // or ledger entries: a replay/top-up is still one journey contribution.
+    await client.query(`DECLARE impact_rows NO SCROLL CURSOR FOR
+      SELECT j.id AS journey_id,j.profile_id,j.summary->>'state' AS state,
+        j.summary->'source' AS source,a.receipt
+      FROM app.journeys j
+      JOIN app.profiles p ON p.id=j.profile_id AND p.kind='real'
+      LEFT JOIN app.journey_award_state s ON s.journey_id=j.id AND s.profile_id=j.profile_id
+      LEFT JOIN app.journey_award_assessments a ON a.id=s.latest_receipt_id
+      WHERE j.summary->>'state'='finished' AND j.summary->'source'->>'kind'='live'`);
+    while (true) {
+      const rows = await client.query('FETCH FORWARD 100 FROM impact_rows');
+      for (const raw of rows.rows) {
+        const row = rowSchema.parse(raw);
+        if (row.source.kind === 'fixture' || row.state !== 'finished') continue;
+        if (
+          row.receipt &&
+          (row.receipt.journeyId !== row.journey_id ||
+            row.receipt.profileId !== row.profile_id)
+        )
+          throw new Error('Stored impact receipt identity mismatch.');
+        const contribution = row.receipt
+          ? classifyReceipt(row.receipt, policy)
+          : ({ kind: 'unavailable', reason: 'assessment_pending' } as const);
+        community.include(contribution);
+        if (row.profile_id === selected) personal.include(contribution);
+        if (contribution.kind === 'eligible') {
+          if (contribution.validation) validation.add(contribution.validation);
+          for (const source of contribution.sources ?? [])
+            sources.set(JSON.stringify(source), source);
+          // Fail explicitly instead of dropping attribution from a lifetime total.
+          if (sources.size > 100)
+            throw new ApiError(
+              503,
+              'Impact sources exceed the supported response size.',
+            );
+        }
+      }
+      if (rows.rows.length < 100) break;
+    }
+    return contributionsSchema.parse({
+      period: 'lifetime',
+      unit: 'kgCO2e',
+      personal:
+        profile.kind === 'demo'
+          ? { kind: 'unavailable', reasons: ['demo_profile'] }
+          : personal.total(),
+      community: community.total(),
+      sources: [...sources.values()],
+      validation: [...validation].sort(),
+    });
+  });
+}

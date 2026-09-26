@@ -553,3 +553,26 @@ active-upload locks, durable commit ordering and expiry. A 2,005-object test
 fails before the fix and passes afterward. No remote storage or heavy fixture ran.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## Impact contribution binding, 2026-09-26
+
+Tracker: [#21](https://github.com/NachikethReddyY/AMR-Fan-App/issues/21). Deliver personal/community lifetime estimated CO2e from
+trusted retained journey contributions, separate from official approved ESG.
+Replace Home/Impact literal placeholders within accepted geometry. Preserve
+award transactions, photo/schema ownership and Travel/account/tab behavior.
+Current production journey receipts explicitly report unavailable credit;
+empty activity must remain distinguishable from unavailable validation, and
+neither state may fabricate a zero or real-travel claim. CI is paused; heavy
+checks and isolated database proof require the coordinator's lease.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact decision, 2026-09-26: the user accepts labelled CO2e estimates from full
+recorded journeys using approved factors before physical calibration. Display
+must not require productionCredit.ready or enable points. Fallback planned
+estimates, fixtures and duplicate/top-up contributions remain excluded. This is
+project product guidance; no shared instructions changed. The coordinator grants
+one bounded isolated DB/full/security slot with owned containers and generated
+credentials only. CI, provider, device and shared DB actions remain prohibited.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

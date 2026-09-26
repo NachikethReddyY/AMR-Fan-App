@@ -2,7 +2,7 @@
 
 Part of the [product specification](../fan-app-specification.md). [Feature index](README.md).
 
-Status: accepted product behavior; implementation pending. Acceptance cases below are requirements, not executed tests.
+Status: contribution read API and phone bindings implemented locally. Synthetic database tests prove the read model; real populated travel and native rendering remain unverified.
 
 ## Outcome
 
@@ -34,3 +34,41 @@ Agree the metric layout using report-supported fields and the accepted visual di
 | Fan A has qualifying journeys estimated at 2 and 3 kg saved; fan B has 4 kg | Show 5 kg personal lifetime savings for A and 9 kg community lifetime savings, with official team figures separate. |
 | A qualifying journey request is replayed or receives a points top-up        | Include its assessed emissions contribution once in the lifetime total; do not add points as emissions.             |
 | Demo activity, admin points or an unverified fallback exists                | Keep demonstration or insufficient-evidence activity separate; it cannot inflate real-journey lifetime savings.     |
+
+## Contribution read model
+
+The phone reads `GET /v1/profiles/:profileId/impact` with its account session.
+Personal totals require ownership even for an admin. Community results contain
+aggregate totals and emissions-factor references, without account names, profile
+IDs, journey IDs, locations or timestamps. Official team figures retain their
+separate approved-report endpoint and reporting periods.
+
+The lifetime read uses the latest retained award assessment for each finished
+real-profile journey in one database snapshot. An assessment replay or later
+points top-up never adds another journey. Savings come from the receipt's exact
+CO2e calculation, never from points, reward purchases, photo activity or tree
+participation. Fixture journeys and demo profiles cannot establish real travel.
+
+The response distinguishes no qualifying activity (`empty`), blocked evidence or
+calculation (`unavailable` with reasons), and a qualifying estimate (`available`
+with an exact decimal in kg CO2e). Zero appears only for a qualifying zero-saving
+journey. A partial available total discloses how many recorded journeys remain
+excluded for insufficient evidence or unavailable calculation data. Network and
+authorization errors never become zero. Factor source URLs, versions, reference
+periods, methods and assumptions accompany available totals.
+
+Display eligibility is a server-owned policy independent of points credit. The
+accepted policy allows clearly labelled estimates before real-world calibration
+when the retained receipt has a full assessed calculation and approved factors
+for every used mode. Fallback planned-route estimates never count. The response
+discloses unvalidated estimates per receipt; it does not claim verified savings,
+physical validation or automatic points. A stricter readiness policy remains a
+separately tested server option, not an HTTP input. Numerical factor approval and
+factor-release configuration belong to the journey owner; no actual dataset is
+approved or seeded by this change. Synthetic configured-policy totals prove the
+read model, not physical travel.
+
+Home and Impact preserve the accepted layout and expose loading, sign-in, empty,
+unavailable and populated states. Impact permits refresh and shows the
+single-driver same-endpoint baseline, lifetime period and source disclosure.
+Rendered native behavior remains unverified until coordinated device proof.
