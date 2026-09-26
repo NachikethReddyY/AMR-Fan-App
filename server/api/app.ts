@@ -14,6 +14,11 @@ import { ApiError, type Identity } from '../accounts/types.ts';
 import { authConfig } from '../auth/config.ts';
 import { createIdentityVerifier } from '../auth/oidc.ts';
 import {
+  createSupabaseVerifier,
+  supabaseBrowserConfig,
+} from '../auth/supabase.ts';
+import { readFile } from 'node:fs/promises';
+import {
   authenticateSession,
   createSession,
   revokeSession,
@@ -88,6 +93,10 @@ export function createApi({
   verifyIdentity?: (token: string) => Promise<Identity>;
 }) {
   const config = authConfig(env);
+  const adminAuth =
+    config.kind === 'supabase'
+      ? supabaseBrowserConfig(env.SUPABASE_PUBLISHABLE_KEY)
+      : { mode: 'unavailable' };
   const browserOrigin = adminOrigin(env.ADMIN_ORIGIN);
   const queryRoutes = createRouteQuery({ env });
   const journeys = createJourneyService({ pool, env, queryRoutes });
@@ -98,7 +107,9 @@ export function createApi({
   const verifier =
     config.kind === 'oidc'
       ? (verifyIdentity ?? createIdentityVerifier(config))
-      : null;
+      : config.kind === 'supabase'
+        ? (verifyIdentity ?? createSupabaseVerifier())
+        : null;
   // Fixed global window bounds both memory and authentication/JWKS/DB work.
   let windowStart = Date.now();
   let requests = 0;
@@ -113,11 +124,36 @@ export function createApi({
     res.setHeader('Referrer-Policy', 'no-referrer');
     try {
       const path = new URL(req.url ?? '/', 'http://api.invalid').pathname;
-      if (req.method === 'GET' && (await serveAdmin(path, res))) return;
-      if (req.method === 'GET' && (await serveSubmissionAdmin(path, res)))
+      if (req.method === 'GET' && path === '/auth/admin.js') {
+        const bytes = await readFile(
+          new URL('../auth/admin.js', import.meta.url),
+        );
+        res.writeHead(200, {
+          'Content-Type': 'text/javascript; charset=utf-8',
+        });
+        res.end(bytes);
         return;
-      if (req.method === 'GET' && (await serveRewardsAdmin(path, res))) return;
-      if (req.method === 'GET' && (await serveReportsAdmin(path, res))) return;
+      }
+      if (
+        req.method === 'GET' &&
+        (await serveAdmin(path, res, adminAuth.mode === 'supabase'))
+      )
+        return;
+      if (
+        req.method === 'GET' &&
+        (await serveSubmissionAdmin(path, res, adminAuth.mode === 'supabase'))
+      )
+        return;
+      if (
+        req.method === 'GET' &&
+        (await serveRewardsAdmin(path, res, adminAuth.mode === 'supabase'))
+      )
+        return;
+      if (
+        req.method === 'GET' &&
+        (await serveReportsAdmin(path, res, adminAuth.mode === 'supabase'))
+      )
+        return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
       if (Date.now() - windowStart >= 60000) {
@@ -128,7 +164,10 @@ export function createApi({
       if (req.headers.origin && req.headers.origin !== browserOrigin)
         throw new ApiError(403, 'Browser access is not configured.');
       if (path === '/admin/config' && req.method === 'GET')
-        return send(res, 200, { synthetic: config.kind === 'synthetic' });
+        return send(res, 200, {
+          synthetic: config.kind === 'synthetic',
+          auth: adminAuth,
+        });
       if (path === '/v1/dev/session' && req.method === 'POST') {
         if (config.kind !== 'synthetic') throw new ApiError(404, 'Not found.');
         const fixture = onlyField(await body(req), 'fixture');

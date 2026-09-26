@@ -1,3 +1,5 @@
+import { bindPasswordSignIn } from '../../auth/admin.js';
+
 const byId = (id) => window.document.getElementById(id);
 const fieldNames = [
   'name',
@@ -200,21 +202,23 @@ async function openReport(id, candidateId = '') {
   selectRevision();
   await refreshOfficial();
 }
+async function activate(nextToken) {
+  token = nextToken;
+  await api('/v1/admin/session');
+  byId('signin').hidden = true;
+  byId('workspace').hidden = false;
+  byId('logout').hidden = false;
+  await refreshReports();
+  await refreshOfficial();
+  message('Signed in with assigned admin access.');
+}
 for (const button of window.document.querySelectorAll('[data-fixture]'))
   button.addEventListener('click', () =>
     work(async () => {
-      token = (
-        await api('/v1/dev/session', 'POST', {
-          fixture: button.dataset.fixture,
-        })
-      ).token;
-      await api('/v1/admin/session');
-      byId('signin').hidden = true;
-      byId('workspace').hidden = false;
-      byId('logout').hidden = false;
-      await refreshReports();
-      await refreshOfficial();
-      message('Signed in with assigned admin access.');
+      const session = await api('/v1/dev/session', 'POST', {
+        fixture: button.dataset.fixture,
+      });
+      await activate(session.token);
     }),
   );
 byId('logout').addEventListener('click', () =>
@@ -364,7 +368,10 @@ byId('decision-form').addEventListener('submit', (event) => {
 void work(async () => {
   const config = await api('/admin/config');
   byId('fixtures').hidden = !config.synthetic;
+  bindPasswordSignIn(config.auth, { work, onSession: activate });
   byId('setup').textContent = config.synthetic
     ? 'Choose the assigned local test admin.'
-    : 'Admin sign-in setup is pending.';
+    : config.auth?.mode === 'supabase'
+      ? ''
+      : 'Admin sign-in setup is pending.';
 });

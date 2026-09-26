@@ -19,3 +19,4 @@ prototypes/
 .agents.local/
 .claude/
 security/fixtures/
+/supabase/.temp/

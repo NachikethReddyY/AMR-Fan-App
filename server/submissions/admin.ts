@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from '../auth/supabase.ts';
 import { readFile } from 'node:fs/promises';
 import type { ServerResponse } from 'node:http';
 
@@ -12,7 +13,11 @@ const assets = new Map([
   ],
 ]);
 
-export async function serveSubmissionAdmin(path: string, res: ServerResponse) {
+export async function serveSubmissionAdmin(
+  path: string,
+  res: ServerResponse,
+  supabaseSignIn = false,
+) {
   const asset = assets.get(path);
   if (!asset) return false;
   const bytes = await readFile(
@@ -20,7 +25,7 @@ export async function serveSubmissionAdmin(path: string, res: ServerResponse) {
   );
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    `default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'${supabaseSignIn ? ` ${SUPABASE_URL}` : ''}; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
   );
   res.writeHead(200, { 'Content-Type': asset.type });
   res.end(bytes);

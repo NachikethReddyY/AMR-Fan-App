@@ -7,7 +7,11 @@ import { MAX_FILE_BYTES, uuid } from './contracts.ts';
 
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const busyRoots = new Set<string>();
-export type SourceStorage = Awaited<ReturnType<typeof createStorage>>;
+export type SourceStorage = {
+  get(id: string, expectedHash: string): Promise<Buffer>;
+  put(id: string, bytes: Buffer): Promise<{ sha256: string; bytes: number }>;
+  cleanupIncomplete(): Promise<void>;
+};
 
 export async function createStorage({
   root,

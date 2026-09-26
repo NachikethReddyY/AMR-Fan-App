@@ -4,6 +4,8 @@ import { createAi } from '../ai/index.ts';
 import { createReports } from './index.ts';
 import { createParser } from './parser.ts';
 import { createStorage } from './storage.ts';
+import { createSupabaseStorage } from './storage-supabase.ts';
+import { transaction } from '../database/index.ts';
 
 export function isReportPath(path: string) {
   return (
@@ -19,7 +21,10 @@ export function reportRuntime(
 ) {
   let pending: Promise<ReturnType<typeof createReports>> | undefined;
   return async () => {
-    if (!env.REPORT_STORAGE_ROOT)
+    const storageProvider = env.REPORT_STORAGE_PROVIDER ?? 'local';
+    if (!['local', 'supabase'].includes(storageProvider))
+      throw new ApiError(503, 'Private report storage is not configured.');
+    if (storageProvider === 'local' && !env.REPORT_STORAGE_ROOT)
       throw new ApiError(503, 'Private report storage is not configured.');
     if (!pending)
       pending = (async () => {
@@ -31,7 +36,20 @@ export function reportRuntime(
           !/^sha256:[a-f0-9]{64}$/.test(env.REPORT_PARSER_IMAGE ?? '')
         )
           throw new Error('An immutable report parser image is required.');
-        const storage = await createStorage({ root: env.REPORT_STORAGE_ROOT! });
+        const storage =
+          storageProvider === 'supabase'
+            ? await createSupabaseStorage({
+                credential: env.SUPABASE_STORAGE_KEY ?? '',
+                exclusive: (operation) =>
+                  transaction(pool, async (client) => {
+                    await client.query("SET LOCAL lock_timeout='1s'");
+                    await client.query(
+                      'SELECT pg_advisory_xact_lock(48136294)',
+                    );
+                    return operation();
+                  }),
+              })
+            : await createStorage({ root: env.REPORT_STORAGE_ROOT! });
         await storage.cleanupIncomplete();
         const ai = createAi(
           Object.fromEntries(

@@ -1,3 +1,5 @@
+import { bindPasswordSignIn } from '../../auth/admin.js';
+
 const byId = (id) => document.getElementById(id);
 let token = null;
 let selected = null;
@@ -117,19 +119,22 @@ async function catalogue(append = false) {
   byId('more').hidden = !cursor;
   byId('empty').hidden = byId('offers').children.length > 0;
 }
+async function activate(nextToken) {
+  token = nextToken;
+  await api('/v1/admin/session');
+  byId('signin').hidden = true;
+  byId('workspace').hidden = false;
+  byId('logout').hidden = false;
+  await catalogue();
+  message('');
+}
 for (const button of document.querySelectorAll('[data-fixture]'))
   button.addEventListener('click', () =>
     work(async () => {
-      const data = await api('/v1/dev/session', 'POST', {
+      const session = await api('/v1/dev/session', 'POST', {
         fixture: button.dataset.fixture,
       });
-      token = data.token;
-      await api('/v1/admin/session');
-      byId('signin').hidden = true;
-      byId('workspace').hidden = false;
-      byId('logout').hidden = false;
-      await catalogue();
-      message('');
+      await activate(session.token);
     }),
   );
 byId('logout').addEventListener('click', () =>
@@ -191,9 +196,11 @@ byId('editor').addEventListener('submit', (event) => {
 try {
   const config = await api('/admin/config');
   byId('fixtures').hidden = !config.synthetic;
-  byId('setup').textContent = config.synthetic
-    ? ''
-    : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
+  bindPasswordSignIn(config.auth, { work, onSession: activate });
+  byId('setup').textContent =
+    config.synthetic || config.auth?.mode === 'supabase'
+      ? ''
+      : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
 } catch {
   byId('setup').textContent = 'Sign-in is unavailable. Reload to try again.';
 }
