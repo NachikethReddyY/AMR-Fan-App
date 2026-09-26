@@ -65,6 +65,10 @@ remain in [evaluation](evaluation.md).
 
 ## TokenRouter preparation, disabled
 
+The later [gateway verification](gateway-contract.md) establishes the Jev gateway
+request path, displayed tiered rates and the existing AMR key quota. Full response,
+image and billing bounds remain unresolved; this preparation stays disabled.
+
 `server/ai/tokenrouter.ts` exports `createTokenRouter(configuration)` separately
 from `createAi`. No product caller selects it. Its config accepts only
 `TOKENROUTER_BASE_URL` (exact `https://api.tokenrouter.com/v1`), optional
@@ -97,8 +101,9 @@ The [gateway contract and owner handoff](integration.md) records current facts.
 Two separately authorized metadata reads confirmed both exact model IDs: Jev
 uses `system-one`, Luna uses `openai`/`openai-response`, and both carry `Text`
 tags. Catalog entries contain no prices, token limits or budget enforcement.
-The provisioned key and catalog presence do not prove image support, actual
-inference availability or the exact gateway SystemOne path. No live inference
+The provisioned key and catalog presence do not prove image support or actual
+inference availability. The later console inspection establishes the gateway
+request path, but not the full response or billing contract. No live inference
 has run. Upstream-only synthetic mappings and the shared cost-store interface
 are documented there; they do not enable these adapters.
 

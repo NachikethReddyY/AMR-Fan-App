@@ -1,5 +1,46 @@
 # Work record
 
+## 2026-09-26: prepare the offline TokenRouter Jev request
+
+Related to [#3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
+The signed-in console established the Jev gateway path, string state and Choice
+criteria, displayed model rates and finite key quota. The pure request mapper
+copies validated route/activity decisions into that documented request and caps
+the serialized body at 60,000 bytes. It has no dispatch, credentials or response
+parser. Existing product transport and upstream parsing remain unchanged.
+[Contract evidence](docs/ai/gateway-contract.md) distinguishes observed facts
+from unresolved billing, substitution, image and response contracts.
+
+Three new failing-first tests and 21 existing decision tests pass. The tests
+cover exact request fields, route eligibility, untrusted observation text,
+independent copies, the byte cap and zero dispatch. Rebased through main
+`575787768868946dbc34a1bbe0d00298936ecfe9` without peer-file copying. TODO remains
+byte-identical; exact stash IDs are retained in ignored local evidence. Durable
+store/interface/migration and peer integration paths are untouched. The serial
+`pnpm check` and `pnpm security:check` both exited 0 on this base. Security scans
+reported zero source findings; the existing moderate dependency advisory remains
+visible below the high-severity failure threshold. Scanner positive/negative
+fixtures passed. Both command sessions exited and no scanner container or check
+process remained; the heavy slot was released before PR delivery. CI remains
+paused and unverified. No size label exists and self-review is not requested.
+
+One explicitly authorized support email was sent and its final body/headers
+verified. It asks for aggregate charge bounds, exact-model routing and separate
+Luna image/billing support. No credentials, account IDs, attachments or private
+source were sent. A clipboard conflict was corrected before Send; direct field
+entry is the proposed shared lesson, with no shared instructions edited. No
+provider reply is claimed. Later read-only account usage inspection could not
+establish complete shared-scope history or pending liability. Sanitized receipts
+and accounting evidence remain private under `.evidence/tokenrouter-live-integration/`.
+
+Root corrected the diagnostic probe prerequisite: unknown response fields may be
+observed later, with unavailable product output and the full reservation held.
+Aggregate charge bounds, no substitution, verified shared-scope liability and
+root's explicit allocation still precede a paid probe. No provider call, live
+activation, database deployment, model substitution or CI action was performed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: execute the database CLI through casing aliases
 
 - Tracking: INFRA-001, PR #23, independent review R1. The prior correction failed the actual CLI execution criterion: the entry guard canonicalized argv but compared it with an unnormalized module path, so an uppercase absolute script alias exited successfully without running the command. Namespace helper tests did not prove CLI execution.
