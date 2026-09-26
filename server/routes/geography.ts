@@ -115,6 +115,10 @@ function interpolate(a: Point, b: Point, t: number): Point {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
+export function isSingaporeCoordinate(value: Coordinate): boolean {
+  return contains([value.longitude, value.latitude]);
+}
+
 // Check the supplied geometry only. Internal region borders are allowed; outer
 // boundaries, missing geometry and segments leaving the polygon union fail closed.
 export async function singaporeRouteGeography(

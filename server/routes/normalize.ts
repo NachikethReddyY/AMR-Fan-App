@@ -82,7 +82,7 @@ export type RouteEvidence = {
     | 'unsupported_transit_factor';
 };
 
-function decodePolyline(encoded: string): Coordinate[] | null {
+export function decodePolyline(encoded: string): Coordinate[] | null {
   const values: number[] = [];
   let value = 0,
     shift = 0;
@@ -112,7 +112,7 @@ function decodePolyline(encoded: string): Coordinate[] | null {
   }
   return hasDistinctPoints(points) ? points : null;
 }
-function sameEndpoint(a: Coordinate, b: Coordinate) {
+export function sameEndpoint(a: Coordinate, b: Coordinate) {
   // Two polyline5 quantization units; this is parser consistency, not journey adherence.
   return (
     Math.abs(a.latitude - b.latitude) <= 0.00002 &&
