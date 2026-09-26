@@ -116,6 +116,7 @@ export function Redemption() {
           />
           {!selected.enabled && <Text>This offer is unavailable.</Text>}
           <Action
+            secondary
             label="Cancel confirmation"
             disabled={locked}
             onPress={() => setSelected(null)}
@@ -124,6 +125,7 @@ export function Redemption() {
       )}
       {error && <Text accessibilityLiveRegion="polite">{error}</Text>}
       <Action
+        secondary
         label={
           catalogue.state.kind === 'loading'
             ? 'Loading offers…'
@@ -158,6 +160,7 @@ export function Redemption() {
           {catalogue.state.error && <Text>{catalogue.state.error}</Text>}
           {catalogue.state.nextCursor && (
             <Action
+              secondary
               label="Load more offers"
               disabled={locked || catalogue.state.busy}
               onPress={() => {

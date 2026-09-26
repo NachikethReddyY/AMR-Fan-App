@@ -78,6 +78,7 @@ export function ReceiptHistory() {
     <View style={styles.section}>
       <Text style={styles.title}>Retained rewards</Text>
       <Action
+        secondary
         label={
           state.kind === 'loading'
             ? 'Loading rewards…'
@@ -100,6 +101,7 @@ export function ReceiptHistory() {
           {state.error && <Text>{state.error}</Text>}
           {state.nextCursor && (
             <Action
+              secondary
               label={state.busy ? 'Loading…' : 'Load more retained rewards'}
               disabled={state.busy}
               onPress={() => {

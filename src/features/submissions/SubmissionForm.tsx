@@ -73,6 +73,7 @@ export function SubmissionForm() {
       {parent && (
         <Text>Preparing a new paid resubmission of a rejected entry.</Text>
       )}
+      <Text>Question or activity idea</Text>
       <TextInput
         accessibilityLabel="Submission text"
         value={text}
@@ -120,6 +121,7 @@ export function SubmissionForm() {
             }}
           />
           <Action
+            secondary
             label="Cancel submission confirmation"
             disabled={locked}
             onPress={() => setConfirmation(null)}

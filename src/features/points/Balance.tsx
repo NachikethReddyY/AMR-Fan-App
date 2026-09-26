@@ -3,7 +3,7 @@ import { useHistory } from './provider';
 import { Action, Text } from './controls';
 
 export function Balance({ prominent = false }: { prominent?: boolean }) {
-  const { state, account, profile, controller } = useHistory();
+  const { state, account, controller } = useHistory();
   const { fontScale } = useWindowDimensions();
   if (account.kind === 'signedOut')
     return <Text>Sign in to see your points.</Text>;
@@ -16,19 +16,15 @@ export function Balance({ prominent = false }: { prominent?: boolean }) {
           <Text
             style={[
               styles.balance,
-              prominent &&
-                (fontScale <= 1.3
-                  ? styles.prominent
-                  : styles.accessibleDisplay),
+              prominent && styles.prominent,
+              fontScale > 1.3 && styles.accessibleDisplay,
             ]}
-            accessibilityLabel={`${state.page.balance} available points, ${profile?.kind === 'demo' ? 'demo profile' : 'real profile'}`}
+            accessibilityLabel={`${state.page.balance} available points`}
           >
             {state.page.balance.toLocaleString()}
             {!prominent && <Text> available points</Text>}
           </Text>
-          <Text style={[styles.caption, prominent && styles.onGreen]}>
-            {profile?.kind === 'demo' ? 'Demo profile' : 'Real profile'}
-          </Text>
+          {prominent && <Text style={styles.unit}>pts</Text>}
         </>
       ) : state.kind === 'unavailable' ? (
         <>
@@ -54,8 +50,7 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     fontVariant: ['tabular-nums'],
   },
-  caption: { color: '#A9A9A3', fontSize: 14, lineHeight: 20 },
   prominent: { fontSize: 60, lineHeight: 68 },
   accessibleDisplay: { fontSize: 24, lineHeight: 32 },
-  onGreen: { color: '#D6E5E1', fontSize: 17, lineHeight: 25 },
+  unit: { color: '#CEDC00', fontSize: 17, lineHeight: 25 },
 });

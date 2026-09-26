@@ -47,12 +47,16 @@ export function Action({
   disabled = false,
   onPress,
   secondary = false,
+  accent = false,
+  quiet = false,
   icon: Icon,
 }: {
   label: string;
   disabled?: boolean;
   onPress: () => void;
   secondary?: boolean;
+  accent?: boolean;
+  quiet?: boolean;
   icon?: LucideIcon;
 }) {
   return (
@@ -64,12 +68,30 @@ export function Action({
       style={({ pressed }) => [
         styles.button,
         secondary && styles.secondary,
+        accent && styles.accent,
+        quiet && styles.quiet,
         disabled && styles.disabled,
         pressed && !disabled && { opacity: 0.75 },
       ]}
     >
-      <Text style={styles.label}>{label}</Text>
-      {Icon && <Icon size={20} color="#F5F5F3" accessible={false} />}
+      <Text
+        style={[
+          styles.label,
+          accent && !disabled && styles.accentLabel,
+          quiet && styles.quietLabel,
+        ]}
+      >
+        {label}
+      </Text>
+      {Icon && (
+        <Icon
+          size={20}
+          color={
+            accent && !disabled ? '#102017' : quiet ? '#CEDC00' : '#F5F5F3'
+          }
+          accessible={false}
+        />
+      )}
     </Pressable>
   );
 }
@@ -96,6 +118,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 26,
   },
+  quiet: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    justifyContent: 'space-between',
+    borderRadius: 0,
+  },
+  quietLabel: { color: '#CEDC00', textAlign: 'left' },
+  accent: { backgroundColor: '#CEDC00', borderRadius: 26 },
+  accentLabel: { color: '#102017' },
   disabled: { backgroundColor: '#3A3A3A' },
   label: {
     color: '#F5F5F3',

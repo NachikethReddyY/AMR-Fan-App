@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useHistory } from './provider';
@@ -9,11 +9,15 @@ import { ReceiptHistory } from '../rewards/ReceiptDetail';
 import { SubmissionForm } from '../submissions/SubmissionForm';
 import { SubmissionStatus } from '../submissions/SubmissionStatus';
 import { useProfileContext } from '../account/useResource';
-import { AccountPanel } from '../account/AccountPanel';
 
-export function RewardsScreen() {
+export function RewardsScreen({
+  section,
+  onSectionChange,
+}: {
+  section: 'Redemption' | 'History';
+  onSectionChange: (section: 'Redemption' | 'History') => void;
+}) {
   const context = useProfileContext();
-  const [section, setSection] = useState<'Redemption' | 'History'>('History');
   const { state, controller, account } = useHistory();
   useFocusEffect(
     useCallback(() => {
@@ -22,7 +26,6 @@ export function RewardsScreen() {
   );
   return (
     <View>
-      <AccountPanel />
       <View style={styles.content}>
         <Text style={styles.title}>Rewards</Text>
         <Balance />
@@ -30,7 +33,7 @@ export function RewardsScreen() {
           {(['Redemption', 'History'] as const).map((name) => (
             <Pressable
               key={name}
-              onPress={() => setSection(name)}
+              onPress={() => onSectionChange(name)}
               accessibilityRole="tab"
               accessibilityState={{ selected: section === name }}
               style={[styles.tab, section === name && styles.selected]}
@@ -54,6 +57,7 @@ export function RewardsScreen() {
           <>
             {account.kind === 'signedIn' && (
               <Action
+                secondary
                 label={
                   state.kind === 'loading' ? 'Refreshing…' : 'Refresh History'
                 }

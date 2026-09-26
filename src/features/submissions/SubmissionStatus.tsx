@@ -15,6 +15,7 @@ export function SubmissionStatus({
     <View style={styles.section}>
       <Text style={styles.title}>Submission status</Text>
       <Action
+        secondary
         label={
           state.kind === 'loading'
             ? 'Loading submissions…'
@@ -54,6 +55,7 @@ export function SubmissionStatus({
           {state.error && <Text>{state.error}</Text>}
           {state.nextCursor && (
             <Action
+              secondary
               label={state.busy ? 'Loading…' : 'Load more submissions'}
               disabled={state.busy}
               onPress={() => {

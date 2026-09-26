@@ -12,7 +12,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { UserRound } from 'lucide-react-native';
+import {
+  UserRound,
+  X,
+  Pencil,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react-native';
 import { useAccount } from './provider';
 import {
   api,
@@ -58,7 +64,7 @@ function Action({
         styles.button,
         secondary && styles.secondary,
         pressed && { opacity: 0.75 },
-        disabled && { opacity: 0.5 },
+        disabled && { backgroundColor: '#3A3A3A' },
       ]}
     >
       <Text style={styles.buttonText}>{label}</Text>
@@ -78,6 +84,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
     return () => listener.remove();
   }, []);
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -146,9 +153,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              profile
-                ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
-                : 'Sign in'
+              profile ? `${profile.displayName}, account` : 'Sign in'
             }
             onPress={() => {
               setOpen(true);
@@ -164,11 +169,7 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
         ) : (
           <Action
             secondary
-            label={
-              profile
-                ? `${profile.displayName} · ${profile.kind === 'demo' ? 'Demo profile' : 'Your account'}`
-                : 'Sign in'
-            }
+            label={profile ? `${profile.displayName}, account` : 'Sign in'}
             onPress={() => {
               setOpen(true);
               void history.refresh();
@@ -181,14 +182,30 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
         animationType="none"
         presentationStyle="pageSheet"
         onRequestClose={close}
+        onDismiss={close}
       >
         <SafeAreaView style={styles.modal}>
           <ScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.section}
+            automaticallyAdjustKeyboardInsets
           >
-            <Action secondary label="Close" onPress={close} />
-            <Text style={styles.title}>Your account</Text>
+            <View style={styles.headingRow}>
+              <Text accessibilityRole="header" style={styles.title}>
+                Your account
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close account"
+                onPress={close}
+                style={({ pressed }) => [
+                  styles.accountButton,
+                  pressed && { opacity: 0.75 },
+                ]}
+              >
+                <X size={22} color="#F5F5F3" accessible={false} />
+              </Pressable>
+            </View>
             {state.kind === 'loading' && (
               <Text accessibilityLiveRegion="polite" style={styles.body}>
                 Connecting…
@@ -319,12 +336,35 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                     {error}
                   </Text>
                 ) : null}
-                <Text style={styles.name}>{profile.displayName}</Text>
-                <Text style={styles.body}>
-                  {profile.kind === 'demo'
-                    ? 'Demo profile · simulated activity'
-                    : 'Real profile'}
-                </Text>
+                <View style={styles.headingRow}>
+                  <Text style={styles.name}>{profile.displayName}</Text>
+                  {!editing && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit name"
+                      style={({ pressed }) => [
+                        styles.accountButton,
+                        pressed && { opacity: 0.75 },
+                      ]}
+                      onPress={() => {
+                        setName(profile.displayName);
+                        setEditOwner({
+                          token: state.token,
+                          profileId: profile.id,
+                        });
+                        setError('');
+                      }}
+                    >
+                      <Pencil size={20} color="#F5F5F3" accessible={false} />
+                    </Pressable>
+                  )}
+                </View>
+                {profile.kind === 'demo' && (
+                  <Text style={styles.caption}>
+                    This profile uses sample data. Its points and activity stay
+                    separate from your account.
+                  </Text>
+                )}
                 <Balance />
                 {state.account.role === 'admin' && (
                   <Text style={styles.caption}>Assigned admin</Text>
@@ -371,40 +411,60 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
                   </>
                 ) : (
                   <>
-                    <Action
-                      secondary
-                      label="Edit name"
-                      onPress={() => {
-                        setName(profile.displayName);
-                        setEditOwner({
-                          token: state.token,
-                          profileId: profile.id,
-                        });
-                        setError('');
-                      }}
-                    />
-                    <Action
-                      secondary
-                      label={
-                        profile.kind === 'real'
-                          ? 'Use demo profile'
-                          : 'Use real profile'
-                      }
-                      onPress={() => {
-                        void controller
-                          .select(profile.kind === 'real' ? 'demo' : 'real')
-                          .catch(() =>
-                            setError('Could not switch profiles. Try again.'),
-                          );
-                      }}
-                    />
-                    <Action
-                      secondary
-                      label="Refresh session"
-                      onPress={() => {
-                        void controller.resume();
-                      }}
-                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: settingsOpen }}
+                      onPress={() => setSettingsOpen(!settingsOpen)}
+                      style={({ pressed }) => [
+                        styles.settingsRow,
+                        pressed && { opacity: 0.75 },
+                      ]}
+                    >
+                      <Text style={[styles.body, { flex: 1 }]}>
+                        Account settings
+                      </Text>
+                      {settingsOpen ? (
+                        <ChevronDown
+                          size={20}
+                          color="#F5F5F3"
+                          accessible={false}
+                        />
+                      ) : (
+                        <ChevronRight
+                          size={20}
+                          color="#F5F5F3"
+                          accessible={false}
+                        />
+                      )}
+                    </Pressable>
+                    {settingsOpen && (
+                      <>
+                        <Action
+                          secondary
+                          label={
+                            profile.kind === 'real'
+                              ? 'Use sample profile'
+                              : 'Use my account'
+                          }
+                          onPress={() => {
+                            void controller
+                              .select(profile.kind === 'real' ? 'demo' : 'real')
+                              .catch(() =>
+                                setError(
+                                  'Could not switch profiles. Try again.',
+                                ),
+                              );
+                          }}
+                        />
+                        <Action
+                          secondary
+                          label="Refresh session"
+                          onPress={() => {
+                            void controller.resume();
+                          }}
+                        />
+                      </>
+                    )}
                     <Action
                       secondary
                       label="Sign out"
@@ -436,16 +496,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modal: { flex: 1, backgroundColor: '#121212' },
+  modal: { flex: 1, backgroundColor: '#091410' },
   section: {
     marginHorizontal: 20,
     paddingVertical: 24,
     gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D3D3D',
   },
-  title: { color: '#F5F5F3', fontSize: 20, fontFamily: 'Geist_600SemiBold' },
-  name: { color: '#F5F5F3', fontSize: 24, fontFamily: 'Geist_600SemiBold' },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  settingsRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  title: {
+    flex: 1,
+    color: '#F5F5F3',
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: 'Geist_600SemiBold',
+  },
+  name: {
+    flex: 1,
+    lineHeight: 32,
+    color: '#F5F5F3',
+    fontSize: 24,
+    fontFamily: 'Geist_600SemiBold',
+  },
   body: {
     color: '#E0E0DC',
     fontSize: 17,
@@ -469,6 +553,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   secondary: {
+    borderRadius: 26,
     backgroundColor: '#222222',
     borderWidth: 1,
     borderColor: '#3D3D3D',
