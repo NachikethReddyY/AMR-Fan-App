@@ -267,6 +267,24 @@ merge is a separate manager-owned turn. No CI queries or device/provider actions
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
+## AI-BUDGET-001: durable shared USD admission
+
+Related to parent #3 and merged PR45. Implement the existing `AiCostStore`
+contract with one PostgreSQL budget shared across development and hosted callers.
+The ceiling remains $10; no provider, rate, credential or hosted database is
+enabled. Migration `0011_ai_cost_store.sql` is reserved by the coordinator;
+photo work owns `0010`. Acceptance covers concurrent admission, restart/replay,
+immutable fingerprints/rates, per-stage claims, partial completion, unknown-spend
+holds and persistent suspension after bound violations. Isolated PostgreSQL and
+heavy gates used the coordinator's explicit slot grant, now released. Eleven
+full-chain PostgreSQL cases and security pass. Full repository checks retain a
+route responsiveness deadline failure; its isolated rerun passes in 4.6 seconds.
+Full check is RED and the cause is unproven. The coordinator authorized one real
+inactive PR for review with that limit explicit; no merge turn is granted.
+CI remains paused.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## ONEMAP-001: finish the Singapore routing adapter
 
 Related [#6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6) and #7;
@@ -305,3 +323,22 @@ regression now uses distinct coordinates because repeated geometry can finish
 before its 25 ms deadline. Native journey work and its unselected UI remain separate.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+PR48 review correction: a later contradictory receipt within the original
+reservation throws inside reconciliation, leaving the earlier lower charge and
+admission active. Add a persistent disputed-call hold and suspend admission in
+the same transaction, preserve the original receipt, then report conflict after
+commit. Three new cases failed against original `4f83e244`; all fourteen passed
+with the correction on isolated PostgreSQL 17. Owned resources were cleaned.
+Initialization still requires verified no prior provider spend or
+in-flight calls, or separately reviewed import of existing liabilities.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+PR48 current verification: after PR43 merged as `026b4d70`, the corrected budget
+branch was rebased onto actual main. Full `pnpm check` and `pnpm security:check`
+now pass, including the earlier route deadline case. The fourteen PostgreSQL
+cases passed with byte-identical adapter, SQL and tests. Earlier red evidence is
+retained. Exact P2 re-review and root merge disposition remain pending.
+
+Verified by gpt-6-astra through Codex (T3 Code).

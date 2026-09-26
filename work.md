@@ -857,3 +857,92 @@ candidate. Phone capture/leg-attribution work is preserved separately and is not
 part of this performance commit.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: durable shared AI USD store
+
+Implemented the PR45 store seam for parent #3. One PostgreSQL budget-row lock
+serializes reservations, claims, cancellation and accounting. Exact replays do
+not dispatch; changed fingerprints/quotes fail. Unknown spend stays held across
+process exit, and bound violations persistently suspend admission. Configuration
+requires an explicit shared database URL with no per-worktree fallback. No
+provider, price, cloud database, API route or paid request was enabled.
+
+Eleven isolated PostgreSQL 17 cases pass, including separate processes, cap
+races, lock-wait expiry, partial two-stage recovery, rollback and exact runtime
+column grants. Six initial behavioral tests failed against the stub before the
+implementation. Each fixture owned one disposable container/internal network,
+with no host ports/mounts or shared credentials, and removed its resources.
+The initial chain was 0001–0009 plus independent 0011. After rebase onto photo
+main `726efbb`, all eleven cases passed on the complete 0001–0011 chain in
+3.78 seconds. Owned container and network IDs were confirmed absent after cleanup.
+Typecheck passed.
+Independent read-only source review found no actionable issues.
+
+The first full gate stopped on bug-record formatting, repaired locally. The next
+reached the unchanged route responsiveness fixture, where the 5-second deadline
+returned six routes instead of twelve. The isolated rerun passed
+unchanged in 4.6 seconds. The integrated full run again reached this test and
+returned `unavailable` at its deadline. All preceding gates and the seven
+remaining suite commands pass; no route source or threshold was changed.
+Security passed before and after the rebase, with zero source findings and
+zero high/critical dependency advisories. Scanner negative fixtures failed as
+expected. The DB/heavy slot was released after cleanup. Raw proof remains
+local under `.evidence/ai-cost-store/`. CI is paused and was not queried. The
+Full `pnpm check` is RED; the cause of the repeated route failure is unproven.
+The coordinator authorized one real PR for review with that limit explicit and
+assigned separate diagnosis. No merge turn is granted.
+
+A bare stash pop during rebase recovery selected a peer's concurrently newer
+stash. It remained intact. The accidental untracked copy was verified against
+that retained stash before removal, deploy tooling was restored to this task's
+HEAD, and this task's TODO was restored byte-for-byte from its captured stash
+object. Private recovery assertions confirm no deploy diff and retained stash;
+no peer worktree or reset was touched. Failed criterion: preserve task-owned
+changes across shared stash ordering. Proposed project guidance: use captured
+stash object IDs only. No global guidance was edited.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+### PR48 P2: conflicting receipts, 2026-09-26
+
+Independent final-head review found that an in-bound contradictory receipt
+threw within the transaction, retaining an earlier lower charge without
+suspending admission. The prior test checked rejection but then permitted the
+next stage; it did not prove conservative exposure. This failed the accounting
+criterion. Classification: project correction; no shared guidance was edited.
+
+Three new PostgreSQL cases failed against exact original `4f83e244` adapter and
+SQL while the eleven earlier cases passed. With the fix, all fourteen pass in
+2.09 seconds on migrations 0001–0011. A contradiction preserves the original
+receipt, marks the call disputed, restores its full reservation and suspends the
+budget atomically. Conflict is returned only after commit. Reconnect, repeated,
+different and original-receipt replays cannot shed the hold; admission and claims
+remain blocked. Late correction after released funds are reused records all
+conservative exposure even above $10. There is no new grant or column; migration
+0011 adds the disputed state to its constraints. Its old checksum is obsolete.
+
+The granted serial proof used disposable PostgreSQL 17 with generated credentials,
+an owned internal network and no host ports/mounts. Red and green fixtures each
+cleaned their container/network/image. Prior evidence remains untouched; new
+proof is `p2-red.log` and `p2-green.log` under the existing local evidence path.
+Activation explicitly requires no prior provider spend/in-flight calls or a
+separately reviewed import of liabilities. Main refresh after the route fix,
+integrated gates and exact-head re-review remain pending. No merge is granted.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+PR48 integrated refresh: PR43 merged as
+`026b4d70f9ab1eb4ef2b1731db88e1162feda1fb`; the corrected budget was rebased onto
+that actual main commit without copying peer source. Append-only record conflicts
+preserve both owners; TODO was restored byte-for-byte from a private file copy,
+without the shared stash stack. Adapter, SQL and tests match the fourteen-case
+PG-proven version byte-for-byte. Full `pnpm check` and `pnpm security:check` pass.
+The earlier route responsiveness case passes in 190 ms; earlier red evidence
+remains unchanged. Proof is in `p2-main-check.log`, `p2-main-security.log` and
+`p2-cleanup.txt` under the existing evidence path. Exact owned red/green container
+and network IDs were confirmed absent. The heavy slot is released. Migration
+0011 SHA256 is `be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`;
+runtime grants are unchanged. Final-head P2 re-review and any root merge turn
+remain pending; no provider, cloud, shared database or CI action occurred.
+
+Verified by gpt-6-astra through Codex (T3 Code).

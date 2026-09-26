@@ -89,6 +89,40 @@ function amount(pricing: z.infer<typeof rate>, input: number, output: number) {
   );
 }
 
+/** Validate persisted/caller-supplied quotes without trusting supplied amounts. */
+export const aiCostReservationSchema = z
+  .strictObject({
+    scope: z.literal('amr-tokenrouter-dev-and-demo'),
+    capNanoUsd: z.literal(10_000_000_000),
+    operationId: id,
+    fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    rateRevision: id,
+    rateExpiresAtMs: z.int().positive(),
+    reservedNanoUsd: z.int().min(0).max(capNanoUsd),
+    calls: z
+      .array(
+        call.extend({ rate, reservedNanoUsd: z.int().min(0).max(capNanoUsd) }),
+      )
+      .min(1)
+      .max(2),
+  })
+  .refine((value) => {
+    const total = value.calls.reduce(
+      (sum, item) => sum + BigInt(item.reservedNanoUsd),
+      0n,
+    );
+    return (
+      total === BigInt(value.reservedNanoUsd) &&
+      new Set(value.calls.map((item) => item.id)).size === value.calls.length &&
+      value.calls.every(
+        (item) =>
+          item.model === item.rate.model &&
+          amount(item.rate, item.maxInputTokens, item.maxOutputTokens) ===
+            BigInt(item.reservedNanoUsd),
+      )
+    );
+  });
+
 /** Trusted, externally verified ceilings only. Parsing does not verify provider prices,
  * image tokenization, output enforcement, failover billing or remaining account funds.
  */
