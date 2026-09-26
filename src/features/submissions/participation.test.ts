@@ -312,3 +312,42 @@ test('malformed response retains original key for recovery instead of another de
   await controller.retry();
   expect(request.mock.calls[1]).toEqual(request.mock.calls[0]);
 });
+
+test('History preserves pending/rejected moderation without fabricating participation', async () => {
+  const rows = ['pending', 'rejected'].map((moderation, i) => ({
+    pointsOperationId: i ? requestId : operationId,
+    sequence: String(2 - i),
+    submissionId,
+    moderation,
+    participation: null,
+  }));
+  const page = await createParticipationApi(async () => ({
+    items: rows,
+    nextCursor: null,
+  })).history(ctx);
+  expect(page.items.map((row) => [row.moderation, row.participation])).toEqual([
+    ['pending', null],
+    ['rejected', null],
+  ]);
+});
+test('History rejects mismatched pagination and unapproved shared content', async () => {
+  const row = {
+    pointsOperationId: operationId,
+    sequence: '1',
+    submissionId,
+    moderation: 'pending',
+    participation: item,
+  };
+  await expect(
+    createParticipationApi(async () => ({
+      items: [row],
+      nextCursor: null,
+    })).history(ctx),
+  ).rejects.toThrow();
+  await expect(
+    createParticipationApi(async () => ({
+      items: [{ ...row, participation: null }],
+      nextCursor: '2',
+    })).history(ctx),
+  ).rejects.toThrow();
+});

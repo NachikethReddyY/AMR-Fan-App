@@ -1613,7 +1613,8 @@ paid-intent queue retains original request IDs and amounts across lost responses
 remounts and matching-profile reauthentication. Server roles, prices, eligibility
 and atomic debits remain authoritative; no backend code changed.
 
-Local proof: 38 focused participation/submission/resource tests pass; TypeScript
+Local proof: 38 focused participation/submission/resource tests pass, plus two
+additional History moderation/pagination cases; TypeScript
 check passes. New tests were authored before their implementation. They cover
 malformed/mismatched responses, literal fan text, duplicate confirmation,
 refusals, storage failure and late profile-switch results. These adapter tests
