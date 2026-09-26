@@ -880,7 +880,7 @@ Independent read-only source review found no actionable issues.
 
 The first full gate stopped on bug-record formatting, repaired locally. The next
 reached the unchanged route responsiveness fixture, where the 5-second deadline
-returned six routes instead of twelve under load. The isolated rerun passed
+returned six routes instead of twelve. The isolated rerun passed
 unchanged in 4.6 seconds. The integrated full run again reached this test and
 returned `unavailable` at its deadline. All preceding gates and the seven
 remaining suite commands pass; no route source or threshold was changed.
@@ -888,8 +888,9 @@ Security passed before and after the rebase, with zero source findings and
 zero high/critical dependency advisories. Scanner negative fixtures failed as
 expected. The DB/heavy slot was released after cleanup. Raw proof remains
 local under `.evidence/ai-cost-store/`. CI is paused and was not queried. The
-coordinator owns publication disposition for the unrelated timing gate and the
-eventual squash merge.
+Full `pnpm check` is RED; the cause of the repeated route failure is unproven.
+The coordinator authorized one real PR for review with that limit explicit and
+assigned separate diagnosis. No merge turn is granted.
 
 A bare stash pop during rebase recovery selected a peer's concurrently newer
 stash. It remained intact. The accidental untracked copy was verified against

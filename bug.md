@@ -278,9 +278,10 @@ immutable fingerprints/rates, per-stage claims, partial completion, unknown-spen
 holds and persistent suspension after bound violations. Isolated PostgreSQL and
 heavy gates used the coordinator's explicit slot grant, now released. Eleven
 full-chain PostgreSQL cases and security pass. Full repository checks retain an
-unrelated route responsiveness deadline failure; its isolated rerun passes.
-Deliver one reviewed inactive PR with that limit explicit; the coordinator owns
-publication disposition and the squash turn. CI remains paused.
+route responsiveness deadline failure; its isolated rerun passes in 4.6 seconds.
+Full check is RED and the cause is unproven. The coordinator authorized one real
+inactive PR for review with that limit explicit; no merge turn is granted.
+CI remains paused.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
