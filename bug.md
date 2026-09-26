@@ -553,3 +553,43 @@ active-upload locks, durable commit ordering and expiry. A 2,005-object test
 fails before the fix and passes afterward. No remote storage or heavy fixture ran.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## Impact contribution binding, 2026-09-26
+
+Tracker: [#21](https://github.com/NachikethReddyY/AMR-Fan-App/issues/21). Deliver personal/community lifetime estimated CO2e from
+trusted retained journey contributions, separate from official approved ESG.
+Replace Home/Impact literal placeholders within accepted geometry. Preserve
+award transactions, photo/schema ownership and Travel/account/tab behavior.
+Current production journey receipts explicitly report unavailable credit;
+empty activity must remain distinguishable from unavailable validation, and
+neither state may fabricate a zero or real-travel claim. CI is paused; heavy
+checks and isolated database proof require the coordinator's lease.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact decision, 2026-09-26: the user accepts labelled CO2e estimates from full
+recorded journeys using approved factors before physical calibration. Display
+must not require productionCredit.ready or enable points. Fallback planned
+estimates, fixtures and duplicate/top-up contributions remain excluded. This is
+project product guidance; no shared instructions changed. The coordinator grants
+one bounded isolated DB/full/security slot with owned containers and generated
+credentials only. CI, provider, device and shared DB actions remain prohibited.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact root-review correction: the latest settled receipt could remain visible
+when newer evidence had already advanced the journey assessment. Match the
+current assessment version/revision in the same snapshot and expose mismatches
+as `assessment_pending` until explicit settlement. The interval regression is
+authored; real PostgreSQL red/green proof remains queued. This enforces existing
+project guidance in `docs/operations/awards.md`; no shared guidance changed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Impact CO2 integration follows merged PR50 at `458cae1`. The user-approved label
+is "Estimated CO2 avoided". Use only explicit compatible CO2 assessed calculations;
+legacy CO2e and planned provisional calculations cannot enter CO2 totals. Retain
+published-unit discrepancy and neutral one-occupant car scope. No dataset default
+activation or peer source copy. Existing assessment-freshness proof remains required.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

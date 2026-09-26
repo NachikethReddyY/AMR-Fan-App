@@ -1,3 +1,4 @@
+import { contributionsSchema } from '../../../server/impact/contracts.ts';
 import { z } from 'zod';
 // PostgreSQL's text timestamp is not an ECMAScript date format (Hermes rejects
 // it). Normalize only the explicit server format, keeping its timezone/instant.
@@ -65,4 +66,9 @@ export function parseOfficial(raw: unknown) {
     .max(100)
     .parse(raw)
     .map((row) => ({ ...row, id: row.approvalId }));
+}
+
+// Shared schema is data-only; no database/server runtime is imported by the app.
+export function parseContributions(raw: unknown) {
+  return contributionsSchema.parse(raw);
 }

@@ -1497,3 +1497,109 @@ rerun. The inherited Awards API hash change is separately recorded in the DAST
 exception document for root's focused review. Merge remains held.
 
 Rebased and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-26: Impact contribution read and phone binding
+
+Personal and community lifetime estimates have a scoped read API and Home/Impact
+bindings on main `026b4d70`. A repeatable database snapshot follows the latest
+assessment per journey. Exact decimal savings do not depend on points, replay
+count or top-up amounts. Full assessed records and approved factors qualify for
+labelled estimates before physical calibration, as accepted by the user. Fixture,
+demo, fallback and insufficient-evidence records cannot inflate those estimates.
+No numerical dataset, physical evidence or production award release was invented.
+
+Home changes are imports, one hook and its two text bindings. Impact retains
+its geometry and separate official figures, with source/method/period disclosure
+and explicit empty, unavailable, loading and error states. No award transaction,
+journey schema, photo, account, Travel or dock code was changed.
+
+| Security dimension            | Status and evidence                                                                                           | Confidence and limit                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Ownership and admin isolation | Pass: isolated real HTTP/PG tests reject anonymous, revoked and cross-account reads, including admin          | High for tested actors; no production accounts used              |
+| Community disclosure          | Pass: strict aggregate/source schema and real response omit profile and journey IDs                           | High for tested response; no privacy claim about other endpoints |
+| Accounting preservation       | Pass: replay and later evidence use one journey; 5 kg personal and 9 kg community fixtures leave balance zero | High for synthetic stored data; no actual travel claim           |
+
+Three isolated PostgreSQL18/Node24 cases passed, including cursor traversal over
+100 records and a qualifying zero. Eight pure backend, fifteen client and two
+component cases pass. Full `pnpm check` passed; the subsequent assessment guard
+passed focused tests, isolated DB, typecheck, lint and formatting. Security checks
+passed with no source findings; the existing dependency audit retains one moderate
+advisory. Owned database containers, internal network and private context were
+removed. Evidence is local under `.evidence/impact/`.
+
+Native rendering and endpoint-specific DAST remain unverified. The existing DAST
+target uses a PostgreSQL version outside the granted PG17/18 fixture scope and
+starts at the unrelated participation admin path. CI is paused by the user.
+No provider/device/cloud/shared-DB/CI action occurred. Approved live numerical
+factors and actual populated journey proof remain upstream activation work.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+PR review corrections: independent specification review found evidence-related
+`no_award` receipts were displayed as empty; they now remain unavailable and are
+counted beside partial totals. Independent standards review required a bound on
+the full community scan. The read now caps work at 10,000 records and five seconds,
+with a shrinking per-fetch database timeout, and never returns a truncated total.
+Failing-first focused regressions pass. The final budget SQL has not rerun in
+PostgreSQL because the heavy slot was released to the migration owner; prior
+isolated proof predates that correction. Native and impact-specific DAST remain
+unverified. Review scope is the impact diff, not a repository-wide audit.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+Impact rebased onto merged admin main `e2f95534814b7e6289ba24f01aa20a919ed1514a`.
+The pre-correction Impact/Home code is byte-equivalent to reviewed `0b14a8b`;
+admin origin/helper registrations and both record histories are preserved.
+Root specification review then identified an assessment-freshness gap. The read
+now selects the current assessment identity with the receipt in its existing
+read-only snapshot and excludes mismatches as `assessment_pending`. The regression
+reads after new evidence but before settlement, checks repeated reads remain
+pending, then expects exactly one replacement contribution after settlement.
+Typecheck, all eleven focused backend tests, changed-file lint, formatting and
+diff checks pass after the rebase and correction. The new database regression has
+not run. Database red/green execution, corrected timeout SQL and scoped endpoint
+DAST remain queued. No heavy services started; the offered slot was released because
+the source correction was still in progress. Native rendering remains unverified.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+Impact integrated actual merged awards main `458cae1`. The aggregate now selects
+full assessed or provisional nonnull assessed calculations, requires explicit CO2
+measurement and retained approved factor provenance, and excludes unchanged legacy
+CO2e records. The API and accepted Home/Impact text use CO2 with source values,
+interpreted/published units and release version. No layout or point-credit changes.
+Four new failing-first unit tests cover legacy exclusion, assessed-only provisional
+values, factor provenance and the accepted CAG calculation. All fifteen backend,
+fifteen client and two component cases pass, along with typecheck and affected lint.
+Leased PostgreSQL freshness red/green, registered mixed-unit/timeout HTTP proof and
+scoped passive DAST are in progress; their result is not yet claimed.
+
+Integrated by gpt-6-astra through Codex (T3 Code).
+
+Impact integrated execution: the disposable freshness negative control failed at
+exactly the pending interval, retaining the obsolete 2 kg without the guard.
+Corrected PostgreSQL18/Node24 passed all three cases. Registered HTTP proved
+CO2-only 5/9 kg with a legacy receipt excluded and unchanged, actual lock-induced
+57014 returning503 without totals, and successful recovery. Initial HTTP fixture
+auth configuration failure is retained separately; only the corrected run passes.
+
+Pinned passive ZAP against actual createApi observed11 Impact URLs, passed60
+rules with zero alerts, and verified all seven actor/origin cases. Responses
+passed the strict contribution schema and no-store/nosniff checks with no account
+IDs, coordinates or tokens in aggregates. The initial missing scanner report
+directory failure is retained; correction created it inside the container without
+host mounts. All owned PG/Node/ZAP containers, private networks and copied contexts
+were removed. Full/security checks remain in progress. CI stays paused; native
+rendering, deployment activation and real populated travel remain unverified.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+The final integrated `pnpm check` and `pnpm security:check` pass. Source secret/SAST
+scans found no findings; one existing moderate dependency advisory remains, with
+no high/critical blocker. Scanner positive/negative controls pass. Docker inventory
+confirms no owned Impact containers/networks remain, and the heavy slot is released.
+Evidence is retained privately under `.evidence/impact/`; previous review receipts
+remain intact. Final CO2 source review and root squash remain pending. No full-app,
+native, provider or deployed proof is claimed.
+
+Verified by gpt-6-astra through Codex (T3 Code).

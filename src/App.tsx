@@ -42,6 +42,8 @@ import { Action, Text } from './features/points/controls';
 import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
 
 import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
+import { useContributions } from './features/impact/useContributions';
+import { contributionText } from './features/impact/presentation';
 import { ImpactScreen as OfficialImpact } from './features/impact/ImpactScreen';
 import { useProfileContext } from './features/account/useResource';
 
@@ -72,6 +74,7 @@ function Home({
 }) {
   const { controller: accountController } = useAccount();
   const photo = usePhotoActivity(accountController);
+  const impact = useContributions();
   const { controller } = useHistory();
   useFocusEffect(
     useCallback(() => {
@@ -119,13 +122,17 @@ function Home({
             <Text accessibilityRole="header" style={styles.sectionTitle}>
               Your impact
             </Text>
-            <Text style={styles.muted}>Impact unavailable</Text>
+            <Text style={styles.muted}>
+              {contributionText(impact.state, 'personal')}
+            </Text>
           </View>
           <View style={styles.impactItem}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>
               Community impact
             </Text>
-            <Text style={styles.muted}>Impact unavailable</Text>
+            <Text style={styles.muted}>
+              {contributionText(impact.state, 'community')}
+            </Text>
           </View>
         </View>
         <Action

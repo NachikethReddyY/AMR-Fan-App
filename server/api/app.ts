@@ -41,6 +41,7 @@ import { serveRewardsAdmin } from '../rewards/admin.ts';
 import { reportRuntime, isReportPath } from '../reports/runtime.ts';
 import { handleReports } from '../reports/http.ts';
 import { serveReportsAdmin } from '../reports/admin.ts';
+import { readContributions } from '../impact/store.ts';
 import { createAwardsHandler } from '../awards/http.ts';
 import { createPhotoHandler } from '../activity/http.ts';
 
@@ -235,6 +236,13 @@ export function createApi({
       const photoResponse = await photoActivity(req, path);
       if (photoResponse)
         return send(res, photoResponse.status, photoResponse.body);
+      const impactProfile = /^\/v1\/profiles\/([^/]+)\/impact$/.exec(path);
+      if (impactProfile && req.method === 'GET')
+        return send(
+          res,
+          200,
+          await readContributions({ pool, token, profileId: impactProfile[1] }),
+        );
       if (isReportPath(path)) {
         const actor = await authenticateSession(pool, token);
         if (path !== '/v1/impact/official' && actor.role !== 'admin')

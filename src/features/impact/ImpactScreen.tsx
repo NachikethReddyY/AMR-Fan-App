@@ -4,10 +4,13 @@ import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { Action, Text } from '../points/controls';
 import { api } from '../account/native-auth';
 import { useResource } from '../account/useResource';
+import { useContributions } from './useContributions';
+import { contributionText } from './presentation';
 import { createOfficialApi } from './api';
 const read = createOfficialApi(api.request);
 export function ImpactScreen() {
   const { state, controller } = useResource(read);
+  const impact = useContributions();
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <View style={styles.content}>
@@ -18,18 +21,81 @@ export function ImpactScreen() {
         <Text accessibilityRole="header" style={styles.heading}>
           Your contribution
         </Text>
-        <Text>Impact unavailable</Text>
+        <Text>{contributionText(impact.state, 'personal')}</Text>
       </View>
       <View style={styles.community}>
         <Text accessibilityRole="header" style={styles.heading}>
           Community impact
         </Text>
-        <Text>Impact unavailable</Text>
+        <Text>{contributionText(impact.state, 'community')}</Text>
       </View>
       <Text style={styles.caption}>
-        Travel impact is not available yet. Points and team figures are
-        separate.
+        Lifetime estimates compare recorded journeys with one person driving a
+        car between the same endpoints. Points and official team figures are
+        separate. These are estimates, not measured savings or carbon offsets.
+        Published surface-access factors estimate CO2 only, excluding other
+        greenhouse gases and lifecycle emissions.
       </Text>
+      <Action
+        secondary
+        label={
+          impact.state?.kind === 'loading'
+            ? 'Loading impact…'
+            : 'Refresh impact'
+        }
+        disabled={impact.state?.kind === 'loading'}
+        onPress={() => {
+          void impact.controller.refresh();
+        }}
+      />
+      {impact.state?.kind === 'ready' && (
+        <>
+          {impact.state.items[0]?.validation.includes(
+            'unvalidated_estimate',
+          ) && (
+            <Text style={styles.caption}>
+              Includes estimates using unvalidated journey calibration.
+            </Text>
+          )}
+          {impact.state.items[0]?.validation.includes('reviewed_release') && (
+            <Text style={styles.caption}>
+              Uses retained reviewed journey rules and emissions factors.
+            </Text>
+          )}
+          {(['personal', 'community'] as const).map((scope) => {
+            const total =
+              impact.state?.kind === 'ready'
+                ? impact.state.items[0]?.[scope]
+                : null;
+            return total?.kind === 'available' ? (
+              <Text key={scope} style={styles.caption}>
+                {scope === 'personal'
+                  ? 'Your contribution'
+                  : 'Community impact'}
+                : {total.journeyCount} qualifying journeys.
+                {total.excludedJourneys > 0
+                  ? ` ${total.excludedJourneys} journeys await sufficient evidence or approved calculation data.`
+                  : ''}
+              </Text>
+            ) : null;
+          })}
+          {impact.state.items[0]?.sources.map((source) => (
+            <View key={JSON.stringify(source)} style={styles.row}>
+              <Text selectable>Emissions source: {source.source}</Text>
+              <Text>
+                Factor {source.id} · {source.period}
+              </Text>
+              <Text>{source.method}</Text>
+              <Text>{source.assumptions}</Text>
+              <Text>
+                {source.releaseVersion}: {source.sourceValue}{' '}
+                {source.sourceUnit}. Published unit: {source.publishedUnit};
+                occupants: {source.occupants}.
+              </Text>
+            </View>
+          ))}
+        </>
+      )}
       <Text accessibilityRole="header" style={styles.heading}>
         Official team figures
       </Text>
