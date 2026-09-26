@@ -430,7 +430,6 @@ yet; independent policy code remains testable with synthetic factors.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
-
 ### Accepted CAG CO2 factor variant, 26 September 2026
 
 The final user decision supersedes the pending factor-unit question above.
@@ -443,5 +442,24 @@ separate. Native owns parser/UI adaptation and Impact owns aggregate adaptation.
 No physical calibration is claimed. Source/focused proof precedes root's queued
 heavy checks and new exact-head review; the earlier b9d370f clearance covers only
 the prior synthetic-factor slice. One PR50 remains open, with no squash yet.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### PR50 activation compatibility correction, 26 September 2026
+
+Independent exact-e2a553f reviews found that the automatic CAG fallback made
+unconfigured API responses use `approved` and CO2 variants before the current
+native decoder supported them, including unavailable-provider responses. The
+failed criterion was coordinated server/client compatibility. Both createApi
+and createJourneyService now omit that fallback; the accepted dataset and
+explicit JOURNEY_FACTOR_RELEASE_FILE path remain. Default responses retain
+legacy indicative contracts. Deployment activation waits for the compatible
+native client on main. No new flag or peer implementation was copied.
+
+The registered route HTTP regression feeds both available and unavailable default
+responses through the actual current parseComparison decoder. It also checks
+explicit CAG configuration emits the retained CO2 server display contract.
+Project-level lesson proposed: verify default server responses against the client
+on the merge base before enabling a new wire variant. Shared guidance unchanged.
 
 Edited by gpt-6-astra through Codex (T3 Code).

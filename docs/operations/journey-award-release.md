@@ -1,6 +1,6 @@
 # Journey award release evidence
 
-The bundled `cag-surface-access-co2-v1` factor configuration supports clearly
+The bundled, explicitly configured `cag-surface-access-co2-v1` factor artifact supports clearly
 labelled CO2 estimates and provisional points for applicable Singapore routes.
 Physical award readiness still defaults to unavailable: no physical calibration
 report is shipped. The [award rules](../features/05-points-and-history.md) retain
@@ -14,7 +14,7 @@ report is shipped. The [award rules](../features/05-points-and-history.md) retai
 | Car baseline | Neutral single occupant | .1901 kg per vehicle-km, one occupant | No ICE-specific, Singapore fleet-average or lifecycle claim. |
 | Physical calibration | Unverified | Zero real trips in supplied handoffs | Simulator UI/camera proof cannot establish GPS thresholds or distance validity. |
 | Policy and unit boundaries | Focused tests | Explicit CO2 plus unchanged legacy CO2e, changed factors/units/endpoints | Synthetic journeys prove code decisions, not real travel or calibration. |
-| Ledger integration | Prior slice passed with synthetic factors | 49 isolated PostgreSQL/HTTP tests plus 9 photo tests | New CO2 dataset/composition needs the scheduled affected database proof. |
+| Ledger integration | Passed, synthetic journeys with retained factors | 60 distinct isolated PostgreSQL/HTTP scenarios across initial and corrected runs | Includes explicit CAG CO2 credit/replay, current-client default decoding and 9 photo regressions; no physical calibration claim. |
 
 The exact dataset and source limitations are retained in
 [the factor evidence note](../../server/awards/factors/cag-surface-access-co2-v1.md)
@@ -88,9 +88,11 @@ of physical calibration. It contains `factors`, `release` and `evidenceFile`.
 reference/digest fields as a physical release. The shared validator checks
 approved unique factors, exact unit conversion, the declared single-occupant
 baseline, gas basis, fingerprint and the factor review file bytes. With no explicit
-configuration, the server loads the bundled CAG CO2 factor release. A configured
-physical release supplies its own factors; an explicit factor file overrides the
-bundled default and must match any configured physical release.
+configuration, both API and journey service preserve legacy indicative responses.
+After the compatible native client reaches main, a reviewed deployment may set
+`JOURNEY_FACTOR_RELEASE_FILE` to `server/awards/factors/cag-surface-access-co2-v1.json`.
+There is no automatic activation or new flag. A configured physical release supplies
+its own factors; an explicit factor file must match any configured physical release.
 If both files are configured, their factor datasets must match. Physical release
 selects the physical variant; otherwise retained reviewed factors select provisional.
 

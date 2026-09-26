@@ -1260,7 +1260,6 @@ activation occurred. Local TODO stays unstaged.
 
 Verified by gpt-6-astra through Codex (T3 Code).
 
-
 ### Accepted CAG CO2 factor variant, 26 September 2026
 
 The final user decision supersedes the pending factor-unit question above.
@@ -1281,5 +1280,45 @@ CO2 candidate focused proof: 38 server policy/readiness/evidence/planning tests,
 format checks pass. Agent/document links pass. New registered HTTP CO2 credit and
 restart replay test is authored but awaits the leased PostgreSQL run. No new
 DB, fullcheck, security scan, provider call, CI or device claim at this freeze.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### PR50 activation compatibility correction, 26 September 2026
+
+Independent exact-e2a553f reviews found that the automatic CAG fallback made
+unconfigured API responses use `approved` and CO2 variants before the current
+native decoder supported them, including unavailable-provider responses. The
+failed criterion was coordinated server/client compatibility. Both createApi
+and createJourneyService now omit that fallback; the accepted dataset and
+explicit JOURNEY_FACTOR_RELEASE_FILE path remain. Default responses retain
+legacy indicative contracts. Deployment activation waits for the compatible
+native client on main. No new flag or peer implementation was copied.
+
+The registered route HTTP regression feeds both available and unavailable default
+responses through the actual current parseComparison decoder. It also checks
+explicit CAG configuration emits the retained CO2 server display contract.
+Project-level lesson proposed: verify default server responses against the client
+on the merge base before enabling a new wire variant. Shared guidance unchanged.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Final compatibility-fix proof: isolated PostgreSQL ran 60 tests with 59 initial
+passes. The new CO2 test expected a 1 km bus route, but the retained fixture is
+1.112 km. Corrected exact assertions are baseline .1901 kg, journey .0490392 kg,
+savings .1410608 kg and 7 points. All 7 registered API tests then passed, including
+CO2 immutable restart replay. The initial run passed default available and
+unavailable HTTP responses through the current client decoder, explicit CO2
+configuration and all 9 photo regressions. All 60 distinct scenarios passed
+across those runs. Both owned PG18 tmpfs containers were removed; pre-existing
+shared containers were untouched.
+
+`pnpm check` passed after formatting the appended bug/work entries. It includes
+136 native/state tests, 23 web tests and all domain/tooling checks.
+`pnpm security:check` passed: source secret and SAST scans reported no findings,
+the audit retained one existing moderate advisory with no high/critical, and
+scanner positive/negative controls passed. No provider/cloud/CI/device or native
+compilation was used. Heavy lease released before final commit/review refresh.
+Default factors are not activated. Root must review the new exact head before
+serialized squash; native-compatible main precedes explicit deployment config.
 
 Verified by gpt-6-astra through Codex (T3 Code).

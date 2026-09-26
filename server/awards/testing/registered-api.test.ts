@@ -540,7 +540,10 @@ for (const release of [true, 'provisional', 'co2'] as const)
         gas: 'CO2',
         unit: 'kgCO2',
       });
-      assert.equal(decision.calculation.savingsKg, '0.146');
+      // Fixture retains a 1 km car baseline and 1.112 km planned bus route.
+      assert.equal(decision.calculation.baselineKg, '0.1901');
+      assert.equal(decision.calculation.journeyKg, '0.0490392');
+      assert.equal(decision.calculation.savingsKg, '0.1410608');
       assert.equal(
         result.outcome.receipt.basis.factorRelease?.version,
         'cag-surface-access-co2-v1',
