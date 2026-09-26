@@ -188,10 +188,16 @@ export function createIntent<I, R>({
         await clearMatching();
         if (attempt === version) set({ kind: 'success', result });
       } catch (error) {
-        const definitive =
+        let definitive =
           error instanceof AccountError &&
           [400, 403, 404, 409, 422].includes(error.status);
-        if (definitive) await clearMatching();
+        if (definitive) {
+          try {
+            await clearMatching();
+          } catch {
+            definitive = false;
+          }
+        }
         if (attempt !== version) return;
         if (error instanceof AccountError && error.status === 401) {
           recovered = false;
@@ -201,7 +207,7 @@ export function createIntent<I, R>({
           set({
             kind: 'rejected',
             error:
-              error.status === 409
+              error instanceof AccountError && error.status === 409
                 ? 'Request declined. Refresh current details and confirm again.'
                 : 'Request declined. Check the details and balance.',
           });

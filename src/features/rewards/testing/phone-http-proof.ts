@@ -63,24 +63,22 @@ test('phone fan adapters transact with current authorized API/PostgreSQL', async
       reason: 'Synthetic phone proof funding',
     });
     const newOffer = async (kind: 'tree' | 'content' | 'discount') =>
-      z
-        .object({ id: z.uuid(), version: z.number() })
-        .parse(
-          await api.request('/v1/admin/rewards/offers', admin.token, 'POST', {
-            requestId: randomUUID(),
-            enabled: true,
-            product: {
-              kind,
-              title: `Phone fixture ${kind}`,
-              description: 'Synthetic proof only',
-              pointsPrice: 400,
-              ...(kind === 'content'
-                ? { text: 'Retained literal <script>text</script>' }
-                : {}),
-              ...(kind === 'discount' ? { percentage: 10 } : {}),
-            },
-          }),
-        );
+      z.object({ id: z.uuid(), version: z.number() }).parse(
+        await api.request('/v1/admin/rewards/offers', admin.token, 'POST', {
+          requestId: randomUUID(),
+          enabled: true,
+          product: {
+            kind,
+            title: `Phone fixture ${kind}`,
+            description: 'Synthetic proof only',
+            pointsPrice: 400,
+            ...(kind === 'content'
+              ? { text: 'Retained literal <script>text</script>' }
+              : {}),
+            ...(kind === 'discount' ? { percentage: 10 } : {}),
+          },
+        }),
+      );
     const tree = await newOffer('tree');
     const content = await newOffer('content');
     const voucher = await newOffer('discount');

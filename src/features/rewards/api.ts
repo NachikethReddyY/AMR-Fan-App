@@ -47,14 +47,12 @@ export function createRewardsApi(request: Request) {
       };
     },
     purchase: async (ctx: Context, input: Purchase) => {
-      const raw = z
-        .object({ outcome: z.unknown() })
-        .parse(
-          await request('/v1/rewards/purchases', ctx.token, 'POST', {
-            ...input,
-            profileId: ctx.profileId,
-          }),
-        );
+      const raw = z.object({ outcome: z.unknown() }).parse(
+        await request('/v1/rewards/purchases', ctx.token, 'POST', {
+          ...input,
+          profileId: ctx.profileId,
+        }),
+      );
       return ownedReceipt(raw.outcome, ctx.profileId);
     },
     content: async (ctx: Context, id: string) => {
