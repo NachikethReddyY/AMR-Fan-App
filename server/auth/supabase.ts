@@ -7,6 +7,13 @@ export const SUPABASE_ISSUER = `${SUPABASE_URL}/auth/v1`;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export function supabaseBrowserConfig(publishableKey: string | undefined) {
+  if (!publishableKey) return { mode: 'unavailable' } as const;
+  if (!/^sb_publishable_[A-Za-z0-9_-]{16,200}$/.test(publishableKey))
+    throw new Error('Admin sign-in requires a Supabase publishable key.');
+  return { mode: 'supabase', url: SUPABASE_URL, publishableKey } as const;
+}
+
 /** Verify user identity only. Application roles always come from app.principals. */
 export function createSupabaseVerifier(
   keys: JWTVerifyGetKey = createRemoteJWKSet(

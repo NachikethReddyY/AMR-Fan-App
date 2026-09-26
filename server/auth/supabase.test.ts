@@ -98,3 +98,13 @@ test('Supabase provider is explicit and cannot change trusted project or enable 
     authConfig({ ...env, AUTH_ISSUER: 'https://other.supabase.co/auth/v1' }),
   );
 });
+test('admin public configuration refuses secret/legacy keys rather than exposing them', async () => {
+  const { supabaseBrowserConfig } = await import('./supabase.ts');
+  assert.deepEqual(supabaseBrowserConfig(undefined), { mode: 'unavailable' });
+  assert.throws(() => supabaseBrowserConfig('sb_secret_synthetic'));
+  assert.throws(() => supabaseBrowserConfig('eyJsynthetic.legacy.key'));
+  assert.equal(
+    supabaseBrowserConfig('sb_publishable_synthetic_12345678').mode,
+    'supabase',
+  );
+});
