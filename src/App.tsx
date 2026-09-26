@@ -27,6 +27,10 @@ import { PointsProvider, useHistory } from './features/points/provider';
 import { Balance } from './features/points/Balance';
 import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
 
+import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
+import { ImpactScreen as OfficialImpact } from './features/impact/ImpactScreen';
+import { useProfileContext } from './features/account/useResource';
+
 type Tabs = {
   Home: undefined;
   Travel: undefined;
@@ -98,7 +102,19 @@ function HomeScreen() {
   );
 }
 function TravelScreen() {
-  return <Placeholder title="Travel" />;
+  const ctx = useProfileContext();
+  return (
+    <Screen>
+      <AccountPanel />
+      {ctx ? (
+        <TravelComparison key={`${ctx.token}:${ctx.profileId}`} />
+      ) : (
+        <View style={styles.section}>
+          <Text style={styles.muted}>Sign in to compare routes.</Text>
+        </View>
+      )}
+    </Screen>
+  );
 }
 function RewardsScreen() {
   return (
@@ -108,16 +124,19 @@ function RewardsScreen() {
   );
 }
 function ImpactScreen() {
-  return <Placeholder title="Impact" />;
-}
-
-function Placeholder({ title }: { title: string }) {
+  const ctx = useProfileContext();
   return (
     <Screen>
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderTitle}>{title}</Text>
-        <Text style={styles.muted}>{title} content is coming soon.</Text>
-      </View>
+      <AccountPanel />
+      {ctx ? (
+        <OfficialImpact key={`${ctx.token}:${ctx.profileId}`} />
+      ) : (
+        <View style={styles.section}>
+          <Text style={styles.muted}>
+            Sign in to read approved team figures.
+          </Text>
+        </View>
+      )}
     </Screen>
   );
 }
