@@ -139,3 +139,15 @@ test('documented transit stop/shape offsets preserve metrics but cannot invent a
     );
   }
 });
+
+test('continuous OneMap leg geometry remains bound to its original leg ordering', async () => {
+  const result = await normalizeOneMap('TRANSIT', transit());
+  if (result.kind !== 'routes') throw new Error('No route');
+  assert.equal(result.evidence[0].legGeometry?.kind, 'provider');
+  const geometry = result.evidence[0].legGeometry;
+  if (geometry?.kind !== 'provider') return;
+  assert.deepEqual(
+    geometry.legs.map((l) => l.legIndex),
+    [0, 1],
+  );
+});

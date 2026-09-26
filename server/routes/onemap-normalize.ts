@@ -110,6 +110,7 @@ export async function normalizeOneMap(
     duration: number;
     points: Coordinate[];
     continuous: boolean;
+    shapes: Coordinate[][];
   }[] = [];
   if (mode === 'TRANSIT') {
     const parsed = ptResponse.safeParse(raw);
@@ -117,6 +118,7 @@ export async function normalizeOneMap(
     for (const route of parsed.data.plan.itineraries) {
       const points: Coordinate[] = [];
       const legs: RouteLeg[] = [];
+      const shapes: Coordinate[][] = [];
       let previousEnd = route.startTime;
       let continuous = true;
       for (const item of route.legs) {
@@ -143,6 +145,7 @@ export async function normalizeOneMap(
           (points.length === 0 ||
             sameEndpoint(points[points.length - 1], decoded[0]));
         points.push(...decoded);
+        shapes.push(decoded);
         if (points.length > 2048) return missing;
         previousEnd = item.endTime;
         const legMode =
@@ -168,7 +171,13 @@ export async function normalizeOneMap(
           route.duration + legs.length
       )
         return missing;
-      candidates.push({ legs, duration: route.duration, points, continuous });
+      candidates.push({
+        legs,
+        duration: route.duration,
+        points,
+        continuous,
+        shapes,
+      });
     }
   } else {
     const parsed = roadResponse.safeParse(raw);
@@ -189,6 +198,7 @@ export async function normalizeOneMap(
       mode === 'DRIVE' ? 'car' : mode === 'BICYCLE' ? 'cycle' : 'walk';
     candidates.push({
       points,
+      shapes: [points],
       continuous: true,
       duration: parsed.data.route_summary.total_time,
       legs: [
@@ -231,6 +241,12 @@ export async function normalizeOneMap(
     evidence.push({
       routeId: id,
       primaryMode: mode,
+      legGeometry: c.continuous
+        ? {
+            kind: 'provider',
+            legs: c.shapes.map((points, legIndex) => ({ legIndex, points })),
+          }
+        : { kind: 'unavailable', reason: 'missing_geometry' },
       geometry: c.continuous
         ? {
             kind: 'provider',

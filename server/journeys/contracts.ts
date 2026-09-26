@@ -112,6 +112,29 @@ export const emissionFactorSchema = z.union([
     kgPerPassengerKm: z.number().nonnegative().max(100),
   }),
 ]);
+export const legGeometrySchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('unavailable'),
+    reason: z.literal('missing_geometry'),
+  }),
+  z.strictObject({
+    kind: z.literal('provider'),
+    legs: z
+      .array(
+        z.strictObject({
+          legIndex: z.number().int().min(0).max(127),
+          points: z.array(coordinate).min(2).max(2048),
+        }),
+      )
+      .min(1)
+      .max(128)
+      .refine(
+        (legs) =>
+          legs.reduce((total, leg) => total + leg.points.length, 0) <= 2048,
+        'Too many leg geometry points',
+      ),
+  }),
+]);
 export const routeSchema = z.strictObject({
   routeId: z.string().min(1).max(160),
   routeEvidence: routeEvidenceSchema,
@@ -122,6 +145,7 @@ export const routeSchema = z.strictObject({
   start: coordinate,
   end: coordinate,
   points: z.array(coordinate).min(2).max(2048),
+  legGeometry: legGeometrySchema.optional(),
   distanceMeters: z.number().positive().max(1_000_000),
   durationSeconds: z.number().positive().max(604800),
   legs: z
@@ -251,7 +275,10 @@ const earningPolicySchema = z.strictObject({
 export const assessedLegsSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('available'),
-    method: z.literal('gps_single_mode_lower_bound'),
+    method: z.enum([
+      'gps_single_mode_lower_bound',
+      'gps_leg_geometry_lower_bound',
+    ]),
     legs: routeSchema.shape.legs,
   }),
   z.strictObject({

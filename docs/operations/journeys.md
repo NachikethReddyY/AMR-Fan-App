@@ -3,7 +3,8 @@
 Issue #8's server module is under `server/journeys/`. It persists preparation,
 Start, original-timestamp evidence, finish and a deterministic assessment in the
 same PostgreSQL service as accounts through the authenticated API. Native
-collection, awards and deployment remain separate work.
+collection is implemented under `src/features/journeys/`; device verification,
+physical calibration and deployment are separate acceptance gates.
 
 ## Authority and retained data
 
@@ -240,12 +241,52 @@ unrounded decimal savings times the retained rate, floors once and applies the
 cap. An unstarted journey has `earningPolicy: null`; no old missing version is
 silently filled. Factor/earning approval and fixture/real separation belong to #9.
 
-`selectedLegs` preserves provider distances. `assessedLegs` is available only for
-a satisfying single-mode trace, with method `gps_single_mode_lower_bound` and
-uncertainty-adjusted observed distance. It is still uncalibrated. A satisfying
-multimodal trace returns `multimodal_distances_unknown`, never GPS-total-based
-allocation among modes. Missing/insufficient assessment remains unavailable.
-All these nonprecise inputs and assessment facts survive precise-data deletion.
+`selectedLegs` preserves provider distances. A satisfying single-mode trace
+uses `gps_single_mode_lower_bound`. Complete ordered provider leg geometry can
+use `gps_leg_geometry_lower_bound` for a multimodal trace. The geometry comes
+from the same Google step response or continuous OneMap itinerary and has at
+most 2,048 total points. Each observed interval must belong uniquely to one leg,
+in order, and every leg must pass its own evidence assessment. Missing shapes,
+overlap, uncertain transitions and partial matches remain unavailable. Neither
+method allocates planned distance ratios or verifies the reported transport mode.
+Only the nonprecise assessed legs survive precise-data deletion.
+
+## Native recording
+
+Travel uses the prepared comparison directly. Starting requests location access;
+denial leaves planning available. The selected trip and Arrived/Stop replace
+search while recording. The session observer lives above the tabs. Arrival and
+Stop freeze the timestamp immediately and persist the intent on the local-write
+queue even when a network upload is pending. Upload acknowledgments remove only
+acknowledged samples. Retried operations keep their original IDs and timestamps.
+
+`runtime.ts` registers the Expo background task at module scope. Headless callbacks
+write GPS evidence without reading session credentials or calling authenticated
+APIs. `location.ts` retains acquisition time, accuracy, OS mock flag and capture
+context. Termination can interrupt OS delivery; the app shows paused recording
+and requires an explicit Resume. It does not reconstruct missing travel.
+
+`storage.ts` keeps an AES-GCM encrypted SQLite record and a device-only SecureStore
+key accessible after the first unlock. The record contains the selected trip,
+bounded sample queue and mutation intents, never authentication tokens. Collection
+and network queues are separate so slow uploads do not delay durable samples or
+Stop. There are at most 4,096 samples, uploaded in batches of 50. Logout/profile
+invalidation stops collection, invalidates delayed responses and removes local
+ciphertext/key. Expired data is removed on restore, retry or callback; dormant
+and backup storage still need the retention limits below.
+
+The phone reads current server assessments and settlements. Provisional receipts
+label their planned-estimate basis and separate the new credit from cumulative
+journey credit. They are excluded from verified impact. The server controls
+policy/factor releases and top-ups; Start still accepts only request and capture
+session IDs. No native input grants award authority.
+
+New location/SQLite dependencies and config plugins require a new internal native
+build. Expo Go or a JavaScript export alone cannot prove background capture.
+Focused controller/component tests use synthetic adapters; leased native checks
+must cover actual permissions, module linkage, callbacks, offline/restart recovery,
+profile isolation and control accessibility. Emulator movement is simulated and
+cannot satisfy physical iOS/Android locked-travel calibration.
 
 ## Retention and cleanup
 

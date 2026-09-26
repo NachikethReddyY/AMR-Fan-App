@@ -288,6 +288,7 @@ export function routeSnapshots(
       start: evidence.geometry.start,
       end: evidence.geometry.end,
       points: evidence.geometry.points,
+      legGeometry: evidence.legGeometry,
       distanceMeters: route.distanceMeters,
       durationSeconds: route.durationSeconds,
       legs: route.legs.map(({ mode, distanceMeters, durationSeconds }) => ({

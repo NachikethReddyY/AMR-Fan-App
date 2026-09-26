@@ -1,3 +1,4 @@
+import { JourneySession } from './features/journeys/provider';
 import { PhotoActivitySession } from './features/activity/PhotoActivitySession';
 import { usePhotoActivity } from './features/activity/usePhotoActivity';
 import { StatusBar } from 'expo-status-bar';
@@ -256,6 +257,7 @@ function AccountNavigation() {
   const labelHeight = Math.max(14 * fontScale, ...Object.values(labelHeights));
   return (
     <AccountProvider>
+      <JourneySession />
       <PointsProvider>
         <Onboarding>
           <NavigationContainer
