@@ -979,3 +979,21 @@ keeps the label and an error. The old switch moved out of Account, whose identit
 is real. No rewards, provider, activity or journey behavior was edited.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: native evidence and recording limits
+
+User requested local workflow videos, permitting ordinary account/setup details
+but excluding passwords, tokens and codes. Captured current 04dc JS in reused
+Pixel nativeproof and iPhone native apps with an isolated synthetic provider.
+No live provider mutation/email, native build or public video upload. The reported
+white footer was not reproduced: dark canvas surrounds the normal OS gesture
+handle; light Gboard keyboard chrome is distinct. No white-bar fix claimed.
+
+Largest text keeps all four tabs reachable but wraps their labels across lines;
+retain this visual review limit. First three intro steps, reduced-motion native
+behavior and same-device account switching remain unverified. Preserved existing
+storage rather than resetting it. Root owns final release/live-provider allocation
+and unrelated provider/rewards/reports/admin work; none is marked complete here.
+Local clip receipt and timestamps: `.evidence/app-feedback/native-video-receipt.md`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

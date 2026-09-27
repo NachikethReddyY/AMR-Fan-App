@@ -2261,3 +2261,34 @@ A proof await root allocation after the parser slot. No push, build, Metro,
 provider request, email or device interaction ran for this slice.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### App feedback: frozen gates and partial native video proof
+
+Exact 04dc403561010e3c27b6167f5096c787a8b2d7dd passed pnpm check then security:check
+serially: 257 unit and 48 DOM tests plus subsequent chains; source scan zero findings, configured
+audit threshold passed with one moderate advisory. Both independent source reviews
+reported zero actionable findings. Earlier base 775 onboarding timing failure is
+retained; this candidate's successful run does not erase it.
+
+User selected A is now observed in reused Pixel nativeproof and iPhone native apps
+with 04dc Metro JS. Local videos show balance-first Home, Photo/Plan entry, labelled
+illustrative and saved data, explicit saved 875 to real 55 return, real Account identity,
+native keyboards, and all four tabs at largest text. iPhone compact retry measured
+48 × 48 pt in the native tree and recovered the fixture balance. Pixel synthetic nonce
+step survived foreground, then password update succeeded once; iPhone email draft
+survived foreground. Secrets were entered off-camera. No real email/provider/DB.
+
+Evidence remains local in `.evidence/app-feedback/native-video-receipt.md`, with
+exact clip paths, approximate anchors, runtime lineage and export warnings. Some
+Android clips encode shorter than the requested window. Videos are mostly 480 px
+high; screenshots retain clearer text. Earlier unrecorded steps are not claimed
+as filmed. These reused debug binaries do not establish final release behavior.
+
+No broad white footer was reproduced or fixed. Largest text wraps dock labels.
+First three intro steps, reduced-motion native behavior, exact completion timing, same-device
+account switching, final release and live provider confirmation remain unverified.
+All saved records/storage remain intact. Pixel large text/boot state and iPhone
+large text/shutdown state restored; own CLI sessions and panels closed; fixture
+and Metro processes stopped with ports 54872/8087 verified closed. Root lease released.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
