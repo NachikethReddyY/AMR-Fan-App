@@ -47,7 +47,7 @@
     "account:test": "node --test server/auth/*.test.ts",
     "account:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/accounts/*.test.ts server/api/app.test.ts",
     "route:test": "node --test --test-concurrency=1 server/routes/*.test.ts",
-    "route:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/api/routes.test.ts",
+    "route:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/api/routes.test.ts server/routes/testing/google-budget.database.test.ts",
     "api:start": "node server/api/start.ts",
     "points:test:database": "pnpm db:run-test -- node --test server/points/*.test.ts",
     "journey:test": "node --test server/journeys/evidence.test.ts server/journeys/legs.test.ts server/journeys/planning.test.ts",

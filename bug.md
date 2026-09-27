@@ -1,5 +1,28 @@
 # Steering and bug inbox
 
+## GOOGLE-001: enforce the authorized USD 1 total routing allowance
+
+Tracking: unlinked follow-up to route planning. User authorized Google billing
+setup with a USD 1 total AMR routing cutoff and no automatic reset. This replaces
+strict-zero routing only, not AI or any other service. Root accepted a separate
+PostgreSQL row reserving all selected modes before dispatch, capped at 200
+attempts. Errors, timeouts, crashes and uncertain commits never refund attempts.
+No account-wide or leaked-key billing guarantee is claimed.
+
+Implementation owns routes, minimal registration, tests, docs and reserved
+`0012_google_route_budget.sql`. Root owns cloud/key/deployment and review.
+Production deployment is held: ledger 0010 precedes undeployed AI 0011, whose
+initialization prerequisite is not cleared. Do not assert zero historical AI
+liability, change its checksum or bypass the deployment runner. A separately
+reviewed schema-only suspended/no-spending-grants path belongs to that owner.
+
+Local implementation and focused proof are complete: failing-first admission,
+real PostgreSQL concurrency/process termination/restart and registered API tests
+pass, as do `pnpm check` and `pnpm security:check`. Root's independent review and
+the separate production migration/deployment work remain pending.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## AI-SUPPORT-046: one authorized technical support email
 
 User authorized one email to the official TokenRouter support address about the

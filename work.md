@@ -1,5 +1,52 @@
 # Work record
 
+## 2026-09-27: durable USD 1 Google routing allowance
+
+GOOGLE-001 is an unlinked follow-up to route planning. The user authorized USD 1
+total for AMR Google routing, with no automatic reset. A single independent
+PostgreSQL row now admits at most 200 lifetime attempts at the reviewed USD 0.005
+Essentials list price. It reserves all selected modes atomically before dispatch,
+with synchronous commit, no retries, refunds or reset path. Errors, timeouts,
+process death, lost acknowledgements and unused late reservations burn allowance.
+The API injects the store through its existing pool. The complete comparison
+deadline includes admission and both provider batches; late commits cannot send.
+
+| Evidence                | Observed result                                                                                                                                                                                                            | Limits                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Failing-first admission | Four expected failures before implementation, then seven focused tests pass                                                                                                                                                | Fetch intercepted, no Google request                                                                                                          |
+| PostgreSQL/API          | Nine tests pass on isolated PostgreSQL 18; four processes admit 200 of 320 attempted reservations, restart rejects further admission, SIGKILL before/after commit spends 0/4, late or lost acknowledgement cannot dispatch | One isolated local run after correcting a test mock accessor; injected acknowledgement loss after a real commit, not a physical network fault |
+| Registration            | Real authenticated local HTTP consumes the durable row; unauthorized request and exhausted allowance dispatch nothing                                                                                                      | Real Google endpoint intercepted                                                                                                              |
+| Protected routes        | Existing geometry, mode, CO2 and responsiveness cases pass; full `pnpm check` exits 0                                                                                                                                      | No browser/device or live response proof                                                                                                      |
+| Cost/request shape      | Exact four mode bodies and ten-field mask tested; repeated failed searches reserve again, no automatic retry or route-result cache                                                                                         | Current official SKU/pricing evidence, not a Google billing statement                                                                         |
+
+`pnpm security:check` exits 0 with zero source findings and scanner positive/
+negative fixtures passing. One existing moderate dependency advisory remains.
+DAST was not rerun: no HTTP endpoint changed, and its configured unauthenticated
+crawl covers the unrelated admin participation page. The protected route and
+cost boundary instead have real authenticated HTTP/PostgreSQL proof above.
+
+The isolated fixture used generated credentials, a random loopback port and test
+database, PostgreSQL 18, one CPU, 512 MiB memory and a 384 MiB tmpfs. Exact
+containers were removed after every run and absence checked. No host credential
+mount, shared database or provider credentials were used. New local planning
+stays unstaged in TODO. Evidence is private under
+`.evidence/google-routing-budget/`. Application code only increments the counter;
+database operators and compromised database credentials remain outside the cap.
+
+The [route operations contract](docs/operations/routes.md) records SKU sources,
+limits and rollout requirements. Migration `0012_google_route_budget.sql` SHA256
+is `00aeddb091fe0c43ff753ef6d89e937d041a07cef4849c06240f54aa625dff45`.
+Runtime requires table SELECT and column UPDATE(used_attempts), nothing else.
+Migration 0011, AI source, mobile, Auth, awards and deployment runner are unchanged.
+Production remains held on the separately owned, independently reviewed runner
+path that installs AI schema suspended and without spending grants. Historical AI
+liability is unknown, not zero; AI_COST_DATABASE_URL stays absent and AI disabled.
+No key, billing setting, cloud mutation, live DDL or live provider call occurred.
+The cutoff covers participating AMR routing calls, not other consumers, leaked
+keys, account-wide billing, taxes or currency effects. Root owns review/deployment.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-26: prepare the offline TokenRouter Jev request
 
 Related to [#3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).

@@ -1,5 +1,6 @@
 import { createOneMapProvider } from './onemap.ts';
 import { routeConfig } from './config.ts';
+import type { GoogleRouteBudget } from './google-budget.ts';
 import { z } from 'zod';
 import type {
   RouteOption,
@@ -79,7 +80,10 @@ function waypoint(value: RouteInput['origin']) {
     : { location: { latLng: value } };
 }
 
-export function createRouteProvider(env: Record<string, string | undefined>) {
+export function createRouteProvider(
+  env: Record<string, string | undefined>,
+  budget?: GoogleRouteBudget,
+) {
   const selected = routeConfig(env);
   if (selected.kind === 'onemap') return createOneMapProvider(selected);
   const config = selected;
@@ -88,11 +92,20 @@ export function createRouteProvider(env: Record<string, string | undefined>) {
   let windowStart = Date.now();
   let windowCalls = 0;
 
-  async function request(input: RouteInput, mode: PrimaryMode) {
+  async function request(
+    input: RouteInput,
+    mode: PrimaryMode,
+    deadline: number,
+  ) {
     if (config.kind === 'disabled')
       return { kind: 'unavailable', reason: 'live_not_configured' } as const;
+    if (performance.now() >= deadline)
+      return { kind: 'unavailable', reason: 'timeout' } as const;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+    const timer = setTimeout(
+      () => controller.abort(),
+      Math.ceil(deadline - performance.now()),
+    );
     try {
       const response = await fetch(config.endpoint, {
         method: 'POST',
@@ -168,6 +181,8 @@ export function createRouteProvider(env: Record<string, string | undefined>) {
         return { kind: 'unavailable', reason: 'invalid_input' };
       if (config.kind === 'disabled')
         return { kind: 'unavailable', reason: 'live_not_configured' };
+      if (config.kind === 'google' && !budget)
+        return { kind: 'unavailable', reason: 'live_not_configured' };
       if (active) return { kind: 'unavailable', reason: 'busy' };
       const input = parsed.data;
       if (Date.now() - windowStart >= 60000) {
@@ -176,21 +191,47 @@ export function createRouteProvider(env: Record<string, string | undefined>) {
       }
       if (
         windowCalls + input.modes.length > 60 ||
-        totalCalls + input.modes.length > 1000
+        (config.kind === 'fixture' &&
+          !budget &&
+          totalCalls + input.modes.length > 200)
       )
         return { kind: 'unavailable', reason: 'budget_exhausted' };
       // Reserve the complete operation before spending. No retries or waiting queue.
       windowCalls += input.modes.length;
-      totalCalls += input.modes.length;
       active = true;
       try {
+        const deadline = performance.now() + config.timeoutMs;
+        if (budget) {
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          try {
+            const admission = await Promise.race([
+              budget
+                .reserve(input.modes.length)
+                .then((allowed) => (allowed ? 'allowed' : 'denied')),
+              new Promise<'timeout'>((resolve) => {
+                timer = setTimeout(() => resolve('timeout'), config.timeoutMs);
+              }),
+            ]);
+            if (admission === 'timeout' || performance.now() >= deadline)
+              return { kind: 'unavailable', reason: 'timeout' };
+            if (admission === 'denied')
+              return { kind: 'unavailable', reason: 'budget_exhausted' };
+          } catch {
+            return { kind: 'unavailable', reason: 'provider_error' };
+          } finally {
+            clearTimeout(timer);
+          }
+        } else {
+          // Only synthetic loopback fixtures may use a process-local allowance.
+          totalCalls += input.modes.length;
+        }
         const routes: RouteOption[] = [];
         const evidence: RouteEvidence[] = [];
         const outcomes: ModeOutcome[] = [];
         for (let i = 0; i < input.modes.length; i += 2) {
           const modes = input.modes.slice(i, i + 2);
           const results = await Promise.all(
-            modes.map((mode) => request(input, mode)),
+            modes.map((mode) => request(input, mode, deadline)),
           );
           for (const [index, result] of results.entries()) {
             const mode = modes[index];
