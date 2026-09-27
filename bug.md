@@ -997,3 +997,42 @@ and unrelated provider/rewards/reports/admin work; none is marked complete here.
 Local clip receipt and timestamps: `.evidence/app-feedback/native-video-receipt.md`.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### SIGNUP-GUIDANCE-001: explain signup failures safely (unlinked)
+
+Accepted 27 September 2026 on origin/main 03a8363: replace the generic request to
+check unspecified password requirements with bounded provider-code guidance.
+Support modern and legacy error envelopes, reject conflicting/malformed codes,
+allowlist weak-password reasons, distinguish invalid email, disabled signup/email,
+rate limits and server failure. Unknown/duplicate errors must stay neutral; never
+reflect provider response text, disclose account existence or retry automatically.
+Confirmation-only responses must offer a conditional email next step without
+claiming account creation/delivery or granting/exchanging a session. Preserve
+automatic-confirmation success, layout, account records and cancellation guards.
+
+The cloud owner verified a minimum of six at 04:31:21 UTC, with signup/email enabled
+and confirmations disabled. Required classes and leaked-password enforcement
+remain unverified. Signup helper copy waits for root's policy-delivery review;
+the existing 1,024-character client bound is not a provider policy assertion.
+No live signup/email, provider mutation, browser/device, database or CI proof is
+authorized for this slice. Full/security/native checks remain with root.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Independent correction verified locally: 42 focused acceptance failures reproduced
+before implementation; 125 account unit and 13 Account/onboarding DOM cases now
+pass. Confirmation guidance preserves the email draft, clears the password and
+keeps the sheet open without storing/exchanging a session or exposing resend.
+Unknown/duplicate and conflicting machine codes share neutral copy. Production
+AccountPanel/session code and all policy/configuration sources remain unchanged.
+The complete helper request is still held for policy proof and delivery review.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+SIGNUP-GUIDANCE-001 delivery update: frozen 03fb8a4 passed full/security gates,
+763 tests total, and both independent reviews cleared the exact source. The
+configured audit threshold passed with one moderate advisory. Root authorized
+push and one non-draft PR; merge/deploy remain prohibited. Password helper and
+native/live-auth proof remain outstanding.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

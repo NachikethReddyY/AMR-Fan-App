@@ -51,6 +51,64 @@ export class EmailConfirmationRequired extends Error {
     super('Confirm your email before signing in.');
   }
 }
+function providerErrorCode(value: unknown, status: number) {
+  const parsed = z
+    .object({
+      code: z.union([z.string().min(1).max(100), z.literal(status)]).optional(),
+      error_code: z.string().min(1).max(100).optional(),
+    })
+    .safeParse(value);
+  if (!parsed.success) return undefined;
+  const { code, error_code: legacy } = parsed.data;
+  // Modern responses use string code; legacy code is the numeric HTTP status.
+  // Conflicting machine codes are not reliable enough for specific guidance.
+  if (typeof code === 'string')
+    return legacy === undefined || legacy === code ? code : undefined;
+  return legacy;
+}
+function signupFailure(value: unknown, status: number) {
+  if (status === 429) return 'Too many attempts. Wait a moment and try again.';
+  if (status >= 500)
+    return 'Sign-up is temporarily unavailable. Try again later.';
+  switch (providerErrorCode(value, status)) {
+    case 'email_address_invalid':
+      return 'Enter a valid email address.';
+    case 'signup_disabled':
+      return 'New account signup is unavailable. Try again later.';
+    case 'email_provider_disabled':
+      return 'Email signup is unavailable. Try again later.';
+    case 'over_request_rate_limit':
+    case 'over_email_send_rate_limit':
+      return 'Too many attempts. Wait a moment and try again.';
+    case 'weak_password': {
+      const weak = z
+        .object({
+          weak_password: z.object({
+            reasons: z
+              .array(z.enum(['length', 'characters', 'pwned']))
+              .min(1)
+              .max(10),
+          }),
+        })
+        .safeParse(value);
+      if (!weak.success) return 'Choose a stronger password.';
+      const reasons = new Set(weak.data.weak_password.reasons);
+      return [
+        reasons.has('length') ? 'Choose a longer password.' : '',
+        reasons.has('characters')
+          ? 'This password is missing required character types. Choose a different password.'
+          : '',
+        reasons.has('pwned')
+          ? 'Choose a different password. This password is known to be compromised.'
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
+    default:
+      return 'Sign-up could not finish. Try again later, or sign in if you already have an account.';
+  }
+}
 export function validateEmail(email: string) {
   const parsed = z.email().max(254).safeParse(email.trim());
   if (!parsed.success) throw new Error('Enter a valid email address.');
@@ -153,9 +211,13 @@ export function createSupabaseAuth({
       value = text ? JSON.parse(text) : null;
     } catch {
       if (method === 'PUT') throw uncertainUpdate();
+      if (path === 'signup')
+        throw new Error(signupFailure(null, response.status));
       throw new Error('Invalid sign-in response.');
     }
     if (!response.ok) {
+      if (path === 'signup')
+        throw new Error(signupFailure(value, response.status));
       const code = z.object({ error_code: z.string() }).safeParse(value);
       if (response.status === 429)
         throw new Error('Too many attempts. Wait a moment and try again.');
@@ -216,7 +278,7 @@ export function createSupabaseAuth({
           'Could not update account details. Check your connection and try again.',
         );
       }
-      if (code.success && code.data.error_code === 'email_not_confirmed')
+      if (providerErrorCode(value, response.status) === 'email_not_confirmed')
         throw new EmailConfirmationRequired();
       if (
         path.startsWith('token?grant_type=refresh_token') &&
@@ -228,10 +290,6 @@ export function createSupabaseAuth({
         [401, 403, 404].includes(response.status)
       )
         throw new AccountError(401, 'Provider session is no longer available.');
-      if (path === 'signup')
-        throw new Error(
-          'Could not create an account. Check your details and password requirements, then try again.',
-        );
       throw new Error('Sign-in failed. Check your email and password.');
     }
     return value;
