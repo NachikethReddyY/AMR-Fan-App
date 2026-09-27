@@ -33,8 +33,12 @@ import {
   authenticateEmail,
   syntheticEmailAuth,
 } from './native-auth';
-import { validateCredentials } from './supabase';
-import { Balance } from '../points/Balance';
+import {
+  AccountEditError,
+  validateCredentials,
+  type AccountDetails,
+  type AccountChange,
+} from './supabase';
 import { useHistory } from '../points/provider';
 
 const BoldText = createContext(false);
@@ -78,6 +82,305 @@ function Action({
     </Pressable>
   );
 }
+type CredentialDraft = {
+  editor: 'email' | 'password' | null;
+  email: string | null;
+  needsCode: boolean;
+};
+const emptyCredentialDraft: CredentialDraft = {
+  editor: null,
+  email: null,
+  needsCode: false,
+};
+function CredentialsEditor({
+  draft,
+  onDraftChange,
+}: {
+  draft: CredentialDraft;
+  onDraftChange: (draft: CredentialDraft) => void;
+}) {
+  const { controller } = useAccount();
+  const [details, setDetails] = useState<AccountDetails | null>(null);
+  const { editor, email, needsCode } = draft;
+  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [nonce, setNonce] = useState('');
+  const [busy, setBusy] = useState(true);
+  const [message, setMessage] = useState('');
+  const attempt = useRef(0);
+  useEffect(
+    () => () => {
+      attempt.current++;
+    },
+    [],
+  );
+  async function load() {
+    const current = ++attempt.current;
+    try {
+      const next = await controller.readAccountDetails();
+      if (attempt.current === current) setDetails(next);
+    } catch (error) {
+      if (attempt.current === current)
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Could not load your email. Try again.',
+        );
+    } finally {
+      if (attempt.current === current) setBusy(false);
+    }
+  }
+  useEffect(() => {
+    let active = true;
+    controller.readAccountDetails().then(
+      (next) => {
+        if (active) {
+          setDetails(next);
+          setBusy(false);
+        }
+      },
+      (error: unknown) => {
+        if (active) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : 'Could not load your email. Try again.',
+          );
+          setBusy(false);
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [controller]);
+  function reload() {
+    setBusy(true);
+    setMessage('');
+    void load();
+  }
+  async function save() {
+    if (!editor || !details) return;
+    const current = ++attempt.current;
+    const change: AccountChange =
+      editor === 'email'
+        ? { kind: 'email', email: email ?? details.email }
+        : {
+            kind: 'password',
+            password,
+            currentPassword,
+            ...(nonce ? { nonce } : {}),
+          };
+    setBusy(true);
+    setMessage('');
+    setPassword('');
+    setCurrentPassword('');
+    setNonce('');
+    try {
+      const next = await controller.updateAccount(change);
+      if (attempt.current !== current) return;
+      setDetails(next);
+      onDraftChange({ ...draft, editor: null, needsCode: false });
+      setMessage(
+        change.kind === 'password'
+          ? 'Password updated.'
+          : next.pendingEmail
+            ? ''
+            : 'Email updated.',
+      );
+    } catch (error) {
+      if (attempt.current !== current) return;
+      if (
+        error instanceof AccountEditError &&
+        error.kind === 'reauthenticationRequired'
+      )
+        onDraftChange({ ...draft, needsCode: true });
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Could not save. Check your connection and try again.',
+      );
+    } finally {
+      if (attempt.current === current) setBusy(false);
+    }
+  }
+  async function sendCode() {
+    const current = ++attempt.current;
+    setBusy(true);
+    setMessage('');
+    try {
+      await controller.requestAccountCode();
+      if (attempt.current === current)
+        setMessage('Code requested. Check your email, then enter it below.');
+    } catch (error) {
+      if (attempt.current === current)
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Could not request a code. Try again.',
+        );
+    } finally {
+      if (attempt.current === current) setBusy(false);
+    }
+  }
+  return (
+    <View style={styles.credentials}>
+      {details ? (
+        <>
+          <Text style={styles.body}>Email</Text>
+          <Text style={styles.body}>{details.email}</Text>
+          {details.pendingEmail && (
+            <Text accessibilityLiveRegion="polite" style={styles.body}>
+              Confirmation pending: {details.pendingEmail}. Follow the
+              confirmation email instructions, then check again.
+            </Text>
+          )}
+          {editor === 'email' ? (
+            <>
+              <Text style={styles.body}>New email</Text>
+              <TextInput
+                accessibilityLabel="New email"
+                value={email ?? details.email}
+                onChangeText={(email) => onDraftChange({ ...draft, email })}
+                editable={!busy}
+                keyboardType="email-address"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={254}
+                style={styles.input}
+              />
+              <Action
+                label={busy ? 'Saving…' : 'Save email'}
+                onPress={() => {
+                  void save();
+                }}
+                disabled={busy}
+              />
+            </>
+          ) : editor === 'password' ? (
+            <>
+              <Text style={styles.body}>Current password</Text>
+              <TextInput
+                accessibilityLabel="Current password"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                editable={!busy}
+                secureTextEntry
+                autoComplete="current-password"
+                textContentType="password"
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={1024}
+                style={styles.input}
+              />
+              <Text style={styles.body}>New password</Text>
+              <TextInput
+                accessibilityLabel="New password"
+                value={password}
+                onChangeText={setPassword}
+                editable={!busy}
+                secureTextEntry
+                autoComplete="new-password"
+                textContentType="newPassword"
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={1024}
+                style={styles.input}
+              />
+              {needsCode && (
+                <>
+                  <Action
+                    secondary
+                    label="Send verification code"
+                    disabled={busy}
+                    onPress={() => {
+                      void sendCode();
+                    }}
+                  />
+                  <Text style={styles.body}>Verification code</Text>
+                  <TextInput
+                    accessibilityLabel="Verification code"
+                    value={nonce}
+                    onChangeText={setNonce}
+                    editable={!busy}
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    textContentType="oneTimeCode"
+                    maxLength={10}
+                    style={styles.input}
+                  />
+                </>
+              )}
+              <Action
+                label={busy ? 'Saving…' : 'Save password'}
+                onPress={() => {
+                  void save();
+                }}
+                disabled={busy}
+              />
+            </>
+          ) : (
+            <>
+              <Action
+                secondary
+                label="Edit email"
+                disabled={busy}
+                onPress={() => {
+                  onDraftChange({ ...draft, editor: 'email' });
+                  setMessage('');
+                }}
+              />
+              <Action
+                secondary
+                label="Change password"
+                disabled={busy}
+                onPress={() => {
+                  onDraftChange({ ...draft, editor: 'password' });
+                  setMessage('');
+                }}
+              />
+              {details.pendingEmail && (
+                <Action
+                  secondary
+                  label="Check email confirmation"
+                  disabled={busy}
+                  onPress={reload}
+                />
+              )}
+            </>
+          )}
+          {editor && (
+            <Action
+              secondary
+              label="Back to account"
+              disabled={busy}
+              onPress={() => {
+                onDraftChange({ ...draft, editor: null });
+                setPassword('');
+                setCurrentPassword('');
+                setNonce('');
+                setMessage('');
+              }}
+            />
+          )}
+        </>
+      ) : (
+        <Action
+          secondary
+          label={busy ? 'Loading email…' : 'Retry account details'}
+          disabled={busy}
+          onPress={reload}
+        />
+      )}
+      {!!message && (
+        <Text accessibilityLiveRegion="polite" style={styles.body}>
+          {message}
+        </Text>
+      )}
+    </View>
+  );
+}
 export function AccountPanel({
   compact = false,
   onOpenChange,
@@ -98,6 +401,15 @@ export function AccountPanel({
   }, []);
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [credentialDraft, setCredentialDraft] = useState<{
+    owner: string;
+    draft: CredentialDraft;
+  } | null>(null);
+  useEffect(
+    () =>
+      controller.subscribeIdentityInvalidation(() => setCredentialDraft(null)),
+    [controller],
+  );
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const authHeading = useRef<NativeText>(null);
   const focusAuthHeading = useRef(false);
@@ -126,7 +438,7 @@ export function AccountPanel({
   const [error, setError] = useState('');
   const profile =
     state.kind === 'signedIn'
-      ? state.account.profiles.find((p) => p.kind === state.selected)
+      ? state.account.profiles.find((p) => p.kind === 'real')
       : undefined;
   const editing =
     state.kind === 'signedIn' &&
@@ -142,12 +454,21 @@ export function AccountPanel({
     [controller],
   );
   function close() {
+    setCredentialDraft(null);
     authAttempt.current++;
     controller.cancelSignIn();
     setPassword('');
     setAuthError('');
     setOpen(false);
     onOpenChange?.(false);
+  }
+  function openAccount(mode: 'signIn' | 'signUp' = 'signIn') {
+    setAuthMode(mode);
+    setPassword('');
+    setAuthError('');
+    setOpen(true);
+    onOpenChange?.(true);
+    void history.refresh();
   }
   async function submitEmail() {
     try {
@@ -175,7 +496,7 @@ export function AccountPanel({
     setSaving(true);
     setError('');
     try {
-      await controller.rename(name);
+      await controller.rename(name, 'real');
       setEditOwner(null);
     } catch {
       setError('Could not save your name. Try again.');
@@ -192,11 +513,7 @@ export function AccountPanel({
             accessibilityLabel={
               profile ? `${profile.displayName}, account` : 'Sign in'
             }
-            onPress={() => {
-              setOpen(true);
-              onOpenChange?.(true);
-              void history.refresh();
-            }}
+            onPress={() => openAccount()}
             style={({ pressed }) => [
               styles.accountButton,
               pressed && { opacity: 0.75 },
@@ -204,16 +521,21 @@ export function AccountPanel({
           >
             <UserRound size={22} color="#F5F5F3" accessible={false} />
           </Pressable>
-        ) : (
+        ) : profile ? (
           <Action
             secondary
-            label={profile ? `${profile.displayName}, account` : 'Sign in'}
-            onPress={() => {
-              setOpen(true);
-              onOpenChange?.(true);
-              void history.refresh();
-            }}
+            label={`${profile.displayName}, account`}
+            onPress={() => openAccount()}
           />
+        ) : (
+          <View style={styles.authEntries}>
+            <View style={styles.authEntry}>
+              <Action secondary label="Log in" onPress={() => openAccount()} />
+            </View>
+            <View style={styles.authEntry}>
+              <Action label="Sign up" onPress={() => openAccount('signUp')} />
+            </View>
+          </View>
         )}
       </View>
       <Modal
@@ -411,13 +733,28 @@ export function AccountPanel({
                     </Pressable>
                   )}
                 </View>
-                {profile.kind === 'demo' && (
+                {state.selected === 'demo' && (
                   <Text style={styles.caption}>
-                    This profile uses sample data. Its points and activity stay
-                    separate from your account.
+                    Test data is selected. Your real account stays unchanged.
                   </Text>
                 )}
-                <Balance />
+                {open && (
+                  <CredentialsEditor
+                    key={`${state.account.id}:${state.token}`}
+                    draft={
+                      credentialDraft?.owner ===
+                      `${state.account.id}:${state.token}`
+                        ? credentialDraft.draft
+                        : emptyCredentialDraft
+                    }
+                    onDraftChange={(draft) =>
+                      setCredentialDraft({
+                        owner: `${state.account.id}:${state.token}`,
+                        draft,
+                      })
+                    }
+                  />
+                )}
                 {state.account.role === 'admin' && (
                   <Text style={styles.caption}>Assigned admin</Text>
                 )}
@@ -493,23 +830,6 @@ export function AccountPanel({
                       <>
                         <Action
                           secondary
-                          label={
-                            profile.kind === 'real'
-                              ? 'Use sample profile'
-                              : 'Use my account'
-                          }
-                          onPress={() => {
-                            void controller
-                              .select(profile.kind === 'real' ? 'demo' : 'real')
-                              .catch(() =>
-                                setError(
-                                  'Could not switch profiles. Try again.',
-                                ),
-                              );
-                          }}
-                        />
-                        <Action
-                          secondary
                           label="Refresh session"
                           onPress={() => {
                             void controller.resume();
@@ -536,6 +856,9 @@ export function AccountPanel({
   );
 }
 const styles = StyleSheet.create({
+  credentials: { gap: 12 },
+  authEntries: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  authEntry: { flexGrow: 1, flexBasis: 120 },
   entry: { marginHorizontal: 20, marginBottom: 20 },
   compactEntry: { flexShrink: 0 },
   accountButton: {

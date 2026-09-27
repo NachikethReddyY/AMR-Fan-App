@@ -4,11 +4,30 @@ import {
   type AccountApi,
   type Session,
 } from './api.ts';
-import type { ProviderSession } from './supabase.ts';
+import type {
+  AccountChange,
+  AccountDetails,
+  ProviderSession,
+} from './supabase.ts';
 export type AuthenticatedSession = Session & { provider?: ProviderSession };
 export type ProviderLifecycle = {
   refresh: (session: ProviderSession) => Promise<ProviderSession>;
   revoke: (session: ProviderSession) => Promise<void>;
+  account?: {
+    read: (
+      session: ProviderSession,
+      beforeSend?: () => void,
+    ) => Promise<AccountDetails>;
+    update: (
+      session: ProviderSession,
+      change: AccountChange,
+      beforeSend?: () => void,
+    ) => Promise<AccountDetails>;
+    reauthenticate: (
+      session: ProviderSession,
+      beforeSend?: () => void,
+    ) => Promise<void>;
+  };
 };
 export type StoredSession =
   | {
@@ -274,7 +293,76 @@ export function createSessionController(
         });
     }
   }
+  async function withProviderAccount<T>(
+    operation: (
+      credentials: ProviderSession,
+      account: NonNullable<ProviderLifecycle['account']>,
+      beforeSend: () => void,
+    ) => Promise<T>,
+  ) {
+    const current = state;
+    const attempt = generation;
+    if (current.kind !== 'signedIn' || !provider?.account)
+      throw new Error(
+        'Account editing is unavailable. Sign in with email and try again.',
+      );
+    const account = provider.account;
+    const lifecycle = provider;
+    const token = current.token;
+    function assertCurrent() {
+      if (
+        attempt !== generation ||
+        state.kind !== 'signedIn' ||
+        state.token !== token
+      )
+        throw new Error('Account changed. Reopen Account and try again.');
+    }
+    // Share the credential queue with logout/refresh, so rotated tokens are
+    // persisted before a queued revocation reads them. Never retry writes.
+    return withStorage(async () => {
+      assertCurrent();
+      const stored = await storage.read();
+      assertCurrent();
+      if (
+        stored?.kind !== 'active' ||
+        stored.token !== current.token ||
+        !stored.provider
+      )
+        throw new Error(
+          'Account editing is unavailable. Sign in with email and try again.',
+        );
+      let credentials = stored.provider;
+      if (credentials.expiresAt <= Date.now() + 60000) {
+        const next = await lifecycle.refresh(credentials);
+        if (next.subject !== credentials.subject)
+          throw new Error('Account identity changed. Sign in again.');
+        try {
+          await storage.write({ ...stored, provider: next });
+        } catch (error) {
+          await lifecycle.revoke(next);
+          throw error;
+        }
+        credentials = next;
+        assertCurrent();
+      }
+      const result = await operation(credentials, account, assertCurrent);
+      assertCurrent();
+      return result;
+    });
+  }
   return {
+    readAccountDetails: () =>
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.read(credentials, beforeSend),
+      ),
+    updateAccount: (change: AccountChange) =>
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.update(credentials, change, beforeSend),
+      ),
+    requestAccountCode: () =>
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.reauthenticate(credentials, beforeSend),
+      ),
     getState: () => state,
     // Explicit loss of identity must close private drafts before loading hides its cause.
     subscribeIdentityInvalidation: (listener: () => void) => {
@@ -332,11 +420,11 @@ export function createSessionController(
         throw error;
       }
     },
-    rename: async (displayName: string) => {
+    rename: async (displayName: string, target?: 'real') => {
       if (state.kind !== 'signedIn') return;
       const current = state;
       const profile = current.account.profiles.find(
-        (profile) => profile.kind === current.selected,
+        (profile) => profile.kind === (target ?? current.selected),
       );
       if (!profile) return;
       let updated;

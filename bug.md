@@ -860,3 +860,140 @@ preservation and missing-row denial are verified locally; real initialization
 and activation remain held. No production or credential claim.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: onboarding, Account and Home clarity (unlinked)
+
+Accepted 27 September 2026: show numbered progress across the whole onboarding,
+expose Sign up beside Log in, remove the white bottom system area, refine the
+four-tab dock, add subtle onboarding motion, keep setup progress out of returning
+Account visits, clarify points and Photo/Plan a journey entry, reduce refresh
+prominence and shorten copy. Replace the sample-profile Account experience with
+editable real email/password. This supersedes the old sample-profile UI direction;
+all existing demo balances/history and real account records must survive.
+
+Scope: app presentation and related tests only. Home/points/photo/journey/dock
+redesign waits for selection between two local static alternatives. Auth updates
+need a root-approved shared contract before adapter/controller edits. No server,
+points, rewards, journey, activity, API or provider mutation. Native proof waits
+for root's Pixel then iPhone window. Tracker remains unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: clarified acceptance and ownership
+
+Root confirmed a labelled test-data view outside Account; Account always refers
+to real identity. Include that entry in both unselected previews. Preserve saved
+demo balances/activity/history, and never populate real records with dummy data.
+
+Acceptance: count all onboarding steps consistently; expose Log in and Sign up;
+completed Account visits show no setup progress; preserve entered drafts across
+navigation; smaller refresh keeps its callback and a target of at least 44 pt;
+diagnose the white bottom area on Pixel before changing OS/inset behavior. Subtle
+onboarding motion must respect reduced motion. Home entry, points usefulness,
+dock and broad copy changes remain proposals until A/B selection.
+
+Account adapter/state and related tests are now allocated for supported real
+email/password edits. No live mutation, email or provider-setting changes.
+Balance.tsx is allocated only for compact existing retry presentation.
+RewardsScreen, providers, API/server, rewards rules, activity/journey behavior,
+reports and admin remain root/peer-owned and are not claimed finished here.
+Root owns any additional feedback in those areas not supplied to this owner.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: preview terminology correction
+
+Root review found CO₂e in the test-impact specimen despite the accepted CO₂
+product label. Both previews now say 0.8 kg CO₂ with estimated test-data wording.
+Moved setup/password explanations outside the Account specimen. This task-specific
+copy correction changes no direction, production component or global guidance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: A selected and pure test-data boundary
+
+User selected A: balance first, grouped photo/journey entry, rounded four-tab dock.
+The illustrative test-data module must arrive through main; its pure no-argument
+getTestDataView export supplies display strings only. The app owner supplies the
+component/navigation. Existing selected demo context remains visibly labelled,
+with an explicit Return to real data action; no automatic profile switch/reset.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: auth contract correction before live proof
+
+Supabase OpenAPI disagrees with its current router/client on reauthentication:
+the actual API is GET, not POST. Added request-method proof and followed the
+router/client. Email update responses must match the requested current or pending
+address before the UI reports an outcome. Live deployed-provider behavior and
+email delivery remain unverified, with no provider settings changed.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: completion visibility and review follow-ups
+
+The reduced-motion zero-delay completion timer could remove progress 5 before
+it was observed. A deterministic regression now checks both motion settings:
+completion remains visible for 220 ms, then the app opens. The optional intro
+illustration fade runs once and is disabled with reduced motion. Compact balance
+retry retains a 48 pt target, its accessible name and existing refresh callback.
+Native appearance and timing remain unverified.
+
+Independent auth review reported the code-entry step disappearing during foreground
+session resume, and an unsanitized response-body read rejection after a PUT.
+Reproduce these separately from frozen auth commit 73e35f4; preserve same-identity
+navigation only, clear secrets and prevent state restoration after logout/switch.
+No provider mutation or email is authorized. Root owns the fixture baseline-red
+record and remaining full/security/native gate allocation.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: reproduced auth review corrections
+
+Three bounded findings reproduced with synthetic fixtures against frozen auth
+73e35f4: foreground resume removed the verification step; logout during cold
+configuration still allowed old-session dispatch; PUT body failure exposed a raw
+transport error and lacked an uncertain-outcome message. Seven adapter cases and
+one Account DOM case failed before the fixes.
+
+The editor now retains only its same-account/session email draft and step across
+resume. Password/code fields remain local to the unmounted editor. Dismissal,
+identity invalidation, logout and switching discard drafts. The controller's
+identity guard now reaches the adapter immediately before dispatch after config
+I/O. Unreadable/invalid PUT bodies report an uncertain outcome without retry.
+Native foreground/email-app proof is still required before auth acceptance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: selected A source integration
+
+Merged reviewed fixture through origin/main 3beaf76; no peer source copying.
+Selected A now has balance first, separate Rewards/History actions and equal
+Photo activity/Plan a journey rows. The existing rounded four-tab dock and OS
+navigation handling are unchanged. White-bar reproduction remains outstanding.
+
+Home opens clearly labelled illustrative data without changing selected profile
+or records. Explicit saved-test-data selection remains available there. Persisted
+demo context is labelled with Return to real data on every tab; failed return
+keeps the label and an error. The old switch moved out of Account, whose identity
+is real. No rewards, provider, activity or journey behavior was edited.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: native evidence and recording limits
+
+User requested local workflow videos, permitting ordinary account/setup details
+but excluding passwords, tokens and codes. Captured current 04dc JS in reused
+Pixel nativeproof and iPhone native apps with an isolated synthetic provider.
+No live provider mutation/email, native build or public video upload. The reported
+white footer was not reproduced: dark canvas surrounds the normal OS gesture
+handle; light Gboard keyboard chrome is distinct. No white-bar fix claimed.
+
+Largest text keeps all four tabs reachable but wraps their labels across lines;
+retain this visual review limit. First three intro steps, reduced-motion native
+behavior and same-device account switching remain unverified. Preserved existing
+storage rather than resetting it. Root owns final release/live-provider allocation
+and unrelated provider/rewards/reports/admin work; none is marked complete here.
+Local clip receipt and timestamps: `.evidence/app-feedback/native-video-receipt.md`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

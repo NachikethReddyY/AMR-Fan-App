@@ -7,7 +7,10 @@ import {
 } from './supabase.ts';
 
 export function createEmailFlow(
-  auth: ReturnType<typeof createSupabaseAuth>,
+  auth: Pick<
+    ReturnType<typeof createSupabaseAuth>,
+    'signIn' | 'signUp' | 'revoke'
+  >,
   api: Pick<AccountApi, 'signIn'>,
 ) {
   async function exchange(

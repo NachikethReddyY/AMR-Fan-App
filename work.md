@@ -2091,3 +2091,204 @@ key access/creation, provider request, cloud mutation or activation occurred.
 Evidence: `.evidence/ai-new-amr-allowance/`.
 
 Implemented locally by gpt-6-astra through Codex (T3 Code).
+
+### App feedback presentation preflight, 27 September 2026
+
+Clean starting branch fix/app-feedback-experience at 7754117. Read selected C
+DESIGN, onboarding, Account, Home/navigation, accepted account behavior, and
+verification/security guidance. The intro labels three screens but its bar
+counts five setup steps. Signup currently requires first opening Sign in.
+Account settings still switches real/demo profiles and refreshes the session.
+Home exposes Photo activity separately from Plan a journey. Its balance renderer
+and refresh retry belong to the points owner and remain untouched.
+
+First slice: failure-first numbered progress, direct Log in/Sign up entry and
+shorter onboarding copy. Material Home/dock changes stay in local alternatives.
+Auth seam proposed to root: Supabase adapter, email flow, native composition,
+session lifecycle and stored-session parsing. No provider/backend changes yet.
+Dependencies are absent; asked root for a local install/check slot. Requested
+better-interface and animate-expo skills were not found in supplied skill roots;
+animation work is held. No browser, device, Metro, build, scanner or CI use.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### App feedback first local slice and selection previews
+
+Implemented consistent Step 1 through Step 5 onboarding labels and separate
+Log in/Sign up entry actions. Both open the intended form; email drafts remain
+through close/reopen and existing password clearing remains intact. Two new
+acceptance tests failed before implementation; all 9 focused DOM tests now pass,
+including completion, retained name draft, cancellation and stale auth completion.
+The 43 onboarding/session/storage regressions pass. Changed source/tests pass
+ESLint, formatting and whitespace checks. Typecheck/full gates and native UI
+acceptance remain pending under root's allocation; no push or product completion.
+
+Prepared two local static Home/test-data/Account alternatives. A keeps balance
+first with the rounded dock; B puts activity first with a compact balance and
+flatter dock. Both retain four tabs, green palette, real unloaded data and a
+labelled test-data entry outside Account. Rendered through the owned T3 preview
+at desktop and 390 px width with no horizontal overflow; captured screenshots
+remain in ignored .evidence/app-feedback. Root's copy correction uses CO₂ and
+moves explanatory Account annotations outside the specimen. Broad app UI is held
+for selection. Supabase update/reauthentication documentation and current source
+were checked; the identity-preserving implementation contract is prepared locally.
+No live auth mutation, email, provider settings, server or data change.
+
+The prior Pixel screenshot shows a white OS gesture handle on dark canvas, not
+a broad white footer. Actual white-bar diagnosis, compact retry, animation and
+real email/password editing remain unfinished. Root has the exact preview paths,
+current-state map and auth seam. Loopback preview server remains for selection.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### App feedback A selection
+
+Root relayed user selection of A, balance first with the rounded dock. Retained
+corrected local HTML and screenshots as private selection evidence. Stopped the
+owned loopback server and closed owned T3 preview tab. Pure illustrative test-data
+integration waits for the peer module to reach main; no source copying. Pixel is
+left untouched. Auth source and focused tests are in progress independently.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Account credential editor, local controlled verification
+
+Prepared real-profile Account name/email/password presentation. Email reads and
+updates use fixed-origin Supabase user endpoints, parse only account details and
+reject changed subjects. Pending email stays separate from the current email.
+Password changes pass current_password and, when requested, a reauthentication
+nonce. Send verification code is explicit; no automatic email request or PUT retry.
+The credential queue checks account generation across storage, refresh and I/O;
+logout cannot dispatch a waiting edit or publish its response to another account.
+Real-profile name edits preserve a selected demo preference and every balance.
+
+Official current password guide and server implementation support current_password;
+deployed-version support is not proven. Supabase OpenAPI lists POST reauthenticate,
+but its actual router and official client use GET. The adapter follows GET with
+a failing-first request-method regression. Account UI keeps current email visible
+while confirmation is pending, preserves the email draft through editor back/forward,
+clears passwords on submission/close, and gives bounded recovery messages.
+
+Sources read 27 September 2026: Supabase updateUser and password guides,
+auth/internal/api/user.go, auth/internal/api/api.go and auth-js/GoTrueClient.ts.
+No live provider request, email, credential mutation, server change or security
+setting change. Provider and native proof remain pending. The old sample switch
+remains temporarily until the accepted Home test-data entry and explicit exit
+land; real-only identity already renders independently of selected demo.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Controlled auth verification: 71 account adapter/session/storage/email-flow unit
+cases and 11 Account/onboarding DOM cases pass, plus typecheck and scoped ESLint/
+formatting. Includes provider errors, ambiguous PUT outcome without retry,
+subject mismatch, failed refresh storage, logout races, pending email, nonce flow
+and secret clearing. A reported baseline onboarding timer flake is corrected by
+holding fake timers for the transient completion assertion, then advancing them;
+reduced-motion production timing is unchanged. Full/security/native/live-provider
+checks remain unverified under the scheduled resource and test-account gates.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+### Onboarding completion and compact retry, separate light slice
+
+Added a one-shot 180 ms illustration fade with Reanimated's typed cubicBezier;
+reduced motion disables the animation. Completion remains statically visible for
+220 ms under either motion setting. Failing-first timer tests retain progress 5,
+Setup complete and final app-entry assertions. The balance error retry now uses
+a 48 pt circular icon button with its existing accessible name and callback.
+The focused retry test failed against the former wide button, then passed.
+
+All 9 focused onboarding/retry DOM cases, typecheck and scoped ESLint pass.
+Frozen auth 73e35f4 is unchanged. Native rendering/motion/touch proof and broader
+gates remain pending; no full gate, provider request or device interaction ran.
+Selected Home A integration waits for the fixture module to merge through main.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### Frozen auth review corrections
+
+Reproduced and corrected all three independent findings from 73e35f4 in a separate
+slice: nonce-step loss on foreground resume, stale dispatch after configuration
+await, and ambiguous PUT body failure. Preserved the frozen commit for review.
+Hoisted only non-secret editor navigation/email draft, bound to account/session;
+password and nonce still clear on editor unmount. Tests drive the real controller
+resume used by the AppState active handler, including the intermediate loading
+state, and prove explicit code requests, blank secrets, retained email draft,
+logout/same-account re-entry and account-switch clearing. This is controlled DOM
+proof, not an actual native email-app round trip.
+
+Cold-config tests drive the real adapter/controller with synthetic transport for
+GET user, PUT user and GET reauthenticate. Logout blocks each before dispatch.
+Response-body rejection, malformed JSON, malformed account and oversized body
+all produce bounded PUT uncertainty with exactly one request. Existing subject,
+provider error, session race and storage protections remain covered. No live
+provider call, email or credential mutation occurred.
+
+Focused proof: 76 cases across Supabase/session/email-flow, 12 Account/onboarding
+DOM cases, typecheck and scoped ESLint pass. Full/security and native gates remain
+pending with root; the fixture's earlier baseline timer failure remains recorded
+separately from its subsequent clean serial pass. Main fixture consumption waits
+until this auth fix is committed and frozen for rereview.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
+
+### Selected A Home and separate test-data presentation
+
+Consumed fixture PR57 only through fetched origin/main at
+3beaf76f0d92d4651b0e2a85ccdd963eabafe415. Main merged cleanly after auth correction
+40801d3; both independent correction reviews reported zero findings. Native and
+live-provider proof remain unverified despite those controlled review passes.
+
+Moved Home presentation into its own owned component. Balance remains first;
+View rewards opens Redemption and History opens History. Photo and Plan use equal
+rows with the selected concise copy and existing callbacks. The dock's four tabs,
+geometry, canvas and OS gesture affordance are preserved. No white-bar fix claimed.
+
+Home now opens the readonly illustrative fixture in a separate labelled view.
+Opening/closing it never changes account context. A visible explicit action opens
+existing saved test data, preserving the old capability outside Account. Every
+normal tab shows the saved-test-data label and Return to real data when selected;
+failed return keeps the selection and explains recovery. Account/greeting use real
+identity. Account delta after auth rereview only removes the relocated sample
+switch; credential logic is unchanged. Example rows have no redemption/journey
+callbacks and cannot fulfil rewards or award points.
+
+Four new acceptance failures preceded implementation: two Home navigation/data
+cases and two label/switch-relocation cases. All 30 focused Home, Account,
+onboarding, retry and existing photo-flow DOM cases now pass; typecheck, scoped
+ESLint/formatting and whitespace checks pass. Full/security/native/actual rendered
+A proof await root allocation after the parser slot. No push, build, Metro,
+provider request, email or device interaction ran for this slice.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+### App feedback: frozen gates and partial native video proof
+
+Exact 04dc403561010e3c27b6167f5096c787a8b2d7dd passed pnpm check then security:check
+serially: 257 unit and 48 DOM tests plus subsequent chains; source scan zero findings, configured
+audit threshold passed with one moderate advisory. Both independent source reviews
+reported zero actionable findings. Earlier base 775 onboarding timing failure is
+retained; this candidate's successful run does not erase it.
+
+User selected A is now observed in reused Pixel nativeproof and iPhone native apps
+with 04dc Metro JS. Local videos show balance-first Home, Photo/Plan entry, labelled
+illustrative and saved data, explicit saved 875 to real 55 return, real Account identity,
+native keyboards, and all four tabs at largest text. iPhone compact retry measured
+48 × 48 pt in the native tree and recovered the fixture balance. Pixel synthetic nonce
+step survived foreground, then password update succeeded once; iPhone email draft
+survived foreground. Secrets were entered off-camera. No real email/provider/DB.
+
+Evidence remains local in `.evidence/app-feedback/native-video-receipt.md`, with
+exact clip paths, approximate anchors, runtime lineage and export warnings. Some
+Android clips encode shorter than the requested window. Videos are mostly 480 px
+high; screenshots retain clearer text. Earlier unrecorded steps are not claimed
+as filmed. These reused debug binaries do not establish final release behavior.
+
+No broad white footer was reproduced or fixed. Largest text wraps dock labels.
+First three intro steps, reduced-motion native behavior, exact completion timing, same-device
+account switching, final release and live provider confirmation remain unverified.
+All saved records/storage remain intact. Pixel large text/boot state and iPhone
+large text/shutdown state restored; own CLI sessions and panels closed; fixture
+and Metro processes stopped with ports 54872/8087 verified closed. Root lease released.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

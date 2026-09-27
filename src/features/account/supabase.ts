@@ -9,6 +9,29 @@ export const providerSessionSchema = z.object({
   subject: z.uuid(),
 });
 export type ProviderSession = z.infer<typeof providerSessionSchema>;
+const accountDetailsSchema = z.object({
+  id: z.uuid(),
+  email: z.email().max(254),
+  new_email: z.union([z.email().max(254), z.literal('')]).optional(),
+});
+export type AccountDetails = { email: string; pendingEmail: string | null };
+export type AccountChange =
+  | { kind: 'email'; email: string }
+  | {
+      kind: 'password';
+      password: string;
+      currentPassword: string;
+      nonce?: string;
+    };
+export class AccountEditError extends Error {
+  constructor(
+    public readonly kind:
+      'reauthenticationRequired' | 'signInRequired' | 'failed',
+    message: string,
+  ) {
+    super(message);
+  }
+}
 const tokenResponse = z.object({
   access_token: z.string().min(1).max(16384),
   refresh_token: z.string().min(1).max(4096),
@@ -70,8 +93,20 @@ export function createSupabaseAuth({
       );
     origin = url.origin;
   }
+  function uncertainUpdate() {
+    return new AccountEditError(
+      'failed',
+      'Could not confirm the update. Check your email or sign in with your new details before retrying.',
+    );
+  }
   let publicConfiguration: z.infer<typeof configuration> | undefined;
-  async function send(path: string, body?: unknown, accessToken?: string) {
+  async function send(
+    path: string,
+    body?: unknown,
+    accessToken?: string,
+    method: 'POST' | 'GET' | 'PUT' = 'POST',
+    beforeSend?: () => void,
+  ) {
     // Keep only validated public configuration in memory. Provider logout must
     // remain possible if the app API becomes unavailable after sign-in.
     if (!publicConfiguration) {
@@ -80,10 +115,12 @@ export function createSupabaseAuth({
         throw new Error('Email sign-in is not configured. Try again later.');
       publicConfiguration = parsed.data;
     }
+    // Configuration may have awaited I/O after the controller checked identity.
+    beforeSend?.();
     let response;
     try {
       response = await request(`${origin}/auth/v1/${path}`, {
-        method: 'POST',
+        method,
         headers: {
           apikey: publicConfiguration.auth.publishableKey,
           'Content-Type': 'application/json',
@@ -96,31 +133,89 @@ export function createSupabaseAuth({
         cache: 'no-store',
       });
     } catch {
+      if (method === 'PUT') throw uncertainUpdate();
       throw new Error(
         'Account connection unavailable. Reconnect and try again.',
       );
     }
-    if (
-      response.redirected ||
-      (response.url && new URL(response.url).origin !== origin)
-    )
-      throw new Error('Invalid sign-in response.');
-    // Native fetch has no portable streaming reader. Reject an advertised large
-    // body before reading, then enforce the same bound on decoded text.
-    if (Number(response.headers.get('content-length')) > 65536)
-      throw new Error('Invalid sign-in response.');
-    const text = await response.text();
-    if (text.length > 65536) throw new Error('Invalid sign-in response.');
     let value: unknown = null;
     try {
+      if (
+        response.redirected ||
+        (response.url && new URL(response.url).origin !== origin)
+      )
+        throw new Error('Invalid response');
+      // Native fetch has no portable streaming reader. Bound advertised and decoded bodies.
+      if (Number(response.headers.get('content-length')) > 65536)
+        throw new Error('Invalid response');
+      const text = await response.text();
+      if (text.length > 65536) throw new Error('Invalid response');
       value = text ? JSON.parse(text) : null;
     } catch {
+      if (method === 'PUT') throw uncertainUpdate();
       throw new Error('Invalid sign-in response.');
     }
     if (!response.ok) {
       const code = z.object({ error_code: z.string() }).safeParse(value);
       if (response.status === 429)
         throw new Error('Too many attempts. Wait a moment and try again.');
+      if (path === 'user' || path === 'reauthenticate') {
+        const errorCode = code.success ? code.data.error_code : '';
+        if (errorCode === 'reauthentication_needed')
+          throw new AccountEditError(
+            'reauthenticationRequired',
+            'Confirm it is you before changing your password. Send a code, then enter it below.',
+          );
+        if (errorCode === 'reauthentication_not_valid')
+          throw new AccountEditError(
+            'reauthenticationRequired',
+            'That code is invalid or expired. Send a new code and try again.',
+          );
+        if (
+          errorCode === 'current_password_required' ||
+          errorCode === 'current_password_mismatch'
+        )
+          throw new AccountEditError(
+            'failed',
+            'Check your current password and try again.',
+          );
+        if (errorCode === 'same_password')
+          throw new AccountEditError(
+            'failed',
+            'Choose a different new password.',
+          );
+        if (errorCode === 'weak_password')
+          throw new AccountEditError(
+            'failed',
+            'Choose a stronger password and try again.',
+          );
+        if (
+          errorCode === 'email_exists' ||
+          errorCode === 'email_address_invalid'
+        )
+          throw new AccountEditError(
+            'failed',
+            'That email cannot be used. Check it or choose another.',
+          );
+        if (errorCode === 'insufficient_aal')
+          throw new AccountEditError(
+            'failed',
+            'This account requires additional verification. Complete it with your account provider before retrying.',
+          );
+        if (
+          response.status === 401 ||
+          errorCode === 'session_not_found' ||
+          errorCode === 'refresh_token_not_found'
+        )
+          throw new AccountEditError(
+            'signInRequired',
+            'Your sign-in expired. Sign in again before editing your account.',
+          );
+        throw new AccountEditError(
+          'failed',
+          'Could not update account details. Check your connection and try again.',
+        );
+      }
       if (code.success && code.data.error_code === 'email_not_confirmed')
         throw new EmailConfirmationRequired();
       if (
@@ -162,7 +257,91 @@ export function createSupabaseAuth({
       throw new AccountError(401, 'Your sign-in changed. Sign in again.');
     return next;
   }
+  function details(
+    value: unknown,
+    session: ProviderSession,
+    updating = false,
+  ): AccountDetails {
+    const parsed = accountDetailsSchema.safeParse(value);
+    if (!parsed.success) {
+      if (updating) throw uncertainUpdate();
+      throw new Error('Invalid account response. Try again.');
+    }
+    if (parsed.data.id !== session.subject)
+      throw new AccountEditError(
+        'signInRequired',
+        'Account identity changed. Sign in again.',
+      );
+    return {
+      email: parsed.data.email,
+      pendingEmail: parsed.data.new_email || null,
+    };
+  }
   return {
+    account: {
+      read: async (session: ProviderSession, beforeSend?: () => void) =>
+        details(
+          await send('user', undefined, session.accessToken, 'GET', beforeSend),
+          session,
+        ),
+      update: async (
+        session: ProviderSession,
+        change: AccountChange,
+        beforeSend?: () => void,
+      ) => {
+        let body;
+        if (change.kind === 'email') {
+          body = { email: validateEmail(change.email) };
+        } else {
+          if (
+            !change.password ||
+            change.password.length > 1024 ||
+            !change.currentPassword ||
+            change.currentPassword.length > 1024
+          )
+            throw new Error(
+              'Enter your current and new passwords, each at most 1,024 characters.',
+            );
+          if (change.nonce !== undefined && !/^\d{6,10}$/.test(change.nonce))
+            throw new Error('Enter the verification code from your email.');
+          body = {
+            password: change.password,
+            current_password: change.currentPassword,
+            ...(change.nonce ? { nonce: change.nonce } : {}),
+          };
+        }
+        const updated = details(
+          await send('user', body, session.accessToken, 'PUT', beforeSend),
+          session,
+          true,
+        );
+        if (change.kind === 'email') {
+          const requested = validateEmail(change.email).toLowerCase();
+          if (
+            updated.email.toLowerCase() !== requested &&
+            updated.pendingEmail?.toLowerCase() !== requested
+          )
+            throw new AccountEditError(
+              'failed',
+              'Could not confirm the email change. Check your account email before retrying.',
+            );
+        }
+        return updated;
+      },
+      reauthenticate: async (
+        session: ProviderSession,
+        beforeSend?: () => void,
+      ) => {
+        // Auth's router and official JS client use GET; its OpenAPI lists POST.
+        await send(
+          'reauthenticate',
+          undefined,
+          session.accessToken,
+          'GET',
+          beforeSend,
+        );
+      },
+    },
     signIn: async (email: string, password: string) =>
       parse(
         await send(

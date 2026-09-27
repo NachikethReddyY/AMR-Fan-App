@@ -10,6 +10,7 @@ import type { AccountApi } from '../src/features/account/api';
 import { Onboarding } from '../src/features/onboarding/Onboarding';
 
 let mockState: { kind: string; account?: { id: string }; token?: string };
+let mockReducedMotion = true;
 const mockRead = jest.fn<(key: string) => Promise<string | null>>();
 const mockWrite = jest.fn<(key: string, value: string) => Promise<void>>();
 const mockRename = jest.fn<(name: string) => Promise<void>>();
@@ -80,7 +81,8 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('react-native-reanimated', () => ({
   __esModule: true,
   default: { View: () => <div /> },
-  useReducedMotion: () => true,
+  useReducedMotion: () => mockReducedMotion,
+  cubicBezier: (...values: number[]) => values,
 }));
 jest.mock('lucide-react-native', () => ({
   Route: () => null,
@@ -117,6 +119,7 @@ async function click(label: string) {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   mockState = { kind: 'signedOut' };
+  mockReducedMotion = true;
   mockRead.mockReset().mockResolvedValue(null);
   mockWrite.mockReset().mockResolvedValue(undefined);
   mockRename.mockReset().mockResolvedValue(undefined);
@@ -127,6 +130,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   act(() => root.unmount());
+  jest.useRealTimers();
   element.remove();
 });
 test('walkthrough moves back and forward, persists introduction, and permits guest browsing', async () => {
@@ -151,6 +155,7 @@ test('completed onboarding keeps the app mounted during refresh and logout', asy
   mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'one' };
   await render();
   expect(mounts).toBe(1);
+  expect(element.querySelector('[data-progress]')).toBeNull();
   mockState = { kind: 'loading' };
   await render();
   expect(element.textContent).toContain('App content');
@@ -161,29 +166,39 @@ test('completed onboarding keeps the app mounted during refresh and logout', asy
   expect(element.textContent).toContain('App content');
   expect(mounts).toBe(1);
 });
-test('saving a name reaches full progress before entering app and persists only that account', async () => {
-  mockRead.mockImplementation(async (key) =>
-    key.includes('introduction') ? 'done' : null,
-  );
-  mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'one' };
-  await render();
-  await click('Save and continue');
-  expect(mockRename).not.toHaveBeenCalled();
-  const input = element.querySelector('input');
-  if (!input) throw new Error('Name input absent');
-  await act(async () => {
-    input.value = 'Fan Name';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await click('Save and continue');
-  expect(mockRename).toHaveBeenCalledWith('Fan Name');
-  expect(mockWrite).toHaveBeenCalledWith('amr.onboarding.account.a', 'done');
-  expect(element.querySelector('[data-progress="5"]')).not.toBeNull();
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  });
-  expect(element.textContent).toContain('App content');
-});
+test.each([true, false])(
+  'saving a name keeps completed progress visible before entry (reduced motion: %s)',
+  async (reducedMotion) => {
+    jest.useFakeTimers();
+    mockReducedMotion = reducedMotion;
+    mockRead.mockImplementation(async (key) =>
+      key.includes('introduction') ? 'done' : null,
+    );
+    mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'one' };
+    await render();
+    await click('Save and continue');
+    expect(mockRename).not.toHaveBeenCalled();
+    const input = element.querySelector('input');
+    if (!input) throw new Error('Name input absent');
+    await act(async () => {
+      input.value = 'Fan Name';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click('Save and continue');
+    expect(mockRename).toHaveBeenCalledWith('Fan Name');
+    expect(mockWrite).toHaveBeenCalledWith('amr.onboarding.account.a', 'done');
+    expect(element.querySelector('[data-progress="5"]')).not.toBeNull();
+    await act(async () => {
+      jest.advanceTimersByTime(219);
+    });
+    expect(element.querySelector('[data-progress="5"]')).not.toBeNull();
+    expect(element.textContent).toContain('Setup complete');
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(element.textContent).toContain('App content');
+  },
+);
 
 test('guest browsing still asks a newly signed-in account for its name', async () => {
   mockRead.mockImplementation(async (key) =>
@@ -293,4 +308,18 @@ test('immediate password signup persists provider and app sessions then enters n
   expect(element.textContent).toContain('What should we call you?');
   expect(element.textContent).not.toContain('App content');
   expect(element.textContent).not.toContain('Confirm email');
+});
+
+test('numbered setup includes introduction, account and name without suggesting step three is final', async () => {
+  await render();
+  expect(element.textContent).toContain('Step 1 of 5');
+  await click('Next');
+  expect(element.textContent).toContain('Step 2 of 5');
+  await click('Next');
+  expect(element.textContent).toContain('Step 3 of 5');
+  await click('Continue');
+  expect(element.textContent).toContain('Step 4 of 5');
+  mockState = { kind: 'signedIn', account: { id: 'new' }, token: 'one' };
+  await render();
+  expect(element.textContent).toContain('Step 5 of 5');
 });

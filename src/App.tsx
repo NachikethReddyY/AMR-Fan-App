@@ -2,29 +2,17 @@ import {
   JourneySession,
   useJourneyRecorder,
 } from './features/journeys/provider';
-import { PhotoActivitySession } from './features/activity/PhotoActivitySession';
-import { usePhotoActivity } from './features/activity/usePhotoActivity';
 import { StatusBar } from 'expo-status-bar';
 import { Onboarding } from './features/onboarding/Onboarding';
-import { useCallback, useState } from 'react';
-import {
-  NavigationContainer,
-  DarkTheme,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { useState } from 'react';
+import { Home } from './features/home/Home';
+import { TestDataNotice } from './features/home/TestDataNotice';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import {
   createBottomTabNavigator,
   type BottomTabScreenProps,
 } from '@react-navigation/bottom-tabs';
-import {
-  ArrowRight,
-  Gift,
-  House,
-  Leaf,
-  Route,
-  ChevronRight,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
 import {
   ScrollView,
   StyleSheet,
@@ -40,14 +28,11 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '../global.css';
 import { AccountProvider, useAccount } from './features/account/provider';
 import { AccountPanel } from './features/account/AccountPanel';
-import { PointsProvider, useHistory } from './features/points/provider';
-import { Balance } from './features/points/Balance';
-import { Action, Text } from './features/points/controls';
+import { PointsProvider } from './features/points/provider';
+import { Text } from './features/points/controls';
 import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen';
 
 import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
-import { useContributions } from './features/impact/useContributions';
-import { contributionText } from './features/impact/presentation';
 import { ImpactScreen as OfficialImpact } from './features/impact/ImpactScreen';
 import { useProfileContext } from './features/account/useResource';
 
@@ -67,102 +52,21 @@ function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   );
 }
 
-function Home({
-  onTravel,
-  onRewards,
-  onImpact,
-}: {
-  onTravel: () => void;
-  onRewards: () => void;
-  onImpact: () => void;
-}) {
-  const { controller: accountController } = useAccount();
-  const photo = usePhotoActivity(accountController);
-  const impact = useContributions();
-  const { controller } = useHistory();
-  useFocusEffect(
-    useCallback(() => {
-      void controller.refresh();
-    }, [controller]),
-  );
-  if (photo.owner) {
-    return (
-      <PhotoActivitySession
-        owner={photo.owner}
-        session={accountController}
-        onClose={photo.close}
-        check={photo.check}
-      />
-    );
-  }
-  return (
-    <>
-      <View style={styles.balancePanel}>
-        <Text style={styles.balanceLabel}>Points balance</Text>
-        <Balance prominent />
-        <Action quiet label="History" icon={ChevronRight} onPress={onRewards} />
-      </View>
-      <View style={styles.homeContent}>
-        <Action
-          label="Photo activity"
-          disabled={!photo.canOpen}
-          onPress={photo.open}
-        />
-        {photo.cleanupError ? <Text>{photo.cleanupError}</Text> : null}
-        <View style={styles.travelEntry}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            Your next journey
-          </Text>
-          <Text style={styles.muted}>Compare time and emissions.</Text>
-          <Action
-            accent
-            label="Plan a journey"
-            icon={ArrowRight}
-            onPress={onTravel}
-          />
-        </View>
-        <View style={styles.impactGroup}>
-          <View style={styles.impactItem}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              Your impact
-            </Text>
-            <Text style={styles.muted}>
-              {contributionText(impact.state, 'personal')}
-            </Text>
-          </View>
-          <View style={styles.impactItem}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              Community impact
-            </Text>
-            <Text style={styles.muted}>
-              {contributionText(impact.state, 'community')}
-            </Text>
-          </View>
-        </View>
-        <Action
-          quiet
-          label="View impact"
-          icon={ChevronRight}
-          onPress={onImpact}
-        />
-      </View>
-    </>
-  );
-}
-
 function Screen({
   children,
   greeting = false,
+  showTestDataNotice = true,
 }: {
   children: React.ReactNode;
   greeting?: boolean;
+  showTestDataNotice?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const { state } = useAccount();
   const profile =
     state.kind === 'signedIn'
-      ? state.account.profiles.find((p) => p.kind === state.selected)
+      ? state.account.profiles.find((p) => p.kind === 'real')
       : undefined;
   return (
     <View style={styles.screen}>
@@ -191,6 +95,7 @@ function Screen({
           </View>
           <AccountPanel compact />
         </View>
+        {showTestDataNotice && <TestDataNotice />}
         {children}
       </ScrollView>
     </View>
@@ -199,10 +104,13 @@ function Screen({
 
 function HomeScreen({ navigation }: BottomTabScreenProps<Tabs, 'Home'>) {
   return (
-    <Screen greeting>
+    <Screen greeting showTestDataNotice={false}>
       <Home
         onTravel={() => navigation.navigate('Travel')}
-        onRewards={() => navigation.navigate('Rewards', { section: 'History' })}
+        onRewards={() =>
+          navigation.navigate('Rewards', { section: 'Redemption' })
+        }
+        onHistory={() => navigation.navigate('Rewards', { section: 'History' })}
         onImpact={() => navigation.navigate('Impact')}
       />
     </Screen>
@@ -402,35 +310,7 @@ const styles = StyleSheet.create({
   },
   brandCopy: { flex: 1 },
   brandName: { fontSize: 22, lineHeight: 28, fontFamily: 'Geist_600SemiBold' },
-  balancePanel: {
-    backgroundColor: '#004A4D',
-    marginHorizontal: 20,
-    padding: 20,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#344C40',
-    borderRadius: 12,
-  },
-  balanceLabel: { color: '#ADBDB3', fontSize: 17 },
-  homeContent: { marginHorizontal: 20, paddingVertical: 20, gap: 20 },
-  impactGroup: {
-    flexDirection: 'column',
-    gap: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#3D3D3D',
-    paddingTop: 20,
-  },
-  impactItem: { flex: 1, gap: 8 },
   caption: { color: '#A9A9A3', fontSize: 14, lineHeight: 20 },
-  travelEntry: {
-    gap: 16,
-  },
   section: { marginHorizontal: 20, paddingVertical: 26 },
-  sectionTitle: {
-    color: '#F5F5F3',
-    fontSize: 22,
-    lineHeight: 28,
-    fontFamily: 'Geist_600SemiBold',
-  },
   muted: { color: '#A9A9A3', fontSize: 17, lineHeight: 25 },
 });
