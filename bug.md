@@ -1028,3 +1028,11 @@ AccountPanel/session code and all policy/configuration sources remain unchanged.
 The complete helper request is still held for policy proof and delivery review.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+SIGNUP-GUIDANCE-001 delivery update: frozen 03fb8a4 passed full/security gates,
+763 tests total, and both independent reviews cleared the exact source. The
+configured audit threshold passed with one moderate advisory. Root authorized
+push and one non-draft PR; merge/deploy remain prohibited. Password helper and
+native/live-auth proof remain outstanding.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

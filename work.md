@@ -2342,3 +2342,23 @@ freshness claim was added. This completes only the independent correction slice;
 root owns independent review and subsequent gate/publication allocation.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Signup correction: frozen review and delivery gates
+
+The independent correction at 03fb8a4762d0de427dbdccb75061de81a9d36430 passed
+root-allocated serial pnpm check and security:check, both exit 0. Full check:
+304 Jest, 49 DOM and 410 tooling/server cases, 763 total passed. Source secret
+scan found no leaks; SAST found zero issues across 339 targets. Audit passed the
+configured high threshold with one moderate advisory. Scanner safe/unsafe
+self-tests passed. No database service/integration, DAST, native or live-auth
+verification ran. Root relayed two independent exact-range reviews, both clear
+with zero findings; reviewers read focused evidence without rerunning it.
+
+Delivery authorized after these gates. Fetched origin/main remains 03a8363, so
+no rebase is needed. This proof-record update changes no implementation or tests.
+The existing branch has no PR. The repository has no size labels, and the
+current author is also its owner, so size labelling and human review assignment
+remain unassigned. No new label or self-review request. Password helper and
+public policy delivery remain held, and no complete signup-rule claim is made.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
