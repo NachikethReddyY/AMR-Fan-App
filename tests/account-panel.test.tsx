@@ -6,7 +6,10 @@ import { createRoot } from 'react-dom/client';
 import { expect, jest, test } from '@jest/globals';
 import { AccountEditError } from '../src/features/account/supabase';
 import { AccountPanel } from '../src/features/account/AccountPanel';
-import { createSessionController } from '../src/features/account/session';
+import {
+  createSessionController,
+  type StoredSession,
+} from '../src/features/account/session';
 import type { AccountApi, Session } from '../src/features/account/api';
 
 const mockSession: Session = {
@@ -34,10 +37,15 @@ const mockApi: AccountApi = {
     nextCursor: null,
   }),
 };
+let mockStored: StoredSession | null = null;
 const mockController = createSessionController(mockApi, {
-  read: async () => null,
-  write: async () => {},
-  clear: async () => {},
+  read: async () => mockStored,
+  write: async (value) => {
+    mockStored = value;
+  },
+  clear: async () => {
+    mockStored = null;
+  },
 });
 const mockAuthenticate = jest.fn<() => Promise<Session>>();
 jest.mock('../src/features/account/provider', () => ({
@@ -268,6 +276,11 @@ test('account email edit reports pending verification and preserves real identit
       input.value = 'new@example.test';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await act(async () => mockController.resume());
+    expect(
+      element.querySelector<HTMLInputElement>('input[aria-label="New email"]')
+        ?.value,
+    ).toBe('new@example.test');
     await click('Back to account');
     await click('Edit email');
     expect(
@@ -294,7 +307,7 @@ test('account email edit reports pending verification and preserves real identit
   }
 });
 
-test('password reauthentication is explicit, keeps provider nonce, and clears secrets on close', async () => {
+test('foreground resume preserves verification step but clears secrets; logout and account switch discard drafts', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   await mockController.signIn(async () => mockSession);
   const details = { email: 'fan@example.test', pendingEmail: null };
@@ -343,6 +356,57 @@ test('password reauthentication is explicit, keeps provider nonce, and clears se
     expect(code).not.toHaveBeenCalled();
     await click('Send verification code');
     expect(code).toHaveBeenCalledTimes(1);
+    await fill('Current password', 'discard-background');
+    await fill('New password', 'discard-background');
+    await fill('Verification code', '111111');
+    await act(async () => mockController.resume());
+    for (const label of [
+      'Current password',
+      'New password',
+      'Verification code',
+    ])
+      expect(
+        element.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+          ?.value,
+      ).toBe('');
+    await fill('Current password', 'discard-background');
+    await fill('New password', 'discard-background');
+    await fill('Verification code', '111111');
+    let resumeDone: () => void = () => {};
+    const resumed = new Promise<void>((resolve) => {
+      resumeDone = resolve;
+    });
+    const resume = jest
+      .spyOn(mockApi, 'resume')
+      .mockImplementationOnce(async () => {
+        await resumed;
+        return mockSession.account;
+      });
+    let foreground: Promise<void> = Promise.resolve();
+    await act(async () => {
+      foreground = mockController.resume();
+    });
+    expect(
+      element.querySelector('input[aria-label="New password"]'),
+    ).toBeNull();
+    await act(async () => {
+      resumeDone();
+      await foreground;
+    });
+    resume.mockRestore();
+    expect(
+      element.querySelector('input[aria-label="Verification code"]'),
+    ).not.toBeNull();
+    for (const label of [
+      'Current password',
+      'New password',
+      'Verification code',
+    ])
+      expect(
+        element.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+          ?.value,
+      ).toBe('');
+    expect(code).toHaveBeenCalledTimes(1);
     await fill('Current password', 'old-password');
     await fill('New password', 'new-password');
     await fill('Verification code', '123456');
@@ -364,6 +428,42 @@ test('password reauthentication is explicit, keeps provider nonce, and clears se
         'input[aria-label="New password"]',
       )?.value,
     ).toBe('');
+    update.mockRejectedValueOnce(
+      new AccountEditError(
+        'reauthenticationRequired',
+        'Send a code to continue.',
+      ),
+    );
+    await fill('Current password', 'old-password');
+    await fill('New password', 'new-password');
+    await click('Save password');
+    expect(
+      element.querySelector('input[aria-label="Verification code"]'),
+    ).not.toBeNull();
+    await act(async () => mockController.logout());
+    await act(async () => mockController.signIn(async () => mockSession));
+    // Even returning to the identical account/token cannot resurrect a logged-out draft.
+    expect(
+      element.querySelector('input[aria-label="Verification code"]'),
+    ).toBeNull();
+    expect(
+      element.querySelector('input[aria-label="New password"]'),
+    ).toBeNull();
+    await click('Edit email');
+    await fill('New email', 'private-draft@example.test');
+    await act(async () =>
+      mockController.signIn(async () => ({
+        ...mockSession,
+        token: 'other-session',
+        account: { ...mockSession.account, id: 'other-fan' },
+      })),
+    );
+    expect(element.querySelector('input[aria-label="New email"]')).toBeNull();
+    await click('Edit email');
+    expect(
+      element.querySelector<HTMLInputElement>('input[aria-label="New email"]')
+        ?.value,
+    ).toBe('fan@example.test');
   } finally {
     await act(async () => root.unmount());
     element.remove();

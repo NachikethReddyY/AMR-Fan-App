@@ -82,15 +82,29 @@ function Action({
     </Pressable>
   );
 }
-function CredentialsEditor() {
+type CredentialDraft = {
+  editor: 'email' | 'password' | null;
+  email: string | null;
+  needsCode: boolean;
+};
+const emptyCredentialDraft: CredentialDraft = {
+  editor: null,
+  email: null,
+  needsCode: false,
+};
+function CredentialsEditor({
+  draft,
+  onDraftChange,
+}: {
+  draft: CredentialDraft;
+  onDraftChange: (draft: CredentialDraft) => void;
+}) {
   const { controller } = useAccount();
   const [details, setDetails] = useState<AccountDetails | null>(null);
-  const [editor, setEditor] = useState<'email' | 'password' | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
+  const { editor, email, needsCode } = draft;
   const [password, setPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [nonce, setNonce] = useState('');
-  const [needsCode, setNeedsCode] = useState(false);
   const [busy, setBusy] = useState(true);
   const [message, setMessage] = useState('');
   const attempt = useRef(0);
@@ -166,8 +180,7 @@ function CredentialsEditor() {
       const next = await controller.updateAccount(change);
       if (attempt.current !== current) return;
       setDetails(next);
-      setEditor(null);
-      setNeedsCode(false);
+      onDraftChange({ ...draft, editor: null, needsCode: false });
       setMessage(
         change.kind === 'password'
           ? 'Password updated.'
@@ -181,7 +194,7 @@ function CredentialsEditor() {
         error instanceof AccountEditError &&
         error.kind === 'reauthenticationRequired'
       )
-        setNeedsCode(true);
+        onDraftChange({ ...draft, needsCode: true });
       setMessage(
         error instanceof Error
           ? error.message
@@ -228,7 +241,7 @@ function CredentialsEditor() {
               <TextInput
                 accessibilityLabel="New email"
                 value={email ?? details.email}
-                onChangeText={setEmail}
+                onChangeText={(email) => onDraftChange({ ...draft, email })}
                 editable={!busy}
                 keyboardType="email-address"
                 autoComplete="email"
@@ -314,7 +327,7 @@ function CredentialsEditor() {
                 label="Edit email"
                 disabled={busy}
                 onPress={() => {
-                  setEditor('email');
+                  onDraftChange({ ...draft, editor: 'email' });
                   setMessage('');
                 }}
               />
@@ -323,7 +336,7 @@ function CredentialsEditor() {
                 label="Change password"
                 disabled={busy}
                 onPress={() => {
-                  setEditor('password');
+                  onDraftChange({ ...draft, editor: 'password' });
                   setMessage('');
                 }}
               />
@@ -343,7 +356,7 @@ function CredentialsEditor() {
               label="Back to account"
               disabled={busy}
               onPress={() => {
-                setEditor(null);
+                onDraftChange({ ...draft, editor: null });
                 setPassword('');
                 setCurrentPassword('');
                 setNonce('');
@@ -388,6 +401,15 @@ export function AccountPanel({
   }, []);
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [credentialDraft, setCredentialDraft] = useState<{
+    owner: string;
+    draft: CredentialDraft;
+  } | null>(null);
+  useEffect(
+    () =>
+      controller.subscribeIdentityInvalidation(() => setCredentialDraft(null)),
+    [controller],
+  );
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const authHeading = useRef<NativeText>(null);
   const focusAuthHeading = useRef(false);
@@ -432,6 +454,7 @@ export function AccountPanel({
     [controller],
   );
   function close() {
+    setCredentialDraft(null);
     authAttempt.current++;
     controller.cancelSignIn();
     setPassword('');
@@ -718,6 +741,18 @@ export function AccountPanel({
                 {open && (
                   <CredentialsEditor
                     key={`${state.account.id}:${state.token}`}
+                    draft={
+                      credentialDraft?.owner ===
+                      `${state.account.id}:${state.token}`
+                        ? credentialDraft.draft
+                        : emptyCredentialDraft
+                    }
+                    onDraftChange={(draft) =>
+                      setCredentialDraft({
+                        owner: `${state.account.id}:${state.token}`,
+                        draft,
+                      })
+                    }
                   />
                 )}
                 {state.account.role === 'admin' && (

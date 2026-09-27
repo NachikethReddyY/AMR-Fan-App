@@ -2204,3 +2204,30 @@ gates remain pending; no full gate, provider request or device interaction ran.
 Selected Home A integration waits for the fixture module to merge through main.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+### Frozen auth review corrections
+
+Reproduced and corrected all three independent findings from 73e35f4 in a separate
+slice: nonce-step loss on foreground resume, stale dispatch after configuration
+await, and ambiguous PUT body failure. Preserved the frozen commit for review.
+Hoisted only non-secret editor navigation/email draft, bound to account/session;
+password and nonce still clear on editor unmount. Tests drive the real controller
+resume used by the AppState active handler, including the intermediate loading
+state, and prove explicit code requests, blank secrets, retained email draft,
+logout/same-account re-entry and account-switch clearing. This is controlled DOM
+proof, not an actual native email-app round trip.
+
+Cold-config tests drive the real adapter/controller with synthetic transport for
+GET user, PUT user and GET reauthenticate. Logout blocks each before dispatch.
+Response-body rejection, malformed JSON, malformed account and oversized body
+all produce bounded PUT uncertainty with exactly one request. Existing subject,
+provider error, session race and storage protections remain covered. No live
+provider call, email or credential mutation occurred.
+
+Focused proof: 76 cases across Supabase/session/email-flow, 12 Account/onboarding
+DOM cases, typecheck and scoped ESLint pass. Full/security and native gates remain
+pending with root; the fixture's earlier baseline timer failure remains recorded
+separately from its subsequent clean serial pass. Main fixture consumption waits
+until this auth fix is committed and frozen for rereview.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

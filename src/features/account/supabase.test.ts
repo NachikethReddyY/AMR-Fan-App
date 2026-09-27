@@ -1,6 +1,8 @@
 /** @jest-environment node */
 import { expect, jest, test } from '@jest/globals';
 import { createSupabaseAuth, type ProviderSession } from './supabase';
+import { createSessionController, type StoredSession } from './session';
+import type { Account, AccountApi } from './api';
 const origin = 'https://folakoxsilrfemctvlxj.supabase.co';
 const config = async () => ({
   auth: {
@@ -342,3 +344,124 @@ test('email update cannot report success from an unrelated or unchanged response
     }),
   ).rejects.toThrow('Could not confirm');
 });
+
+test.each(['read', 'update', 'code'] as const)(
+  'logout while cold configuration loads prevents %s transport dispatch',
+  async (operation) => {
+    let resolveConfig: (value: unknown) => void = () => {};
+    let configStarted: () => void = () => {};
+    const started = new Promise<void>((resolve) => {
+      configStarted = resolve;
+    });
+    const request = jest.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({ id: signed.user.id, email: 'new@example.test' }),
+        ),
+    );
+    const auth = createSupabaseAuth({
+      request,
+      config: () => {
+        configStarted();
+        return new Promise((resolve) => {
+          resolveConfig = resolve;
+        });
+      },
+    });
+    const account = { id: 'fan', role: 'fan', profiles: [] } satisfies Account;
+    let stored: StoredSession | null = {
+      kind: 'active',
+      token: 'app-session',
+      selected: 'real',
+      provider: {
+        accessToken: 'synthetic-access',
+        refreshToken: 'synthetic-refresh',
+        expiresAt: Date.now() + 3600000,
+        subject: signed.user.id,
+      },
+    };
+    const api: AccountApi = {
+      resume: async () => account,
+      logout: async () => {},
+      signIn: async () => {
+        throw new Error('unused');
+      },
+      syntheticSignIn: async () => {
+        throw new Error('unused');
+      },
+      rename: async () => {
+        throw new Error('unused');
+      },
+      history: async () => {
+        throw new Error('unused');
+      },
+    };
+    const controller = createSessionController(
+      api,
+      {
+        read: async () => stored,
+        write: async (next) => {
+          stored = next;
+        },
+        clear: async () => {
+          stored = null;
+        },
+      },
+      { ...auth, revoke: async () => {} },
+    );
+    await controller.resume();
+    const edit =
+      operation === 'read'
+        ? controller.readAccountDetails()
+        : operation === 'code'
+          ? controller.requestAccountCode()
+          : controller.updateAccount({
+              kind: 'email',
+              email: 'new@example.test',
+            });
+    const rejection = expect(edit).rejects.toThrow('Account changed');
+    await started;
+    const logout = controller.logout();
+    resolveConfig(await config());
+    await rejection;
+    await logout;
+    expect(request).not.toHaveBeenCalled();
+    expect(controller.getState().kind).toBe('signedOut');
+  },
+);
+
+test.each([
+  'body rejection',
+  'invalid JSON',
+  'invalid account',
+  'oversized body',
+])(
+  'PUT uncertainty after headers is bounded for %s and never retried',
+  async (failure) => {
+    const response = new Response(
+      failure === 'invalid JSON'
+        ? '{'
+        : failure === 'oversized body'
+          ? 'x'.repeat(65537)
+          : '{}',
+    );
+    if (failure === 'body rejection')
+      jest
+        .spyOn(response, 'text')
+        .mockRejectedValue(new Error('PRIVATE_BODY_DETAIL'));
+    const request = jest.fn<typeof fetch>(async () => response);
+    const auth = createSupabaseAuth({ config, request });
+    await expect(
+      auth.account.update(
+        {
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          expiresAt: Date.now() + 3600000,
+          subject: signed.user.id,
+        },
+        { kind: 'email', email: 'new@example.test' },
+      ),
+    ).rejects.toThrow('Could not confirm the update');
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);

@@ -947,3 +947,20 @@ No provider mutation or email is authorized. Root owns the fixture baseline-red
 record and remaining full/security/native gate allocation.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: reproduced auth review corrections
+
+Three bounded findings reproduced with synthetic fixtures against frozen auth
+73e35f4: foreground resume removed the verification step; logout during cold
+configuration still allowed old-session dispatch; PUT body failure exposed a raw
+transport error and lacked an uncertain-outcome message. Seven adapter cases and
+one Account DOM case failed before the fixes.
+
+The editor now retains only its same-account/session email draft and step across
+resume. Password/code fields remain local to the unmounted editor. Dismissal,
+identity invalidation, logout and switching discard drafts. The controller's
+identity guard now reaches the adapter immediately before dispatch after config
+I/O. Unreadable/invalid PUT bodies report an uncertain outcome without retry.
+Native foreground/email-app proof is still required before auth acceptance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

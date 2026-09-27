@@ -14,12 +14,19 @@ export type ProviderLifecycle = {
   refresh: (session: ProviderSession) => Promise<ProviderSession>;
   revoke: (session: ProviderSession) => Promise<void>;
   account?: {
-    read: (session: ProviderSession) => Promise<AccountDetails>;
+    read: (
+      session: ProviderSession,
+      beforeSend?: () => void,
+    ) => Promise<AccountDetails>;
     update: (
       session: ProviderSession,
       change: AccountChange,
+      beforeSend?: () => void,
     ) => Promise<AccountDetails>;
-    reauthenticate: (session: ProviderSession) => Promise<void>;
+    reauthenticate: (
+      session: ProviderSession,
+      beforeSend?: () => void,
+    ) => Promise<void>;
   };
 };
 export type StoredSession =
@@ -290,6 +297,7 @@ export function createSessionController(
     operation: (
       credentials: ProviderSession,
       account: NonNullable<ProviderLifecycle['account']>,
+      beforeSend: () => void,
     ) => Promise<T>,
   ) {
     const current = state;
@@ -337,21 +345,23 @@ export function createSessionController(
         credentials = next;
         assertCurrent();
       }
-      const result = await operation(credentials, account);
+      const result = await operation(credentials, account, assertCurrent);
       assertCurrent();
       return result;
     });
   }
   return {
     readAccountDetails: () =>
-      withProviderAccount((credentials, account) => account.read(credentials)),
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.read(credentials, beforeSend),
+      ),
     updateAccount: (change: AccountChange) =>
-      withProviderAccount((credentials, account) =>
-        account.update(credentials, change),
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.update(credentials, change, beforeSend),
       ),
     requestAccountCode: () =>
-      withProviderAccount((credentials, account) =>
-        account.reauthenticate(credentials),
+      withProviderAccount((credentials, account, beforeSend) =>
+        account.reauthenticate(credentials, beforeSend),
       ),
     getState: () => state,
     // Explicit loss of identity must close private drafts before loading hides its cause.
