@@ -101,6 +101,20 @@ try {
     'scripts/deploy/supabase-database.test.mjs',
     'scripts/deploy/supabase-participation.test.mjs',
     'scripts/deploy/supabase-api.test.mjs',
+    'scripts/deploy/supabase-schema-only.test.mjs',
+  ]);
+  docker([
+    'exec',
+    '-e',
+    'NODE_ENV=test',
+    '-e',
+    'AMR_OPS123_DISPOSABLE=true',
+    '-e',
+    'AMR_OPS123_SCHEMA_ONLY=true',
+    container,
+    'node',
+    '--test',
+    'scripts/deploy/supabase-api.test.mjs',
   ]);
 } finally {
   if (container) docker(['rm', '-f', container]);

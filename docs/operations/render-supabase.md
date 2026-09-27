@@ -6,9 +6,76 @@ No cloud mutation has been performed by this candidate.
 
 ## Guarded database bootstrap
 
-### Photo and AI upgrade targets
+### Google budget with unverified AI accounting
 
-The runner supports the explicit 0001–0011 chain from merged main
+The explicit `targetMigration: "0012_google_route_budget.sql"` adds the reviewed
+Google schema from merged main `b78be4fee9e5be4ede5b98a20dde8402fcb728f7`.
+Its SHA256 is `00aeddb091fe0c43ff753ef6d89e937d041a07cef4849c06240f54aa625dff45`.
+Omitting the target still selects 0011. Existing ordinary initialization and
+explicit target 0010 behavior remain unchanged.
+
+When historical AI liability is unknown, use the protected configuration fields:
+
+```json
+{
+  "targetMigration": "0012_google_route_budget.sql",
+  "aiBudgetMode": "schema-install-only"
+}
+```
+
+These fields supplement the existing private connection/password configuration.
+`aiBudgetMode` accepts only `schema-install-only` and is mutually exclusive with
+`aiBudgetInitialization`. Do not supply a zero-spend assertion. This mode requires
+exact retained 0001–0010, or an already disabled 0011/0012 installation. It rejects
+fresh setup, retained eight/nine, and target 0010 before mutation. Target 0011 is
+also available for installing or replaying only the disabled AI schema.
+
+Inside the existing advisory-locked transaction, the runner validates retained
+history, checksums, ownership and ACLs. It executes unchanged 0011 only when
+pending, immediately suspends its newly seeded fixed-scope row, and grants no
+runtime rights on any of the three AI tables. Table and column access, PUBLIC or
+other non-owner grants, grant options, and effective runtime authority are refused.
+Pending 0012 and its ledger entry commit with the suspension, or the entire
+pending chain rolls back. No session observes a committed active seed.
+
+The unchanged SQL's numeric zero is an uninitialized placeholder. It does not
+represent verified historical spend, zero outstanding liability or available
+funds. Schema-only output reports
+`aiBudget: "schema-installed-accounting-unverified-spending-disabled"`.
+A separate reviewed liability reconciliation and activation procedure is required
+before AI can become available; this runner implements neither.
+
+Schema-only replay verifies that AI is suspended and inaccessible. It preserves
+all exposure, calls, receipts and history, including nonzero or over-cap exposure.
+It refuses active, initialized or partially granted AI installations instead of
+revoking grants, suspending retained rows or resetting values. Ordinary replay,
+including a supplied verified-zero assertion, cannot promote a schema-only
+installation because its required AI privileges are absent.
+
+Google runtime receives only SELECT on `app.google_route_budget` and
+UPDATE(`used_attempts`). The runner requires the sole `singleton=true` row with
+an integer counter in 0–200 and never resets it. Other runtime table privileges,
+column rights, grant options, PUBLIC and client-role access are refused.
+[Google's application policy](routes.md) commits a full selected-mode reservation
+before dispatch, never refunds and never resets the lifetime allowance. Database
+UPDATE permission alone does not enforce monotonic increments. This is an app
+allowance, not an account-wide or leaked-key spending guarantee.
+
+Keep `AMR_GOOGLE_ROUTES_KEY` absent until the schema, grants and all current API
+instances are ready under root's separate activation authority. Keep
+`AI_COST_DATABASE_URL` absent and AI disabled while liability remains unknown.
+No new environment budget flags are introduced. Implementation and fixture proof
+do not authorize production migration, provider requests or key activation.
+
+The runner candidate was executed against isolated PG17/Node24 on main
+`3beaf76f0d92d4651b0e2a85ccdd963eabafe415`: 83 deployment tests and one additional
+schema-only HTTP/award case passed, with no failures or skips. This proves the
+fixture behavior above, including actual AI store denial and Google exhaustion;
+it does not establish historical accounting or authorize deployment.
+
+### Photo and ordinary AI upgrade targets
+
+The ordinary photo/AI path supports the explicit 0001–0011 chain from merged main
 `e2f95534814b7e6289ba24f01aa20a919ed1514a`. Retained histories must match an exact
 ordered prefix of eight, nine, ten or eleven migrations, including every checksum.
 The existing advisory transaction lock covers history inspection, validation,
@@ -39,7 +106,7 @@ The migration seeds the sole fixed-$10 budget row. Committed exposure can exceed
 $10 while suspended after a late bound violation; the tool must preserve that
 exposure and the immutable admission cap, not clamp or reset accounting.
 
-Before first applying 0011, the protected config must explicitly contain
+On the ordinary path, before first applying 0011 the protected config must explicitly contain
 `"aiBudgetInitialization": "verified-no-prior-spend-or-inflight"`. This is an
 operator assertion, not automated proof. Supply it only after verifying the
 shared scope has no prior provider spend or in-flight calls. Without it the
@@ -49,7 +116,8 @@ or zero-reset override. Complete eleven-migration replay needs no initialization
 assertion and never resets existing accounting. No provider is enabled by migration.
 
 The optional protected-config field `targetMigration` accepts exactly
-`"0010_photo_activity.sql"` or `"0011_ai_cost_store.sql"`. Omission still selects
+`"0010_photo_activity.sql"`, `"0011_ai_cost_store.sql"` or
+`"0012_google_route_budget.sql"`. Omission still selects
 0011. For explicit 0010, fresh setup or retained eight/nine histories apply only
 0001–0010; an exact ten-entry replay returns unchanged. SQL loading, grants and
 validation stop at that target. No AI table, grant or budget initialization occurs,
@@ -66,8 +134,8 @@ while AI remains inactive. It neither establishes nor imports AI liabilities.
 
 Run `node scripts/deploy/testing/run-isolated.mjs` under the coordinated heavy
 lease. Its pinned PG17/Node24 fixture uses generated credentials, one private
-internal network, no published ports and no host mounts. Forty-seven tests pass
-on this main base: exact retained 8/9→10 and 8/9/10→11 upgrades, lock serialization,
+internal network, no published ports and no host mounts. Historical PR51 evidence recorded forty-seven passing tests
+on its main base: exact retained 8/9→10 and 8/9/10→11 upgrades, lock serialization,
 late-DDL rollback, runtime permissions, preserved roles/passwords/ACLs/data and
 liability replay. The actual API and journey award reader work at 0010 with all
 AI tables absent; photo inference remains unavailable. New participation

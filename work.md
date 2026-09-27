@@ -2000,3 +2000,45 @@ user APK. Owned fixture/Metro resources are removed, iPhone large text/shutdown
 restored and Pixel remains booted/large. Root owns final reconciliation and merge.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: Google budget runner with AI accounting unavailable
+
+Tracking: DEPLOY-GOOGLE-001, unlinked. Added explicit schema-only AI installation
+for retained 10→11/12, disabled 11→12 and exact disabled replay. Unchanged 0011
+is immediately suspended in the locked transaction, with no AI runtime grants.
+Reviewed 0012 receives only SELECT and UPDATE(used_attempts). Replay preserves
+nonzero exposure, calls, receipts, Google attempts, roles and prior history.
+Ordinary initialization/default target 0011 remains unchanged; schema-only mode
+cannot convert initialized AI state or later activate through a zero assertion.
+The numeric seed is an uninitialized placeholder, not verified historical spend.
+Separate liability reconciliation and activation remain outside this change.
+
+Integrated actual main through `3beaf76f0d92d4651b0e2a85ccdd963eabafe415` by rebase;
+TODO was byte-preserved and remains unstaged. No peer source was copied. Both SQL
+checksums and the runner hash match the frozen independently reviewed candidate.
+Two independent reviewers found one fixture defect: the new target 0012 API test
+still replayed target 0010. The correction replays the installed target/mode and
+asserts target 0010/0011 downgrade rejection, including the omitted default.
+Classification: one-off test defect; no runtime or guidance change was needed.
+The original patch and corrective delta remain in ignored local evidence.
+
+| Boundary/check                      | Observed evidence                                                                                                                                                    | Limits                                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Failing-first options/history       | 9 failures/22 passes before schema mode; separate target 0012 test failed before implementation; all 32 now pass                                                     | Lightweight boundary mocks                                            |
+| Transaction and runtime permissions | 83 isolated PG17/Node24 deployment tests plus corrected target 0012 HTTP/award test pass; 0 failures/skips                                                           | Generated local fixture, no production accounting claim               |
+| AI disabled state                   | Real runtime read/write/unsuspend/reserve/claim denied; nonzero exposure, calls and receipts preserved; partial/PUBLIC/MAINTAIN/non-owner grants refused             | Current legacy scope only; future 0013 excluded                       |
+| Google allowance                    | Committed complete-mode reservation observed before controlled dispatch; concurrent reservations stop at 200; no dispatch after exhaustion; replay preserves counter | Controlled transport, not paid-provider billing evidence              |
+| Full check                          | `pnpm check` exit 0: 404 Node and 273 Jest tests pass                                                                                                                | No native/browser observation                                         |
+| Security                            | `pnpm security:check` exit 0; zero source leaks/findings over 335 SAST targets; safe/unsafe controls pass                                                            | Four project rules; existing one moderate dependency advisory remains |
+
+Confidence is high for these executed fixture paths. Evidence is in
+`.evidence/google-budget-migration/`: separate red logs, `pg-first.txt`,
+`full-check.txt`, `security-check.txt`, frozen source patch and review delta.
+The first database run passed after the review correction. All exact owned
+container/network/image resources were removed, their absence verified and the
+lease released. No production migration, provider request, key activation,
+cloud change, CI Actions operation, push or PR occurred. Local commit is authorized;
+external delivery awaits root's gate. Only runner/tests and operating records
+changed; SQL, provider, AI and mobile source remain unchanged.
+
+Verified by gpt-6-astra through Codex (T3 Code).

@@ -281,3 +281,98 @@ test('target 0010 refuses an eleven-entry ledger without mutations', async () =>
   );
   assert.equal(queries.at(-1), 'ROLLBACK');
 });
+
+const schemaOnly = { aiBudgetMode: 'schema-install-only' };
+for (const options of [
+  { aiBudgetMode: true },
+  { aiBudgetMode: null },
+  { aiBudgetMode: 'verified-zero' },
+  {
+    ...schemaOnly,
+    aiBudgetInitialization: 'verified-no-prior-spend-or-inflight',
+  },
+  { ...schemaOnly, aiBudgetInitialization: null },
+  { ...schemaOnly, targetMigration: '0010_photo_activity.sql' },
+]) {
+  test(`rejects invalid or conflicting AI mode before connecting: ${JSON.stringify(options)}`, async () => {
+    await assert.rejects(
+      bootstrapDatabase(
+        {
+          connect() {
+            throw new Error('Connected unexpectedly');
+          },
+        },
+        'x'.repeat(48),
+        options,
+      ),
+      /Invalid AI budget mode|mutually exclusive|requires target 0011 or 0012/,
+    );
+  });
+}
+
+for (const count of [0, 8, 9]) {
+  test(`schema-only installation refuses ${count ? `retained ${count}` : 'fresh setup'} before grants or DDL`, async () => {
+    const queries = [];
+    const client = {
+      async query(sql) {
+        queries.push(sql);
+        if (sql.includes("to_regnamespace('app')"))
+          return {
+            rows: [{ app: count > 0, ledger: count > 0, roles: count ? 2 : 0 }],
+          };
+        if (sql.startsWith('SELECT name,checksum'))
+          return { rows: history.slice(0, count) };
+        if (
+          [
+            'BEGIN',
+            'SELECT pg_advisory_xact_lock(48136291)',
+            'ROLLBACK',
+          ].includes(sql)
+        )
+          return { rows: [] };
+        throw new Error(
+          `Unexpected query before unsupported schema-only history was rejected: ${sql}`,
+        );
+      },
+      release() {},
+    };
+    await assert.rejects(
+      bootstrapDatabase(
+        { connect: async () => client },
+        'x'.repeat(48),
+        schemaOnly,
+      ),
+      /Schema-only AI installation requires retained migration 0010 or a disabled 0011\/0012 installation/,
+    );
+    assert.equal(queries.at(-1), 'ROLLBACK');
+  });
+}
+
+test('explicit target 0012 accepts exact retained history before privileges', async () => {
+  const reached = new Error('Reached privilege validation');
+  const client = {
+    async query(sql) {
+      if (sql.includes("to_regnamespace('app')"))
+        return { rows: [{ app: true, ledger: true, roles: 2 }] };
+      if (sql.startsWith('SELECT name,checksum')) return { rows: history };
+      if (sql.includes('has_database_privilege')) throw reached;
+      if (
+        [
+          'BEGIN',
+          'SELECT pg_advisory_xact_lock(48136291)',
+          'ROLLBACK',
+        ].includes(sql)
+      )
+        return { rows: [] };
+      throw new Error(`Unexpected query: ${sql}`);
+    },
+    release() {},
+  };
+  await assert.rejects(
+    bootstrapDatabase({ connect: async () => client }, 'x'.repeat(48), {
+      ...schemaOnly,
+      targetMigration: '0012_google_route_budget.sql',
+    }),
+    (error) => error === reached,
+  );
+});

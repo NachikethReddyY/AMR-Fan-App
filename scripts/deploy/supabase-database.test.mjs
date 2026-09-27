@@ -197,6 +197,27 @@ test('bootstrap collision rollback, ownership, replay and actual restricted conn
       );
       temporary.release();
     }
+    await t.test(
+      'schema-only mode refuses an initialized AI installation without conversion',
+      async () => {
+        const before = (await runtime.query('SELECT * FROM app.ai_cost_budget'))
+          .rows;
+        await assert.rejects(
+          bootstrapDatabase(deployer, password.trim(), {
+            aiBudgetMode: 'schema-install-only',
+          }),
+          /Disabled AI privilege collision/,
+        );
+        assert.deepEqual(
+          (await runtime.query('SELECT * FROM app.ai_cost_budget')).rows,
+          before,
+        );
+        assert.equal(
+          (await bootstrapDatabase(deployer, password.trim())).state,
+          'unchanged',
+        );
+      },
+    );
     for (const grantee of [RUNTIME, 'PUBLIC']) {
       await t.test(
         `replay rejects effective database CREATE through ${grantee}`,
