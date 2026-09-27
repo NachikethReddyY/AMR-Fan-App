@@ -139,13 +139,25 @@ copy checks, not API health or provider acceptance. Observe the subsequent
 `api_started` event separately. Switching to `onemap` remains a separate authorized
 activation; secret/settings saves may deploy, so root must approve staging order.
 
-Preparation/import failures emit fixed errors without reflecting exception text.
+Preparation/import failures emit exactly one stderr JSON object with event
+`onemap_startup_failed`, a fixed `stage`, and an allowlisted `errno`. Stages are
+`config`, `temp_resolution`, `source_open`, `source_metadata`, `source_read`,
+`source_format`, `source_close`, `private_dir`, `copy_open`, `copy_write`,
+`copy_metadata`, `copy_close`, `staged_event`, `api_import`, and `cleanup`.
+Errno is one of `ENOENT`, `EACCES`, `EPERM`, `ELOOP`, `ENOTDIR`, `EISDIR`, `EROFS`,
+`ENOSPC`, `EMFILE`, `ENFILE`, `EEXIST`, `EIO`, `NONE` for validation rejection, or
+`OTHER` for an unrecognized exception. A secondary cleanup/close failure adds only
+`cleanupFailed: true`; it cannot replace the first failure's stage or errno.
+No exception message, stack, cause, path, token, hash or environment is reflected.
+An `api_import` failure occurs after copy staging; missing staging stdout alone
+cannot identify a preparation failure. These diagnostics do not prove a hosted
+cause until observed on the intended release.
 SIGTERM/SIGINT before startup handoff synchronously clean the copy and terminate
 with 143/130, preventing pending import work from resuming. After handoff, the
 existing API handlers still close its server and database pool; process exit
 removes only the generated token and its exact directory. Cleanup never recursively
 deletes a directory or changes the mounted source. Unexpected extra files or failed
-removal produce a fixed cleanup error. SIGKILL, host loss or an API shutdown that
+removal produces one fixed `cleanup` failure object. SIGKILL, host loss or an API shutdown that
 never exits can leave the private ephemeral copy; guaranteed deletion is not claimed.
 
 Focused lifecycle tests run the actual API start/listener with a synthetic database
