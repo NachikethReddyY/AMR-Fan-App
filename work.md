@@ -47,6 +47,46 @@ keys, account-wide billing, taxes or currency effects. Root owns review/deployme
 
 Implemented by gpt-6-astra through Codex (T3 Code).
 
+## 2026-09-27: labelled illustrative test data
+
+Tracking: TEST-DATA-001, unlinked. Root approved a data-only slice on
+`feat/labelled-test-data`, based on `7754117`. The public
+[getTestDataView()](src/features/test-data/index.ts) export takes no arguments and
+returns a deeply readonly display type with string leaves: label, notice,
+summary, activity, rewards, travelNotice and travel. It uses no account hooks,
+session selection, callbacks, API requests, storage or provider objects. Each
+call creates independent display objects. The UI owner owns the component and
+entry/exit after design selection and consumes this slice through main only.
+
+The fixed illustrative manifest shows 1,250 example points and 30 kg example CO₂
+reduction. Fictional journey entries add 600, 500 and 400 points; a content
+example subtracts 250. These are display arithmetic, not actual journey evidence
+or typical earnings. Reward examples cover content at 250 points, tree programme
+participation at 1,000 and a 10% discount at 500, all explicitly illustrative
+prices rather than policy or live offers. Copy disclaims content unlocking,
+tree allocation/planting and vouchers/official offers. Travel contains bus,
+train, car, electric car, walk and cycle comparisons with example distance,
+duration and CO₂ emissions. It is separate from the fictional activity history.
+
+Saved demo profiles, selected state, purchases, History and shared contributions
+are untouched. This view neither represents nor replaces saved demo data. The
+UI owner retains the responsibility to label an existing selected demo and offer
+explicit Return to real data, while Account always displays the real identity.
+There are no new navigation destinations, live catalogue seeds or UI edits.
+
+Verification: frozen install passed without dependency changes; missing export
+produced the initial failing test. Seven new tests plus 43 existing session and
+catalogue tests pass. Checks cover independent labels, total arithmetic,
+supported reward/travel kinds, rejection as offer/purchase/receipt payloads,
+string-only public data, independent copies, zero network calls and a runtime
+dependency boundary excluding account/storage/provider code. Typecheck and
+focused lint pass. Evidence: `.evidence/labelled-test-data/`. Full/security checks
+await root's slot. No UI/native/browser, database, build, provider, CI or
+deployment proof is claimed. Initial interface review is complete; PR delivery
+remains subject to root gates.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-26: prepare the offline TokenRouter Jev request
 
 Related to [#3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).

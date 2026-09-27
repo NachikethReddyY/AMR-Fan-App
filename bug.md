@@ -23,6 +23,22 @@ the separate production migration/deployment work remain pending.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
+## TEST-DATA-001: labelled read-only examples
+
+Root requested representative points, activity, CO2 estimates, reward kinds and
+travel options for a separate labelled test-data view. Tracking: unlinked.
+Root approved the pure interface and content manifest; the UI owner owns
+the selected entry design, real Account and the explicit exit from a saved demo.
+Do not select a profile, seed a catalogue, mutate balances or fabricate rights.
+Preserve existing real/demo profiles, purchases, History and shared contributions.
+Example prices are illustrative, not policy. The pure adapter and seven new tests
+pass alongside 43 existing session/catalogue regressions. Typecheck and focused
+lint pass. No component is part of this slice; UI integration consumes main only.
+Root narrowed travel examples to six modes without cab and required CO₂ units.
+Full checks/security await root allocation; no hosted CI or publication occurred.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## AI-SUPPORT-046: one authorized technical support email
 
 User authorized one email to the official TokenRouter support address about the
