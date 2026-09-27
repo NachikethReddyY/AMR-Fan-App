@@ -909,3 +909,23 @@ Moved setup/password explanations outside the Account specimen. This task-specif
 copy correction changes no direction, production component or global guidance.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: A selected and pure test-data boundary
+
+User selected A: balance first, grouped photo/journey entry, rounded four-tab dock.
+The illustrative test-data module must arrive through main; its pure no-argument
+getTestDataView export supplies display strings only. The app owner supplies the
+component/navigation. Existing selected demo context remains visibly labelled,
+with an explicit Return to real data action; no automatic profile switch/reset.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: auth contract correction before live proof
+
+Supabase OpenAPI disagrees with its current router/client on reauthentication:
+the actual API is GET, not POST. Added request-method proof and followed the
+router/client. Email update responses must match the requested current or pending
+address before the UI reports an outcome. Live deployed-provider behavior and
+email delivery remain unverified, with no provider settings changed.
+
+Corrected by gpt-6-astra through Codex (T3 Code).

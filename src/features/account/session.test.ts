@@ -810,3 +810,133 @@ test('resume authorization failure invalidates before asynchronous credential cl
   cleanup.resolve();
   await pending;
 });
+
+function accountEditFixture() {
+  const f = fixture();
+  const credentials = {
+    accessToken: 'provider',
+    refreshToken: 'refresh',
+    expiresAt: Date.now() + 3600000,
+    subject: '11111111-1111-4111-8111-111111111111',
+  };
+  const details = { email: 'old@example.test', pendingEmail: null };
+  const provider = {
+    refresh: jest.fn(async () => credentials),
+    revoke: jest.fn(async () => {}),
+    account: {
+      read: jest.fn(async () => details),
+      update: jest.fn(async () => ({
+        email: details.email,
+        pendingEmail: 'new@example.test',
+      })),
+      reauthenticate: jest.fn(async () => {}),
+    },
+  };
+  const controller = createSessionController(f.api, f.storage, provider);
+  const login = () =>
+    controller.signIn(async () => ({
+      token: 'token',
+      expiresAt: '2030-01-01',
+      account,
+      provider: credentials,
+    }));
+  return { ...f, controller, provider, credentials, login };
+}
+
+test('provider edits preserve app identity, profile selection, balances and stored credentials', async () => {
+  const f = accountEditFixture();
+  await f.login();
+  await f.controller.select('demo');
+  const before = f.controller.getState();
+  const stored = await f.storage.read();
+  expect(await f.controller.readAccountDetails()).toEqual({
+    email: 'old@example.test',
+    pendingEmail: null,
+  });
+  expect(
+    await f.controller.updateAccount({
+      kind: 'email',
+      email: 'new@example.test',
+    }),
+  ).toEqual({ email: 'old@example.test', pendingEmail: 'new@example.test' });
+  expect(f.controller.getState()).toEqual(before);
+  expect(await f.storage.read()).toEqual(stored);
+  expect(f.api.rename).not.toHaveBeenCalled();
+  expect(f.api.history).not.toHaveBeenCalled();
+});
+
+test('logout during credential refresh prevents the queued account mutation', async () => {
+  const f = accountEditFixture();
+  f.credentials.expiresAt = 1;
+  await f.login();
+  const refreshed = deferred<typeof f.credentials>();
+  f.provider.refresh.mockImplementation(() => refreshed.promise);
+  const update = f.controller.updateAccount({
+    kind: 'email',
+    email: 'new@example.test',
+  });
+  const rejected = expect(update).rejects.toThrow('Account changed');
+  await Promise.resolve();
+  await Promise.resolve();
+  const logout = f.controller.logout();
+  refreshed.resolve({
+    ...f.credentials,
+    accessToken: 'next',
+    refreshToken: 'next-refresh',
+    expiresAt: Date.now() + 3600000,
+  });
+  await rejected;
+  await logout;
+  expect(f.provider.account.update).not.toHaveBeenCalled();
+  expect(f.controller.getState().kind).toBe('signedOut');
+});
+
+test('Account can rename real profile while preserving a selected demo profile', async () => {
+  const f = accountEditFixture();
+  await f.login();
+  await f.controller.select('demo');
+  await f.controller.rename('Real name', 'real');
+  expect(f.api.rename).toHaveBeenCalledWith('token', 'real-a', 'Real name');
+  expect(f.controller.getState()).toMatchObject({ selected: 'demo' });
+});
+
+test('failed refresh storage blocks an account edit and revokes the rotated credential', async () => {
+  const f = accountEditFixture();
+  f.credentials.expiresAt = 1;
+  await f.login();
+  const write = jest
+    .spyOn(f.storage, 'write')
+    .mockRejectedValue(new Error('Storage unavailable'));
+  await expect(
+    f.controller.updateAccount({ kind: 'email', email: 'new@example.test' }),
+  ).rejects.toThrow('Storage unavailable');
+  expect(f.provider.account.update).not.toHaveBeenCalled();
+  expect(f.provider.revoke).toHaveBeenCalledWith(f.credentials);
+  write.mockRestore();
+});
+
+test('late account response after logout cannot complete for a successor account', async () => {
+  const f = accountEditFixture();
+  await f.login();
+  const result = deferred<{ email: string; pendingEmail: string }>();
+  f.provider.account.update.mockImplementation(() => result.promise);
+  const update = f.controller.updateAccount({
+    kind: 'email',
+    email: 'new@example.test',
+  });
+  const rejected = expect(update).rejects.toThrow('Account changed');
+  await Promise.resolve();
+  await Promise.resolve();
+  const logout = f.controller.logout();
+  result.resolve({
+    email: 'old@example.test',
+    pendingEmail: 'new@example.test',
+  });
+  await rejected;
+  await logout;
+  await f.controller.signIn(async () => identity('successor'));
+  expect(f.controller.getState()).toMatchObject({
+    token: 'successor',
+    account: { id: 'successor' },
+  });
+});

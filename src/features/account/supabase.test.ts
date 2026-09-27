@@ -180,3 +180,165 @@ test('password network failures reveal no provider details', async () => {
     ),
   ).rejects.toThrow('Account connection unavailable');
 });
+
+test('account edits use authenticated user endpoint and preserve pending email separately', async () => {
+  const user = {
+    id: signed.user.id,
+    email: 'old@example.test',
+    new_email: 'new@example.test',
+    role: 'admin',
+  };
+  const { auth, request } = fixture(user);
+  const session: ProviderSession = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: 9999999999999,
+    subject: signed.user.id,
+  };
+  expect(await auth.account.read(session)).toEqual({
+    email: 'old@example.test',
+    pendingEmail: 'new@example.test',
+  });
+  expect(request.mock.calls[0][1]?.method).toBe('GET');
+  expect(
+    await auth.account.update(session, {
+      kind: 'email',
+      email: ' new@example.test ',
+    }),
+  ).toEqual({ email: 'old@example.test', pendingEmail: 'new@example.test' });
+  const [url, init] = request.mock.calls[1];
+  expect(url).toBe(`${origin}/auth/v1/user`);
+  expect(init?.method).toBe('PUT');
+  expect(init?.headers).toMatchObject({ Authorization: 'Bearer access' });
+  expect(JSON.parse(String(init?.body))).toEqual({ email: 'new@example.test' });
+});
+
+test('password writes retain provider current-password and reauthentication requirements', async () => {
+  const { auth, request } = fixture({
+    id: signed.user.id,
+    email: 'fan@example.test',
+  });
+  const session: ProviderSession = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: 9999999999999,
+    subject: signed.user.id,
+  };
+  await auth.account.update(session, {
+    kind: 'password',
+    password: 'new-password',
+    currentPassword: 'old-password',
+    nonce: '123456',
+  });
+  expect(JSON.parse(String(request.mock.calls[0][1]?.body))).toEqual({
+    password: 'new-password',
+    current_password: 'old-password',
+    nonce: '123456',
+  });
+  await auth.account.reauthenticate(session);
+  expect(request.mock.calls[1][0]).toBe(`${origin}/auth/v1/reauthenticate`);
+  expect(request.mock.calls[1][1]?.method).toBe('GET');
+  const rejected = fixture(
+    {
+      error_code: 'reauthentication_needed',
+      message: 'private provider detail',
+    },
+    400,
+  );
+  await expect(
+    rejected.auth.account.update(session, {
+      kind: 'password',
+      password: 'new-password',
+      currentPassword: 'old-password',
+    }),
+  ).rejects.toMatchObject({ kind: 'reauthenticationRequired' });
+});
+
+test('account details reject mismatched subjects and malformed email without leaking provider content', async () => {
+  const session: ProviderSession = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: 9999999999999,
+    subject: signed.user.id,
+  };
+  await expect(
+    fixture({
+      id: '22222222-2222-4222-8222-222222222222',
+      email: 'other@example.test',
+    }).auth.account.read(session),
+  ).rejects.toThrow('Sign in again');
+  await expect(
+    fixture({ id: signed.user.id, email: 'invalid' }).auth.account.read(
+      session,
+    ),
+  ).rejects.toThrow('Invalid account response');
+  const { auth, request } = fixture();
+  await expect(
+    auth.account.update(session, { kind: 'email', email: 'invalid' }),
+  ).rejects.toThrow('valid email');
+  expect(request).not.toHaveBeenCalled();
+});
+
+test('ambiguous account update failure never retries or claims a definite failure', async () => {
+  const request = jest.fn<typeof fetch>(async () => {
+    throw new Error('private transport detail');
+  });
+  const auth = createSupabaseAuth({ config, request });
+  const session: ProviderSession = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: 9999999999999,
+    subject: signed.user.id,
+  };
+  await expect(
+    auth.account.update(session, { kind: 'email', email: 'new@example.test' }),
+  ).rejects.toThrow('Could not confirm the update');
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  ['current_password_mismatch', 'Check your current password'],
+  ['weak_password', 'stronger password'],
+  ['same_password', 'different new password'],
+  ['email_exists', 'email cannot be used'],
+  ['insufficient_aal', 'additional verification'],
+  ['reauthentication_not_valid', 'invalid or expired'],
+])(
+  'account error %s has bounded recovery without provider text',
+  async (error_code, message) => {
+    const session: ProviderSession = {
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      expiresAt: 9999999999999,
+      subject: signed.user.id,
+    };
+    await expect(
+      fixture(
+        { error_code, message: 'private-provider-data' },
+        400,
+      ).auth.account.update(session, {
+        kind: 'password',
+        password: 'new-password',
+        currentPassword: 'old-password',
+      }),
+    ).rejects.toThrow(message);
+  },
+);
+
+test('email update cannot report success from an unrelated or unchanged response', async () => {
+  const session: ProviderSession = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    expiresAt: 9999999999999,
+    subject: signed.user.id,
+  };
+  await expect(
+    fixture({
+      id: signed.user.id,
+      email: 'old@example.test',
+    }).auth.account.update(session, {
+      kind: 'email',
+      email: 'new@example.test',
+    }),
+  ).rejects.toThrow('Could not confirm');
+});

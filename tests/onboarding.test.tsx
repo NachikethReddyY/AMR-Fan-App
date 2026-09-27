@@ -127,6 +127,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   act(() => root.unmount());
+  jest.useRealTimers();
   element.remove();
 });
 test('walkthrough moves back and forward, persists introduction, and permits guest browsing', async () => {
@@ -163,6 +164,7 @@ test('completed onboarding keeps the app mounted during refresh and logout', asy
   expect(mounts).toBe(1);
 });
 test('saving a name reaches full progress before entering app and persists only that account', async () => {
+  jest.useFakeTimers();
   mockRead.mockImplementation(async (key) =>
     key.includes('introduction') ? 'done' : null,
   );
@@ -181,7 +183,7 @@ test('saving a name reaches full progress before entering app and persists only 
   expect(mockWrite).toHaveBeenCalledWith('amr.onboarding.account.a', 'done');
   expect(element.querySelector('[data-progress="5"]')).not.toBeNull();
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    jest.runOnlyPendingTimers();
   });
   expect(element.textContent).toContain('App content');
 });

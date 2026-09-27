@@ -2140,3 +2140,51 @@ real email/password editing remain unfinished. Root has the exact preview paths,
 current-state map and auth seam. Loopback preview server remains for selection.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+### App feedback A selection
+
+Root relayed user selection of A, balance first with the rounded dock. Retained
+corrected local HTML and screenshots as private selection evidence. Stopped the
+owned loopback server and closed owned T3 preview tab. Pure illustrative test-data
+integration waits for the peer module to reach main; no source copying. Pixel is
+left untouched. Auth source and focused tests are in progress independently.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Account credential editor, local controlled verification
+
+Prepared real-profile Account name/email/password presentation. Email reads and
+updates use fixed-origin Supabase user endpoints, parse only account details and
+reject changed subjects. Pending email stays separate from the current email.
+Password changes pass current_password and, when requested, a reauthentication
+nonce. Send verification code is explicit; no automatic email request or PUT retry.
+The credential queue checks account generation across storage, refresh and I/O;
+logout cannot dispatch a waiting edit or publish its response to another account.
+Real-profile name edits preserve a selected demo preference and every balance.
+
+Official current password guide and server implementation support current_password;
+deployed-version support is not proven. Supabase OpenAPI lists POST reauthenticate,
+but its actual router and official client use GET. The adapter follows GET with
+a failing-first request-method regression. Account UI keeps current email visible
+while confirmation is pending, preserves the email draft through editor back/forward,
+clears passwords on submission/close, and gives bounded recovery messages.
+
+Sources read 27 September 2026: Supabase updateUser and password guides,
+auth/internal/api/user.go, auth/internal/api/api.go and auth-js/GoTrueClient.ts.
+No live provider request, email, credential mutation, server change or security
+setting change. Provider and native proof remain pending. The old sample switch
+remains temporarily until the accepted Home test-data entry and explicit exit
+land; real-only identity already renders independently of selected demo.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Controlled auth verification: 71 account adapter/session/storage/email-flow unit
+cases and 11 Account/onboarding DOM cases pass, plus typecheck and scoped ESLint/
+formatting. Includes provider errors, ambiguous PUT outcome without retry,
+subject mismatch, failed refresh storage, logout races, pending email, nonce flow
+and secret clearing. A reported baseline onboarding timer flake is corrected by
+holding fake timers for the transient completion assertion, then advancing them;
+reduced-motion production timing is unchanged. Full/security/native/live-provider
+checks remain unverified under the scheduled resource and test-account gates.
+
+Verified by gpt-6-astra through Codex (T3 Code).
