@@ -192,7 +192,7 @@ export function Onboarding({ children }: { children: React.ReactNode }) {
         contentContainerStyle={styles.content}
       >
         <Text style={styles.step}>
-          {stage === 'intro' ? `${page + 1} of 3` : 'Your account'}
+          {finishing ? 'Setup complete' : `Step ${completed + 1} of 5`}
         </Text>
         {stage === 'intro' ? (
           <>

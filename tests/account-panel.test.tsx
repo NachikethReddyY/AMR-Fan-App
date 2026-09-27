@@ -149,7 +149,7 @@ test('password signup closes the real Account sheet so onboarding can show the n
   }
   try {
     await act(async () => root.render(<AccountPanel onOpenChange={changed} />));
-    await click('Sign in');
+    await click('Log in');
     await click('Create an account');
     await fill('Email', 'fixture@example.test');
     await fill('Password', 'fixture-password');
@@ -168,17 +168,64 @@ test('password signup closes the real Account sheet so onboarding can show the n
           resolveLate = resolve;
         }),
     );
-    await click('Sign in');
+    await click('Log in');
     await fill('Password', 'fixture-password');
-    await click('Create account');
+    await click('Sign in with email');
     await click('Close account');
-    await click('Sign in');
+    await click('Log in');
     await act(async () => {
       resolveLate(mockSession);
     });
     expect(changed).toHaveBeenLastCalledWith(true);
     expect(element.querySelector('section')).not.toBeNull();
     expect(mockController.getState()).toMatchObject({ kind: 'signedOut' });
+  } finally {
+    await act(async () => root.unmount());
+    element.remove();
+  }
+});
+
+test('Log in and Sign up are separate entry actions and each opens the requested form', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await mockController.resume();
+  const element = document.createElement('div');
+  document.body.append(element);
+  const root = createRoot(element);
+  async function click(label: string) {
+    const button = [...element.querySelectorAll('button')].find(
+      (b) => b.getAttribute('aria-label') === label || b.textContent === label,
+    );
+    if (!button) throw new Error(`Missing ${label}`);
+    await act(async () => button.click());
+  }
+  try {
+    await act(async () => root.render(<AccountPanel />));
+    expect(element.textContent).toContain('Log in');
+    expect(element.textContent).toContain('Sign up');
+    await click('Sign up');
+    expect(element.querySelector('section')?.textContent).toContain(
+      'Create account',
+    );
+    const email = element.querySelector<HTMLInputElement>(
+      'input[aria-label="Email"]',
+    );
+    if (!email) throw new Error('Email field absent');
+    await act(async () => {
+      email.value = 'draft@example.test';
+      email.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click('Close account');
+    await click('Log in');
+    expect(
+      element.querySelector<HTMLInputElement>('input[aria-label="Email"]')
+        ?.value,
+    ).toBe('draft@example.test');
+    expect(element.querySelector('section')?.textContent).toContain(
+      'Sign in with email',
+    );
+    expect(element.querySelector('section')?.textContent).not.toContain(
+      'Choose an email',
+    );
   } finally {
     await act(async () => root.unmount());
     element.remove();

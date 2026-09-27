@@ -151,6 +151,7 @@ test('completed onboarding keeps the app mounted during refresh and logout', asy
   mockState = { kind: 'signedIn', account: { id: 'a' }, token: 'one' };
   await render();
   expect(mounts).toBe(1);
+  expect(element.querySelector('[data-progress]')).toBeNull();
   mockState = { kind: 'loading' };
   await render();
   expect(element.textContent).toContain('App content');
@@ -293,4 +294,18 @@ test('immediate password signup persists provider and app sessions then enters n
   expect(element.textContent).toContain('What should we call you?');
   expect(element.textContent).not.toContain('App content');
   expect(element.textContent).not.toContain('Confirm email');
+});
+
+test('numbered setup includes introduction, account and name without suggesting step three is final', async () => {
+  await render();
+  expect(element.textContent).toContain('Step 1 of 5');
+  await click('Next');
+  expect(element.textContent).toContain('Step 2 of 5');
+  await click('Next');
+  expect(element.textContent).toContain('Step 3 of 5');
+  await click('Continue');
+  expect(element.textContent).toContain('Step 4 of 5');
+  mockState = { kind: 'signedIn', account: { id: 'new' }, token: 'one' };
+  await render();
+  expect(element.textContent).toContain('Step 5 of 5');
 });

@@ -2091,3 +2091,52 @@ key access/creation, provider request, cloud mutation or activation occurred.
 Evidence: `.evidence/ai-new-amr-allowance/`.
 
 Implemented locally by gpt-6-astra through Codex (T3 Code).
+
+### App feedback presentation preflight, 27 September 2026
+
+Clean starting branch fix/app-feedback-experience at 7754117. Read selected C
+DESIGN, onboarding, Account, Home/navigation, accepted account behavior, and
+verification/security guidance. The intro labels three screens but its bar
+counts five setup steps. Signup currently requires first opening Sign in.
+Account settings still switches real/demo profiles and refreshes the session.
+Home exposes Photo activity separately from Plan a journey. Its balance renderer
+and refresh retry belong to the points owner and remain untouched.
+
+First slice: failure-first numbered progress, direct Log in/Sign up entry and
+shorter onboarding copy. Material Home/dock changes stay in local alternatives.
+Auth seam proposed to root: Supabase adapter, email flow, native composition,
+session lifecycle and stored-session parsing. No provider/backend changes yet.
+Dependencies are absent; asked root for a local install/check slot. Requested
+better-interface and animate-expo skills were not found in supplied skill roots;
+animation work is held. No browser, device, Metro, build, scanner or CI use.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### App feedback first local slice and selection previews
+
+Implemented consistent Step 1 through Step 5 onboarding labels and separate
+Log in/Sign up entry actions. Both open the intended form; email drafts remain
+through close/reopen and existing password clearing remains intact. Two new
+acceptance tests failed before implementation; all 9 focused DOM tests now pass,
+including completion, retained name draft, cancellation and stale auth completion.
+The 43 onboarding/session/storage regressions pass. Changed source/tests pass
+ESLint, formatting and whitespace checks. Typecheck/full gates and native UI
+acceptance remain pending under root's allocation; no push or product completion.
+
+Prepared two local static Home/test-data/Account alternatives. A keeps balance
+first with the rounded dock; B puts activity first with a compact balance and
+flatter dock. Both retain four tabs, green palette, real unloaded data and a
+labelled test-data entry outside Account. Rendered through the owned T3 preview
+at desktop and 390 px width with no horizontal overflow; captured screenshots
+remain in ignored .evidence/app-feedback. Root's copy correction uses CO₂ and
+moves explanatory Account annotations outside the specimen. Broad app UI is held
+for selection. Supabase update/reauthentication documentation and current source
+were checked; the identity-preserving implementation contract is prepared locally.
+No live auth mutation, email, provider settings, server or data change.
+
+The prior Pixel screenshot shows a white OS gesture handle on dark canvas, not
+a broad white footer. Actual white-bar diagnosis, compact retry, animation and
+real email/password editing remain unfinished. Root has the exact preview paths,
+current-state map and auth seam. Loopback preview server remains for selection.
+
+Verified by gpt-6-astra through Codex (T3 Code).

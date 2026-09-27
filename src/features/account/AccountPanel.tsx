@@ -149,6 +149,14 @@ export function AccountPanel({
     setOpen(false);
     onOpenChange?.(false);
   }
+  function openAccount(mode: 'signIn' | 'signUp' = 'signIn') {
+    setAuthMode(mode);
+    setPassword('');
+    setAuthError('');
+    setOpen(true);
+    onOpenChange?.(true);
+    void history.refresh();
+  }
   async function submitEmail() {
     try {
       validateCredentials(email, password);
@@ -192,11 +200,7 @@ export function AccountPanel({
             accessibilityLabel={
               profile ? `${profile.displayName}, account` : 'Sign in'
             }
-            onPress={() => {
-              setOpen(true);
-              onOpenChange?.(true);
-              void history.refresh();
-            }}
+            onPress={() => openAccount()}
             style={({ pressed }) => [
               styles.accountButton,
               pressed && { opacity: 0.75 },
@@ -204,16 +208,21 @@ export function AccountPanel({
           >
             <UserRound size={22} color="#F5F5F3" accessible={false} />
           </Pressable>
-        ) : (
+        ) : profile ? (
           <Action
             secondary
-            label={profile ? `${profile.displayName}, account` : 'Sign in'}
-            onPress={() => {
-              setOpen(true);
-              onOpenChange?.(true);
-              void history.refresh();
-            }}
+            label={`${profile.displayName}, account`}
+            onPress={() => openAccount()}
           />
+        ) : (
+          <View style={styles.authEntries}>
+            <View style={styles.authEntry}>
+              <Action secondary label="Log in" onPress={() => openAccount()} />
+            </View>
+            <View style={styles.authEntry}>
+              <Action label="Sign up" onPress={() => openAccount('signUp')} />
+            </View>
+          </View>
         )}
       </View>
       <Modal
@@ -536,6 +545,8 @@ export function AccountPanel({
   );
 }
 const styles = StyleSheet.create({
+  authEntries: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  authEntry: { flexGrow: 1, flexBasis: 120 },
   entry: { marginHorizontal: 20, marginBottom: 20 },
   compactEntry: { flexShrink: 0 },
   accountButton: {

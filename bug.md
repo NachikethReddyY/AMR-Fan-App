@@ -860,3 +860,52 @@ preservation and missing-row denial are verified locally; real initialization
 and activation remain held. No production or credential claim.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: onboarding, Account and Home clarity (unlinked)
+
+Accepted 27 September 2026: show numbered progress across the whole onboarding,
+expose Sign up beside Log in, remove the white bottom system area, refine the
+four-tab dock, add subtle onboarding motion, keep setup progress out of returning
+Account visits, clarify points and Photo/Plan a journey entry, reduce refresh
+prominence and shorten copy. Replace the sample-profile Account experience with
+editable real email/password. This supersedes the old sample-profile UI direction;
+all existing demo balances/history and real account records must survive.
+
+Scope: app presentation and related tests only. Home/points/photo/journey/dock
+redesign waits for selection between two local static alternatives. Auth updates
+need a root-approved shared contract before adapter/controller edits. No server,
+points, rewards, journey, activity, API or provider mutation. Native proof waits
+for root's Pixel then iPhone window. Tracker remains unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: clarified acceptance and ownership
+
+Root confirmed a labelled test-data view outside Account; Account always refers
+to real identity. Include that entry in both unselected previews. Preserve saved
+demo balances/activity/history, and never populate real records with dummy data.
+
+Acceptance: count all onboarding steps consistently; expose Log in and Sign up;
+completed Account visits show no setup progress; preserve entered drafts across
+navigation; smaller refresh keeps its callback and a target of at least 44 pt;
+diagnose the white bottom area on Pixel before changing OS/inset behavior. Subtle
+onboarding motion must respect reduced motion. Home entry, points usefulness,
+dock and broad copy changes remain proposals until A/B selection.
+
+Account adapter/state and related tests are now allocated for supported real
+email/password edits. No live mutation, email or provider-setting changes.
+Balance.tsx is allocated only for compact existing retry presentation.
+RewardsScreen, providers, API/server, rewards rules, activity/journey behavior,
+reports and admin remain root/peer-owned and are not claimed finished here.
+Root owns any additional feedback in those areas not supplied to this owner.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: preview terminology correction
+
+Root review found CO₂e in the test-impact specimen despite the accepted CO₂
+product label. Both previews now say 0.8 kg CO₂ with estimated test-data wording.
+Moved setup/password explanations outside the Account specimen. This task-specific
+copy correction changes no direction, production component or global guidance.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
