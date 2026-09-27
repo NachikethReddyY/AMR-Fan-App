@@ -8,7 +8,7 @@ flow consumes the returned snapshot without a second provider query.
 
 ## Entry point and authentication
 
-`createRouteQuery({env})` in `server/routes/query.ts` constructs one query function
+`createRouteQuery({env, googleBudget})` in `server/routes/query.ts` constructs one query function
 at API startup. It takes the actor returned by `authenticateSession` and an
 unknown request body. A null actor fails with 401 before a provider call. The
 actor is trusted server context, never a request field. Unknown fields, including
@@ -40,7 +40,9 @@ belong to #8. This boundary establishes no adherence threshold or award.
 
 ## OneMap configuration and limits
 
-The user selected OneMap instead of enabling billable Google. The environment
+The earlier user selection was OneMap instead of billable Google. On 27 September
+2026 the user authorized Google billing with the lifetime allowance described
+below. This changes no OneMap behavior. The environment
 example selects `AMR_ROUTES_PROVIDER=onemap` with no credentials, so live queries
 remain unavailable. `google` retains the original adapter; `disabled` prevents
 all provider calls. An omitted selector preserves legacy Google configuration,
@@ -172,7 +174,7 @@ separate pending work. No paid service or deployment is enabled here.
 | --- | --- |
 | `AMR_GOOGLE_ROUTES_KEY` | Server-only existing Google credential. Absent means `live_not_configured`. Never use an `EXPO_PUBLIC_` variable. |
 | `AMR_GOOGLE_ROUTES_ENDPOINT` | Defaults to `https://routes.googleapis.com/directions/v2:computeRoutes`. Live configuration accepts exactly that HTTPS endpoint, with no userinfo, query, fragment or redirect. |
-| `AMR_ROUTES_TIMEOUT_MS` | Decimal integer 25 to 5000, default 3000, per mode including response-body reading and geometry validation. |
+| `AMR_ROUTES_TIMEOUT_MS` | Decimal integer 25 to 5000, default 3000, for the complete Google comparison including admission, both request batches, response bodies and geometry validation. |
 | `AMR_ROUTES_SYNTHETIC` | Default false. True requires `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>/directions/v2:computeRoutes` endpoint and no Google key. Sends only a fixed synthetic key and labels results as fixtures. |
 
 Changing the endpoint is an explicit server configuration operation, never
@@ -180,19 +182,106 @@ client input. The loopback exception is test-only and cannot carry a real key.
 The live transport rejects redirects, preventing credential forwarding to a
 second host. Invalid configuration fails startup with a generic message.
 
-For Google, one query requests each selected primary mode once, with at most two requests
-in flight. A second concurrent query fails `busy` without queueing or spending.
-There are no retries or alternative-route requests. The server reserves the
-whole query's call budget before sending: at most 60 mode calls per minute and
-1000 per provider-instance lifetime. The query function separately allows six
-queries per authenticated principal per minute and keeps at most 100 principal
-counters per window. These are single-process local-candidate limits. Restart
-resets them. Before public/multi-process deployment, configure an enforceable
-shared spend limit and provider quota; no paid service is provisioned here.
+For Google, one query requests each selected primary mode once, with at most two
+requests in flight. A second concurrent query in that provider instance fails
+`busy`. There are no automatic retries or alternative-route requests. The
+60-mode-call/minute guard and six-query/principal/minute guard (at most 100
+principal counters) remain process-local and reset on restart. The lifetime
+allowance below is shared and does not reset. No Google route-result cache or
+deduplication exists: repeated searches consume new reservations. Existing
+prepared-journey snapshots are reused without another provider comparison.
+
+### USD 1 lifetime application cutoff
+
+Migration `0012_google_route_budget.sql` creates one independent
+`app.google_route_budget` row with `used_attempts` between 0 and 200. The API
+injects `createGoogleRouteBudget(pool)` only for live Google configuration.
+No additional budget environment variable, periodic reset, refund or top-up
+operation exists. Test-only loopback providers may use a local 200-attempt
+allowance; that path cannot carry a real key and is not production durability.
+
+Each comparison atomically increments the row by the number of selected modes
+only if the total will remain at most 200. PostgreSQL commits with
+`synchronous_commit=on` before any provider dispatch. A four-mode comparison
+needs four remaining attempts; it cannot spend a partial reservation. All
+processes and restarts must use the same database. Concurrent row updates
+serialize at PostgreSQL. A committed reservation is never refunded, even if a
+request fails, times out, the process crashes before sending, the second batch
+misses its deadline, or the commit acknowledgement is lost. Retrying a search
+requires a new reservation; no reservation can authorize a replay.
+
+No injected store means `live_not_configured`. An absent row or exhausted
+allowance returns `budget_exhausted`. Database errors or uncertain commits return
+`provider_error` without dispatch. Admission uses the existing timeout and
+returns `timeout` when it expires. Late database completion cannot dispatch.
+Database lock and statement waits also have one-second limits; a reservation
+that finishes after the caller's deadline may burn unused attempts. Provider
+fetch and normalization share the remaining comparison deadline. No provider
+error body, location, key or database error text enters diagnostics.
+
+The runtime has no decrement, delete or seed path. Its required grants are
+`SELECT` on `app.google_route_budget` and `UPDATE(used_attempts)` only. Withhold
+INSERT, DELETE, TRUNCATE and DDL, and deny PUBLIC/anonymous/client access. This
+trusts application code and the database operator: stolen database credentials,
+operator resets or restoring an old database backup can violate the allowance.
+After data loss/restore, keep the Google key disabled until prior attempts are
+reconciled conservatively. Do not initialize another production database at zero
+or roll back to an older binary with the Google key present.
+
+### Pricing and request contract
+
+Official documentation checked 27 September 2026 lists Compute Routes Essentials
+at USD 5 per 1,000 requests. Two hundred reserved attempts therefore represent
+USD 1 of list-price API usage, about 50 complete four-mode comparisons. The
+allowance deliberately ignores free monthly usage and burns failed requests
+even when Google would not bill them. It is not an account-wide billing cap,
+tax/currency guarantee, billing alert or leaked-key guarantee. Other consumers,
+keys and services are outside this app cutoff. Root owns billing/key activation.
+
+The four modes are DRIVE, TRANSIT, WALK and BICYCLE. DRIVE is explicitly
+TRAFFIC_UNAWARE. There are no intermediate waypoints, waypoint optimization,
+location modifiers, toll computation, TWO_WHEELER, traffic-aware polylines,
+Places requests or separate Geocoding API calls. Routes receives address or
+coordinate waypoints directly. Route/step distance and duration, travel mode,
+transit vehicle, leg endpoints, ordinary encoded route/step polylines and
+HIGH_QUALITY geometry introduce none of the listed Pro/Enterprise triggers.
+The exact mask/body are regression-tested. Recheck price and SKU before changing
+those fields or enabling a changed provider contract; do not assume 200 remains
+safe after a price increase.
+
+Sources: [pricing](https://developers.google.com/maps/billing-and-pricing/pricing),
+[SKU triggers](https://developers.google.com/maps/billing-and-pricing/sku-details),
+[billing](https://developers.google.com/maps/documentation/routes/usage-and-billing),
+[basic polylines](https://developers.google.com/maps/documentation/routes/traffic_on_polylines),
+[transit routes](https://developers.google.com/maps/documentation/routes/transit-route).
+
+### Migration and activation contract
+
+Production is reported at migrations 0001 through 0010. AI migration 0011 is
+merged but undeployed; its prior-liability prerequisite is not cleared. Migration
+0012 is a separate Google allowance, not an extension of the AI budget. Leave
+0011 bytes/checksum, AI store source and the existing deployment runner intact.
+Do not assert zero prior AI spending or set its initialization acknowledgement.
+
+Root's deployment owner must provide an independently reviewed schema-only path
+through the existing runner that atomically keeps AI suspended and without
+spending grants before applying 0012. Historical AI liability remains unknown;
+AI_COST_DATABASE_URL stays absent and AI remains disabled. Schema deployment
+does not authorize AI budget initialization or activation. Until that runner
+path is reviewed, Google production migration and activation remain on hold.
+
+For Google activation, root verifies no prior Google app attempts or pending
+calls before the initial zero seed, applies the exact checksum and narrow grants,
+deploys this admission code to every instance, and confirms the shared row before
+adding the server-only key. Restrict the key to Routes API. A Render regional
+egress CIDR restriction is supplementary and does not uniquely identify AMR;
+the exact service ranges must be observed by the cloud owner. Keep old binaries
+and other consumers from using the key. No cloud setting, key, live DDL or
+provider request was used to implement these controls.
 
 The exact field mask requests route distance/duration, ordered step
-distance/duration/mode/transit vehicle, returned leg endpoints and one route
-polyline. `HIGH_QUALITY` requests usable geometry. A mode response is limited to
+distance/duration/mode/transit vehicle, returned leg endpoints and route/step
+polylines. `HIGH_QUALITY` requests usable geometry. A mode response is limited to
 128 KiB, three routes, one leg per route (no intermediate waypoints), 128 steps
 and 2048 decoded geometry points per route. Excessive or missing required data
 is unavailable, never truncated into apparently complete evidence. Supplied

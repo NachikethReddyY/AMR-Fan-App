@@ -9,6 +9,7 @@ import {
 import { recommendRoute } from '../../src/features/routes/recommendation.ts';
 import type { RouteSnapshot } from '../journeys/contracts.ts';
 import { boundarySource } from './geography.ts';
+import type { GoogleRouteBudget } from './google-budget.ts';
 
 type Actor = Awaited<ReturnType<typeof authenticateSession>>;
 
@@ -19,13 +20,15 @@ export function createRouteQuery({
   factors = singaporeFactors,
   calculationStatus = 'indicative_demo',
   factorRelease,
+  googleBudget,
 }: {
   env?: Record<string, string | undefined>;
+  googleBudget?: GoogleRouteBudget;
   factors?: readonly EmissionFactor[];
   factorRelease?: RouteSnapshot['basis']['factorRelease'];
   calculationStatus?: 'indicative_demo' | 'approved';
 } = {}) {
-  const provider = createRouteProvider(env);
+  const provider = createRouteProvider(env, googleBudget);
   let windowStart = Date.now();
   const accounts = new Map<string, number>();
   return async (actor: Actor | null, raw: unknown) => {

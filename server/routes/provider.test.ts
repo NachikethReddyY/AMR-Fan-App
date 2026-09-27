@@ -393,7 +393,7 @@ test('lifetime cost ceiling survives minute-window rollover and transport emits 
     },
     async (env) => {
       const provider = createRouteProvider(env);
-      for (let i = 0; i < 250; i++) {
+      for (let i = 0; i < 50; i++) {
         if (i % 15 === 0) now += 60001;
         const result = await provider.search({
           ...input,
@@ -409,6 +409,6 @@ test('lifetime cost ceiling survives minute-window rollover and transport emits 
       });
     },
   );
-  assert.equal(requests, 1000);
+  assert.equal(requests, 200);
   assert.deepEqual(logs, []);
 });

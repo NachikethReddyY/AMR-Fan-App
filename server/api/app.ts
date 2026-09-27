@@ -31,6 +31,8 @@ import {
 } from '../points/index.ts';
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
 import { createRouteQuery } from '../routes/query.ts';
+import { createGoogleRouteBudget } from '../routes/google-budget.ts';
+import { routeConfig } from '../routes/config.ts';
 import { createJourneyService } from '../journeys/store.ts';
 import { handleSubmissionRequest } from '../submissions/http.ts';
 import { serveSubmissionAdmin } from '../submissions/admin.ts';
@@ -111,6 +113,10 @@ export function createApi({
     loadFactorRelease(env.JOURNEY_FACTOR_RELEASE_FILE) ?? awardConfig;
   const queryRoutes = createRouteQuery({
     env,
+    googleBudget:
+      routeConfig(env).kind === 'google'
+        ? createGoogleRouteBudget(pool)
+        : undefined,
     factors: factorConfig?.factors,
     factorRelease: factorConfig?.release,
     calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
