@@ -841,3 +841,22 @@ the original target 0010 initialization-denial assertion. Classification: one-of
 test defect. Runtime behavior and future AI scope remain unchanged.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+## AI-BUDGET-002: fixed future AMR allowance
+
+Related to parent #3; successor request is locally recorded, tracker write not requested.
+User approved USD10 for new AMR calls only through TokenRouter, on a future dedicated
+key. Prior account USD23.37 is excluded, not asserted zero. Own fixed scope
+`amr-new-calls-20260927-v1`, forward migration0013, budget code/tests/docs only.
+Preserve legacy balances, operations and holds; suspend legacy admission, do not
+automatically initialize the new row. Dedicated unused-key custody, no dispatch,
+unique empty new scope and one shared database must be proved in a later reviewed
+operator action. Root holds activation and provider/image/charge guarantees.
+No credentials, provider calls, cloud, CI or deployment-runner changes authorized.
+
+Local proof passed: 19 isolated PostgreSQL cases, 192 offline AI cases, full
+repository and security gates on main c528ff54 plus the reviewed source. Legacy
+preservation and missing-row denial are verified locally; real initialization
+and activation remain held. No production or credential claim.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

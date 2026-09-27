@@ -39,13 +39,14 @@ const planSchema = z
     (value) =>
       new Set(value.calls.map((item) => item.id)).size === value.calls.length,
   );
+export const aiCostScope = 'amr-new-calls-20260927-v1';
 const capNanoUsd = 10_000_000_000;
 export type ReservedAiCall = z.infer<typeof call> & {
   rate: z.infer<typeof rate>;
   reservedNanoUsd: number;
 };
 export type AiCostReservation = {
-  scope: 'amr-tokenrouter-dev-and-demo';
+  scope: typeof aiCostScope;
   capNanoUsd: 10000000000;
   operationId: string;
   fingerprint: string;
@@ -92,7 +93,7 @@ function amount(pricing: z.infer<typeof rate>, input: number, output: number) {
 /** Validate persisted/caller-supplied quotes without trusting supplied amounts. */
 export const aiCostReservationSchema = z
   .strictObject({
-    scope: z.literal('amr-tokenrouter-dev-and-demo'),
+    scope: z.literal(aiCostScope),
     capNanoUsd: z.literal(10_000_000_000),
     operationId: id,
     fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
@@ -156,7 +157,7 @@ export function quoteAiCost(
     calls.push({ ...item, rate: pricing, reservedNanoUsd: Number(cost) });
   }
   const reservation: AiCostReservation = {
-    scope: 'amr-tokenrouter-dev-and-demo',
+    scope: aiCostScope,
     capNanoUsd,
     operationId: parsedPlan.data.operationId,
     fingerprint: parsedPlan.data.fingerprint,

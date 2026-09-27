@@ -28,3 +28,24 @@ test('hosted shared store validates TLS and rejects production loopback', () => 
     }),
   );
 });
+
+test('scope assertions cannot redirect or refresh the fixed allowance', () => {
+  const env = {
+    AI_COST_DATABASE_URL: 'postgres://fixture:placeholder@budget.example/app',
+  };
+  assert.deepEqual(
+    aiCostDatabaseConfig({
+      ...env,
+      AI_COST_SCOPE: 'amr-new-calls-20260927-v1',
+    }),
+    aiCostDatabaseConfig(env),
+  );
+  for (const AI_COST_SCOPE of [
+    'amr-tokenrouter-dev-and-demo',
+    'worktree-budget',
+    '',
+  ]) {
+    assert.throws(() => aiCostDatabaseConfig({ ...env, AI_COST_SCOPE }));
+    assert.throws(() => aiCostDatabaseConfig({ AI_COST_SCOPE }));
+  }
+});

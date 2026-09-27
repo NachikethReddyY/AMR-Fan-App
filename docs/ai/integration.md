@@ -85,8 +85,11 @@ fixtures and the two-stage synthetic composition are in `jev-decisions.test.ts`.
 an explicit versioned, expiring rate card and a plan with one or two calls. It
 uses integer nano-USD: one dollar is 1,000,000,000 units. Verified fractional
 nano-USD rates must be rounded **up** by the config owner. Products use `bigint`
-before conversion, and the fixed scope `amr-tokenrouter-dev-and-demo` is capped at
-10,000,000,000 units. Test rates are artificial and are not activation config.
+before conversion, and the fixed scope `amr-new-calls-20260927-v1` is capped at
+10,000,000,000 units for future AMR calls through TokenRouter. The old scope and
+its amounts/holds remain preserved and suspended. Migration 0013 does not seed
+the new row; [reviewed initialization prerequisites](cost-store.md#future-initialization-still-held)
+remain required. Test rates are artificial and are not activation config.
 
 Each call names an exact allowed model, maximum billable input/output tokens and
 an opaque stage ID. Input ceilings must include image tokens, instructions,
@@ -99,7 +102,7 @@ The PostgreSQL adapter implements `AiCostStore` as described in
 [shared AI cost storage](cost-store.md):
 
 1. `reserve(reservation)` atomically checks the one shared budget across development
-   and deployed callers. Count prior actual spend, uncertain spend and outstanding
+   and deployed callers. Count this fixed new scope's actual spend, uncertain spend and outstanding
    reservations before adding both activity stages. Serialize scope and operation
    ID; bind the request fingerprint and immutable rates. Duplicate IDs return
    `duplicate`, never another grant. Exhaustion or database failure means no call.
