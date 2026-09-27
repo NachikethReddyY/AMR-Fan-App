@@ -6,8 +6,13 @@ gateway prices, token bounds, account funds, or permission to spend.
 
 ## Admission and recovery
 
-Migration `0011_ai_cost_store.sql` adds three tables. Every transaction first
-locks the single `app.ai_cost_budget` row for `amr-tokenrouter-dev-and-demo`.
+Migration `0011_ai_cost_store.sql` adds three tables. Forward migration
+`0013_ai_new_amr_scope.sql` permits the legacy scope plus the fixed future scope
+`amr-new-calls-20260927-v1` and sets legacy `suspended = true`. It preserves all
+legacy amounts, operation snapshots, calls and holds. It does not insert the new
+row. Every new-store transaction locks only the new scope's `app.ai_cost_budget`
+row and validates its identity, fixed cap and nonnegative committed amount.
+An absent or invalid row denies the operation; the store never falls back to legacy.
 The admission ceiling is fixed at 10,000,000,000 nano-USD ($10), shared by all
 callers of this database. Reservation input is validated and amounts are
 recomputed with integer arithmetic. Immutable operation snapshots bind the
@@ -49,7 +54,9 @@ all in-flight calls before adjusting the database. Do not clear rows to recover.
 `aiCostDatabaseConfig(env)` returns a PostgreSQL pool configuration only when
 `AI_COST_DATABASE_URL` is explicitly supplied. It never falls back to the app's
 `DATABASE_URL`, so a developer worktree does not silently acquire its own $10.
-Remote connections verify TLS; production loopback and URL option overrides
+Optional `AI_COST_SCOPE` is an assertion only: if present it must exactly equal
+`amr-new-calls-20260927-v1`, including when the database URL is absent. It cannot
+select another budget. Remote connections verify TLS; production loopback and URL option overrides
 are rejected. The caller owns the pool and its shutdown. Construct the store
 with `createPostgresAiCostStore(pool)`; this does not migrate or seed anything.
 No route or enabled provider is wired by this slice.
@@ -60,11 +67,40 @@ reach the same database. Before activation the deployment owner must verify that
 fact, provision the migration and runtime grants, preserve existing spend and
 unknown holds, and supply separately verified rates, billing ceilings and
 gateway/account safeguards described in [integration](integration.md).
-The migration's zero initialization is valid only after verifying no prior
-provider spend or in-flight calls. Otherwise, a separately reviewed import of
-existing actual and uncertain liabilities is required before any activation.
+The new allowance covers only future AMR calls through TokenRouter on a dedicated
+key. The user's prior account $23.37 is excluded, not declared zero. Migration
+0011's historical legacy row is not evidence of reconciled liability and is never
+renamed, reset or reused as the new allowance.
 Missing configuration or database failure must deny dispatch. Store errors are
 generic and contain no connection details or input payloads.
+
+## Future initialization, still held
+
+This source change does not authorize creating a key, executing a production
+initializer or activating providers. Before a separately reviewed operator action:
+
+1. Establish the fresh dedicated TokenRouter key's identity, creation and sole
+   custody. Prove it has never dispatched, with no in-flight or outstanding calls.
+   A displayed zero usage counter alone cannot establish this.
+2. Verify that the fixed new scope has no existing row, operations or outstanding
+   liability in the approved database. Source-ref absence is not database proof.
+3. Verify all development and hosted callers bind to that one database and scope.
+   Do not grant another allowance to a worktree, deployment or replacement key.
+4. With dispatch still disabled, use one plain `INSERT` for the fixed scope with
+   `cap_nano_usd = 10000000000` and `committed_nano_usd = 0`. An existing row or
+   conflicting operation is a failure, never an upsert, reset or fallback.
+   Record reviewed proof before enabling admission; separately satisfy the
+   provider/model/image/rate/all-in charge bounds and root's activation decision.
+
+Key rotation retains this same budget and accumulated exposure. Missing proof
+leaves the row absent and dispatch denied. Isolated test fixtures initialize a
+synthetic row explicitly; those fixtures make no claim about any real key or DB.
+Legacy recovery remains a separately reviewed operator procedure; the new store
+rejects legacy identities and cannot settle, cancel or replay their holds. The
+existing global operation-ID uniqueness also rejects a collision with a legacy
+snapshot instead of turning it into a new-scope duplicate grant.
+
+## Runtime grants
 
 The runtime role needs `USAGE` on schema `app` and these grants only:
 
@@ -91,10 +127,14 @@ cleans its owned container/network/image after success or test failure. Build
 dependencies may use network access; the running database cannot reach providers.
 The test guard requires its exact test database and loopback connection.
 
-The fixture applies the available migration chain, including independent `0011`.
-All fourteen tests passed on the complete `0001` through `0011` chain after the
-photo migration landed in main `726efbb`. The three contradictory-receipt cases
-failed against the original PR head before passing with the correction.
+The fixture applies the available migration chain and explicitly inserts its
+new-scope test row. All nineteen PostgreSQL cases passed on the complete
+0001 through 0013 chain at main `c528ff54` plus this allowance change.
+The new cases cover forward legacy preservation for every call state, no automatic
+row creation, missing-row denial, scope rejection and legacy operation collisions.
+Focused pure tests pass for the fixed quote/schema/config identity, pre-connection
+wrong-scope denial and database failure. Four scope/config expectations failed
+before implementation. These tests establish local behavior only.
 Tests exercise independent processes,
 concurrent cap admission, reconnect/replay,
 claim/cancel rules, partial two-stage settlement, unknown recovery, lock-wait

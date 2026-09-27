@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { transaction } from '../database/index.ts';
 import {
   aiCostReservationSchema,
+  aiCostScope as scope,
   type AiCostStore,
 } from './cost-reservation.ts';
 
-const scope = 'amr-tokenrouter-dev-and-demo';
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const identitySchema = z.strictObject({
   scope: z.literal(scope),
@@ -41,11 +41,18 @@ type Identity = Parameters<AiCostStore['claimCall']>[0];
 
 async function budget(client: PoolClient) {
   const result = await client.query(
-    'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget WHERE scope = $1 FOR UPDATE',
+    'SELECT scope, cap_nano_usd, committed_nano_usd, suspended FROM app.ai_cost_budget WHERE scope = $1 FOR UPDATE',
     [scope],
   );
   return z
-    .object({ committed_nano_usd: z.coerce.bigint(), suspended: z.boolean() })
+    .object({
+      scope: z.literal(scope),
+      cap_nano_usd: z.coerce
+        .bigint()
+        .refine((value) => value === 10_000_000_000n),
+      committed_nano_usd: z.coerce.bigint().min(0n),
+      suspended: z.boolean(),
+    })
     .parse(result.rows[0]);
 }
 async function loadCall(client: PoolClient, identity: Identity) {

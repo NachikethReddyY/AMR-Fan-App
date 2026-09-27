@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  aiCostReservationSchema,
   quoteAiCost,
   reserveAiCost,
   accountAiUsage,
@@ -50,7 +51,7 @@ test('quote reserves both stages with integer nano-USD and the same $10 scope', 
   const result = quote();
   assert.equal(result.kind, 'quoted');
   if (result.kind !== 'quoted') return;
-  assert.equal(result.reservation.scope, 'amr-tokenrouter-dev-and-demo');
+  assert.equal(result.reservation.scope, 'amr-new-calls-20260927-v1');
   assert.equal(result.reservation.capNanoUsd, 10_000_000_000);
   assert.equal(result.reservation.reservedNanoUsd, 201000);
   assert.deepEqual(
@@ -177,7 +178,7 @@ test('synthetic atomic store receives common scope and rejects duplicate/restart
   const store: AiCostStore = {
     async reserve(reservation) {
       reserveCalls++;
-      assert.equal(reservation.scope, 'amr-tokenrouter-dev-and-demo');
+      assert.equal(reservation.scope, 'amr-new-calls-20260927-v1');
       const key = reservation.operationId;
       if (reservations.has(key)) return 'duplicate';
       reservations.add(key);
@@ -260,3 +261,16 @@ test('shared synthetic store denies aggregate overspend across distinct operatio
   );
   assert.equal(committedOrHeld, 9_999_901_000);
 });
+
+for (const scope of ['amr-tokenrouter-dev-and-demo', 'worktree-budget', '']) {
+  test(`reservation schema rejects non-active scope: ${scope}`, () => {
+    const result = quote();
+    assert.equal(result.kind, 'quoted');
+    if (result.kind !== 'quoted') return;
+    assert.equal(
+      aiCostReservationSchema.safeParse({ ...result.reservation, scope })
+        .success,
+      false,
+    );
+  });
+}

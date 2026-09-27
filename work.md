@@ -2042,3 +2042,52 @@ external delivery awaits root's gate. Only runner/tests and operating records
 changed; SQL, provider, AI and mobile source remain unchanged.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: fixed future AMR AI allowance, locally verified
+
+Related to parent #3. User approved USD10 for new AMR calls through TokenRouter
+only on a future dedicated key; prior account USD23.37 is excluded, not asserted
+zero. The new quote/schema/store identity is `amr-new-calls-20260927-v1`.
+Optional `AI_COST_SCOPE` can assert only that identity. `AI_COST_DATABASE_URL`
+remains explicit with no worktree/database fallback. Missing or invalid budget
+rows fail closed, including a changed cap. Existing transaction, replay, unknown
+and disputed accounting behavior is preserved.
+
+Forward migration 0013 permits only legacy and new scope, suspends legacy
+admission and inserts nothing. Legacy amounts, operations, call states and holds
+are preserved. Migrations 0011/0012 and deployment-runner source are unchanged. Frozen
+0013 SHA256: `1e12732b898e5b022748fa2613114399b163412f60311be4bca4164cf67eb70f`.
+Grant contract is unchanged and was sent with the guarded future initializer
+contract to the Google migration owner. Their 0012 PR stays separate;
+consume runner/SQL changes through main only.
+
+| Boundary                           | Status and evidence                                                                                                       | Limits                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Fixed scope/config                 | Four expectations failed first; all 25 focused tests pass                                                                 | Synthetic data; no production database uniqueness claim                     |
+| Offline AI regressions             | All 192 AI tests pass                                                                                                     | No provider calls or activation                                             |
+| PostgreSQL preservation/accounting | All 19 cases pass, 2.072 seconds, complete 0001 through 0013 chain                                                        | Isolated PostgreSQL 17.11 fixture only                                      |
+| Full repository gate               | `pnpm check` passes on main c528ff54 plus reviewed source                                                                 | Local checks; no CI query                                                   |
+| Security gate                      | `pnpm security:check` passes; no source leaks, zero findings from four SAST rules over 336 files; scanner self-tests pass | One existing moderate dependency advisory; not comprehensive security proof |
+
+Integrated actual main `c528ff5453e003f5afc523b107e3d8335e4e3a69` through main
+before execution. All owned source, SQL, tests, docs and TODO matched the frozen
+reviewed patch byte-for-byte; own bug/work entries were appended unchanged after
+main's additions. Both independent source reviews reported zero findings. Only
+proof documentation changed after the green gates.
+
+The dependency-install image layer was cached; no package downloads were logged.
+Docker checked image metadata. Build CPU/memory were uncapped, with the existing
+10-minute command timeout below the authorized 25-minute maximum. Runtime used
+one CPU, 512 MiB, tmpfs and an internal network, with generated fixture credentials,
+no host ports or mounts. Runner finally cleanup removed its exact container,
+network and image, and exact-name inventory confirmed their absence. The heavy
+slot was released immediately after serial DB/full/security success. The original
+draft stash and local TODO were preserved.
+
+Source-ref inspection found no prior new-scope literal in HEAD/main/origin/main
+before changes. Real scope absence, key custody/no dispatch and single database
+binding remain a later reviewed operator action. No production initializer,
+key access/creation, provider request, cloud mutation or activation occurred.
+Evidence: `.evidence/ai-new-amr-allowance/`.
+
+Implemented locally by gpt-6-astra through Codex (T3 Code).

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { setTimeout } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +9,11 @@ import { databaseConfig } from '../../database/config.ts';
 import { after, before, beforeEach, test } from 'node:test';
 import { createDatabase } from '../../database/index.ts';
 import { migrate } from '../../database/migrate.ts';
-import { quoteAiCost, type AiCostReservation } from '../cost-reservation.ts';
+import {
+  aiCostScope,
+  quoteAiCost,
+  type AiCostReservation,
+} from '../cost-reservation.ts';
 import { createPostgresAiCostStore } from '../postgres-cost-store.ts';
 
 // The runner owns this disposable database. Never use the shared developer DB.
@@ -59,11 +64,28 @@ function reservation(operationId = 'one', cost = 6_000_000_000, stages = 1) {
 }
 before(async () => {
   await migrate(pool);
+  assert.deepEqual(
+    (await pool.query('SELECT * FROM app.ai_cost_budget')).rows,
+    [
+      {
+        scope: 'amr-tokenrouter-dev-and-demo',
+        cap_nano_usd: '10000000000',
+        committed_nano_usd: '0',
+        suspended: true,
+      },
+    ],
+  );
 });
 beforeEach(async () => {
   await pool.query('TRUNCATE app.ai_cost_calls, app.ai_cost_operations');
+  await pool.query('DELETE FROM app.ai_cost_budget WHERE scope = $1', [
+    aiCostScope,
+  ]);
+  // Isolated fixture initialization only. Never an assertion about a real key/database.
   await pool.query(
-    'UPDATE app.ai_cost_budget SET committed_nano_usd = 0, suspended = false',
+    `INSERT INTO app.ai_cost_budget(scope, cap_nano_usd, committed_nano_usd)
+    VALUES ($1, 10000000000, 0)`,
+    [aiCostScope],
   );
 });
 after(async () => {
@@ -137,7 +159,7 @@ test('late bound violation retains exposure above cap and cannot be cleared by r
   await store.reconcile(violation);
   await store.reconcile(violation);
   const result = await pool.query(
-    'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget',
+    "SELECT committed_nano_usd, suspended FROM app.ai_cost_budget WHERE scope = 'amr-new-calls-20260927-v1'",
   );
   assert.deepEqual(result.rows, [
     { committed_nano_usd: '16000000000', suspended: true },
@@ -159,8 +181,11 @@ test('failed second-stage insert rolls back the entire admission', async () => {
       '0',
     );
     assert.equal(
-      (await pool.query('SELECT committed_nano_usd FROM app.ai_cost_budget'))
-        .rows[0].committed_nano_usd,
+      (
+        await pool.query(
+          "SELECT committed_nano_usd FROM app.ai_cost_budget WHERE scope = 'amr-new-calls-20260927-v1'",
+        )
+      ).rows[0].committed_nano_usd,
       '0',
     );
   } finally {
@@ -197,7 +222,9 @@ test('column-scoped runtime grants support the store without destructive privile
     });
     assert.equal(await runtime.cancelCall(identity(r, 'decide')), true);
     for (const sql of [
-      'DELETE FROM app.ai_cost_budget',
+      "DELETE FROM app.ai_cost_budget WHERE scope = 'amr-new-calls-20260927-v1'",
+      "INSERT INTO app.ai_cost_budget(scope) VALUES ('amr-new-calls-20260927-v1')",
+      "UPDATE app.ai_cost_budget SET scope = 'amr-new-calls-20260927-v1'",
       'TRUNCATE app.ai_cost_calls',
       'UPDATE app.ai_cost_budget SET cap_nano_usd = 10000000000',
       "UPDATE app.ai_cost_operations SET fingerprint = repeat('b', 64)",
@@ -335,7 +362,7 @@ for (const conflictingCharge of [0, 4_000_000_000]) {
       assert.deepEqual(
         (
           await other.query(
-            'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget',
+            "SELECT committed_nano_usd, suspended FROM app.ai_cost_budget WHERE scope = 'amr-new-calls-20260927-v1'",
           )
         ).rows,
         [{ committed_nano_usd: '7000000000', suspended: true }],
@@ -386,7 +413,7 @@ test('conflicting receipt after released funds are reused retains full exposure 
   assert.deepEqual(
     (
       await pool.query(
-        'SELECT committed_nano_usd, suspended FROM app.ai_cost_budget',
+        "SELECT committed_nano_usd, suspended FROM app.ai_cost_budget WHERE scope = 'amr-new-calls-20260927-v1'",
       )
     ).rows,
     [{ committed_nano_usd: '15000000000', suspended: true }],
@@ -467,4 +494,229 @@ test('forged amounts, unknown calls and pre-claim settlement cannot release budg
     }),
   );
   assert.equal(await store.reserve(reservation('denied')), 'exhausted');
+});
+
+const legacyScope = 'amr-tokenrouter-dev-and-demo';
+const transitionSql = new URL(
+  '../../database/migrations/0013_ai_new_amr_scope.sql',
+  import.meta.url,
+);
+
+test('forward transition preserves legacy amounts, snapshots and every call state without seeding', async () => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM app.ai_cost_budget WHERE scope = $1', [
+      aiCostScope,
+    ]);
+    await client.query(`ALTER TABLE app.ai_cost_budget DROP CONSTRAINT ai_cost_budget_scope_check;
+      ALTER TABLE app.ai_cost_budget ADD CONSTRAINT ai_cost_budget_scope_check
+      CHECK (scope = 'amr-tokenrouter-dev-and-demo')`);
+    await client.query(
+      'UPDATE app.ai_cost_budget SET committed_nano_usd = 23370000000, suspended = false WHERE scope = $1',
+      [legacyScope],
+    );
+    const legacy = {
+      ...reservation('legacy_snapshot', 100),
+      scope: legacyScope,
+    };
+    await client.query(
+      `INSERT INTO app.ai_cost_operations(operation_id, scope, fingerprint, reservation, rate_expires_at_ms)
+      VALUES ($1, $2, $3, $4, $5)`,
+      [
+        legacy.operationId,
+        legacy.scope,
+        legacy.fingerprint,
+        legacy,
+        legacy.rateExpiresAtMs,
+      ],
+    );
+    for (const state of [
+      'reserved',
+      'started',
+      'held',
+      'reported',
+      'disputed',
+      'cancelled',
+    ]) {
+      await client.query(
+        `INSERT INTO app.ai_cost_calls(operation_id, call_id, reserved_nano_usd, accounted_nano_usd, state, bound_exceeded)
+        VALUES ($1, $2, 100, $3, $2, $4)`,
+        [
+          legacy.operationId,
+          state,
+          state === 'cancelled' ? 0 : 100,
+          state === 'held',
+        ],
+      );
+    }
+    const before = (await client.query('SELECT * FROM app.ai_cost_operations'))
+      .rows;
+    const calls = (
+      await client.query('SELECT * FROM app.ai_cost_calls ORDER BY call_id')
+    ).rows;
+    await client.query(await readFile(transitionSql, 'utf8'));
+    assert.deepEqual(
+      (await client.query('SELECT * FROM app.ai_cost_operations')).rows,
+      before,
+    );
+    assert.deepEqual(
+      (await client.query('SELECT * FROM app.ai_cost_calls ORDER BY call_id'))
+        .rows,
+      calls,
+    );
+    assert.deepEqual(
+      (await client.query('SELECT * FROM app.ai_cost_budget')).rows,
+      [
+        {
+          scope: legacyScope,
+          cap_nano_usd: '10000000000',
+          committed_nano_usd: '23370000000',
+          suspended: true,
+        },
+      ],
+    );
+    // Explicit test-only INSERT succeeds once; no upsert/reset path exists.
+    await client.query(
+      `INSERT INTO app.ai_cost_budget(scope, cap_nano_usd, committed_nano_usd) VALUES ($1, 10000000000, 0)`,
+      [aiCostScope],
+    );
+    await assert.rejects(
+      client.query('INSERT INTO app.ai_cost_budget(scope) VALUES ($1)', [
+        aiCostScope,
+      ]),
+    );
+  } finally {
+    await client.query('ROLLBACK');
+    client.release();
+  }
+});
+
+test('missing new row denies every store operation and never falls back to legacy funds', async () => {
+  await pool.query('DELETE FROM app.ai_cost_budget WHERE scope = $1', [
+    aiCostScope,
+  ]);
+  const r = reservation('missing');
+  const before = (await pool.query('SELECT * FROM app.ai_cost_budget')).rows;
+  for (const action of [
+    () => store.reserve(r),
+    () => store.claimCall(identity(r)),
+    () => store.cancelCall(identity(r)),
+    () =>
+      store.reconcile({
+        ...identity(r),
+        accounting: { kind: 'reported', chargedNanoUsd: 0 },
+      }),
+  ])
+    await assert.rejects(action(), {
+      message: 'AI cost store unavailable or conflicting operation.',
+    });
+  assert.deepEqual(
+    (await pool.query('SELECT * FROM app.ai_cost_budget')).rows,
+    before,
+  );
+  assert.equal(
+    (await pool.query('SELECT count(*) FROM app.ai_cost_operations')).rows[0]
+      .count,
+    '0',
+  );
+});
+
+test('new allowance cannot replay a legacy operation or change legacy liability', async () => {
+  const r = reservation('collision');
+  const legacy = { ...r, scope: legacyScope };
+  await pool.query(
+    `INSERT INTO app.ai_cost_operations(operation_id, scope, fingerprint, reservation, rate_expires_at_ms)
+    VALUES ($1, $2, $3, $4, $5)`,
+    [r.operationId, legacyScope, r.fingerprint, legacy, r.rateExpiresAtMs],
+  );
+  await pool.query(
+    `INSERT INTO app.ai_cost_calls(operation_id, call_id, reserved_nano_usd, accounted_nano_usd, state)
+    VALUES ($1, 'observe', $2, $2, 'held')`,
+    [r.operationId, r.reservedNanoUsd],
+  );
+  const before = (
+    await pool.query('SELECT * FROM app.ai_cost_budget WHERE scope = $1', [
+      legacyScope,
+    ])
+  ).rows;
+  await assert.rejects(store.reserve(r));
+  assert.equal(await store.claimCall(identity(r)), false);
+  assert.equal(await store.cancelCall(identity(r)), false);
+  await assert.rejects(
+    store.reconcile({
+      ...identity(r),
+      accounting: { kind: 'reported', chargedNanoUsd: 0 },
+    }),
+  );
+  assert.equal(await store.reserve(reservation('new_operation')), 'reserved');
+  assert.deepEqual(
+    (
+      await pool.query('SELECT * FROM app.ai_cost_budget WHERE scope = $1', [
+        legacyScope,
+      ])
+    ).rows,
+    before,
+  );
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT state FROM app.ai_cost_calls WHERE operation_id = $1',
+        [r.operationId],
+      )
+    ).rows[0].state,
+    'held',
+  );
+});
+
+test('unknown third scope and duplicate initialization are rejected by the database', async () => {
+  await assert.rejects(
+    pool.query('INSERT INTO app.ai_cost_budget(scope) VALUES ($1)', [
+      'worktree-budget',
+    ]),
+  );
+  await assert.rejects(
+    pool.query('INSERT INTO app.ai_cost_budget(scope) VALUES ($1)', [
+      aiCostScope,
+    ]),
+  );
+  assert.equal(
+    await store.reserve(reservation('still_single', 10_000_000_000)),
+    'reserved',
+  );
+  assert.equal(await store.reserve(reservation('no_refresh', 1)), 'exhausted');
+});
+
+test('database cap mismatch fails closed without changing either budget', async () => {
+  await pool.query(
+    'ALTER TABLE app.ai_cost_budget DROP CONSTRAINT ai_cost_budget_cap_nano_usd_check',
+  );
+  try {
+    await pool.query(
+      'UPDATE app.ai_cost_budget SET cap_nano_usd = 20000000000 WHERE scope = $1',
+      [aiCostScope],
+    );
+    const before = (
+      await pool.query('SELECT * FROM app.ai_cost_budget ORDER BY scope')
+    ).rows;
+    await assert.rejects(store.reserve(reservation('wrong_cap')));
+    assert.deepEqual(
+      (await pool.query('SELECT * FROM app.ai_cost_budget ORDER BY scope'))
+        .rows,
+      before,
+    );
+    assert.equal(
+      (await pool.query('SELECT count(*) FROM app.ai_cost_operations')).rows[0]
+        .count,
+      '0',
+    );
+  } finally {
+    await pool.query(
+      'UPDATE app.ai_cost_budget SET cap_nano_usd = 10000000000 WHERE scope = $1',
+      [aiCostScope],
+    );
+    await pool.query(
+      'ALTER TABLE app.ai_cost_budget ADD CONSTRAINT ai_cost_budget_cap_nano_usd_check CHECK (cap_nano_usd = 10000000000)',
+    );
+  }
 });
