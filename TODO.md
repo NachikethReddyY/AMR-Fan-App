@@ -180,3 +180,98 @@ Publishing, deployment, shared tracker writes, commits, and pushes are outside t
 - [x] Confirm Expo structure and preserve existing starter dependencies.
 - [x] Replace the custom dock with standard bottom tabs and wire four destinations.
 - [x] Finish local checks and verify tab interaction on a device.
+
+## Manager delivery completion — 2026-09-26 thread 977b624e
+
+- [x] Read live open PR/issue metadata without querying paused Actions; confirm main95e5be8.
+- [x] Preserve existing work and establish `.evidence/delivery-completion/status.md` with feature acceptance and iOS video protocol.
+- [x] Resume existing AI, backend and native owners with disjoint scopes and four-thread ceiling.
+- [ ] Verify backend R-SETUP-1 correction independently, finish hosted readiness and free-tier deployment gates.
+- [ ] Complete TokenRouter/Jev protocol, secure credentials, measured moderation/extraction evaluation and owner integration.
+- [ ] Complete native email/password authentication and publish authentic iOS video/screenshots with fixture/live limits.
+- [ ] Integrate voting, impact/earning rules and demo generation/reset contracts serially with protected accounting tests.
+- [ ] Complete map/location/journey/awards/native acceptance and report physical/provider prerequisites honestly.
+- [ ] Refresh/review/deliver coherent PRs, retain Travel lineage, and dispose of superseded PR24/26 only after verification.
+- [ ] Reconcile every issue against acceptance; close only completed scopes and report remaining blockers.
+- [ ] Deliver final completion reminder with exact deployed/native state, evidence and remaining limits.
+
+Keep this task heading unstaged. GitHub Actions remains paused by user. Hosted resources stay Free; TokenRouter shares one US$10 ceiling across development and demo. Native fan app only. No implicit deletion of evidence, user data or peer work.
+
+### Render startup correction — 2026-09-26
+
+- [x] Read exact main API entry and failed Render log; change only start command and health check on existing Free service.
+- [x] Verify saved command and /health; new build passes and invokes server/api/start.ts.
+- [ ] Hosted startup blocked by missing DATABASE_URL; finish separately reviewed Supabase auth/storage deployment configuration.
+
+Evidence: `.evidence/delivery-completion/render-start-correction.json`. Two automatic deployments resulted from the two setting saves; final failed for missing database configuration. No credential, billing, database, source or Actions changes. Shared bug/work proposals remain private under manager preservation boundary.
+
+## APK completion coordination — 2026-09-26
+
+- [x] Verify five open PRs and no competing active task owners.
+- [x] Resume one owner each for PR28 native/APK, PR41 backend, and existing AI adapter.
+- [x] Generate requested Aston Martin F1 FAN icon candidate.
+- [ ] Verify generated icon crop/readability and pass asset to mobile owner.
+- [x] Resolve photo award location/fallback and daily-limit rules: eligible bus photo50 now, verified same-journey difference later; eligible no-location50; no daily cap; preserve no-double-credit and immediate media deletion.
+- [ ] Verify live maps credentials/billing prerequisites without exposing credentials.
+- [ ] Complete hosted/native feature matrix and independent review of deliverable slices.
+- [ ] Build/test standalone APK against hosted backend; record native video/screenshots.
+- [ ] Resolve PRs serially, close superseded Travel PRs only after retained-code proof, close only accepted issues.
+
+CI stays paused; cloud stays Free; AI shared budget ceiling US$10. No completion claim from screenshots or fixture-only checks.
+
+### Delivery continuation, 26 September 2026
+
+- [x] Verify PR41 terminal merge receipt at main4efa304; hosted service live, CI still paused.
+- [x] Confirm TokenRouter key now present and hand off through a private0600 file without outputting its value.
+- [x] Install signed03cf351 ARM64 APK and observe Home/four tabs/Account with no Metro or local API listeners.
+- [x] Record user selection: Singapore first using OneMap; Google remains disabled.
+- [ ] Complete OneMap provider integration in its isolated one-PR thread.
+- [ ] Correct Account sign-in button curve to match Create account, rebuild and inspect.
+- [ ] Await manual hosted sign-in; no credential screenshots or automation during entry.
+- [ ] Resolve AI gateway protocol/rates/image passthrough and budget enforcement before live inference.
+- [ ] Recheck route timing gate after native compiler is idle; retain both previous failures.
+
+### Account email confirmation correction, 26 September 2026
+
+- [x] Preserve user reproduction: confirmation browser lands on localhost:3000; current native adapter has no code verification.
+- [x] Route native code-entry correction to existing PR28 owner and hosted confirmation-template correction to infra owner.
+- [ ] Verify invalid/expired/valid code and session-generation controls; preserve password sign-in.
+- [ ] Read back hosted template and rebuild/install APK; observe user-controlled confirmation/sign-in without credential capture.
+
+User selected email code confirmation. Account creation is not proof of sign-in. No CI or paid resources. Protected central bug/work records remain unchanged; private evidence carries triage.
+
+### Final APK order and onboarding, 26 September 2026
+
+- [x] Relay explicit user correction: build APK at the end only; stop intermediate builds.
+- [ ] Finish verification-code source and focused checks; notify user when changed, distinguishing uninstalled native proof.
+- [ ] Inspect and complete accepted onboarding: first launch, separate signup/signin, email code confirmation, entry into app, and subsequent launches. Resolve missing product choices before inventing screens.
+- [ ] Build final APK only after the accepted implementation work is complete, then verify installed native behavior.
+
+Project delivery correction: interim APK packaging is not completion. Onboarding remains required. Earlier rebuild-now instructions are superseded.
+
+### PR disposition, 26 September 2026
+
+- [x] Verify four exact open PRs and current main without Actions queries.
+- [x] Independently verify Travel source retention; close superseded PR26 and PR24, preserving branches and open issues.
+- [x] Verify GitHub now has two open PRs and T3 links reflect closures.
+- [ ] Complete PR39 refresh, independent review and normal merge if eligible.
+- [ ] Finish PR28 auth/onboarding, refresh and review before merge; APK only at end.
+
+## Delivery continuation 2026-09-26 manager
+- [x] Confirm one open PR28 and current local candidates; preserve CI pause.
+- [ ] Verify email delivery/code sign-in on native app.
+- [ ] Select and implement onboarding/dock; integrate latest mobile guest rewards.
+- [ ] Recover hosted participation auth in focused follow-up PR and independently review.
+- [ ] Resolve live route provider and AI activity runtime/award blockers.
+- [ ] Deploy integrated backend, verify guest offers/admin, integrate PR28.
+- [ ] Record native end-to-end screenshots/video and build final APK.
+
+## Dinner continuation: 2026-09-26
+
+- [x] Repeat existing account sign-in on Pixel twice; both succeeded. User confirmed intentional sign-out.
+- [x] Show signup OTP screen for selected plus-address; actual email delivery remains blocked by rate-limit response.
+- [x] Independent PR42 source review and local browser/200%/DAST proof completed.
+- [ ] Verify PR42 merged tree and retain open parent issues until full acceptance.
+- [ ] Finish onboarding state/retention tests, native walkthrough/dock proof and PR28 integration.
+- [ ] Diagnose exact SMTP failure and verify delivery when unblocked.
+- [ ] Integrate remaining routing/activity/AI slices only after their gates; final APK last.
