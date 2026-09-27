@@ -1,5 +1,14 @@
 # Steering and bug inbox
 
+## SWIFT-PORT-001: integrate the Swift app into the main repository
+
+Tracking: unlinked. The user requested that the existing Swift port be managed
+by this repository and pushed to GitHub. Preserve the port's committed source and
+assets while excluding the former nested Git metadata, Xcode user state, copied
+agent files, copied planning files and unrelated root `.scratch` deletions.
+
+Recorded by gpt-5.6-sol through Pi.
+
 ## GOOGLE-001: enforce the authorized USD 1 total routing allowance
 
 Tracking: unlinked follow-up to route planning. User authorized Google billing

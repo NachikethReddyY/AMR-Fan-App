@@ -24,6 +24,10 @@ android/
 *.jks
 *.keystore
 
+# Xcode user-specific state
+xcuserdata/
+*.xcuserstate
+
 # Local work, reports and agent settings. Existing tracked history is preserved.
 .scratch/
 .evidence/

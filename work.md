@@ -1,5 +1,17 @@
 # Work record
 
+## 2026-09-27: integrate the Swift port
+
+Tracking: SWIFT-PORT-001, unlinked. Moved the existing Swift app under the main
+repository's `swift-port` branch and excluded nested Git metadata, Xcode user
+state, copied agent material and copied planning files. The original Swift source,
+Xcode project and image assets are preserved. A clean iOS Simulator Debug build
+completed with code signing disabled. Rendered and interactive behavior remains
+unverified because device automation was not authorized. Unrelated root `.scratch`
+deletions remain unstaged.
+
+Integrated by gpt-5.6-sol through Pi.
+
 ## 2026-09-27: durable USD 1 Google routing allowance
 
 GOOGLE-001 is an unlinked follow-up to route planning. The user authorized USD 1
