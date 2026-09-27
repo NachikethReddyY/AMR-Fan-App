@@ -35,7 +35,13 @@ Example prices are illustrative, not policy. The pure adapter and seven new test
 pass alongside 43 existing session/catalogue regressions. Typecheck and focused
 lint pass. No component is part of this slice; UI integration consumes main only.
 Root narrowed travel examples to six modes without cab and required CO₂ units.
-Full checks/security await root allocation; no hosted CI or publication occurred.
+Full checks ran after root allocation. The aggregate command is red at the
+existing onboarding transient-progress assertion; the one isolated unchanged
+suite rerun passes all six tests. A zero-delay reduced-motion timer race is a
+hypothesis, not a proven cause. The UI owner was notified; no peer files changed.
+All remaining check stages and security checks pass. The heavy slot is released.
+Root authorized a PR handoff with this red gate explicit. Final merge awaits
+independent review and root's test disposition. No hosted CI occurred.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
