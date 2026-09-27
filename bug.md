@@ -1128,3 +1128,22 @@ Startup tests pass 33/33. This is a one-off implementation correction, with no
 change to guards or deployment authority.
 
 Corrected and verified by gpt-6-astra through Codex (T3 Code).
+
+## ONEMAP-MOUNT-001: support fixed provider-managed secret indirection (unlinked)
+
+The coordinator observed source_open/ELOOP on the diagnostic release. A synthetic
+fixed-mount symlink reproduces it. The approved policy resolves only the fixed
+OneMap mounted source once before a no-follow/nonblocking open of its target.
+Trust provider control of the mount and target ancestry; do not claim atomic
+ancestor protection or known provider layout. Arbitrary injected paths still
+reject symlinks. Preserve all descriptor/private-copy/reader/lifecycle guards.
+Hosted private-copy/runtime-path proof remains pending; no token/provider access.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-MOUNT-001 local correction: fixed mount resolves once before unchanged
+no-follow target open. Six policy failures reproduced; 38 startup and 95 route/
+startup cases pass after implementation. Arbitrary paths and final-target swaps
+still reject symlinks. Hosted mount/private-copy/runtime-path proof remains pending.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).

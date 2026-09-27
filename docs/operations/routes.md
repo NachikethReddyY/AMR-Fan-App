@@ -112,9 +112,19 @@ token's cutoff. Leave `AMR_ONEMAP_ACCESS_TOKEN_FILE`,
 is incompatible with the wrapper. Normal account/Google startup continues to use
 `pnpm api:start`.
 
-The mounted file must be readable, regular, nonsymlink and bounded to 8194 bytes;
-its mode/UID are not assumed or changed. The wrapper reads through
-`O_NOFOLLOW|O_NONBLOCK`, validates single-token syntax, and creates a unique
+Only the fixed `/etc/secrets/amr-onemap-access-token.txt` mount is resolved once
+with `realpathSync` to support provider-managed secret indirection. Arbitrary
+injected source paths retain no-follow behavior; there is no new CLI/environment
+override. The resolved target is opened with `O_RDONLY|O_NOFOLLOW|O_NONBLOCK`
+and must be readable, regular and bounded to 8194 bytes. Its mode/UID are not
+assumed or changed. This trusts provider control of the mount and target ancestor
+directories. A final-target symlink substitution is rejected; ancestor replacement
+is not atomic, and provider rotation may yield a different validated snapshot.
+No particular Render target layout or race-free ancestry is claimed. Resolution
+failure is reported as `source_resolution` with sanitized errno, without a
+resolved path or raw exception. There is no fallback or retry.
+
+The wrapper validates single-token syntax and creates a unique
 external directory under the resolved OS temporary directory. It verifies current
 UID ownership and mode 0700, exclusive-creates a regular mode-0600 single-link
 token file, bounds the copy and clears its temporary buffer. It rejects a temp
@@ -141,7 +151,7 @@ activation; secret/settings saves may deploy, so root must approve staging order
 
 Preparation/import failures emit exactly one stderr JSON object with event
 `onemap_startup_failed`, a fixed `stage`, and an allowlisted `errno`. Stages are
-`config`, `temp_resolution`, `source_open`, `source_metadata`, `source_read`,
+`config`, `temp_resolution`, `source_resolution`, `source_open`, `source_metadata`, `source_read`,
 `source_format`, `source_close`, `private_dir`, `copy_open`, `copy_write`,
 `copy_metadata`, `copy_close`, `staged_event`, `api_import`, and `cleanup`.
 Errno is one of `ENOENT`, `EACCES`, `EPERM`, `ELOOP`, `ENOTDIR`, `EISDIR`, `EROFS`,
