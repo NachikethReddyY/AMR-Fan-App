@@ -1,4 +1,5 @@
 import { isAbsolute } from 'node:path';
+import { z } from 'zod';
 const googleEndpoint =
   'https://routes.googleapis.com/directions/v2:computeRoutes';
 
@@ -8,7 +9,10 @@ export type RouteConfig =
       kind: 'onemap';
       baseUrl: string;
       timeoutMs: number;
-      credentials: { kind: 'fixture' } | { kind: 'file'; path: string };
+      credentials:
+        | { kind: 'fixture' }
+        | { kind: 'file'; path: string }
+        | { kind: 'token-file'; path: string; expires: number };
     }
   | {
       kind: 'google' | 'fixture';
@@ -57,6 +61,8 @@ export function routeConfig(
         url.username ||
         url.password ||
         env.AMR_ONEMAP_CREDENTIALS_FILE ||
+        env.AMR_ONEMAP_ACCESS_TOKEN_FILE ||
+        env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT ||
         env.AMR_GOOGLE_ROUTES_KEY
       )
         throw invalid();
@@ -69,6 +75,30 @@ export function routeConfig(
     }
     if (baseUrl !== 'https://www.onemap.gov.sg') throw invalid();
     const path = env.AMR_ONEMAP_CREDENTIALS_FILE;
+    const tokenPath = env.AMR_ONEMAP_ACCESS_TOKEN_FILE;
+    const cutoff = env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT;
+    if (tokenPath || cutoff) {
+      if (
+        path ||
+        !tokenPath ||
+        !isAbsolute(tokenPath) ||
+        !cutoff ||
+        cutoff.length > 40 ||
+        !z.iso.datetime({ offset: true }).safeParse(cutoff).success ||
+        !Number.isFinite(Date.parse(cutoff))
+      )
+        throw invalid();
+      return {
+        kind: 'onemap',
+        baseUrl,
+        timeoutMs: Number(timeout),
+        credentials: {
+          kind: 'token-file',
+          path: tokenPath,
+          expires: Date.parse(cutoff),
+        },
+      };
+    }
     if (!path) return { kind: 'disabled' };
     if (!isAbsolute(path)) throw invalid();
     return {

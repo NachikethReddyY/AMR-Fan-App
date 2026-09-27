@@ -41,7 +41,7 @@ class ProviderFailure extends Error {
 }
 
 // Only the explicitly assigned private file is read, lazily, when a query needs a token.
-export async function readOneMapCredentials(path: string) {
+async function readPrivateFile(path: string, maxBytes: number) {
   const root = await realpath(fileURLToPath(new URL('../..', import.meta.url)));
   const parent = await realpath(dirname(path));
   const location = relative(root, parent);
@@ -60,22 +60,29 @@ export async function readOneMapCredentials(path: string) {
       !stat.isFile() ||
       (stat.mode & 0o777) !== 0o600 ||
       stat.uid !== process.getuid?.() ||
-      stat.size > 16384 ||
+      stat.size > maxBytes ||
       stat.nlink !== 1
     )
       throw new ProviderFailure('live_not_configured');
-    const buffer = Buffer.alloc(16385);
-    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
-    if (bytesRead > 16384) throw new ProviderFailure('live_not_configured');
-    const raw: unknown = JSON.parse(
-      buffer.subarray(0, bytesRead).toString('utf8'),
-    );
-    const parsed = credentialsSchema.safeParse(raw);
-    if (!parsed.success) throw new ProviderFailure('live_not_configured');
-    return parsed.data;
+    const buffer = Buffer.alloc(maxBytes + 1);
+    try {
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+      if (bytesRead > maxBytes)
+        throw new ProviderFailure('live_not_configured');
+      return buffer.subarray(0, bytesRead).toString('utf8');
+    } finally {
+      buffer.fill(0);
+    }
   } finally {
     await file.close();
   }
+}
+
+export async function readOneMapCredentials(path: string) {
+  const raw: unknown = JSON.parse(await readPrivateFile(path, 16384));
+  const parsed = credentialsSchema.safeParse(raw);
+  if (!parsed.success) throw new ProviderFailure('live_not_configured');
+  return parsed.data;
 }
 
 export function createOneMapProvider(config: Config) {
@@ -84,7 +91,16 @@ export function createOneMapProvider(config: Config) {
     windowCalls = 0,
     windowStart = Date.now();
   let token: { value: string; expires: number } | null = null;
+  let tokenFileFailure: Failure | null = null;
   let refreshAfter = 0;
+  function checkTokenFile() {
+    if (config.credentials.kind !== 'token-file') return;
+    if (Date.now() >= config.credentials.expires - 60000) {
+      tokenFileFailure ??= 'live_not_configured';
+      token = null;
+    }
+    if (tokenFileFailure) throw new ProviderFailure(tokenFileFailure);
+  }
   async function bounded<T>(
     run: (signal: AbortSignal) => Promise<T>,
   ): Promise<T> {
@@ -105,6 +121,8 @@ export function createOneMapProvider(config: Config) {
     auth?: string,
     body?: unknown,
   ): Promise<unknown> {
+    // Recheck every dispatch, including address lookups and later mode batches.
+    checkTokenFile();
     const response = await fetch(`${config.baseUrl}${path}`, {
       method: body === undefined ? 'GET' : 'POST',
       redirect: 'error',
@@ -118,6 +136,8 @@ export function createOneMapProvider(config: Config) {
     try {
       if (response.status === 401 || response.status === 403) {
         token = null;
+        if (config.credentials.kind === 'token-file')
+          tokenFileFailure = 'provider_error';
         refreshAfter = Date.now() + 60000;
         throw new ProviderFailure('provider_error');
       }
@@ -159,6 +179,24 @@ export function createOneMapProvider(config: Config) {
     }
   }
   async function getToken() {
+    if (config.credentials.kind === 'token-file') {
+      checkTokenFile();
+      if (!token) {
+        try {
+          const raw = await readPrivateFile(config.credentials.path, 8194);
+          const parsed = tokenSchema.shape.access_token.safeParse(
+            raw.replace(/\r?\n$/, ''),
+          );
+          if (!parsed.success) throw new ProviderFailure('live_not_configured');
+          token = { value: parsed.data, expires: config.credentials.expires };
+        } catch {
+          tokenFileFailure = 'live_not_configured';
+          throw new ProviderFailure(tokenFileFailure);
+        }
+        checkTokenFile();
+      }
+      return token.value;
+    }
     if (token && Date.now() < token.expires - 60000) return token.value;
     if (Date.now() < refreshAfter) throw new ProviderFailure('provider_error');
     // No immediate retry. Even malformed/short-lived tokens cannot create a refresh storm.

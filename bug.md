@@ -1036,3 +1036,67 @@ push and one non-draft PR; merge/deploy remain prohibited. Password helper and
 native/live-auth proof remain outstanding.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## ONEMAP-TOKEN-001: explicit expiring access-token file (unlinked)
+
+The assigned credential is an access token, while existing configuration accepts
+only account email/password JSON. Implement a separate private token-file mode
+with a mandatory operator cutoff, a 60-second pre-dispatch margin, rejection
+latched until restart, and explicit replacement plus restart. Preserve account
+credential mode and Google budgets; use existing unavailable reasons. Synthetic
+failure-first tests only. No provider calls, cloud/DB mutation or delivery.
+
+The user reports expiry on 2026-09-30; exact time/timezone and provider expiry are
+unverified. Root selected 2026-09-29T00:00:00+08:00 as an earlier operator cutoff
+for eventual setup, not a source default or verified provider expiry.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-TOKEN-001 local candidate: explicit token-file/cutoff mode implemented;
+57 focused route cases, typecheck, focused lint and documentation checks pass.
+Expiry/rejection and replacement are covered with synthetic files and intercepted
+fetch. No real token reread, provider call or hosted activation. Existing public
+failure reasons and account/Google behavior preserved. Root owns independent
+review, full/security gate allocation and hosted file feasibility/provisioning.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+## ONEMAP-HOST-001: stage a hosted token without relaxing the reader (unlinked)
+
+Root approved a separate opt-in startup helper after the token candidate passed
+full/security gates. The fixed mounted source is read through a bounded regular
+file descriptor; a fresh external private copy must meet the unchanged reader's
+ownership/mode/link rules. Routing-disabled staging validates the token and cutoff
+without enabling a provider. Preserve default startup, host/port and existing API
+shutdown, same process, and account/Google modes. Sanitize failures and remove only
+the owned copy on failure/orderly exit; SIGKILL cleanup cannot be guaranteed.
+Synthetic file/lifecycle proof only; hosted metadata and real routes remain unverified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-HOST-001 local candidate: opt-in wrapper/private copy implemented with
+routing-disabled staging and unchanged default startup/token reader. Focused suite
+passes 71/71, including 14 helper cases; typecheck/lint/docs pass. Lifecycle proof
+uses the real API listener with a synthetic DB module. Full/security for the new
+slice await a fresh slot; hosted file metadata and real routes remain unverified.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+## ONEMAP-EXPIRY-001: keep API available after token cutoff (unlinked)
+
+Root's one-off design correction supersedes the wrapper future-cutoff requirement:
+expired or within-margin but syntactically valid cutoffs must not block unrelated
+API startup/health. Remove only the wrapper's two time checks. Mandatory valid
+cutoff, all private-copy checks and reader no-dispatch expiry guards stay intact.
+Preserve previous green receipts; prove the correction failure-first with actual
+API startup/health and a synthetic DB. No heavyweight or live-provider work.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-EXPIRY-001 local correction: wrapper-only time guards removed. Four startup
+failures reproduced before implementation; 77/77 focused route/startup cases now
+pass. Expired/within-margin tokens permit health while route fetch count remains
+zero; malformed/missing cutoff still prevents startup. Prior operating-limit notes
+about expiry blocking restart are superseded. Full/security await root disposition.
+
+Verified by gpt-6-astra through Codex (T3 Code).
