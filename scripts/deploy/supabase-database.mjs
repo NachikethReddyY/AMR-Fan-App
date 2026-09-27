@@ -20,6 +20,7 @@ const migrationNames = [
   '0009_submission_participation.sql',
   '0010_photo_activity.sql',
   '0011_ai_cost_store.sql',
+  '0012_google_route_budget.sql',
 ];
 const participationTables = [
   'fan_submission_contributions',
@@ -73,6 +74,11 @@ const migrationPrivileges = [
     grant: grantAi,
     verify: (client) => verifyTablePrivileges(client, aiTables),
   },
+  {
+    count: 12,
+    grant: grantGoogle,
+    verify: verifyGoogle,
+  },
 ];
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -80,6 +86,8 @@ const databaseCreateRefusal =
   'Runtime has effective database CREATE. Have the database owner review direct and PUBLIC grants before retrying; bootstrap will not revoke shared rights.';
 const aiInitializationRefusal =
   'AI budget initialization requires aiBudgetInitialization=verified-no-prior-spend-or-inflight. Verify no prior provider spend or in-flight calls; otherwise obtain a separately reviewed liability import before retrying. No budget is reset or imported by this tool.';
+const schemaOnlyHistoryRefusal =
+  'Schema-only AI installation requires retained migration 0010 or a disabled 0011/0012 installation.';
 
 function requireAiInitialization(options) {
   if (options?.aiBudgetInitialization !== 'verified-no-prior-spend-or-inflight')
@@ -127,12 +135,28 @@ export async function bootstrapDatabase(pool, runtimePassword, options = {}) {
     options.targetMigration === undefined
       ? '0011_ai_cost_store.sql'
       : options.targetMigration;
-  if (!['0010_photo_activity.sql', '0011_ai_cost_store.sql'].includes(target))
+  if (!migrationNames.slice(9).includes(target))
     throw new Error('Invalid migration target.');
+  if (
+    options.aiBudgetMode !== undefined &&
+    options.aiBudgetMode !== 'schema-install-only'
+  )
+    throw new Error('Invalid AI budget mode.');
+  const schemaOnly = options.aiBudgetMode === 'schema-install-only';
+  if (schemaOnly && Object.hasOwn(options, 'aiBudgetInitialization'))
+    throw new Error(
+      'AI budget mode and initialization are mutually exclusive.',
+    );
+  if (schemaOnly && target === '0010_photo_activity.sql')
+    throw new Error('Schema-only AI mode requires target 0011 or 0012.');
   const targetCount = migrationNames.indexOf(target) + 1;
-  const privileges = migrationPrivileges.filter(
-    (step) => step.count <= targetCount,
-  );
+  const privileges = migrationPrivileges
+    .filter((step) => step.count <= targetCount)
+    .map((step) =>
+      schemaOnly && step.count === 11
+        ? { count: 11, grant: suspendNewAiBudget, verify: verifyDisabledAi }
+        : step,
+    );
   const migrations = await Promise.all(
     migrationNames.slice(0, targetCount).map(async (name) => {
       const sql = await readFile(
@@ -169,12 +193,14 @@ export async function bootstrapDatabase(pool, runtimePassword, options = {}) {
         )
       )
         throw new Error('Migration checksum collision.');
+      if (schemaOnly && history.length < 10)
+        throw new Error(schemaOnlyHistoryRefusal);
       await verifyPrivileges(client);
       // Validate retained ACLs before applying anything; never repair old grants.
       for (const step of privileges)
         if (history.length >= step.count) await step.verify(client);
       if (history.length < migrations.length) {
-        if (targetCount === 11 && history.length < 11)
+        if (targetCount >= 11 && history.length < 11 && !schemaOnly)
           requireAiInitialization(options);
         await client.query(`SET LOCAL ROLE ${OWNER}`);
         for (let index = history.length; index < migrations.length; index++) {
@@ -196,9 +222,16 @@ export async function bootstrapDatabase(pool, runtimePassword, options = {}) {
       return {
         state: history.length < migrations.length ? 'upgraded' : 'unchanged',
         migrations: migrations.length,
+        ...(schemaOnly
+          ? {
+              aiBudget:
+                'schema-installed-accounting-unverified-spending-disabled',
+            }
+          : {}),
       };
     }
-    if (targetCount === 11) requireAiInitialization(options);
+    if (schemaOnly) throw new Error(schemaOnlyHistoryRefusal);
+    if (targetCount >= 11) requireAiInitialization(options);
     await client.query(
       `CREATE ROLE ${OWNER} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
     );
@@ -288,6 +321,78 @@ async function grantAi(client) {
      GRANT UPDATE(committed_nano_usd,suspended) ON app.ai_cost_budget TO ${RUNTIME};
      GRANT UPDATE(state,accounted_nano_usd,bound_exceeded) ON app.ai_cost_calls TO ${RUNTIME}`,
   );
+}
+
+async function grantGoogle(client) {
+  await client.query(
+    `REVOKE ALL ON app.google_route_budget FROM PUBLIC,${RUNTIME};
+     GRANT SELECT ON app.google_route_budget TO ${RUNTIME};
+     GRANT UPDATE(used_attempts) ON app.google_route_budget TO ${RUNTIME}`,
+  );
+}
+
+async function verifyGoogle(client) {
+  await verifyTablePrivileges(client, {
+    google_route_budget: { insert: [], update: ['used_attempts'] },
+  });
+  const rows = (
+    await client.query(
+      'SELECT singleton,used_attempts FROM app.google_route_budget',
+    )
+  ).rows;
+  if (
+    rows.length !== 1 ||
+    rows[0].singleton !== true ||
+    !Number.isInteger(rows[0].used_attempts) ||
+    rows[0].used_attempts < 0 ||
+    rows[0].used_attempts > 200
+  )
+    throw new Error('Google route budget collision.');
+}
+
+async function suspendNewAiBudget(client) {
+  // Only called immediately after new 0011 DDL, never to repair retained state.
+  const result = await client.query(
+    `UPDATE app.ai_cost_budget SET suspended=true
+     WHERE scope='amr-tokenrouter-dev-and-demo' AND suspended=false`,
+  );
+  if (result.rowCount !== 1)
+    throw new Error('New AI budget suspension failed.');
+}
+
+async function verifyDisabledAi(client) {
+  for (const table of Object.keys(aiTables)) {
+    const name = `app.${table}`;
+    const unsafe = await client.query(
+      `SELECT 1 FROM (
+         SELECT acl.* FROM pg_class c,
+           LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl
+           WHERE c.oid=$1::regclass
+         UNION ALL
+         SELECT acl.* FROM pg_attribute a, LATERAL aclexplode(a.attacl) acl
+           WHERE a.attrelid=$1::regclass AND a.attnum>0 AND NOT a.attisdropped
+       ) rights WHERE grantee<>(SELECT oid FROM pg_roles WHERE rolname=$2)`,
+      [name, OWNER],
+    );
+    const effective = (
+      await client.query(
+        `SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+           OR has_any_column_privilege($1,$2,'SELECT,INSERT,UPDATE,REFERENCES') AS access`,
+        [RUNTIME, name],
+      )
+    ).rows[0];
+    if (unsafe.rowCount || effective.access)
+      throw new Error(`Disabled AI privilege collision: ${name}.`);
+  }
+  const budget = (
+    await client.query('SELECT scope,suspended FROM app.ai_cost_budget')
+  ).rows;
+  if (
+    budget.length !== 1 ||
+    budget[0].scope !== 'amr-tokenrouter-dev-and-demo' ||
+    budget[0].suspended !== true
+  )
+    throw new Error('Disabled AI budget must remain suspended.');
 }
 
 // Effective column rights catch column grants that table-level checks omit.

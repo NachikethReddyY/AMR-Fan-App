@@ -19,9 +19,17 @@ import { routeFixture } from '../../server/journeys/fixtures.ts';
 import { readJourneyAward } from '../../server/awards/store.ts';
 if (process.env.AMR_OPS123_DISPOSABLE !== 'true')
   throw new Error('Owned disposable fixture only.');
+const targetCount = process.env.AMR_OPS123_SCHEMA_ONLY === 'true' ? 12 : 10;
 const initialization = {
   targetMigration: '0010_photo_activity.sql',
 };
+const installedOptions =
+  targetCount === 12
+    ? {
+        targetMigration: '0012_google_route_budget.sql',
+        aiBudgetMode: 'schema-install-only',
+      }
+    : initialization;
 const password = (await readFile('/run/amr-test/password', 'utf8')).trim();
 const admin = new pg.Pool({
   host: '127.0.0.1',
@@ -48,14 +56,29 @@ async function close(server) {
     server.close((e) => (e ? reject(e) : resolve())),
   );
 }
-test('target 0010 serves real HTTP and award reads with AI tables absent', async () => {
+test(`target ${targetCount} serves real HTTP and award reads with AI unavailable`, async () => {
   let api, provider;
   try {
     assert.deepEqual(await bootstrapDatabase(admin, password, initialization), {
       state: 'created',
       migrations: 10,
     });
-    const noAiTables = async () =>
+    if (targetCount === 12)
+      await bootstrapDatabase(admin, password, installedOptions);
+    const verifyAiUnavailable = async () => {
+      if (targetCount === 12) {
+        assert.equal(
+          (await admin.query('SELECT suspended FROM app.ai_cost_budget'))
+            .rows[0].suspended,
+          true,
+        );
+        await assert.rejects(
+          pool.query('SELECT * FROM app.ai_cost_budget'),
+          (error) => error.code === '42501',
+        );
+        return;
+      }
+
       assert.equal(
         (
           await admin.query(
@@ -64,7 +87,8 @@ test('target 0010 serves real HTTP and award reads with AI tables absent', async
         ).rows[0].n,
         0,
       );
-    await noAiTables();
+    };
+    await verifyAiUnavailable();
     const keys = await generateKeyPair('ES256'),
       now = Math.floor(Date.now() / 1000);
     const subject = '33333333-3333-4333-8333-333333333333';
@@ -173,15 +197,36 @@ test('target 0010 serves real HTTP and award reads with AI tables absent', async
     });
     assert.equal(award.cumulativeAutomaticCredit, 0);
     assert.equal(award.latestReceipt, null);
-    assert.deepEqual(await bootstrapDatabase(admin, password, initialization), {
-      state: 'unchanged',
-      migrations: 10,
-    });
-    await assert.rejects(
-      bootstrapDatabase(admin, password),
-      /AI budget initialization requires/,
+    assert.deepEqual(
+      await bootstrapDatabase(admin, password, installedOptions),
+      {
+        state: 'unchanged',
+        migrations: targetCount,
+        ...(targetCount === 12
+          ? {
+              aiBudget:
+                'schema-installed-accounting-unverified-spending-disabled',
+            }
+          : {}),
+      },
     );
-    await noAiTables();
+    if (targetCount === 12) {
+      for (const options of [
+        initialization,
+        { targetMigration: '0011_ai_cost_store.sql' },
+        {},
+      ])
+        await assert.rejects(
+          bootstrapDatabase(admin, password, options),
+          /Migration checksum collision/,
+        );
+    } else {
+      await assert.rejects(
+        bootstrapDatabase(admin, password),
+        /AI budget initialization requires/,
+      );
+    }
+    await verifyAiUnavailable();
     assert.equal(
       (await fetch(base + '/v1/dev/session', { method: 'POST' })).status,
       404,

@@ -813,3 +813,31 @@ limits. Final documentation and the sole native PR proceed under existing root
 authority; no merge, release or provider activation is implied.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## DEPLOY-GOOGLE-001: install Google budget while AI accounting is unknown
+
+Root authorized a separate runner/test/operating-doc implementation on
+`fix/google-budget-migration-delivery`; tracker unlinked. Add explicit
+`aiBudgetMode: "schema-install-only"`, exclusive with verified-zero initialization,
+for retained ten-migration installation and disabled eleven/twelve replay.
+Keep omitted target at eleven and add explicit target twelve. Apply unchanged
+0011, suspend its new seed before commit, and grant no AI runtime access; apply
+reviewed 0012 with only SELECT and UPDATE(used_attempts). Reject active or drifted
+AI state instead of repairing it. Preserve all accounting and Google attempts.
+Seeded zero is an uninitialized placeholder, not evidence of historical zero.
+Separate liability reconciliation remains required. Integrated reviewed main;
+84 isolated deployment/API tests and full/security gates pass under root's lease.
+Resources are removed and the lease is released. No production action or
+tracker write is authorized by this request.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+DEPLOY-GOOGLE-001 review correction: two independent reviewers found the target
+0012 API fixture replaying target 0010 and expecting an initialization error from
+omitted target 0011. Both are downgrades and correctly fail history validation.
+The fixture now replays its installed target and mode, explicitly expects checksum
+collision for target 0010, target 0011 and omitted-target downgrades, and retains
+the original target 0010 initialization-denial assertion. Classification: one-off
+test defect. Runtime behavior and future AI scope remain unchanged.
+
+Corrected by gpt-6-astra through Codex (T3 Code).
