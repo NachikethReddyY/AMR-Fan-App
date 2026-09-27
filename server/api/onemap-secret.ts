@@ -12,12 +12,89 @@ type Options = {
   env?: Record<string, string | undefined>;
 };
 
+type FailureStage =
+  | 'config'
+  | 'temp_resolution'
+  | 'source_open'
+  | 'source_metadata'
+  | 'source_read'
+  | 'source_format'
+  | 'source_close'
+  | 'private_dir'
+  | 'copy_open'
+  | 'copy_write'
+  | 'copy_metadata'
+  | 'copy_close'
+  | 'staged_event'
+  | 'api_import'
+  | 'cleanup';
+
+function safeErrno(error: unknown) {
+  try {
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? error.code
+        : undefined;
+    switch (code) {
+      case 'ENOENT':
+      case 'EACCES':
+      case 'EPERM':
+      case 'ELOOP':
+      case 'ENOTDIR':
+      case 'EISDIR':
+      case 'EROFS':
+      case 'ENOSPC':
+      case 'EMFILE':
+      case 'ENFILE':
+      case 'EEXIST':
+      case 'EIO':
+        return code;
+      default:
+        return 'OTHER';
+    }
+  } catch {
+    return 'OTHER';
+  }
+}
+
+class StartupFailure extends Error {
+  cleanupFailed = false;
+  readonly stage: FailureStage;
+  readonly errno: ReturnType<typeof safeErrno> | 'NONE';
+  constructor(
+    stage: FailureStage,
+    errno: ReturnType<typeof safeErrno> | 'NONE',
+  ) {
+    super('OneMap token staging failed.');
+    this.stage = stage;
+    this.errno = errno;
+  }
+}
+
+function failureAt(stage: FailureStage, error: unknown) {
+  return error instanceof StartupFailure
+    ? error
+    : new StartupFailure(stage, safeErrno(error));
+}
+
+// Only our fixed fields cross stderr. Never serialize an original exception.
+export function oneMapStartupFailure(error: unknown) {
+  const failure = failureAt('api_import', error);
+  return {
+    event: 'onemap_startup_failed',
+    stage: failure.stage,
+    errno: failure.errno,
+    ...(failure.cleanupFailed ? { cleanupFailed: true } : {}),
+  };
+}
+
 // Source/base injection is for synthetic tests; the opt-in entrypoint accepts no overrides.
 export function prepareOneMapSecret({
   source = mountedSource,
   temporaryBase = tmpdir(),
   env = process.env,
 }: Options = {}) {
+  let stage: FailureStage = 'config';
   let directory: string | undefined;
   let path: string | undefined;
   let created = false;
@@ -31,10 +108,33 @@ export function prepareOneMapSecret({
         fs.rmdirSync(directory);
         directory = undefined;
       }
-    } catch {
-      throw new Error('OneMap private token cleanup failed.');
+    } catch (error) {
+      const failure = failureAt('cleanup', error);
+      failure.message = 'OneMap private token cleanup failed.';
+      throw failure;
     }
   };
+  // A close failure must not replace the operation that already failed.
+  function withDescriptor<T>(
+    fd: number,
+    closeStage: FailureStage,
+    operation: () => T,
+  ): T {
+    let original: StartupFailure | undefined;
+    try {
+      return operation();
+    } catch (error) {
+      original = failureAt(stage, error);
+      throw original;
+    } finally {
+      try {
+        fs.closeSync(fd);
+      } catch (error) {
+        if (!original) throw failureAt(closeStage, error);
+        original.cleanupFailed = true;
+      }
+    }
+  }
   const buffer = Buffer.alloc(maxBytes + 1);
   try {
     if (
@@ -44,7 +144,7 @@ export function prepareOneMapSecret({
       env.AMR_GOOGLE_ROUTES_KEY ||
       env.AMR_ROUTES_SYNTHETIC === 'true'
     )
-      throw new Error();
+      throw new StartupFailure(stage, 'NONE');
     // Disabled staging validates the OneMap contract without changing the selected provider.
     const config = routeConfig({
       ...env,
@@ -52,7 +152,8 @@ export function prepareOneMapSecret({
       AMR_ONEMAP_ACCESS_TOKEN_FILE: source,
     });
     if (config.kind !== 'onemap' || config.credentials.kind !== 'token-file')
-      throw new Error();
+      throw new StartupFailure(stage, 'NONE');
+    stage = 'temp_resolution';
     const root = fs.realpathSync(
       fileURLToPath(new URL('../..', import.meta.url)),
     );
@@ -64,16 +165,19 @@ export function prepareOneMapSecret({
         !location.startsWith('../') &&
         !isAbsolute(location))
     )
-      throw new Error();
+      throw new StartupFailure(stage, 'NONE');
+    stage = 'source_open';
     const sourceFd = fs.openSync(
       source,
       fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK,
     );
     let bytes = 0;
-    try {
+    withDescriptor(sourceFd, 'source_close', () => {
+      stage = 'source_metadata';
       const stat = fs.fstatSync(sourceFd);
       if (!stat.isFile() || stat.size < 1 || stat.size > maxBytes)
-        throw new Error();
+        throw new StartupFailure(stage, 'NONE');
+      stage = 'source_read';
       while (bytes < buffer.length) {
         const read = fs.readSync(
           sourceFd,
@@ -85,6 +189,7 @@ export function prepareOneMapSecret({
         if (!read) break;
         bytes += read;
       }
+      stage = 'source_format';
       if (
         bytes > maxBytes ||
         !/^[A-Za-z0-9._~-]{1,8192}$/.test(
@@ -94,10 +199,9 @@ export function prepareOneMapSecret({
             .replace(/\r?\n$/, ''),
         )
       )
-        throw new Error();
-    } finally {
-      fs.closeSync(sourceFd);
-    }
+        throw new StartupFailure(stage, 'NONE');
+    });
+    stage = 'private_dir';
     directory = fs.mkdtempSync(join(base, 'amr-onemap-'));
     fs.chmodSync(directory, 0o700);
     const dirStat = fs.lstatSync(directory);
@@ -107,8 +211,9 @@ export function prepareOneMapSecret({
       (dirStat.mode & 0o777) !== 0o700 ||
       fs.realpathSync(dirname(directory)) !== base
     )
-      throw new Error();
+      throw new StartupFailure(stage, 'NONE');
     path = join(directory, 'access-token.txt');
+    stage = 'copy_open';
     const targetFd = fs.openSync(
       path,
       fs.constants.O_WRONLY |
@@ -118,19 +223,15 @@ export function prepareOneMapSecret({
       0o600,
     );
     created = true;
-    let metadata: {
-      uid: number;
-      mode: number;
-      nlink: number;
-      directoryMode: number;
-    };
-    try {
+    const metadata = withDescriptor(targetFd, 'copy_close', () => {
+      stage = 'copy_write';
       let written = 0;
       while (written < bytes) {
         const count = fs.writeSync(targetFd, buffer, written, bytes - written);
-        if (!count) throw new Error();
+        if (!count) throw new StartupFailure(stage, 'NONE');
         written += count;
       }
+      stage = 'copy_metadata';
       const stat = fs.fstatSync(targetFd);
       if (
         !stat.isFile() ||
@@ -139,20 +240,28 @@ export function prepareOneMapSecret({
         stat.nlink !== 1 ||
         stat.size !== bytes
       )
-        throw new Error();
-      metadata = {
+        throw new StartupFailure(stage, 'NONE');
+      return {
         uid: stat.uid,
         mode: stat.mode & 0o777,
         nlink: stat.nlink,
         directoryMode: dirStat.mode & 0o777,
       };
-    } finally {
-      fs.closeSync(targetFd);
-    }
+    });
     return { path, cleanup, metadata };
-  } catch {
-    cleanup();
-    throw new Error('OneMap token staging failed.');
+  } catch (error) {
+    const failure = failureAt(stage, error);
+    // routeConfig throws validation errors, with no operational errno.
+    const reported =
+      stage === 'config' && !(error instanceof StartupFailure)
+        ? new StartupFailure('config', 'NONE')
+        : failure;
+    try {
+      cleanup();
+    } catch {
+      reported.cleanupFailed = true;
+    }
+    throw reported;
   } finally {
     buffer.fill(0);
   }
@@ -165,12 +274,20 @@ export async function startOneMap({
   start?: () => Promise<unknown>;
 } = {}) {
   const env = options.env ?? process.env;
+  let stage: FailureStage = 'config';
   let copy: ReturnType<typeof prepareOneMapSecret> | undefined;
+  let cleanupReported = false;
   const cleanup = () => {
     try {
       copy?.cleanup();
-    } catch {
-      process.stderr.write('OneMap private token cleanup failed.\n');
+    } catch (error) {
+      if (!cleanupReported) {
+        cleanupReported = true;
+        process.stderr.write(
+          JSON.stringify(oneMapStartupFailure(failureAt('cleanup', error))) +
+            '\n',
+        );
+      }
       process.exitCode = 1;
     }
   };
@@ -188,6 +305,7 @@ export async function startOneMap({
   process.once('SIGINT', interrupt);
   try {
     copy = prepareOneMapSecret({ ...options, env });
+    stage = 'staged_event';
     env.AMR_ONEMAP_ACCESS_TOKEN_FILE = copy.path;
     process.stdout.write(
       JSON.stringify({
@@ -197,12 +315,19 @@ export async function startOneMap({
         provider: env.AMR_ROUTES_PROVIDER,
       }) + '\n',
     );
+    stage = 'api_import';
     await start();
-  } catch {
-    cleanup();
+  } catch (error) {
+    const failure = failureAt(stage, error);
+    try {
+      copy?.cleanup();
+    } catch {
+      failure.cleanupFailed = true;
+    }
     if (copy) delete env.AMR_ONEMAP_ACCESS_TOKEN_FILE;
     process.removeListener('exit', cleanup);
-    throw new Error('OneMap startup failed.');
+    failure.message = 'OneMap startup failed.';
+    throw failure;
   } finally {
     // Once start.ts has installed its handlers, it owns graceful server/DB shutdown.
     process.removeListener('SIGTERM', term);

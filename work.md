@@ -2480,3 +2480,52 @@ hosted files, DB startup and provider routes remain unverified. No real token wa
 read and no provider/cloud/device/CI/Git delivery action occurred.
 
 Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: diagnose OneMap startup failures without exposing secrets
+
+The inactive exact-source deployment failed with only a generic startup message.
+Missing staging stdout did not identify a failed file check or exclude API import.
+This one-off implementation correction adds bounded diagnostics, not a hosted
+cause determination. Previous full/security green receipts remain unchanged.
+
+The opt-in entrypoint now emits one `onemap_startup_failed` stderr JSON object
+with a fixed stage, allowlisted errno and optional `cleanupFailed: true`. Source
+and copy close failures cannot replace an earlier failed operation. Preparation
+or import cleanup failures are folded into that same object. No raw exception,
+message, stack, cause, path, token, hash or environment is serialized. The
+`api_import` stage identifies failure after staging. Signal/exit cleanup reports
+at most once. All file/config/cutoff guards, default API startup, provider modes
+and existing lifecycle ownership remain intact; no fallback or retry was added.
+
+Failure-first proof: all 12 new diagnostics fail against the unchanged helper
+with corrected synthetic fixtures. Final route/helper suite passes 89/89, including
+missing mount, symlink, nonregular source, malformed token/config, copy-write
+failure, original-stage preservation through close/cleanup failure, sensitive
+code/message redaction, throwing code accessor, and import failure. Existing
+lifecycle tests use actual API startup/listener with a synthetic database module;
+there is no real DB or provider access. Typecheck and scoped lint pass.
+
+Intermediate failures are retained: Node strip-only syntax rejected constructor
+parameter properties; test setup needed NODE_ENV; fixture directory redirection
+violated the canonical-parent check; unbounded filesystem mocks interfered with
+the module loader. Corrections use ordinary fields, an isolated TMPDIR and only
+the synthetic token descriptor. No production guard was relaxed.
+
+Evidence and frozen correction: `.evidence/onemap-startup-diagnostic/`. Full and
+security reruns await review and a coordinated slot. The mounted source, private
+copy and runtime path still need hosted proof before activation. No real token
+read, provider/DB/cloud/device call, deployment or Git delivery occurred.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+Independent spec review found primary cleanup lost its filesystem errno at two
+error boundaries. A synthetic orderly-exit cleanup case failed with OTHER instead
+of EPERM, then passed after both boundaries retained the sanitized failure.
+The focused startup suite passes 33/33; typecheck and scoped lint pass. Secondary
+cleanup tests still preserve copy_write/EACCES and api_import/OTHER with only
+cleanupFailed added. The first frozen patch and red evidence remain preserved.
+This one-off implementation correction changes no guards or default lifecycle.
+Hosted logs still execute the earlier merged source without these diagnostics;
+no hosted cause or deployed fix is claimed.
+
+Corrected and verified by gpt-6-astra through Codex (T3 Code).

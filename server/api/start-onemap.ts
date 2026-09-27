@@ -1,8 +1,8 @@
-import { startOneMap } from './onemap-secret.ts';
+import { oneMapStartupFailure, startOneMap } from './onemap-secret.ts';
 
 try {
   await startOneMap();
-} catch {
-  process.stderr.write('OneMap startup failed.\n');
+} catch (error) {
+  process.stderr.write(JSON.stringify(oneMapStartupFailure(error)) + '\n');
   process.exit(1);
 }

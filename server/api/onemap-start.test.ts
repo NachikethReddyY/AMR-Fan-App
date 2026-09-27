@@ -459,3 +459,103 @@ for (const provider of ['disabled', 'onemap'] as const)
         provider,
         cutoff: new Date(Date.now() + remaining).toISOString(),
       }));
+
+// Exercise the real opt-in entrypoint. Redirect only its fixed source/temp inputs
+// at the filesystem boundary; no production config override or database import.
+async function diagnostic(scenario: string) {
+  const f = fixture();
+  const entry = new URL('./start-onemap.ts', import.meta.url).href;
+  const start = new URL('./start.ts', import.meta.url).href;
+  const code = `
+    import fs from 'node:fs';
+    import { registerHooks } from 'node:module';
+    const scenario = ${JSON.stringify(scenario)};
+    const source = ${JSON.stringify(f.source)};
+    const sensitive = 'synthetic-sensitive-token-path-stack-cause';
+    const bad = Object.assign(new Error(sensitive), {code: sensitive, path: sensitive, cause: sensitive});
+    const open = fs.openSync;
+    let sourceFd;
+    fs.openSync = (path, ...args) => {
+      if (path !== '/etc/secrets/amr-onemap-access-token.txt') return open(path, ...args);
+      sourceFd = open(source, ...args); return sourceFd;
+    };
+    const read = fs.readSync;
+    const close = fs.closeSync;
+    if (scenario === 'missing') fs.unlinkSync(source);
+    if (scenario === 'symlink') { fs.renameSync(source, source+'.target'); fs.symlinkSync(source+'.target', source); }
+    if (scenario === 'directory') { fs.unlinkSync(source); fs.mkdirSync(source); }
+    if (scenario === 'format') fs.writeFileSync(source, 'Bearer '+sensitive);
+    if (scenario === 'config') process.env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT = '';
+    if (scenario === 'write' || scenario === 'cleanup') fs.writeSync = () => { throw Object.assign(new Error(sensitive), {code:'EACCES'}); };
+    if (scenario === 'cleanup' || scenario === 'import_cleanup' || scenario === 'primary_cleanup') fs.unlinkSync = () => { throw Object.assign(new Error(sensitive), {code:'EPERM'}); };
+    if (scenario === 'code') fs.readSync = (fd, ...args) => { if (fd === sourceFd) throw bad; return read(fd, ...args); };
+    if (scenario === 'getter') fs.readSync = (fd, ...args) => { if (fd === sourceFd) throw Object.defineProperty(new Error(sensitive), 'code', {get(){throw bad}}); return read(fd,...args); };
+    if (scenario === 'close') { fs.closeSync = (fd) => {close(fd); if(fd === sourceFd) throw Object.assign(new Error(sensitive),{code:'EIO'});}; fs.readSync = (fd,...args) => {if(fd === sourceFd) throw Object.assign(new Error(sensitive),{code:'EACCES'}); return read(fd,...args);}; }
+    registerHooks({resolve(specifier, context, next) {
+      const result = next(specifier, context);
+      if (result.url === ${JSON.stringify(start)}) return {url:'data:text/javascript,'+encodeURIComponent(scenario === 'primary_cleanup' ? 'export {}' : 'throw new Error('+JSON.stringify(sensitive)+')'),shortCircuit:true};
+      return result;
+    }});
+    await import(${JSON.stringify(entry)});
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', code], {
+    env: {
+      PATH: process.env.PATH,
+      NODE_ENV: 'test',
+      TMPDIR: f.temporaryBase,
+      ...f.env,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => {
+    stderr += String(chunk);
+  });
+  child.stdout.resume();
+  try {
+    const [exit] = await once(child, 'exit');
+    assert.equal(exit, 1);
+    assert.ok(stderr.length < 220, 'failure output is bounded');
+    const lines = stderr.trim().split('\n');
+    assert.equal(lines.length, 1, 'exactly one stderr failure object');
+    const result: unknown = JSON.parse(lines[0]);
+    assert.ok(!stderr.includes('synthetic') && !stderr.includes(f.source));
+    if (
+      scenario !== 'cleanup' &&
+      scenario !== 'import_cleanup' &&
+      scenario !== 'primary_cleanup'
+    )
+      assert.deepEqual(fs.readdirSync(f.temporaryBase), []);
+    return result;
+  } finally {
+    f.remove();
+  }
+}
+
+for (const [scenario, stage, errno] of [
+  ['missing', 'source_open', 'ENOENT'],
+  ['symlink', 'source_open', 'ELOOP'],
+  ['directory', 'source_metadata', 'NONE'],
+  ['format', 'source_format', 'NONE'],
+  ['config', 'config', 'NONE'],
+  ['write', 'copy_write', 'EACCES'],
+  ['cleanup', 'copy_write', 'EACCES'],
+  ['code', 'source_read', 'OTHER'],
+  ['getter', 'source_read', 'OTHER'],
+  ['close', 'source_read', 'EACCES'],
+  ['import', 'api_import', 'OTHER'],
+  ['import_cleanup', 'api_import', 'OTHER'],
+  ['primary_cleanup', 'cleanup', 'EPERM'],
+])
+  test(`startup diagnostic: ${scenario} reports only fixed stage and safe errno`, async () => {
+    assert.deepEqual(await diagnostic(scenario), {
+      event: 'onemap_startup_failed',
+      stage,
+      errno,
+      ...(scenario === 'cleanup' ||
+      scenario === 'close' ||
+      scenario === 'import_cleanup'
+        ? { cleanupFailed: true }
+        : {}),
+    });
+  });

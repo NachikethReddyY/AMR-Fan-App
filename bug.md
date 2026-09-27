@@ -1100,3 +1100,31 @@ zero; malformed/missing cutoff still prevents startup. Prior operating-limit not
 about expiry blocking restart are superseded. Full/security await root disposition.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+## ONEMAP-DIAGNOSTIC-001: identify startup failure without exposing secrets (unlinked)
+
+The inactive hosted startup emitted only a generic failure. Missing staging stdout
+cannot identify the failed check or exclude API import failure. Add one bounded
+stderr failure object with fixed stage and allowlisted errno, preserving the first
+failure through cleanup. Keep every guard and lifecycle behavior. This is a
+one-off implementation correction; hosted cause remains unverified. Local synthetic
+proof only, with no token read, provider request or deployment.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-DIAGNOSTIC-001 local correction: 12 diagnostic cases fail against the
+unchanged helper; the corrected candidate passes 89/89 route/startup cases,
+typecheck and scoped lint. Original failure stage survives close/cleanup failures;
+stderr reflects only fixed fields. Hosted cause and actual mounted-file flow
+remain unverified. Full/security await review and slot allocation.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+ONEMAP-DIAGNOSTIC-001 review correction: primary exit cleanup discarded known
+filesystem errno as OTHER. A focused synthetic EPERM regression reproduced it.
+Both cleanup layers now preserve only the sanitized allowlisted errno; secondary
+cleanup still adds only cleanupFailed without replacing the first failure.
+Startup tests pass 33/33. This is a one-off implementation correction, with no
+change to guards or deployment authority.
+
+Corrected and verified by gpt-6-astra through Codex (T3 Code).
