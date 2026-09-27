@@ -2362,3 +2362,121 @@ remain unassigned. No new label or self-review request. Password helper and
 public policy delivery remain held, and no complete signup-rule claim is made.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: explicit OneMap access-token file, local candidate
+
+Thread `mcp:7520bee2-5ba4-4381-846e-3e62b97fd610`, branch
+`fix/onemap-live-routing-setup`, base `0d27a7bb9620ffca2d529a6a4c02c1f755d7df7c`.
+Related route work #6/#7; token-specific steering remains unlinked. Root authorized
+only configuration, adapter, directly affected tests/setup docs and local records.
+
+Added explicit access-token-file mode with a required offset-bearing operator
+cutoff. Account credential exchange remains supported. The bounded private reader
+is shared; no provider URL override or fixture credential escape was added.
+Every token-file dispatch checks the 60-second cutoff margin. Invalid files,
+observed expiry and HTTP 401/403 latch unavailable status until restart; tokens
+are read lazily and cached per instance. There is no refresh, fallback or public
+schema addition. Existing mode outcomes explain partial failures. Already
+in-flight requests can finish after expiry/rejection; no subsequent dispatch is
+allowed. Replacement requires privately updating token and cutoff, then restart.
+
+The reported 2026-09-30 expiry has no verified time/timezone. The separately
+approved initial operator cutoff is 2026-09-29T00:00:00+08:00. Neither the real token
+nor this cutoff is embedded in implementation, fixtures or environment defaults.
+The saved token had passed named-only private-file/syntax validation earlier;
+implementation tests did not reread it. Provider validity remains unverified.
+
+| Proof                     | Observed                                                                                 | Limits                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Failure-first token tests | 9 failures, 1 preservation case passed before implementation                             | Synthetic files and intercepted fetch; no live provider                         |
+| Final route suite         | 57/57 pass, including 11 token-file cases, account renewal and Google budget regressions | Existing loopback fixtures plus synthetic fetch interception; no DB integration |
+| Static checks             | Typecheck, focused ESLint, affected-file formatting, diff whitespace pass                | No full aggregate or security scan slot authorized                              |
+| Documentation structure   | 15 skills and 44 maintained documents pass                                               | Structure/content review only                                                   |
+| Installation              | Frozen lockfile, scripts disabled, all packages reused                                   | No package/lockfile change or build                                             |
+
+Evidence: `.evidence/onemap-token-file/`, including red/final logs and review diff.
+The minimum hosted prerequisite is proving the assigned file's server UID, mode
+0600, regular-file status, single link and external resolved parent; an incompatible
+mount needs a private server-owned copy, not weaker validation. Root coordinates
+cloud085 provisioning. No live routing, hosted file, database, native, CI, full
+security, commit, push or PR proof is claimed. No Google/auth/journey/UI source
+changed. Independent review and later activation remain with root.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: opt-in hosted OneMap private copy, local candidate
+
+Separate slice in thread `mcp:7520bee2-5ba4-4381-846e-3e62b97fd610` after the
+reader candidate completed its gates and released the heavy slot. Reader gate
+receipt: final full check exit 0 (774 tests), security exit 0, no remaining owned
+processes/containers/temp files. Initial full check and one redundant unchanged
+rerun exited 1 on the new work-entry table formatting. Only seven table-alignment
+lines changed; security-source equivalence is recorded in the frozen evidence.
+Initial Docker preflight failed on its missing socket; root restored OrbStack and
+verified Docker 29.4.0 before security. Those gates do not cover this later helper.
+
+Added `server/api/onemap-secret.ts`, `start-onemap.ts` and focused startup tests.
+The opt-in `pnpm api:start:onemap` uses the fixed mounted path, bounded regular-file
+descriptor read, fresh external current-UID-owned 0700 directory and exclusive
+0600 single-link copy. It assigns the private path before importing existing
+`start.ts` in the same process. Preparation/import errors are fixed messages.
+Cleanup removes only its exact file/directory, never recursively or from the
+managed mount. SIGTERM/SIGINT before handoff terminate after cleanup so pending
+imports cannot resume; existing API handlers retain ownership after handoff.
+SIGKILL/host loss or shutdown that never exits can retain the ephemeral copy.
+
+Routing-disabled staging validates a future cutoff and single-token syntax while
+leaving the provider disabled. A sanitized event reports path, UID, numeric modes,
+link count and selected provider. It is metadata proof only. Existing default
+`api:start`, `start.ts`, strict token reader, token tests, Google/auth/journey source
+and dependency lockfile are unchanged from the frozen reader candidate.
+The example and procedure document the explicit command; no real configuration,
+cutoff default or token is embedded. Root owns staged release order and activation.
+
+Proof: 11/11 behavioral cases failed against the initial helper stub. Final focused
+route/startup suite passes 71/71, including 14 helper cases. Synthetic copy is
+accepted by the unchanged reader; disabled staging makes zero provider calls.
+Signal tests use real `start.ts` and API listener with a substituted synthetic DB
+module, not a real DB connection. Both SIGTERM/SIGINT cover preparation (synthetic
+signal emission), before import, during the pending DB readiness query and after
+handoff; exits, listener closure and cleanup are asserted. Import and copy failures
+are sanitized. Focused typecheck/lint/format and document structure checks pass.
+
+Evidence and separate helper delta: `.evidence/onemap-startup-copy/`. Full/security
+checks for this new slice require a new root slot. Hosted mount compatibility,
+real DB startup and live routes remain unverified. No real token read, provider
+call, cloud/device/CI/Git delivery, or default start behavior change occurred.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: preserve API availability after OneMap token expiry
+
+Root corrected the protected criterion after accepting the combined 788-test and
+security-green candidate: an expired route token must not prevent unrelated API
+startup. This one-off design correction supersedes only the wrapper's future-cutoff
+requirement. The earlier green receipts remain unchanged in evidence.
+
+Removed only two wall-clock rejections from `server/api/onemap-secret.ts`.
+The cutoff remains mandatory and syntactically validated, and all private-copy
+checks remain intact. Expired/within-margin cutoffs now permit startup/health with
+either `disabled` or `onemap` selected. The unchanged route adapter still checks
+expiry before token use and each dispatch, returns unavailable and makes no fetch.
+No provider switch, fallback or environment rewrite was introduced.
+
+Failure-first proof: 14 existing cases passed and four new expired/within-margin
+startup cases failed before implementation. Final focused route/startup suite passes
+77/77, including actual `start.ts`/API listener health requests with a synthetic DB.
+All four cases return health HTTP 200, refuse route use and report zero provider
+fetches through orderly exit. Missing/malformed cutoffs still fail wrapper startup.
+The new HTTP assertion exposed an existing double-fetch-mock restoration problem;
+the test now uses one updated mock plus a bounded loopback health request. A test
+callback type mismatch was corrected before final typecheck. No production reader,
+configuration, default startup, signal handler or private-file guard changed.
+
+Focused typecheck, lint, formatting and docs checks passed. Evidence and minimal
+correction patch: `.evidence/onemap-expiry-availability/`. Earlier full/security
+passes do not cover this correction; no heavyweight rerun was authorized. Real
+hosted files, DB startup and provider routes remain unverified. No real token was
+read and no provider/cloud/device/CI/Git delivery action occurred.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).

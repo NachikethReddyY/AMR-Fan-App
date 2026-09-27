@@ -51,11 +51,13 @@ which is disabled without its existing key. There is no cross-provider fallback.
 | Variable | Behavior |
 | --- | --- |
 | `AMR_ONEMAP_CREDENTIALS_FILE` | Assigned absolute path outside this worktree to JSON containing only `email` and `password`. The regular file must belong to the server user, have mode 600, one link, and at most 16 KiB. Symlinks and repository files are rejected. No file path is supplied or discovered automatically. |
+| `AMR_ONEMAP_ACCESS_TOKEN_FILE` | Alternative to the account credential file: an assigned absolute external path to a regular server-owned mode-600 file with one link. One token of 1–8192 characters using letters, digits, `.`, `_`, `~`, or `-`, optionally followed by one LF or CRLF; at most 8194 bytes. No JSON, `Bearer` prefix, spaces, symlinks or repository files. |
+| `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT` | Required with the access-token file. ISO timestamp with `Z` or an explicit timezone offset. This is an operator use-until cutoff, not proof of provider expiry. No default or date-only value. Missing/invalid pairs and simultaneous account/token configuration fail startup. |
 | `AMR_ONEMAP_BASE_URL` | Exactly `https://www.onemap.gov.sg` for live use. Redirects are rejected. |
 | `AMR_ROUTES_TIMEOUT_MS` | Existing 25–5000 ms bound, default 3000. Each auth/search/route request includes bounded body reading; route validation and geography use the same deadline. |
-| `AMR_ROUTES_SYNTHETIC` | Test-only OneMap fixtures require `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>` base, no credential file and no Google key. Only fixed synthetic credentials are sent. |
+| `AMR_ROUTES_SYNTHETIC` | Test-only OneMap fixtures require `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>` base, no credential/token file or token cutoff, and no Google key. Only fixed synthetic credentials are sent. |
 
-Credentials are read only when a query needs a token. The server caches tokens
+Account credentials are read only when a query needs a token. The server caches tokens
 in memory until 60 seconds before their supplied expiry, capped at three days.
 One active query owns authentication before mode fan-out, so refreshes cannot
 race. Every refresh attempt starts a 60-second cooldown. A 401/403 clears the
@@ -64,10 +66,99 @@ credential cannot cause an immediate login loop. Tokens and account passwords
 never appear in route results. No account was created or authenticated for this
 implementation. Supply a secure file only after the owner assigns it.
 
+Access-token mode reads only its assigned private file, lazily once per provider
+instance, and caches the supplied token in memory. It never calls the login
+endpoint or falls back to account credentials or Google. Before each address or
+route dispatch, including the second request in a pair and subsequent batches,
+it checks the operator cutoff with a 60-second margin. Once that margin is reached,
+it discards the cache and returns the existing `live_not_configured` reason
+without another dispatch. Invalid/missing files also latch that reason until
+restart. A provider 401/403 discards the token and latches `provider_error` until
+restart, with no retry. Already dispatched requests may finish; subsequent
+dispatches are blocked. Per-mode outcomes retain existing response structure,
+including the aggregate `provider_error` when no route succeeds.
+
+Token syntax and a configured cutoff do not verify provider validity. A token may
+be revoked or expire earlier; provider rejection stops further use. No refresh
+credentials are assumed. Filesystem changes alone do not rotate a cached token
+or clear a failure. Suspend routing, privately replace the token and its operator
+cutoff together, then restart all API instances. Run local format/configuration
+checks before a separately authorized bounded provider check. If no replacement
+is available, leave routing unavailable; never advance the cutoff for the same
+expired token. Precise locations, credentials and provider bodies stay out of logs.
+
+For a hosted secret mount, the infrastructure owner must verify the actual runtime
+UID, file mode, regular-file status, link count and external resolved parent path.
+The repository deployment template does not establish these properties. If the
+mount is incompatible, provisioning must supply a server-owned private copy outside
+the app tree, in a mode-700 directory; do not relax the reader or expose the token
+in a client bundle. Secret provisioning, rotation and restart require their own
+deployment authority.
+
+### Opt-in hosted private copy
+
+`pnpm api:start:onemap` runs `server/api/start-onemap.ts`. The default
+`pnpm api:start` and `server/api/start.ts` are unchanged. This wrapper reads only
+`/etc/secrets/amr-onemap-access-token.txt`; there is no CLI or environment override
+for the mounted source. It accepts `AMR_ROUTES_PROVIDER=disabled` or `onemap`
+and requires a syntactically valid explicit `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT`
+cutoff. An expired or within-60-second cutoff still permits API startup and health,
+including disabled staging. The unchanged route adapter returns unavailable before
+fetching, so token expiry cannot take unrelated API operations down on restart.
+Missing/malformed cutoff or failed private-copy checks still fail startup.
+Replace the token and cutoff together to restore routes; never extend an expired
+token's cutoff. Leave `AMR_ONEMAP_ACCESS_TOKEN_FILE`,
+`AMR_ONEMAP_CREDENTIALS_FILE` and the Google key unset. Synthetic provider mode
+is incompatible with the wrapper. Normal account/Google startup continues to use
+`pnpm api:start`.
+
+The mounted file must be readable, regular, nonsymlink and bounded to 8194 bytes;
+its mode/UID are not assumed or changed. The wrapper reads through
+`O_NOFOLLOW|O_NONBLOCK`, validates single-token syntax, and creates a unique
+external directory under the resolved OS temporary directory. It verifies current
+UID ownership and mode 0700, exclusive-creates a regular mode-0600 single-link
+token file, bounds the copy and clears its temporary buffer. It rejects a temp
+base inside the app tree. The generated path is assigned to the API process
+environment before dynamically importing the existing `start.ts` in that same
+process. No login, refresh, provider request or database operation occurs in the
+copy helper. The existing API startup still performs its usual database readiness
+query and host/port binding.
+
+For a later authorized Render setup, the exact opt-in start command is:
+
+```sh
+API_HOST=0.0.0.0 API_PORT="$PORT" pnpm api:start:onemap
+```
+
+Stage with `AMR_ROUTES_PROVIDER=disabled`. The wrapper validates OneMap token
+configuration separately but keeps the actual selected provider disabled. Its
+`onemap_token_staged` log contains only generated path, runtime UID, numeric file
+mode (384 means 0600), directory mode (448 means 0700), link count and selected
+provider. It contains no token, hash, length or source exception. This event proves
+copy checks, not API health or provider acceptance. Observe the subsequent
+`api_started` event separately. Switching to `onemap` remains a separate authorized
+activation; secret/settings saves may deploy, so root must approve staging order.
+
+Preparation/import failures emit fixed errors without reflecting exception text.
+SIGTERM/SIGINT before startup handoff synchronously clean the copy and terminate
+with 143/130, preventing pending import work from resuming. After handoff, the
+existing API handlers still close its server and database pool; process exit
+removes only the generated token and its exact directory. Cleanup never recursively
+deletes a directory or changes the mounted source. Unexpected extra files or failed
+removal produce a fixed cleanup error. SIGKILL, host loss or an API shutdown that
+never exits can leave the private ephemeral copy; guaranteed deletion is not claimed.
+
+Focused lifecycle tests run the actual API start/listener with a synthetic database
+module and no provider access. They establish local signal/host/port/same-process
+compatibility only. Hosted mount metadata, real database startup and real routes
+still require their separately authorized checks.
+
 The same 60-call/minute and 1000-call/provider-lifetime ceilings include OneMap
 authentication and address requests. Each query conservatively reserves one auth
 call, up to two address searches, and one call per selected mode, even if a token
-is cached or both address strings match. Identical address strings are resolved
+is cached, token-file mode skips authentication, or both address strings match.
+These process-local ceilings reset on restart; the independent Google budget is
+unchanged and is not used for OneMap. Identical address strings are resolved
 once. Maximum fan-out remains two; a concurrent query returns `busy`. Every
 response has the existing 128 KiB limit. No pagination or automatic retry occurs.
 
@@ -128,7 +219,17 @@ captured personal trips or a claim that live schedules were checked.
 
 ### Minimal path to live routing
 
-The account owner must [register for OneMap API access](https://www.onemap.gov.sg/apidocs/register)
+Choose one credential mode. If the owner supplies an access token, use
+`AMR_ONEMAP_ACCESS_TOKEN_FILE` plus `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT`, leaving
+`AMR_ONEMAP_CREDENTIALS_FILE` empty. Obtain an exact provider expiry or an
+explicitly approved earlier operator cutoff; never infer a time or timezone from
+a reported expiry date. Set `AMR_ROUTES_PROVIDER=onemap`, keep the official base
+URL and synthetic mode off. Follow the replacement/restart procedure above.
+An initial authorized coordinate-only comparison avoids address ambiguity and
+requires one routing request per selected mode, with no login or search calls.
+This does not establish address, cycling or transit compatibility.
+
+For account credential mode, the account owner must [register for OneMap API access](https://www.onemap.gov.sg/apidocs/register)
 and [confirm the account](https://www.onemap.gov.sg/apidocs/registerconfirm) using
 the confirmation code sent by email, then set the account password. The
 [authentication service](https://www.onemap.gov.sg/apidocs/authentication) accepts
@@ -143,7 +244,8 @@ Keep the official base URL and synthetic mode off. Do not put credentials in
 source, chat, shell history or phone configuration. No account, file location or
 credential was assigned or used in this task.
 
-After explicit authorization, the live check must cover token exchange, one
+After explicit authorization, the live check must cover token exchange when using
+account credentials (direct authorization when using a supplied token), one
 unambiguous address, and drive/walk/cycle/transit responses, including mode fields,
 units and actual geometry. Deployment and phone attribution belong to their
 separate owners. Local fixtures cannot establish live availability.
