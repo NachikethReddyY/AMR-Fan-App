@@ -2292,3 +2292,53 @@ large text/shutdown state restored; own CLI sessions and panels closed; fixture
 and Metro processes stopped with ports 54872/8087 verified closed. Root lease released.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+### Signup error guidance: independent correction, 2026-09-27
+
+Started from clean 03a836315eaf671a958748470ed8745226740fc0, verified as origin/main
+with read-only ls-remote. Supabase signup now maps unambiguous modern string code
+and legacy error_code (including matching numeric HTTP code) to fixed safe copy.
+Conflicting or malformed envelopes and unknown/duplicate errors stay neutral.
+Weak-password reasons are restricted to length, characters and pwned, without
+inventing a minimum or character classes. HTTP 429/5xx retain their own guidance
+with malformed bodies. No raw response strings, new requests or automatic retries.
+
+Confirmation-only signup and unconfirmed sign-in now say to check email and open
+a confirmation link if received, then return to sign in. This proves neither
+account creation nor delivery. Real email-flow/controller tests keep the caller
+signed out with no app exchange or storage; the Account DOM case retains the
+email draft, clears the password and leaves the sheet open without code/resend.
+Automatic-confirmation session exchange and existing cancellation remain covered.
+AccountPanel.tsx, session.ts, native-auth.ts, server/config and layout are unchanged.
+
+| Boundary / criterion   | Observed evidence                                                                                                                                                | Limits / confidence                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Provider error output  | Both envelopes, numeric legacy status, conflicts, malformed fields, unknown/duplicate, weak-reason allowlist, raw-body rejection and one-request assertions pass | High for synthetic cases; no live provider test           |
+| Confirmation authority | New/sanitized user responses stay signed out; no app exchange/storage/resend; auto-confirm success passes                                                        | High for tested flow/controller paths                     |
+| UI/state preservation  | 13 Account/onboarding DOM tests pass, including email retention, password clearing and late cancellation                                                         | Controlled DOM only; native appearance unverified         |
+| Focused regression     | 125 account unit cases pass; initial failure-first run had 42 failures and 30 passes                                                                             | Full/security/DB/native/CI checks deferred to root's slot |
+
+Node 24.20.0 and pnpm 12.6.0 frozen install, typecheck, scoped ESLint/Prettier and
+whitespace proof passed serially. Receipts are private under
+`.evidence/signup-error-guidance/`. No live signup/email/provider mutation,
+browser/device, database, CI, push, PR, merge or deployment was performed.
+
+Primary sources read 27 September 2026: [Auth error envelopes](https://raw.githubusercontent.com/supabase/auth/master/internal/api/errors.go),
+[legacy HTTPError](https://raw.githubusercontent.com/supabase/auth/master/internal/api/apierrors/apierrors.go),
+[auth-js version precedence](https://raw.githubusercontent.com/supabase/auth-js/master/src/lib/fetch.ts),
+[sanitized signup response](https://raw.githubusercontent.com/supabase/auth/master/internal/api/signup.go),
+[weak-password reasons](https://raw.githubusercontent.com/supabase/auth/master/internal/api/password.go),
+and [password security](https://supabase.com/docs/guides/auth/password-security).
+Unlike auth-js's header-based selection, this guidance parser accepts unambiguous
+machine codes in either envelope and refuses conflicting codes under any version
+header. It never grants authority from an error envelope.
+
+Policy helper remains blocked: the cloud owner's 04:31:21 UTC receipt verifies
+minimum six, signup/email enabled and confirmation disabled, but classes and
+leaked-password enforcement remain unknown. Root reviewed an optional public
+policy-field proposal and held all metadata/server/schema changes until policy
+proof and the delivery decision. No hardcoded six, default-false unknowns or
+freshness claim was added. This completes only the independent correction slice;
+root owns independent review and subsequent gate/publication allocation.
+
+Edited by gpt-6-astra through Codex (T3 Code).

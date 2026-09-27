@@ -3,6 +3,7 @@ import { expect, jest, test } from '@jest/globals';
 import { createEmailFlow } from './email-flow';
 import { createSupabaseAuth, supabaseOrigin } from './supabase';
 import type { Session } from './api';
+import { createSessionController } from './session';
 const providerResponse = {
   access_token: 'fixture-access',
   refresh_token: 'fixture-refresh',
@@ -51,11 +52,16 @@ test('password sign-in exchanges only the validated provider session', async () 
   ).toMatchObject(session);
   expect(api.signIn).toHaveBeenCalledWith('fixture-access');
 });
-test('a provider still requiring confirmation fails without a code flow or app session', async () => {
-  const { flow, api } = setup({ id: providerResponse.user.id });
+test('a confirmation-only signup offers a conditional email next step without claiming delivery', async () => {
+  const { flow, api, request } = setup({ id: providerResponse.user.id });
   await expect(
     flow.authenticate('signUp', 'fan@example.test', 'fixture-password'),
-  ).rejects.toThrow('Account creation could not finish');
+  ).rejects.toThrow(
+    new Error(
+      'Check your email. If you received a confirmation link, open it, then return here to sign in.',
+    ),
+  );
+  expect(request).toHaveBeenCalledTimes(1);
   expect(api.signIn).not.toHaveBeenCalled();
 });
 test('failed app exchange revokes the new provider session', async () => {
@@ -69,10 +75,59 @@ test('failed app exchange revokes the new provider session', async () => {
   );
 });
 
-test('an existing unconfirmed account reports failure without starting code confirmation', async () => {
-  const { flow, api } = setup({ error_code: 'email_not_confirmed' }, 400);
-  await expect(
-    flow.authenticate('signIn', 'fan@example.test', 'fixture-password'),
-  ).rejects.toThrow('Sign-in could not finish');
-  expect(api.signIn).not.toHaveBeenCalled();
-});
+test.each(['code', 'error_code'])(
+  'unconfirmed sign-in (%s) offers an email next step without starting code confirmation',
+  async (field) => {
+    const { flow, api, request } = setup(
+      { [field]: 'email_not_confirmed' },
+      400,
+    );
+    await expect(
+      flow.authenticate('signIn', 'fan@example.test', 'fixture-password'),
+    ).rejects.toThrow(
+      new Error(
+        'Check your email. If you received a confirmation link, open it, then return here to sign in.',
+      ),
+    );
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(api.signIn).not.toHaveBeenCalled();
+  },
+);
+
+// A sanitized duplicate user and a new unconfirmed user have the same authority.
+test.each([{}, { identities: [], confirmation_sent_at: '2030-01-01' }])(
+  'confirmation-only signup stays signed out with no storage, exchange or resend (%j)',
+  async (extra) => {
+    const { flow, api, request } = setup({
+      id: providerResponse.user.id,
+      ...extra,
+    });
+    const write = jest.fn(async () => {});
+    const controller = createSessionController(
+      {
+        ...api,
+        resume: async () => session.account,
+        logout: async () => {},
+        syntheticSignIn: async () => session,
+        rename: async () => {
+          throw new Error('unused');
+        },
+        history: async () => {
+          throw new Error('unused');
+        },
+      },
+      { read: async () => null, write, clear: async () => {} },
+    );
+    await controller.signIn(() =>
+      flow.authenticate('signUp', 'fan@example.test', 'fixture-password'),
+    );
+    expect(controller.getState()).toEqual({
+      kind: 'signedOut',
+      error:
+        'Check your email. If you received a confirmation link, open it, then return here to sign in.',
+    });
+    expect(api.signIn).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);

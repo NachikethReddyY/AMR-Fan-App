@@ -100,6 +100,193 @@ test('provider failures are controlled, confirmation and rate-limit explain the 
     'Wait',
   );
 });
+const neutralSignup =
+  'Sign-up could not finish. Try again later, or sign in if you already have an account.';
+const signupErrors = [
+  ['email_address_invalid', 'Enter a valid email address.'],
+  ['signup_disabled', 'New account signup is unavailable. Try again later.'],
+  ['email_provider_disabled', 'Email signup is unavailable. Try again later.'],
+  [
+    'over_request_rate_limit',
+    'Too many attempts. Wait a moment and try again.',
+  ],
+  [
+    'over_email_send_rate_limit',
+    'Too many attempts. Wait a moment and try again.',
+  ],
+  ['weak_password', 'Choose a stronger password.'],
+  ['user_already_exists', neutralSignup],
+  ['email_exists', neutralSignup],
+  ['unknown_future_code', neutralSignup],
+];
+test.each(signupErrors)(
+  'signup maps %s in both provider envelopes without reflection or retry',
+  async (code, message) => {
+    for (const body of [
+      { code },
+      { error_code: code },
+      { code: 422, error_code: code },
+    ]) {
+      const { auth, request } = fixture(
+        {
+          ...body,
+          message: 'PRIVATE_RESPONSE',
+          msg: 'PRIVATE_RESPONSE',
+          error_description: 'PRIVATE_RESPONSE',
+        },
+        422,
+      );
+      await expect(
+        auth.signUp('fan@example.test', 'fixture-password'),
+      ).rejects.toThrow(new Error(message));
+      expect(request).toHaveBeenCalledTimes(1);
+    }
+  },
+);
+test.each([
+  null,
+  [],
+  'PRIVATE_RESPONSE',
+  {},
+  { code: 422 },
+  { code: 'weak_password', error_code: 'user_already_exists' },
+  { code: 'unknown_future_code', error_code: 'weak_password' },
+  { code: null, error_code: 'weak_password' },
+  { code: 'weak_password', error_code: 422 },
+  { code: 400, error_code: 'weak_password' },
+  { code: {}, error_code: 'weak_password' },
+  { code: '', error_code: 'weak_password' },
+])(
+  'malformed or conflicting signup envelope %j stays neutral',
+  async (body) => {
+    const { auth, request } = fixture(body, 422);
+    await expect(
+      auth.signUp('fan@example.test', 'fixture-password'),
+    ).rejects.toThrow(new Error(neutralSignup));
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);
+test.each([
+  [['length'], 'Choose a longer password.'],
+  [
+    ['characters'],
+    'This password is missing required character types. Choose a different password.',
+  ],
+  [
+    ['pwned'],
+    'Choose a different password. This password is known to be compromised.',
+  ],
+  [['length', 'length'], 'Choose a longer password.'],
+  [
+    ['length', 'characters'],
+    'Choose a longer password. This password is missing required character types. Choose a different password.',
+  ],
+  [['PRIVATE_RESPONSE'], 'Choose a stronger password.'],
+  [['length', 'PRIVATE_RESPONSE'], 'Choose a stronger password.'],
+  [[123], 'Choose a stronger password.'],
+  [null, 'Choose a stronger password.'],
+  ['length', 'Choose a stronger password.'],
+  [[], 'Choose a stronger password.'],
+])(
+  'weak signup reason %j has bounded policy-independent guidance',
+  async (reasons, message) => {
+    for (const code of [
+      { code: 'weak_password' },
+      { code: 422, error_code: 'weak_password' },
+    ]) {
+      const { auth, request } = fixture(
+        { ...code, weak_password: { reasons }, message: 'PRIVATE_RESPONSE' },
+        422,
+      );
+      await expect(
+        auth.signUp('fan@example.test', 'fixture-password'),
+      ).rejects.toThrow(new Error(message));
+      expect(request).toHaveBeenCalledTimes(1);
+    }
+  },
+);
+test.each([429, 500, 502, 503])(
+  'signup HTTP %s is safe even when the error body is not JSON',
+  async (status) => {
+    const request = jest.fn<typeof fetch>(
+      async () => new Response('PRIVATE_RESPONSE', { status }),
+    );
+    const auth = createSupabaseAuth({ config, request });
+    await expect(
+      auth.signUp('fan@example.test', 'fixture-password'),
+    ).rejects.toThrow(
+      new Error(
+        status === 429
+          ? 'Too many attempts. Wait a moment and try again.'
+          : 'Sign-up is temporarily unavailable. Try again later.',
+      ),
+    );
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);
+test('matching machine codes are unambiguous and weak reasons cannot override unknown errors', async () => {
+  await expect(
+    fixture(
+      { code: 'weak_password', error_code: 'weak_password' },
+      422,
+    ).auth.signUp('fan@example.test', 'fixture-password'),
+  ).rejects.toThrow(new Error('Choose a stronger password.'));
+  await expect(
+    fixture(
+      { code: 'unknown', weak_password: { reasons: ['length'] } },
+      422,
+    ).auth.signUp('fan@example.test', 'fixture-password'),
+  ).rejects.toThrow(new Error(neutralSignup));
+});
+test.each(['2024-01-01', '2023-01-01', 'invalid', ''])(
+  'version header %s never lets conflicting codes select account-specific guidance',
+  async (version) => {
+    const request = jest.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            code: 'weak_password',
+            error_code: 'user_already_exists',
+          }),
+          { status: 422, headers: { 'x-supabase-api-version': version } },
+        ),
+    );
+    await expect(
+      createSupabaseAuth({ config, request }).signUp(
+        'fan@example.test',
+        'fixture-password',
+      ),
+    ).rejects.toThrow(new Error(neutralSignup));
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);
+test.each(['invalid JSON', 'body rejection', 'network rejection'])(
+  'signup %s does not reflect transport details or automatically retry',
+  async (failure) => {
+    const response = new Response('PRIVATE_RESPONSE', { status: 422 });
+    if (failure === 'body rejection')
+      jest
+        .spyOn(response, 'text')
+        .mockRejectedValue(new Error('PRIVATE_RESPONSE'));
+    const request = jest.fn<typeof fetch>(async () => {
+      if (failure === 'network rejection') throw new Error('PRIVATE_RESPONSE');
+      return response;
+    });
+    await expect(
+      createSupabaseAuth({ config, request }).signUp(
+        'fan@example.test',
+        'fixture-password',
+      ),
+    ).rejects.toThrow(
+      new Error(
+        failure === 'network rejection'
+          ? 'Account connection unavailable. Reconnect and try again.'
+          : neutralSignup,
+      ),
+    );
+    expect(request).toHaveBeenCalledTimes(1);
+  },
+);
 test('refresh rotation keeps same identity; foreign identity and malformed/oversized response fail', async () => {
   const old: ProviderSession = {
     accessToken: 'old',

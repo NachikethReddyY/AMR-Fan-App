@@ -5,6 +5,7 @@ import React, {
 import { createRoot } from 'react-dom/client';
 import { expect, jest, test } from '@jest/globals';
 import { AccountEditError } from '../src/features/account/supabase';
+import { createEmailFlow } from '../src/features/account/email-flow';
 import { AccountPanel } from '../src/features/account/AccountPanel';
 import {
   createSessionController,
@@ -188,6 +189,78 @@ test('password signup closes the real Account sheet so onboarding can show the n
     expect(changed).toHaveBeenLastCalledWith(true);
     expect(element.querySelector('section')).not.toBeNull();
     expect(mockController.getState()).toMatchObject({ kind: 'signedOut' });
+  } finally {
+    await act(async () => root.unmount());
+    element.remove();
+  }
+});
+
+test('confirmation guidance keeps the signup sheet and email draft, clears the password and never signs in or resends', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  await mockController.cancelSignIn();
+  const signUp = jest.fn(async () => ({
+    kind: 'confirmation' as const,
+    email: 'fixture@example.test',
+  }));
+  const signIn = jest.fn(async () => mockSession);
+  const flow = createEmailFlow(
+    {
+      signUp,
+      signIn: async () => {
+        throw new Error('unused');
+      },
+      revoke: async () => {},
+    },
+    { signIn },
+  );
+  mockAuthenticate.mockImplementationOnce(() =>
+    flow.authenticate('signUp', 'fixture@example.test', 'fixture-password'),
+  );
+  const element = document.createElement('div');
+  document.body.append(element);
+  const root = createRoot(element);
+  const changed = jest.fn<(open: boolean) => void>();
+  async function click(label: string) {
+    const button = [...element.querySelectorAll('button')].find(
+      (b) => b.getAttribute('aria-label') === label || b.textContent === label,
+    );
+    if (!button) throw new Error(`Missing ${label}`);
+    await act(async () => button.click());
+  }
+  async function fill(label: string, value: string) {
+    const input = element.querySelector<HTMLInputElement>(
+      `input[aria-label="${label}"]`,
+    );
+    if (!input) throw new Error(`Missing ${label}`);
+    await act(async () => {
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  try {
+    await act(async () => root.render(<AccountPanel onOpenChange={changed} />));
+    await click('Sign up');
+    await fill('Email', 'fixture@example.test');
+    await fill('Password', 'fixture-password');
+    await click('Create account');
+    expect(element.textContent).toContain(
+      'Check your email. If you received a confirmation link, open it, then return here to sign in.',
+    );
+    expect(element.querySelector('section')).not.toBeNull();
+    expect(
+      element.querySelector<HTMLInputElement>('input[aria-label="Email"]')
+        ?.value,
+    ).toBe('fixture@example.test');
+    expect(
+      element.querySelector<HTMLInputElement>('input[aria-label="Password"]')
+        ?.value,
+    ).toBe('');
+    expect(changed).toHaveBeenLastCalledWith(true);
+    expect(mockController.getState().kind).toBe('signedOut');
+    expect(mockStored).toBeNull();
+    expect(signUp).toHaveBeenCalledTimes(1);
+    expect(signIn).not.toHaveBeenCalled();
+    expect(element.textContent).not.toMatch(/resend|enter.*code/i);
   } finally {
     await act(async () => root.unmount());
     element.remove();
