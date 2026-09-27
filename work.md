@@ -2529,3 +2529,40 @@ Hosted logs still execute the earlier merged source without these diagnostics;
 no hosted cause or deployed fix is claimed.
 
 Corrected and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-27: load the fixed managed OneMap secret through indirection
+
+The coordinator observed source_open/ELOOP on the diagnostic release. A synthetic
+symlink at the fixed production source reproduced that failure. This supports
+no-follow rejection as the failing boundary; it does not prove the full hosted
+mount layout or provider credential validity. The coordinator approved trust in
+provider control of the fixed mount and resolved target ancestry.
+
+Only source equal to `/etc/secrets/amr-onemap-access-token.txt` is now resolved
+once. The target is still opened O_RDONLY|O_NOFOLLOW|O_NONBLOCK. Added fixed
+source_resolution diagnostics without logging resolved paths or raw errors.
+Arbitrary injected paths retain symlink rejection. All descriptor regular-file,
+size/read/syntax checks, buffer clearing, exclusive private-copy metadata checks,
+strict destination reader and lifecycle behavior are unchanged. No new setting,
+fallback or retry was introduced. Final-target symlink swaps are rejected;
+ancestor replacement is not atomic and no provider target layout is assumed.
+
+Failure-first proof: six of seven policy cases failed before implementation;
+arbitrary-path rejection already passed. Startup tests then passed 38/38 and the
+route/startup regression suite passed 95/95. The real-entrypoint symlink fixture
+now reaches staging before its intentional synthetic import failure. Missing,
+broken and looping paths report source_resolution; a final-target symlink swap
+still reports source_open/ELOOP. The private-copy acceptance fixture verifies
+regular/current-UID/0600/single-link metadata, 0700 directory, unchanged source
+symlink and disabled provider. Existing lifecycle cases use a synthetic DB module,
+not a database connection. Initial typecheck found untyped mock parameters;
+explicit filesystem types correct this without production/runtime changes.
+Final typecheck, scoped lint, formatting and documentation checks pass; the seven
+policy cases pass again after that test-only type correction.
+
+Evidence and separate correction: `.evidence/onemap-managed-source/`. Full/security
+await independent review and a slot. Hosted fixed mount to private copy to runtime
+path, API health on this change, and live routes remain unverified. No real token
+read, provider/DB/cloud/device/CI/deployment or Git delivery occurred.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).

@@ -474,15 +474,24 @@ async function diagnostic(scenario: string) {
     const sensitive = 'synthetic-sensitive-token-path-stack-cause';
     const bad = Object.assign(new Error(sensitive), {code: sensitive, path: sensitive, cause: sensitive});
     const open = fs.openSync;
+    const realpath = fs.realpathSync;
+    let resolvedSource;
+    fs.realpathSync = (path, ...args) => {
+      if (path !== '/etc/secrets/amr-onemap-access-token.txt') return realpath(path, ...args);
+      resolvedSource = realpath(source, ...args);
+      if (scenario === 'target_swap') { fs.renameSync(resolvedSource, resolvedSource+'.original'); fs.symlinkSync(resolvedSource+'.original', resolvedSource); }
+      return resolvedSource;
+    };
     let sourceFd;
     fs.openSync = (path, ...args) => {
-      if (path !== '/etc/secrets/amr-onemap-access-token.txt') return open(path, ...args);
-      sourceFd = open(source, ...args); return sourceFd;
+      if (path !== '/etc/secrets/amr-onemap-access-token.txt' && path !== resolvedSource) return open(path, ...args);
+      sourceFd = open(path === resolvedSource ? path : source, ...args); return sourceFd;
     };
     const read = fs.readSync;
     const close = fs.closeSync;
     if (scenario === 'missing') fs.unlinkSync(source);
     if (scenario === 'symlink') { fs.renameSync(source, source+'.target'); fs.symlinkSync(source+'.target', source); }
+    if (scenario === 'broken' || scenario === 'loop') { fs.unlinkSync(source); fs.symlinkSync(scenario === 'loop' ? source : source+'.missing', source); }
     if (scenario === 'directory') { fs.unlinkSync(source); fs.mkdirSync(source); }
     if (scenario === 'format') fs.writeFileSync(source, 'Bearer '+sensitive);
     if (scenario === 'config') process.env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT = '';
@@ -511,7 +520,10 @@ async function diagnostic(scenario: string) {
   child.stderr.on('data', (chunk) => {
     stderr += String(chunk);
   });
-  child.stdout.resume();
+  let stdout = '';
+  child.stdout.on('data', (chunk) => {
+    stdout += String(chunk);
+  });
   try {
     const [exit] = await once(child, 'exit');
     assert.equal(exit, 1);
@@ -519,7 +531,11 @@ async function diagnostic(scenario: string) {
     const lines = stderr.trim().split('\n');
     assert.equal(lines.length, 1, 'exactly one stderr failure object');
     const result: unknown = JSON.parse(lines[0]);
-    assert.ok(!stderr.includes('synthetic') && !stderr.includes(f.source));
+    assert.ok(
+      !stderr.includes('synthetic') && !stderr.includes('amr-stage-fixture-'),
+    );
+    if (scenario === 'symlink')
+      assert.ok(stdout.includes('onemap_token_staged'));
     if (
       scenario !== 'cleanup' &&
       scenario !== 'import_cleanup' &&
@@ -533,8 +549,11 @@ async function diagnostic(scenario: string) {
 }
 
 for (const [scenario, stage, errno] of [
-  ['missing', 'source_open', 'ENOENT'],
-  ['symlink', 'source_open', 'ELOOP'],
+  ['missing', 'source_resolution', 'ENOENT'],
+  ['symlink', 'api_import', 'OTHER'],
+  ['broken', 'source_resolution', 'ENOENT'],
+  ['loop', 'source_resolution', 'ELOOP'],
+  ['target_swap', 'source_open', 'ELOOP'],
   ['directory', 'source_metadata', 'NONE'],
   ['format', 'source_format', 'NONE'],
   ['config', 'config', 'NONE'],
@@ -559,3 +578,70 @@ for (const [scenario, stage, errno] of [
         : {}),
     });
   });
+
+test('fixed managed source indirection stages a strict private copy while routing stays disabled', (context) => {
+  const f = fixture();
+  const mounted = '/etc/secrets/amr-onemap-access-token.txt';
+  const open = fs.openSync;
+  const realpath = fs.realpathSync;
+  let copy: ReturnType<typeof prepareOneMapSecret> | undefined;
+  try {
+    fs.renameSync(f.source, `${f.source}.target`);
+    fs.symlinkSync(`${f.source}.target`, f.source);
+    // Substitute only the fixed mount with a local synthetic symlink. Production
+    // receives no source override; all target/file checks run against real files.
+    context.mock.method(
+      fs,
+      'openSync',
+      (path: fs.PathLike, flags: fs.OpenMode, mode?: fs.Mode) =>
+        open(path === mounted ? f.source : path, flags, mode),
+    );
+    const resolutions = context.mock.method(
+      fs,
+      'realpathSync',
+      (path: fs.PathLike) => realpath(path === mounted ? f.source : path),
+    );
+    copy = prepareOneMapSecret({ env: f.env, temporaryBase: f.temporaryBase });
+    assert.equal(
+      resolutions.mock.calls.filter((call) => call.arguments[0] === mounted)
+        .length,
+      1,
+    );
+    const stat = fs.lstatSync(copy.path);
+    assert.ok(stat.isFile());
+    assert.equal(stat.uid, process.getuid?.());
+    assert.equal(stat.mode & 0o777, 0o600);
+    assert.equal(stat.nlink, 1);
+    assert.equal(fs.lstatSync(dirname(copy.path)).mode & 0o777, 0o700);
+    assert.equal(
+      fs.readFileSync(copy.path, 'utf8'),
+      'synthetic-staged-token\n',
+    );
+    assert.equal(f.env.AMR_ROUTES_PROVIDER, 'disabled');
+    assert.ok(fs.lstatSync(f.source).isSymbolicLink());
+  } finally {
+    copy?.cleanup();
+    f.remove();
+  }
+});
+
+test('arbitrary injected source symlink is never resolved and remains rejected', (context) => {
+  const f = fixture();
+  try {
+    fs.renameSync(f.source, `${f.source}.target`);
+    fs.symlinkSync(`${f.source}.target`, f.source);
+    const resolutions = context.mock.method(fs, 'realpathSync');
+    assert.throws(() => prepareOneMapSecret(f), {
+      stage: 'source_open',
+      errno: 'ELOOP',
+    });
+    assert.equal(
+      resolutions.mock.calls.filter((call) => call.arguments[0] === f.source)
+        .length,
+      0,
+    );
+    assert.deepEqual(fs.readdirSync(f.temporaryBase), []);
+  } finally {
+    f.remove();
+  }
+});

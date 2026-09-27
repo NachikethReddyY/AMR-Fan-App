@@ -15,6 +15,7 @@ type Options = {
 type FailureStage =
   | 'config'
   | 'temp_resolution'
+  | 'source_resolution'
   | 'source_open'
   | 'source_metadata'
   | 'source_read'
@@ -166,9 +167,13 @@ export function prepareOneMapSecret({
         !isAbsolute(location))
     )
       throw new StartupFailure(stage, 'NONE');
+    stage = 'source_resolution';
+    // Only the fixed provider-managed mount may select a target through indirection.
+    const target =
+      source === mountedSource ? fs.realpathSync(mountedSource) : source;
     stage = 'source_open';
     const sourceFd = fs.openSync(
-      source,
+      target,
       fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK,
     );
     let bytes = 0;
