@@ -47,6 +47,71 @@ keys, account-wide billing, taxes or currency effects. Root owns review/deployme
 
 Implemented by gpt-6-astra through Codex (T3 Code).
 
+## 2026-09-27: labelled illustrative test data
+
+Tracking: TEST-DATA-001, unlinked. Root approved a data-only slice on
+`feat/labelled-test-data`, based on `7754117`. The public
+[getTestDataView()](src/features/test-data/index.ts) export takes no arguments and
+returns a deeply readonly display type with string leaves: label, notice,
+summary, activity, rewards, travelNotice and travel. It uses no account hooks,
+session selection, callbacks, API requests, storage or provider objects. Each
+call creates independent display objects. The UI owner owns the component and
+entry/exit after design selection and consumes this slice through main only.
+
+The fixed illustrative manifest shows 1,250 example points and 30 kg example CO₂
+reduction. Fictional journey entries add 600, 500 and 400 points; a content
+example subtracts 250. These are display arithmetic, not actual journey evidence
+or typical earnings. Reward examples cover content at 250 points, tree programme
+participation at 1,000 and a 10% discount at 500, all explicitly illustrative
+prices rather than policy or live offers. Copy disclaims content unlocking,
+tree allocation/planting and vouchers/official offers. Travel contains bus,
+train, car, electric car, walk and cycle comparisons with example distance,
+duration and CO₂ emissions. It is separate from the fictional activity history.
+
+Saved demo profiles, selected state, purchases, History and shared contributions
+are untouched. This view neither represents nor replaces saved demo data. The
+UI owner retains the responsibility to label an existing selected demo and offer
+explicit Return to real data, while Account always displays the real identity.
+There are no new navigation destinations, live catalogue seeds or UI edits.
+
+Verification: frozen install passed without dependency changes; missing export
+produced the initial failing test. Seven new tests plus 43 existing session and
+catalogue tests pass. Checks cover independent labels, total arithmetic,
+supported reward/travel kinds, rejection as offer/purchase/receipt payloads,
+string-only public data, independent copies, zero network calls and a runtime
+dependency boundary excluding account/storage/provider code. Typecheck and
+focused lint pass. Evidence: `.evidence/labelled-test-data/`.
+
+The allocated `pnpm check` run is red: existing `tests/onboarding.test.tsx:181`
+expected transient full progress but found no element. Its reduced-motion mock
+uses the production zero-delay completion timer; scheduling is a hypothesis, not
+a proven root cause. The one isolated unchanged suite rerun passes 6/6 tests.
+The original failing log is preserved. Earlier aggregate stages passed, including
+234 Jest tests; all stages after the web suite were then run serially and passed.
+No assertion, timeout or peer source was edited. The UI owner owns follow-up.
+
+`pnpm security:check` passed with zero source findings across 330 SAST targets,
+zero secrets findings and passing safe/unsafe scanner fixtures. One existing
+moderate dependency advisory remains below the high-severity gate. Both command
+sessions exited; no owned check process or scanner container remains. The heavy
+slot was released immediately. Fetched main remains `7754117`; rebase was a no-op
+and TODO was restored with a matching SHA-256 checksum. No UI/native/browser,
+database integration, build, provider, CI or deployment proof is claimed. Initial
+interface review is complete. Root authorized PR delivery with the red aggregate
+gate explicit; final merge awaits independent review and root's test disposition.
+The UI owner identified the zero-delay timer draining inside React act and owns
+the completion-hold and deterministic fake-timer correction in a separate branch.
+This slice does not alter that production code or test.
+
+After Google PR #56 merged, rebased onto actual fetched main `b78be4f`.
+Both owners' bug/work records were preserved through the two documentation
+conflicts. The test-data source is byte-identical to its original verified slice.
+TODO's checksum still matches. Post-rebase typecheck and seven fixture tests
+pass; no full/security rerun was needed for unchanged fixture code. The earlier
+red aggregate result remains explicit in the PR handoff.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-26: prepare the offline TokenRouter Jev request
 
 Related to [#3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
