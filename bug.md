@@ -964,3 +964,18 @@ I/O. Unreadable/invalid PUT bodies report an uncertain outcome without retry.
 Native foreground/email-app proof is still required before auth acceptance.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: selected A source integration
+
+Merged reviewed fixture through origin/main 3beaf76; no peer source copying.
+Selected A now has balance first, separate Rewards/History actions and equal
+Photo activity/Plan a journey rows. The existing rounded four-tab dock and OS
+navigation handling are unchanged. White-bar reproduction remains outstanding.
+
+Home opens clearly labelled illustrative data without changing selected profile
+or records. Explicit saved-test-data selection remains available there. Persisted
+demo context is labelled with Return to real data on every tab; failed return
+keeps the label and an error. The old switch moved out of Account, whose identity
+is real. No rewards, provider, activity or journey behavior was edited.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

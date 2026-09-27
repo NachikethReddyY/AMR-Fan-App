@@ -830,25 +830,6 @@ export function AccountPanel({
                       <>
                         <Action
                           secondary
-                          label={
-                            state.selected === 'real'
-                              ? 'Use sample profile'
-                              : 'Return to real data'
-                          }
-                          onPress={() => {
-                            void controller
-                              .select(
-                                state.selected === 'real' ? 'demo' : 'real',
-                              )
-                              .catch(() =>
-                                setError(
-                                  'Could not switch profiles. Try again.',
-                                ),
-                              );
-                          }}
-                        />
-                        <Action
-                          secondary
                           label="Refresh session"
                           onPress={() => {
                             void controller.resume();

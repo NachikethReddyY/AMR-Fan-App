@@ -267,6 +267,9 @@ test('account email edit reports pending verification and preserves real identit
     await click('Fan, account');
     expect(element.textContent).toContain('old@example.test');
     expect(element.textContent).not.toContain('Sample Fan');
+    await click('Account settings');
+    expect(element.textContent).not.toContain('Use sample profile');
+    expect(element.textContent).not.toContain('Return to real data');
     await click('Edit email');
     const input = element.querySelector<HTMLInputElement>(
       'input[aria-label="New email"]',

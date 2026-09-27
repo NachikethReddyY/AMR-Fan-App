@@ -2231,3 +2231,33 @@ separately from its subsequent clean serial pass. Main fixture consumption waits
 until this auth fix is committed and frozen for rereview.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+### Selected A Home and separate test-data presentation
+
+Consumed fixture PR57 only through fetched origin/main at
+3beaf76f0d92d4651b0e2a85ccdd963eabafe415. Main merged cleanly after auth correction
+40801d3; both independent correction reviews reported zero findings. Native and
+live-provider proof remain unverified despite those controlled review passes.
+
+Moved Home presentation into its own owned component. Balance remains first;
+View rewards opens Redemption and History opens History. Photo and Plan use equal
+rows with the selected concise copy and existing callbacks. The dock's four tabs,
+geometry, canvas and OS gesture affordance are preserved. No white-bar fix claimed.
+
+Home now opens the readonly illustrative fixture in a separate labelled view.
+Opening/closing it never changes account context. A visible explicit action opens
+existing saved test data, preserving the old capability outside Account. Every
+normal tab shows the saved-test-data label and Return to real data when selected;
+failed return keeps the selection and explains recovery. Account/greeting use real
+identity. Account delta after auth rereview only removes the relocated sample
+switch; credential logic is unchanged. Example rows have no redemption/journey
+callbacks and cannot fulfil rewards or award points.
+
+Four new acceptance failures preceded implementation: two Home navigation/data
+cases and two label/switch-relocation cases. All 30 focused Home, Account,
+onboarding, retry and existing photo-flow DOM cases now pass; typecheck, scoped
+ESLint/formatting and whitespace checks pass. Full/security/native/actual rendered
+A proof await root allocation after the parser slot. No push, build, Metro,
+provider request, email or device interaction ran for this slice.
+
+Edited by gpt-6-astra through Codex (T3 Code).
