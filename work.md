@@ -2188,3 +2188,19 @@ reduced-motion production timing is unchanged. Full/security/native/live-provide
 checks remain unverified under the scheduled resource and test-account gates.
 
 Verified by gpt-6-astra through Codex (T3 Code).
+
+### Onboarding completion and compact retry, separate light slice
+
+Added a one-shot 180 ms illustration fade with Reanimated's typed cubicBezier;
+reduced motion disables the animation. Completion remains statically visible for
+220 ms under either motion setting. Failing-first timer tests retain progress 5,
+Setup complete and final app-entry assertions. The balance error retry now uses
+a 48 pt circular icon button with its existing accessible name and callback.
+The focused retry test failed against the former wide button, then passed.
+
+All 9 focused onboarding/retry DOM cases, typecheck and scoped ESLint pass.
+Frozen auth 73e35f4 is unchanged. Native rendering/motion/touch proof and broader
+gates remain pending; no full gate, provider request or device interaction ran.
+Selected Home A integration waits for the fixture module to merge through main.
+
+Edited by gpt-6-astra through Codex (T3 Code).

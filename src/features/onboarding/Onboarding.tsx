@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  cubicBezier,
+  useReducedMotion,
+} from 'react-native-reanimated';
 import { Route, Gift, Leaf } from 'lucide-react-native';
 import { useAccount } from '../account/provider';
 import { AccountPanel } from '../account/AccountPanel';
@@ -85,16 +88,14 @@ export function Onboarding({ children }: { children: React.ReactNode }) {
   }, [accountId]);
   useEffect(() => {
     if (!finishing) return;
-    const timer = setTimeout(
-      () => {
-        setNamedAccount(finishing);
-        setEntered(true);
-        setFinishing(null);
-      },
-      reducedMotion ? 0 : 220,
-    );
+    // Keep completion visible briefly even when its fill animation is disabled.
+    const timer = setTimeout(() => {
+      setNamedAccount(finishing);
+      setEntered(true);
+      setFinishing(null);
+    }, 220);
     return () => clearTimeout(timer);
-  }, [finishing, reducedMotion]);
+  }, [finishing]);
   const stage = onboardingStage(
     introduced === true,
     !!accountId && !modalOpen,
@@ -196,9 +197,20 @@ export function Onboarding({ children }: { children: React.ReactNode }) {
         </Text>
         {stage === 'intro' ? (
           <>
-            <View style={styles.illustration}>
+            <Animated.View
+              key={page}
+              style={[
+                styles.illustration,
+                !reducedMotion && {
+                  animationName: { from: { opacity: 0.4 }, to: { opacity: 1 } },
+                  animationDuration: 180,
+                  animationTimingFunction: cubicBezier(0.23, 1, 0.32, 1),
+                  animationIterationCount: 1,
+                },
+              ]}
+            >
               <current.Icon size={64} color="#F5F5F3" accessible={false} />
-            </View>
+            </Animated.View>
             <Text accessibilityRole="header" style={styles.title}>
               {current.title}
             </Text>

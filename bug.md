@@ -929,3 +929,21 @@ address before the UI reports an outcome. Live deployed-provider behavior and
 email delivery remain unverified, with no provider settings changed.
 
 Corrected by gpt-6-astra through Codex (T3 Code).
+
+### APP-FEEDBACK-001: completion visibility and review follow-ups
+
+The reduced-motion zero-delay completion timer could remove progress 5 before
+it was observed. A deterministic regression now checks both motion settings:
+completion remains visible for 220 ms, then the app opens. The optional intro
+illustration fade runs once and is disabled with reduced motion. Compact balance
+retry retains a 48 pt target, its accessible name and existing refresh callback.
+Native appearance and timing remain unverified.
+
+Independent auth review reported the code-entry step disappearing during foreground
+session resume, and an unsanitized response-body read rejection after a PUT.
+Reproduce these separately from frozen auth commit 73e35f4; preserve same-identity
+navigation only, clear secrets and prevent state restoration after logout/switch.
+No provider mutation or email is authorized. Root owns the fixture baseline-red
+record and remaining full/security/native gate allocation.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
