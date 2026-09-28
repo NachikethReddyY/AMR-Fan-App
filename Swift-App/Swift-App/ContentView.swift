@@ -9,11 +9,20 @@ struct ContentView: View {
     @State private var showShop = false
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
-    @State private var demoState = DemoFanState()
+    @State private var demoState: DemoFanState
     @State private var tabDirection: PageDirection = .forward
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var driver: Driver? { Driver(rawValue: supportedDriver) }
+
+    init() {
+        let defaults = UserDefaults.standard
+        var state = DemoFanState(greenPoints: defaults.integer(forKey: "demoGreenPoints"))
+        state.currentStreak = defaults.integer(forKey: "demoCurrentStreak")
+        state.lastActivityDay = defaults.string(forKey: "demoLastActivityDay")
+        state.lastQuizRewardDay = defaults.string(forKey: "demoLastQuizRewardDay")
+        _demoState = State(initialValue: state)
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,6 +71,18 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             if driver != nil && !hasSeenFeatureTour { showFeatureTour = true }
+        }
+        .onChange(of: demoState.greenPoints) { _, value in
+            UserDefaults.standard.set(value, forKey: "demoGreenPoints")
+        }
+        .onChange(of: demoState.currentStreak) { _, value in
+            UserDefaults.standard.set(value, forKey: "demoCurrentStreak")
+        }
+        .onChange(of: demoState.lastActivityDay ?? "") { _, value in
+            UserDefaults.standard.set(value, forKey: "demoLastActivityDay")
+        }
+        .onChange(of: demoState.lastQuizRewardDay ?? "") { _, value in
+            UserDefaults.standard.set(value, forKey: "demoLastQuizRewardDay")
         }
         .sheet(isPresented: $showFeatureTour, onDismiss: { hasSeenFeatureTour = true }) {
             FeatureTourScreen {
@@ -124,14 +145,12 @@ struct ContentView: View {
         case .account:
             AccountScreen()
         case .news:
-            EditorialScreen(title: "News.", symbol: "newspaper.fill",
-                            description: "Team stories are coming soon.")
+            NewsFeedScreen()
         case .paddock:
             EditorialScreen(title: "The Paddock.", symbol: "sparkles.tv",
                             description: "Exclusive stories are coming soon.")
-        case .gallery:
-            EditorialScreen(title: "Gallery.", symbol: "camera.fill",
-                            description: "Moments from the circuit.")
+        case .sustainabilityCam:
+            SustainabilityCamScreen(demoState: $demoState)
         case .travel:
             TravelScreen()
         case .challenges:

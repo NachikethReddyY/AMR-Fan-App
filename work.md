@@ -1,5 +1,57 @@
 # Work record
 
+## 2026-09-28: remove fan-selected planting locations
+
+Tracking: SWIFT-REWARDS-003, unlinked. Removed location selection from the
+redemption confirmation flow. Fans now choose only a plant type and quantity;
+race points deduct immediately and each record remains pending with no assigned
+location. The forest labels pending records as awaiting AMR assignment and only
+shows country/location summaries for confirmed records.
+
+Preserved a future `confirmPlanting` state seam for admin integration: it sets
+the real location, planting date and Confirmed status after fulfilment. Focused
+proof passes for two Trees (5,000 points remaining, 24.0 kg CO₂e estimated),
+insufficient balance protection, and later confirmation to Singapore. Build and
+source diagnostics pass; live admin notifications and device rendering remain
+unverified/unconnected.
+
+Implemented and verified by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: forest catalog and pending planting flow
+
+Tracking: SWIFT-REWARDS-002, unlinked. Reorganized Trees into a full-height
+green forest page with an isometric plot, one marker per non-empty planting
+location, searchable location cards, country flags, counts and distribution
+bars. Added a floating add action, catalog sheet, per-kind detail cards,
+location selection, quantity stepper and secondary confirmation sheet.
+
+Redemptions now create pending records rather than confirmed plantings. Each
+record keeps kind, location, date, status and estimated CO₂e; Impact and the
+forest use estimated wording. Provisional examples are Singapore, Bangkok and
+AMR Technology Campus. Prices remain demo values and are labelled accordingly.
+
+Build, source diagnostics and focused quantity/location/insufficient-points
+proof pass: one Tree plus two Bushes creates three pending records, leaves
+4,500 points, and estimates 23.0 kg CO₂e. Device rendering and real AMR
+confirmation notifications remain unverified/unconnected.
+
+Implemented and verified by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: local tree redemption demo
+
+Tracking: SWIFT-REWARDS-001, unlinked. Added a shared local demo state with
+9,000 starting race points. Tree, bush and plant redemptions use distinct demo
+point costs and CO₂e-saved values; successful redemptions deduct points and add
+species, location, date and carbon values to the digital forest. Home, Rewards,
+Trees, Shop and Impact read the same state. Real planting, fulfilment and carbon
+removal remain unavailable and are labelled as demo data.
+
+Build and focused state proof pass: three redemptions leave 5,000 points and
+19.5 kg CO₂e saved; an unaffordable redemption leaves state unchanged. Device
+rendering remains unverified because device automation was not authorized.
+
+Implemented and verified by Codex through Xcode (model ID unavailable).
+
 ## 2026-09-27: integrate the Swift port
 
 Tracking: SWIFT-PORT-001, unlinked. Moved the existing Swift app under the main
@@ -2578,3 +2630,324 @@ path, API health on this change, and live routes remain unverified. No real toke
 read, provider/DB/cloud/device/CI/deployment or Git delivery occurred.
 
 Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-28: refresh merch and add fan challenge interactions
+
+Implemented the requested local SwiftUI slice. Shop now uses a top-aligned driver
+hero, clickable look cards, and category filtering that constrains products to Caps,
+Tops or Layers. Rewards now uses Rewards/Coupons sections rather than History and
+exposes the future coupon-code surface. Fan challenges now supports race filtering,
+idea voting, past-race selected states with gold outlines and stars, a bottom-right
+proposal button, a 500-point submit affordance, and an outbox placeholder. New
+challenge models and sample races live in FanModels.swift. Backend data, moderation,
+identity, and coupon fulfilment are intentionally not claimed or connected.
+
+Focused Xcode diagnostics pass for FanModels.swift, ShopScreen.swift,
+RewardsScreen.swift, FeatureScreens.swift and ContentView.swift. The Xcode project
+build passes successfully after the final interaction correction.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-28: official merch store catalog handoff
+
+Tracking: MERCH-STORE-001, unlinked. Captured the official Aston Martin F1 store
+through its public storefront pages and structured `script.product-data` records.
+The local evidence snapshot contains 21 routes, 70 unique products, 216 product
+JPEGs, current EUR list/sale prices, product URLs, image URLs, categories, driver
+and gender metadata, and sale labels. Added all 216 product images to the Swift
+asset catalog and `Swift-App/Swift-App/MerchStoreCatalog.json` with local image
+paths. App reward discounts and race-point prices remain null until an admin policy
+sets them. Catalog JSON, all local images and the Swift handoff were verified.
+
+Implemented and verified by gpt-6-sol through Codex (T3 Code).
+
+## 2026-09-28: align merch and challenges with clarified backend contract
+
+Updated the merch experience to use the supplied driver/category hero images and
+load the 63-product `MerchStoreCatalog.json` snapshot rather than the old four-item
+mock list. All products are shown by default; Caps, T-shirts, and Outerwear filter
+into dedicated category views. Product cards now show stock status and a green
+point amount, and locally track a one-time demo redemption without claiming backend
+fulfilment. The catalog's current snapshot has no stock or admin reward-cost fields,
+so availability and fallback point values remain demo policy until the backend is
+connected.
+
+Reworked Fan Challenges around the accepted fan-submission model: activity ideas
+rank by contributed points, feed items load incrementally, the local preview orders
+Malaysia before Singapore before past Monaco and selects Malaysia by default, past
+selected items have gold/star treatment, and the contribution sheet accepts 10+
+point increments. Submissions create local Outbox
+records with the accepted moderation/lifecycle fields and deduct the 500-point demo
+fee; the implementation intentionally does not attach a race to submission data.
+Backend endpoints, race ingestion, authentication, moderation, and atomic balance
+operations remain integration work.
+
+Focused Xcode diagnostics pass and the full Xcode build pass after the changes.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-28: separate merch category pages and match reference layout
+
+Corrected the merch navigation after simulator review. `Open store` now opens only
+the full catalog. `Caps`, `T-shirts`, `Outerwear`, and `Other` are independent
+navigation destinations, each with its own category-specific product list. Category
+pages no longer repeat the browse cards, store title, or unrelated products.
+
+The category presentation now follows the supplied reference: full-width hero image
+first, category title and collection copy beneath it, then points and products.
+Product cards use catalog product names instead of SKU IDs. The hero and product grid
+are constrained to the active phone viewport, and categories remain fully accessible.
+
+Final iPhone 17 simulator proof on 2026-09-28 passed Store, Caps, T-shirts,
+Outerwear, and Other navigation and rendering. Evidence screenshots:
+`Reference Style Merch Check-12_35_31_544-screenshot.png`,
+`Reference Style Merch Check-12_37_12_526-screenshot.png`,
+`Reference Style Merch Check-12_38_06_429-screenshot.png`,
+`Reference Style Merch Check-12_38_46_095-screenshot.png`, and
+`Reference Style Merch Check-12_39_30_982-screenshot.png` under the local
+DeviceInteractionSynthesize artifact directory. Full Xcode build and focused
+source diagnostics pass. Backend store/catalog availability remains integration work.
+
+Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-28: merch ownership, coupons, and daily Race IQ
+
+Corrected local merch behavior after simulator review. `MerchCatalogEntry` now
+retains driver ownership and admin discount metadata. Store pages filter selected
+driver merchandise while retaining Team/general products, so Stroll pages do not
+show Alonso-owned items. `Sweatshirt` and `Midlayer` now map to Outerwear;
+T-shirt and Polo remain T-shirts. Rewards now includes an Other card and its
+merchandise cards fill the available grid more evenly.
+
+Merch cards show percentage discount plus points. Claiming an offer deducts
+points and creates a coupon record; Rewards > Coupons renders coupon records as
+a list. Race IQ now awards 100 points on completion and guards the reward to one
+claim per calendar day. Visible demo/preview wording was removed from the
+affected account, travel, editorial, planting, rewards, store, and quiz copy.
+
+Added `docs/backend-prompts/merch-rewards-and-daily-quiz.md`, which asks the
+backend agent to define catalog ingestion, admin offer configuration, atomic
+idempotent claims, coupon listing, audit events, and authoritative daily quiz
+reward operations without inventing client routes.
+
+Build and focused Swift diagnostics pass. Simulator proof confirmed Rewards,
+Stroll Caps, coupon claiming/listing, and Race IQ completion. The result-state
+proof found that `Play again` remained enabled after the daily reward; the
+button is now replaced by a disabled `Reward claimed today` state.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: sustainability cam local capture flow
+
+Replaced the Home quick action's Gallery placeholder with Sustainability cam.
+The new screen lets fans choose one of four sustainability actions, capture a
+photo with the camera or select an image from Photos, and receive the action's
+demo race points after a photo is accepted. The image is held only in transient
+view state and is never uploaded or persisted by this app slice. Added camera
+privacy copy and kept Photos access through the system picker.
+
+Build and focused Swift diagnostics pass. Camera and interactive rendered proof
+remain unverified because the task did not authorize device automation.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: RSES news feed page
+
+Replaced the existing News placeholder with `NewsFeedScreen`, a separate image-led
+news page using the supplied RSES RSS feed. The page parses RSS 2.0 item title,
+summary, secure article link, GUID, publication date and `media:content` image URL;
+shows the latest stories in a Mobbin/Apple-News-inspired card hierarchy; and opens
+source articles through the system link handler. Loading, empty feed, malformed
+response, network failure and retry states are explicit. Feed response content remains
+transient and is not persisted.
+
+Focused Xcode diagnostics pass, project build pass, and live parser smoke check on
+2026-09-28: 20 feed items parsed; first item was “Jessica Hawkins: Eyeing a
+championship-winning weekend”. Rendered/device proof was not run because device
+automation was not authorized.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: device-only demo readiness pass
+
+Tracking: unlinked. Renamed the app's spendable balance from race points to Green
+Points across the Swift port. Added an explicit optional 9,000-point demo balance
+that is stored locally on this device; the normal model starts at zero. Added
+persisted current streak and last activity day state with one activity award per
+calendar day. Quiz completion records the daily activity; photo verification now
+has ready/uploading/verified/rejected/failed states and fails closed because the
+repository's Luna photo endpoint is unavailable. No photo is uploaded by this
+build. Travel, community impact, official team figures, and challenge moderation
+are labelled as preview/demo/unavailable. Merchandise category imagery uses
+adaptive full-width layout and non-cropping treatment, with discount-first product
+labels.
+
+Build and source diagnostics pass. Device camera, forest rendering, and RSS
+presentation checks remain unverified in this handoff; Luna backend integration
+remains blocked on a configured endpoint and reviewed image contract.
+
+Implemented by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: place-to-place travel planning
+
+Replaced the Swift travel preview with a place-to-place planner in
+`Swift-App/TravelScreen.swift`. From and To fields now use MapKit autocomplete
+and selected place results. After both places are selected, the screen offers
+circular Public transport, Walking, Cycling, and Car controls; the selected mode
+calculates an available `MKRoute`, shows duration and distance, and draws the
+route with `MapPolyline`. Start navigation opens Apple Maps with the selected
+transport mode. Outbound/Return copy and static preview mode rows are removed.
+
+The implementation remains planning-only: no location tracking, emissions,
+Green Points, race eligibility, or backend route integration was added. Xcode
+source diagnostics and the full project build pass on 2026-09-28. Device and
+interactive MapKit provider behavior remain unverified because device
+automation was not authorized.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+MapKit verification correction: public transport uses `calculateETA()` because
+Apple documents transit directions as ETA-only for `MKDirections`; walking,
+cycling, and car render an in-app `MKRoute` polyline. All four modes hand off to
+Apple Maps with the selected directions mode.
+
+## 2026-09-28: travel mode selector and bottom edge correction
+
+Adjusted `Swift-App/TravelScreen.swift` after simulator screenshots. The travel
+screen now fills the bottom safe-area edge with the dark app background, and the
+four circular mode controls are replaced by one full pill-shaped segmented
+selector with Transit, Walk, Cycle, and Car sections. Full project build and
+focused source diagnostics pass. Rendered simulator proof remains pending.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: travel sheet and map visibility correction
+
+Replaced the travel screen's fixed black overlay with a native SwiftUI sheet
+with a compact 190-point dock and expanded detents. The sheet owns its bottom
+safe-area background and drag indicator. The dock retains a route summary and
+Maps action; it can expand for place search and mode changes, or collapse after
+a route loads. The map is interactable at the compact detent, the map heading
+disappears after both places are selected, and route framing leaves extra space
+below its geometry to reduce overlap with the dock. Errors retain a compact
+recovery action. Existing MapKit search, modes, and Apple Maps handoff remain.
+
+Full Xcode project build, focused source diagnostics, and `git diff --check`
+pass. Interactive dragging and rendered bottom-edge coverage remain unverified:
+device automation was not authorized for this task. Tracker: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: wider travel sheet and explicit route search
+
+Updated `Swift-App/TravelScreen.swift` to use SwiftUI page presentation sizing
+for the native travel sheet, keeping the existing draggable detents and bottom
+safe-area ownership. Added a visible `Search route` button when place text has
+been entered but one or both places have not yet been resolved. The button uses
+MapKit natural-language search for the typed values, then calculates the active
+travel mode; autocomplete selection remains supported.
+
+Focused source diagnostics, full Xcode build, and `git diff --check` pass.
+Sheet width and provider-backed search behavior remain unverified in a rendered
+simulator run because device automation was not authorized. Tracker: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: remove floating travel sheet insets
+
+Updated `Swift-App/TravelScreen.swift` to keep the planner as a native SwiftUI
+sheet while changing presentation sizing to
+`.automatic.fitted(horizontal: false, vertical: true)`. This removes the
+page-style horizontal inset and lets the system sheet use the full available
+width; internal content padding remains unchanged, and the existing bottom
+safe-area background, drag indicator, detents, route search, and mode selection
+remain intact.
+
+Focused Xcode diagnostics, full project build, and `git diff --check` pass.
+Rendered edge-to-edge coverage remains unverified because device automation was
+not authorized. Tracker: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: hard edge-to-edge travel panel
+
+Replaced the inset native sheet container in `Swift-App/TravelScreen.swift` with
+an explicitly viewport-sized, bottom-aligned presentation layer. The panel uses
+`geometry.size.width`, has no outer horizontal or bottom padding, is clipped with
+top-only rounded corners, and applies bottom safe-area padding inside the planner
+content. Compact and expanded detents remain available through the existing
+state, with the route/search/mode logic unchanged. The drag indicator and drag
+state control remain local to the panel.
+
+Focused Xcode diagnostics, full project build, and `git diff --check` pass.
+Rendered edge contact and drag behavior remain unverified because device
+automation was not authorized. Tracker: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: travel grabber spacing and interactive drag
+
+Added internal top spacing below the travel panel grabber in
+`Swift-App/TravelScreen.swift`. Replaced the release-only grabber gesture with a
+live `@GestureState` drag: the panel height follows the finger between the
+compact 190-point dock and the expanded 72%-height position, then settles to the
+nearest intended detent using a short ease-out animation. Reduced-motion users
+skip the animation. Existing edge anchoring, search, route modes, and Maps
+handoff remain unchanged.
+
+Focused Xcode diagnostics, full project build, and `git diff --check` pass.
+Rendered drag behavior remains unverified because device automation was not
+authorized. Tracker: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: stabilize travel sheet transition and camera
+
+Updated `Swift-App/TravelScreen.swift` to keep one persistent edge-to-edge
+planner panel while measuring its rendered compact and expanded content heights.
+Removed the expanded scroll container that caused unexplained empty black space,
+added interactive spring settling with reduced-motion fallback, and made the
+collapsed planner surface itself expand on tap. Camera framing now uses the
+rendered sheet height plus the bottom safe-area inset and remains guarded against
+repeated updates after manual map movement. Initial title and planner overlays
+remain gated until MapKit reports the first settled camera state.
+
+Focused source diagnostics were unavailable from Xcode's source-editor service,
+but the full Xcode build passed and `git diff --check` passed. Simulator proof
+before this final adjustment confirmed stable map entry, sheet expansion/collapse,
+and clean back navigation; the revised content-measured detent and collapsed
+surface hit target still need a fresh rendered pass.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: remove overlapping travel-sheet animation
+
+Fixed `Swift-App/TravelScreen.swift` so the planner uses one persistent sheet
+container, one handle and one content subtree. Conditional collapsed/expanded
+content no longer receives implicit opacity/layout animation; only the outer
+panel height animates. Added explicit current-height tracking so repeated Edit
+taps, reversed drags and interrupted spring settling continue from the current
+visual position. All state changes now use a single interruptible transition
+function, and map camera updates remain detent-guarded rather than layout-driven.
+
+Full Xcode build passed and `git diff --check` passed. Focused Xcode source
+diagnostics remain unavailable because the SourceEditor diagnostic service
+returns error 5. Simulator interaction verification is pending the fresh
+re-run.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## 2026-09-28: final sheet interruption guards
+
+Removed the route-driven root animation, made planner branch replacement
+identity-only, gave the sheet drag priority over subviews, cancelled camera work
+when a drag begins, delayed camera framing until the final measured detent, and
+ignored zero-height preference emissions during branch replacement. Expanded
+content remains scrollable when the keyboard reduces the available viewport.
+
+The latest full Xcode build passed (`BuildProject-Log-20260928-222207.txt`) and
+`git diff --check` passed. The last available simulator run was against an
+older build and still showed transient overlap, so fresh visual verification of
+this final build remains unavailable. Reduced Motion remains unverified.
+
+Recorded by Codex through Xcode (model ID unavailable).

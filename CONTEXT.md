@@ -37,6 +37,9 @@ _Avoid_: Proof of bus use
 **Points**:
 Units earned through eligible sustainable travel or explicitly granted by an admin, and spent on fan rewards. Every account starts at 0. Initial earning settings are 50 points per estimated kg reduced, capped at 2,000 per eligible journey; admins can change earning rules.
 
+**Green Points**:
+The Swift port's on-screen name for its local demo balance. It is not a separate currency or evidence that a production account has earned points. Its optional 9,000-point seed is enabled explicitly on one installation, not for new accounts.
+
 **Provisional journey points**:
 The estimated award for an unfinished journey, adjusted when its assessed impact changes. These points enter the earned balance only on qualifying completion; reductions do not remove previously earned points.
 

@@ -5,6 +5,7 @@ struct RewardsScreen: View {
     @Binding var demoState: DemoFanState
     let open: (FanDestination) -> Void
     @State private var selectedSection = "Rewards"
+    @AppStorage("demoSeedApplied") private var demoSeedApplied = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -13,7 +14,16 @@ struct RewardsScreen: View {
                 SectionHeader(title: "Rewards.", description: "Your points. Your choices.")
                     .padding(.top, 30)
 
-                racePointsHeader
+                greenPointsHeader
+
+                if !demoSeedApplied {
+                    Button("Enable 9,000 demo Green Points on this device") {
+                        demoSeedApplied = true
+                        demoState.greenPoints += DemoMode.optionalGreenPoints
+                    }
+                    .font(.footnote.bold())
+                    .tint(FanStyle.teal)
+                }
 
                 HStack(spacing: 9) {
                     ForEach(["Rewards", "Coupons"], id: \.self) { section in
@@ -127,7 +137,7 @@ struct RewardsScreen: View {
 
                         Button { open(.other) } label: {
                             DriverShopPreviewCard(
-                                imageName: "AMR26CarFront",
+                                imageName: "Merch_701238098_multicolor",
                                 title: "Other",
                                 driver: driver
                             )
@@ -170,9 +180,17 @@ struct RewardsScreen: View {
                         }
                         Text("\(coupon.discountPercent)% off · \(coupon.productName)")
                             .font(.subheadline.bold())
-                        Text("\(coupon.pointsSpent) points · expires in \(coupon.expiry) · \(coupon.createdAt)")
+                        Text("\(coupon.pointsSpent) Green Points · expires in \(coupon.expiry) · \(coupon.createdAt)")
                             .font(.caption)
                             .foregroundStyle(FanStyle.muted)
+                        Text("Demo code only; not accepted at checkout.")
+                            .font(.caption)
+                            .foregroundStyle(FanStyle.muted)
+                        if let storeURL = URL(string: coupon.storeURLString), storeURL.scheme == "https" {
+                            Link("View item at official store", destination: storeURL)
+                                .font(.footnote.bold())
+                                .foregroundStyle(FanStyle.teal)
+                        }
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -182,13 +200,13 @@ struct RewardsScreen: View {
         }
     }
 
-    private var racePointsHeader: some View {
+    private var greenPointsHeader: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Race points")
+                Text("Green Points")
                     .font(.subheadline)
                     .foregroundStyle(FanStyle.muted)
-                Text(demoState.racePoints.formatted())
+                Text(demoState.greenPoints.formatted())
                     .font(.system(size: 34, weight: .bold, design: .rounded))
             }
             Spacer()
@@ -224,8 +242,9 @@ private struct DriverShopPreviewCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Image(imageName)
                 .resizable()
-                .scaledToFill()
-                .frame(width: 141, height: 118)
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .frame(height: 118)
                 .clipped()
                 .accessibilityLabel("\(driver.firstName) \(driver.rawValue) wearing \(title.lowercased())")
             Text(title)

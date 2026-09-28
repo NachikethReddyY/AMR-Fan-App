@@ -13,6 +13,10 @@ enum FanStyle {
     )
 }
 
+enum DemoMode {
+    static let optionalGreenPoints = 9_000
+}
+
 enum Driver: String, CaseIterable, Identifiable {
     case alonso = "Alonso"
     case stroll = "Stroll"
@@ -38,6 +42,7 @@ struct MerchCatalogEntry: Decodable {
     let url: String
     let appRewardPointsCost: Int?
     let appRewardDiscountPercent: Int?
+    let year: String?
 
     init(
         category: String,
@@ -47,7 +52,8 @@ struct MerchCatalogEntry: Decodable {
         name: String,
         url: String,
         appRewardPointsCost: Int? = nil,
-        appRewardDiscountPercent: Int? = nil
+        appRewardDiscountPercent: Int? = nil,
+        year: String? = nil
     ) {
         self.category = category
         self.driver = driver
@@ -57,6 +63,7 @@ struct MerchCatalogEntry: Decodable {
         self.url = url
         self.appRewardPointsCost = appRewardPointsCost
         self.appRewardDiscountPercent = appRewardDiscountPercent
+        self.year = year
     }
 }
 
@@ -74,6 +81,7 @@ struct MerchPreview: Identifiable {
     let pointsCost: Int
     let storeURLString: String
     let isAvailable: Bool
+    let year: String
 
     init(entry: MerchCatalogEntry) {
         id = entry.id
@@ -85,6 +93,7 @@ struct MerchPreview: Identifiable {
         pointsCost = entry.appRewardPointsCost ?? Self.defaultPoints(for: entry.category)
         storeURLString = entry.url
         isAvailable = true
+        year = entry.year ?? "2026"
     }
 
     @MainActor static var examples: [MerchPreview] {
@@ -266,12 +275,32 @@ struct PlantedTree: Identifiable {
     var species: String { kind.rawValue }
 }
 
+enum SustainabilityAction: String, CaseIterable, Identifiable {
+    case publicTransport = "Public transport"
+    case recycling = "Recycle something"
+
+    var id: String { rawValue }
+    var symbol: String {
+        switch self {
+        case .publicTransport: "bus.fill"
+        case .recycling: "arrow.3.trianglepath"
+        }
+    }
+}
+
 struct DemoFanState {
-    var racePoints = 9_000
+    var greenPoints: Int
     var plantedTrees: [PlantedTree] = []
+    var sustainabilityActionsCompleted = 0
     var redeemedMerchIDs = Set<String>()
     var coupons: [RewardCoupon] = []
     var lastQuizRewardDay: String?
+    var currentStreak = 0
+    var lastActivityDay: String?
+
+    init(greenPoints: Int = 0) {
+        self.greenPoints = greenPoints
+    }
 
     var totalEstimatedCarbonKg: Double {
         plantedTrees.reduce(0) { $0 + $1.carbonSavedKg }
@@ -280,8 +309,8 @@ struct DemoFanState {
     mutating func redeem(_ kind: TreeKind, quantity: Int) -> Bool {
         let safeQuantity = max(1, quantity)
         let totalCost = kind.pointsCost * safeQuantity
-        guard racePoints >= totalCost else { return false }
-        racePoints -= totalCost
+        guard greenPoints >= totalCost else { return false }
+        greenPoints -= totalCost
         plantedTrees.append(contentsOf: (0..<safeQuantity).map { _ in
             PlantedTree(
                 id: UUID(),
@@ -292,6 +321,7 @@ struct DemoFanState {
                 status: .pending
             )
         })
+        recordActivity()
         return true
     }
 
@@ -303,17 +333,18 @@ struct DemoFanState {
     }
 
     mutating func redeemMerch(_ product: MerchPreview) -> Bool {
-        guard racePoints >= product.pointsCost, product.isAvailable else { return false }
-        racePoints -= product.pointsCost
+        guard greenPoints >= product.pointsCost, product.isAvailable else { return false }
+        greenPoints -= product.pointsCost
         redeemedMerchIDs.insert(product.id)
         coupons.insert(RewardCoupon(
             code: "AMR-\(String(UUID().uuidString.prefix(8)).uppercased())",
             productName: product.name,
+            storeURLString: product.storeURLString,
             discountPercent: product.discountPercent,
             pointsSpent: product.pointsCost,
             createdAt: Date.now.formatted(date: .abbreviated, time: .omitted),
             expiry: "30 days",
-            status: "Available"
+            status: "Demo only"
         ), at: 0)
         return true
     }
@@ -322,8 +353,31 @@ struct DemoFanState {
         let today = Date.now.formatted(date: .numeric, time: .omitted)
         guard lastQuizRewardDay != today else { return false }
         lastQuizRewardDay = today
-        racePoints += 100
+        greenPoints += 100
+        recordActivity()
         return true
+    }
+
+    mutating func completeSustainabilityAction() {
+        greenPoints += 100
+        sustainabilityActionsCompleted += 1
+        recordActivity()
+    }
+
+    mutating func recordActivity(on date: Date = .now, calendar: Calendar = .current) {
+        let day = calendar.startOfDay(for: date)
+        let formatter = Date.ISO8601FormatStyle().year().month().day()
+        let dayKey = day.formatted(formatter)
+        guard lastActivityDay != dayKey else { return }
+
+        if let lastActivityDay,
+           let previousDay = calendar.date(byAdding: .day, value: -1, to: day),
+           lastActivityDay == previousDay.formatted(formatter) {
+            currentStreak += 1
+        } else {
+            currentStreak = 1
+        }
+        lastActivityDay = dayKey
     }
 }
 
@@ -331,6 +385,7 @@ struct RewardCoupon: Identifiable {
     let id = UUID()
     let code: String
     let productName: String
+    let storeURLString: String
     let discountPercent: Int
     let pointsSpent: Int
     let createdAt: String
@@ -354,7 +409,7 @@ enum FanTab: String, CaseIterable, Identifiable {
 }
 
 enum FanDestination: String, Identifiable {
-    case profile, account, news, paddock, gallery, travel, challenges, history, tree, offers, caps, tshirts, outerwear, other, content, quiz
+    case profile, account, news, paddock, sustainabilityCam, travel, challenges, history, tree, offers, caps, tshirts, outerwear, other, content, quiz
 
     var id: String { rawValue }
 }

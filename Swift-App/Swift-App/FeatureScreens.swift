@@ -35,10 +35,10 @@ struct ChallengesScreen: View {
                     HStack(spacing: 12) {
                         Image(systemName: "bolt.fill")
                             .foregroundStyle(FanStyle.teal)
-                        Text("\(demoState.racePoints.formatted()) race points")
+                        Text("\(demoState.greenPoints.formatted()) Green Points")
                             .font(.subheadline.bold())
                         Spacer()
-                        Text("500 to submit")
+                        Text("500 Green Points to submit")
                             .font(.caption.bold())
                             .foregroundStyle(FanStyle.muted)
                     }
@@ -110,7 +110,7 @@ struct ChallengesScreen: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(14)
                                 .background(FanStyle.darkTeal, in: RoundedRectangle(cornerRadius: 14))
-                                .disabled(idea.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || demoState.racePoints < 500)
+                                .disabled(idea.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || demoState.greenPoints < 500)
                             }
                         }
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -156,7 +156,7 @@ struct ChallengesScreen: View {
                         Label("Submitted ideas", systemImage: "tray.and.arrow.up.fill")
                             .font(.headline)
                         if submittedIdeas.isEmpty {
-                            Text("Your challenge proposals will appear here after the backend accepts and moderates them.")
+                            Text("Your challenge proposals stay here as pending admin review until the backend is connected.")
                                 .font(.subheadline)
                                 .foregroundStyle(FanStyle.muted)
                         } else {
@@ -164,7 +164,7 @@ struct ChallengesScreen: View {
                                 VStack(alignment: .leading, spacing: 7) {
                                     Text(submission.text)
                                         .font(.subheadline.bold())
-                                    Text("activity · \(submission.moderation) · \(submission.fee) points")
+                                    Text("activity · Pending admin review · \(submission.fee) Green Points")
                                         .font(.caption)
                                         .foregroundStyle(FanStyle.muted)
                                 }
@@ -186,7 +186,7 @@ struct ChallengesScreen: View {
                 VStack(alignment: .leading, spacing: 22) {
                     Text(idea.title)
                         .font(.system(size: 28, weight: .bold, design: .rounded))
-                    Text("Add race points to this activity idea. Every point contributes to the shared ranking.")
+                    Text("Add Green Points to this activity idea. Every point contributes to the shared ranking.")
                         .font(.subheadline)
                         .foregroundStyle(FanStyle.muted)
                     Stepper("\(contributionPoints) points", value: Binding(
@@ -202,7 +202,7 @@ struct ChallengesScreen: View {
                     .padding(16)
                     .background(FanStyle.teal, in: RoundedRectangle(cornerRadius: 15))
                     .foregroundStyle(.black)
-                    .disabled((Int(contributionPoints) ?? 0) < 10 || (Int(contributionPoints) ?? 0) > demoState.racePoints)
+                    .disabled((Int(contributionPoints) ?? 0) < 10 || (Int(contributionPoints) ?? 0) > demoState.greenPoints)
                     Spacer()
                 }
                 .padding(22)
@@ -254,10 +254,10 @@ struct ChallengesScreen: View {
         guard let activeContribution,
               let points = Int(contributionPoints),
               points >= 10,
-              demoState.racePoints >= points,
+              demoState.greenPoints >= points,
               let challengeIndex = challenges.firstIndex(where: { $0.race == selectedRace }),
               let ideaIndex = challenges[challengeIndex].ideas.firstIndex(where: { $0.id == activeContribution.id }) else { return }
-        demoState.racePoints -= points
+        demoState.greenPoints -= points
         challenges[challengeIndex].ideas[ideaIndex].rankingPoints += points
         self.activeContribution = nil
         contributionPoints = "10"
@@ -265,8 +265,8 @@ struct ChallengesScreen: View {
 
     private func submitIdea() {
         let trimmedIdea = idea.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedIdea.isEmpty, demoState.racePoints >= 500 else { return }
-        demoState.racePoints -= 500
+        guard !trimmedIdea.isEmpty, demoState.greenPoints >= 500 else { return }
+        demoState.greenPoints -= 500
         submittedIdeas.insert(
             SubmissionRecord(
                 id: UUID(),
@@ -344,7 +344,7 @@ struct TreeScreen: View {
 
                         HStack(spacing: 18) {
                             forestMetric("\(filteredTrees.count)", label: "PLANTINGS")
-                            forestMetric("\(demoState.racePoints.formatted())", label: "RACE POINTS")
+                            forestMetric("\(demoState.greenPoints.formatted())", label: "GREEN POINTS")
                             forestMetric(demoState.totalEstimatedCarbonKg.formatted(.number.precision(.fractionLength(1))), label: "KG CO₂E EST.")
                         }
                         if demoState.plantedTrees.contains(where: { $0.status == .pending }) {
@@ -497,7 +497,7 @@ private struct LocationSummaryCard: View {
                         Text("\(summary.count)")
                             .font(.headline.monospacedDigit())
                     }
-                    Text("\(summary.count) planting\(summary.count == 1 ? "" : "s") · \(summary.carbonSavedKg, specifier: "%.1f") kg CO₂e estimated")
+                            Text("\(summary.count) planting\(summary.count == 1 ? "" : "s") · \(summary.carbonSavedKg, specifier: "%.1f") kg CO₂e estimated")
                         .font(.caption)
                         .foregroundStyle(FanStyle.muted)
                     ProgressView(value: Double(summary.count), total: Double(maximumCount))
@@ -561,7 +561,7 @@ private struct PlantingCatalogSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Choose a planting")
                         .font(.system(size: 30, weight: .bold, design: .rounded))
-                    Text("Select a card to choose quantity before spending race points.")
+                    Text("Select a card to choose quantity before spending Green Points.")
                         .font(.subheadline)
                         .foregroundStyle(FanStyle.muted)
                     ForEach(TreeKind.allCases) { kind in
@@ -577,7 +577,7 @@ private struct PlantingCatalogSheet: View {
                                     Image(systemName: "chevron.right")
                                         .foregroundStyle(FanStyle.muted)
                                 }
-                                Text("\(kind.pointsCost.formatted()) race points")
+                                Text("\(kind.pointsCost.formatted()) Green Points")
                                     .font(.subheadline)
                                 Text("Estimated saving: \(kind.carbonSavedKg, specifier: "%.1f") kg CO₂e")
                                     .font(.caption)
@@ -618,7 +618,7 @@ private struct PlantingConfirmationSheet: View {
 
     private var totalCost: Int { kind.pointsCost * quantity }
     private var totalCarbon: Double { kind.carbonSavedKg * Double(quantity) }
-    private var canRedeem: Bool { demoState.racePoints >= totalCost }
+    private var canRedeem: Bool { demoState.greenPoints >= totalCost }
 
     var body: some View {
         NavigationStack {
@@ -645,7 +645,7 @@ private struct PlantingConfirmationSheet: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Confirmation")
                         .font(.headline)
-                    Text("Spend \(totalCost.formatted()) race points")
+                    Text("Spend \(totalCost.formatted()) Green Points")
                     Text("Add \(quantity) pending planting\(quantity == 1 ? "" : "s")")
                     Text("Estimated saving: \(totalCarbon, specifier: "%.1f") kg CO₂e")
                         .foregroundStyle(FanStyle.teal)
@@ -663,7 +663,7 @@ private struct PlantingConfirmationSheet: View {
                     onComplete()
                     dismiss()
                 } label: {
-                    Text(canRedeem ? "Confirm redemption" : "Not enough race points")
+                    Text(canRedeem ? "Confirm redemption" : "Not enough Green Points")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(16)
@@ -917,7 +917,7 @@ struct QuizScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 SectionHeader(title: "Race IQ.",
-                              description: "Complete today's quiz to earn 100 race points.")
+                              description: "Complete today's quiz to earn 100 Green Points.")
 
                 if questionIndex < questions.count {
                     let question = questions[questionIndex]
@@ -979,7 +979,7 @@ struct QuizScreen: View {
                             Text("\(correctCount) out of \(questions.count)")
                                 .font(.system(size: 35, weight: .bold, design: .rounded))
                             Text(demoState.lastQuizRewardDay == Date.now.formatted(date: .numeric, time: .omitted)
-                                 ? "Today's reward has been added to your race points. Come back tomorrow for the next quiz."
+                                 ? "Today's reward has been added to your Green Points. Come back tomorrow for the next quiz."
                                  : "Today's reward is already claimed. Come back tomorrow for the next quiz.")
                                 .font(.subheadline).foregroundStyle(FanStyle.muted)
                         }

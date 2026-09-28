@@ -13,12 +13,15 @@ struct ImpactScreen: View {
 
                 FeatureCard {
                     VStack(alignment: .leading, spacing: 15) {
+                        Label("DEMO DATA", systemImage: "info.circle")
+                            .font(.caption.bold())
+                            .foregroundStyle(FanStyle.teal)
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 34))
                             .foregroundStyle(FanStyle.teal)
-                        Text("Your story starts here.")
+                        Text(demoState.plantedTrees.isEmpty ? "Your story starts here." : "Your impact is taking shape.")
                             .font(.system(size: 25, weight: .bold, design: .rounded))
-                        Text("Your planting and journey estimates will appear here.")
+                        Text("Verified journeys, Green Points activity, and plantings are separate from community and official AMR figures.")
                             .font(.subheadline)
                             .foregroundStyle(FanStyle.muted)
                     }
@@ -26,7 +29,7 @@ struct ImpactScreen: View {
                 }
 
                 HStack(spacing: 12) {
-                    impactMetric("0", label: "JOURNEYS", symbol: "figure.walk")
+                    impactMetric("Unavailable", label: "VERIFIED JOURNEYS", symbol: "figure.walk")
                     impactMetric(String(format: "%.1f", demoState.totalEstimatedCarbonKg), label: "KG CO₂E EST.", symbol: "carbon.dioxide.cloud")
                 }
 
@@ -34,7 +37,7 @@ struct ImpactScreen: View {
                     VStack(alignment: .leading, spacing: 9) {
                         Text("Together, we go further.")
                             .font(.title3.bold())
-                        Text("Community journey estimates are coming soon.")
+                        Text("Community totals are unavailable in this device-only demo.")
                             .font(.subheadline)
                             .foregroundStyle(FanStyle.muted)
                     }
@@ -47,13 +50,13 @@ struct ImpactScreen: View {
                             .foregroundStyle(FanStyle.teal)
                         Text("Official team figures")
                             .font(.title3.bold())
-                        Text("Sourced team data, separate from fan estimates.")
+                        Text("Official AMR ESG figures will appear after admin report approval. This demo does not claim team totals.")
                             .font(.subheadline)
                             .foregroundStyle(FanStyle.muted)
                     }
                 }
 
-                FanButton(title: "View activity history", symbol: "arrow.right") { open(.history) }
+                FanButton(title: "View digital forest", symbol: "tree.fill") { open(.tree) }
                     .padding(.bottom, 110)
             }
             .padding(.horizontal, 22)

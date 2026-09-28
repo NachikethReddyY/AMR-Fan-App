@@ -58,7 +58,7 @@ struct HomeScreen: View {
                         HStack {
                             quickAction("newspaper.fill", label: "News", page: .news)
                             Spacer()
-                            quickAction("camera.fill", label: "Gallery", page: .gallery)
+                            quickAction("camera.fill", label: "Sustainability", page: .sustainabilityCam)
                             Spacer()
                             quickAction("flag.checkered", label: "Challenges", page: .challenges)
                         }
@@ -81,7 +81,7 @@ struct HomeScreen: View {
                                 .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Race IQ").font(.headline)
-                                Text("Play daily and earn race points.")
+                                Text("Play daily and earn Green Points.")
                                     .font(.caption).foregroundStyle(FanStyle.muted)
                             }
                             Spacer()
@@ -120,6 +120,8 @@ struct HomeScreen: View {
         }
         .buttonStyle(FanPressStyle())
         .accessibilityLabel(label)
+        .contentShape(Rectangle())
+        .frame(minWidth: 84, minHeight: 92)
     }
 }
 
@@ -130,12 +132,12 @@ struct HeroCards: View {
         GeometryReader { geometry in
             let width = geometry.size.width
             ZStack {
-                metricCard(value: demoState.racePoints.formatted(), caption: "Race Points", symbol: "bolt.fill", isPoints: true)
+                metricCard(value: demoState.greenPoints.formatted(), caption: "Green Points", symbol: "bolt.fill", isPoints: true)
                     .frame(width: width * 0.52, height: 151)
                     .rotationEffect(.degrees(-18))
                     .position(x: width * 0.78, y: 100)
 
-                metricCard(value: "0", caption: "Days", symbol: "flame.fill", isPoints: false)
+                metricCard(value: demoState.currentStreak.formatted(), caption: "Day Streak", symbol: "flame.fill", isPoints: false)
                     .frame(width: width * 0.52, height: 149)
                     .rotationEffect(.degrees(18))
                     .position(x: width * 0.22, y: 112)

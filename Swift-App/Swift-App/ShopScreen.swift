@@ -13,13 +13,8 @@ struct ShopScreen: View {
         }
     }
 
-    private var viewportWidth: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.screen.bounds.width }
-            .first ?? 402
-    }
-
     var body: some View {
+        GeometryReader { geometry in
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                     if category == .all {
@@ -31,13 +26,15 @@ struct ShopScreen: View {
                                 .foregroundStyle(FanStyle.muted)
                         }
                         .padding(.top, 12)
+                        .padding(.horizontal, 22)
 
                         categoryLinks
+                            .padding(.horizontal, 22)
                     } else {
-                        categoryHero(width: viewportWidth)
+                        categoryHero(width: geometry.size.width)
                     }
 
-                    HStack {
+                    VStack(alignment: .leading, spacing: 6) {
                         if category == .all {
                             Text("All products")
                                 .font(.title3.bold())
@@ -45,30 +42,29 @@ struct ShopScreen: View {
                             Text("Available now")
                                 .font(.title3.bold())
                         }
-                        Spacer()
-                        Label("\(demoState.racePoints.formatted()) race points", systemImage: "bolt.fill")
+                        Label("\(demoState.greenPoints.formatted()) Green Points · Demo", systemImage: "bolt.fill")
                             .font(.subheadline.bold())
                             .foregroundStyle(FanStyle.teal)
                     }
+                    .padding(.horizontal, 22)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(visibleProducts) { product in
-                            CatalogProductCard(product: product, isRedeemed: demoState.redeemedMerchIDs.contains(product.id)) {
+                            CatalogProductCard(product: product, driver: driver, isRedeemed: demoState.redeemedMerchIDs.contains(product.id)) {
                                 _ = demoState.redeemMerch(product)
                             }
                         }
                     }
+                    .padding(.horizontal, 22)
 
-                    Text("Products and availability come from the connected store. Point costs are admin-configured.")
+                    Text("Demo catalogue and local coupon codes. Discounts are not connected to the official store.")
                         .font(.caption)
                         .foregroundStyle(FanStyle.muted)
+                        .padding(.horizontal, 22)
                         .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 22)
-                .frame(width: viewportWidth)
+                .frame(maxWidth: .infinity)
             }
-            .frame(width: viewportWidth)
-        .frame(width: viewportWidth)
         .scrollIndicators(.hidden)
         .ignoresSafeArea(.container, edges: category == .all ? [] : .top)
         .background(FanStyle.background)
@@ -76,6 +72,7 @@ struct ShopScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(category == .all ? .visible : .hidden, for: .navigationBar)
         .toolbar(.visible, for: .navigationBar)
+        }
     }
 
     private func categoryHero(width: CGFloat) -> some View {
@@ -83,7 +80,7 @@ struct ShopScreen: View {
             Image(heroImageName)
                 .resizable()
                 .scaledToFill()
-                .frame(width: width, height: 330)
+                .frame(width: width, height: width * 0.6)
                 .clipped()
 
             VStack(alignment: .leading, spacing: 6) {
@@ -121,13 +118,19 @@ struct ShopScreen: View {
     }
 
     private var heroImageName: String {
-        guard let driver, let keyPath = category.heroImageKey else { return "AMR26Car" }
-        return driver[keyPath: keyPath]
+        guard let driver else { return "Merch_701238098_multicolor" }
+        switch category {
+        case .caps: return driver.capPortraitImageName
+        case .tshirts: return driver.teamwearPortraitImageName
+        case .outerwear: return driver.outerwearPortraitImageName
+        case .all, .other: return "Merch_701238098_multicolor"
+        }
     }
 }
 
 private struct CatalogProductCard: View {
     let product: MerchPreview
+    let driver: Driver?
     let isRedeemed: Bool
     let redeem: () -> Void
 
@@ -136,20 +139,20 @@ private struct CatalogProductCard: View {
             Image(product.imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 140, height: 118)
                 .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
                 .background(Color(white: 0.23), in: RoundedRectangle(cornerRadius: 15))
 
-            Text(product.name)
+            Text(offerTitle)
                 .font(.subheadline.bold())
             HStack {
                 Text(product.isAvailable ? "In stock" : "Currently unavailable")
                 Spacer()
-                Text("\(product.discountPercent)% off")
+                Text("Green Points offer")
             }
                 .font(.caption.bold())
                 .foregroundStyle(FanStyle.teal)
-            Button(isRedeemed ? "Coupon added" : "\(product.pointsCost) points", action: redeem)
+            Button(isRedeemed ? "Coupon added" : "\(product.pointsCost) Green Points", action: redeem)
                 .font(.caption.bold())
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
@@ -160,6 +163,18 @@ private struct CatalogProductCard: View {
         .frame(maxWidth: .infinity)
         .padding(10)
         .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 19))
+    }
+
+    private var offerTitle: String {
+        let yearPrefix = product.name.contains(product.year) ? "" : "\(product.year) "
+        let driverPrefix: String
+        if let productDriver = product.driver, productDriver != "Team",
+           !product.name.localizedCaseInsensitiveContains(productDriver) {
+            driverPrefix = "\(productDriver) "
+        } else {
+            driverPrefix = ""
+        }
+        return "\(product.discountPercent)% off · \(yearPrefix)\(driverPrefix)\(product.name)"
     }
 }
 
