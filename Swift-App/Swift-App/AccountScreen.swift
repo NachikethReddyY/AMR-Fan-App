@@ -72,7 +72,7 @@ struct AccountScreen: View {
                 .disabled(email.isEmpty || password.isEmpty || (isCreatingAccount && displayName.isEmpty))
                 .opacity(email.isEmpty || password.isEmpty || (isCreatingAccount && displayName.isEmpty) ? 0.55 : 1)
 
-                Label("Preview only · Accounts aren't connected yet.", systemImage: "info.circle")
+                Label("Account access will be available when connected.", systemImage: "info.circle")
                     .font(.caption)
                     .foregroundStyle(FanStyle.muted)
             }
@@ -82,7 +82,7 @@ struct AccountScreen: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background(FanStyle.background)
-        .alert("Account preview", isPresented: $showsUnavailableNotice) {
+        .alert("Account unavailable", isPresented: $showsUnavailableNotice) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Sign-in and account creation will be available when the authentication service is connected. No account was created.")

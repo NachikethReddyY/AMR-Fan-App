@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ImpactScreen: View {
+    let demoState: DemoFanState
     let open: (FanDestination) -> Void
 
     var body: some View {
@@ -17,7 +18,7 @@ struct ImpactScreen: View {
                             .foregroundStyle(FanStyle.teal)
                         Text("Your story starts here.")
                             .font(.system(size: 25, weight: .bold, design: .rounded))
-                        Text("Your journey estimates will appear here.")
+                        Text("Your planting and journey estimates will appear here.")
                             .font(.subheadline)
                             .foregroundStyle(FanStyle.muted)
                     }
@@ -26,7 +27,7 @@ struct ImpactScreen: View {
 
                 HStack(spacing: 12) {
                     impactMetric("0", label: "JOURNEYS", symbol: "figure.walk")
-                    impactMetric("—", label: "KG CO₂E EST.", symbol: "carbon.dioxide.cloud")
+                    impactMetric(String(format: "%.1f", demoState.totalEstimatedCarbonKg), label: "KG CO₂E EST.", symbol: "carbon.dioxide.cloud")
                 }
 
                 FeatureCard {

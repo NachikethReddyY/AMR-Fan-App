@@ -54,6 +54,6 @@ struct FanButton: View {
             .background(FanStyle.darkTeal, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(FanStyle.teal.opacity(0.5)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FanPressStyle())
     }
 }

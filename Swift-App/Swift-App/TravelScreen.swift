@@ -7,6 +7,7 @@ struct TravelScreen: View {
     @State private var direction = "Outbound"
     @State private var showRoutes = false
     @State private var selectedMode: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let modes: [(name: String, symbol: String, detail: String)] = [
         ("Transit", "tram.fill", "Bus · rail · walk"),
@@ -18,12 +19,7 @@ struct TravelScreen: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                Map(initialPosition: .region(MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(latitude: 1.2868, longitude: 103.8545),
-                    span: MKCoordinateSpan(latitudeDelta: 0.065, longitudeDelta: 0.065)
-                )))
-                .mapStyle(.standard(emphasis: .muted))
-                .mapControlVisibility(.hidden)
+                TravelMapView()
                 Color.clear.frame(height: showRoutes ? 540 : 316)
             }
 
@@ -36,7 +32,7 @@ struct TravelScreen: View {
                 Text("Where to…")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
                     .tracking(-1.4)
-                Label("Singapore · Map preview", systemImage: "map.fill")
+                Label("Singapore route planning", systemImage: "map.fill")
                     .font(.caption.bold())
                     .foregroundStyle(FanStyle.muted)
                 Spacer()
@@ -75,7 +71,7 @@ struct TravelScreen: View {
                     HStack(spacing: 10) {
                         ForEach(["Outbound", "Return"], id: \.self) { option in
                             Button {
-                                withAnimation(.easeInOut(duration: 0.25)) { direction = option }
+                                withAnimation(reduceMotion ? nil : FanMotion.quick) { direction = option }
                             } label: {
                                 Label(option, systemImage: option == "Outbound" ? "arrow.up.right" : "arrow.down.left")
                                     .font(.caption.bold())
@@ -84,39 +80,43 @@ struct TravelScreen: View {
                                     .background(direction == option ? FanStyle.darkTeal : .white.opacity(0.07), in: Capsule())
                                     .overlay(Capsule().strokeBorder(direction == option ? FanStyle.teal : .clear))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(FanPressStyle())
                         }
                     }
 
                     FanButton(title: showRoutes ? "Hide options" : "Travel options", symbol: "arrow.right") {
-                        withAnimation(.easeInOut(duration: 0.35)) { showRoutes.toggle() }
+                        withAnimation(reduceMotion ? nil : FanMotion.sheet) { showRoutes.toggle() }
                     }
 
                     if showRoutes {
-                        ForEach(modes, id: \.name) { mode in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) { selectedMode = mode.name }
-                            } label: {
-                                HStack(spacing: 14) {
-                                    Image(systemName: mode.symbol)
-                                        .font(.title3)
-                                        .foregroundStyle(FanStyle.teal)
-                                        .frame(width: 30)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(mode.name).font(.subheadline.bold())
-                                        Text(mode.detail).font(.caption).foregroundStyle(FanStyle.muted)
+                        VStack(spacing: 15) {
+                            ForEach(modes, id: \.name) { mode in
+                                Button {
+                                    withAnimation(reduceMotion ? nil : FanMotion.quick) { selectedMode = mode.name }
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        Image(systemName: mode.symbol)
+                                            .font(.title3)
+                                            .foregroundStyle(FanStyle.teal)
+                                            .frame(width: 30)
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(mode.name).font(.subheadline.bold())
+                                            Text(mode.detail).font(.caption).foregroundStyle(FanStyle.muted)
+                                        }
+                                        Spacer()
+                                        Image(systemName: selectedMode == mode.name ? "checkmark.circle.fill" : "circle")
+                                            .foregroundStyle(FanStyle.teal)
                                     }
-                                    Spacer()
-                                    Image(systemName: selectedMode == mode.name ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(FanStyle.teal)
+                                    .padding(13)
+                                    .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
                                 }
-                                .padding(13)
-                                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                                .buttonStyle(FanPressStyle())
                             }
-                            .buttonStyle(.plain)
+                            Text("Live routes and tracking will be available when connected.")
+                                .font(.caption)
+                                .foregroundStyle(FanStyle.muted)
                         }
-                        Text("Preview only · No live routes or tracking.")
-                            .font(.caption).foregroundStyle(FanStyle.muted)
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -137,5 +137,16 @@ struct TravelScreen: View {
             .shadow(color: .black.opacity(0.5), radius: 18, y: -10)
         }
         .background(FanStyle.background)
+    }
+}
+
+private struct TravelMapView: View {
+    var body: some View {
+        Map(initialPosition: .region(MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 1.2868, longitude: 103.8545),
+            span: MKCoordinateSpan(latitudeDelta: 0.065, longitudeDelta: 0.065)
+        )))
+        .mapStyle(.standard(emphasis: .muted))
+        .mapControlVisibility(.hidden)
     }
 }

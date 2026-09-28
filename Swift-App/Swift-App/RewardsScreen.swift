@@ -1,26 +1,11 @@
 import SwiftUI
 
-struct MerchPreview: Identifiable {
-    let id: String
-    let imageName: String
-    let category: String
-    let storeURLString: String
-
-    static let examples = [
-        MerchPreview(id: "Team cap", imageName: "TeamCap", category: "Caps",
-                     storeURLString: "https://shop.astonmartinf1.com/"),
-        MerchPreview(id: "Replica team tee", imageName: "TeamTee", category: "Tops",
-                     storeURLString: "https://us.puma.com/us/en/pd/puma-x-aston-martin-aramco-f1-team-mens-replica-tee/713889"),
-        MerchPreview(id: "Replica team polo", imageName: "TeamPolo", category: "Tops",
-                     storeURLString: "https://us.puma.com/us/en/pd/puma-x-aston-martin-aramco-f1-team-mens-replica-polo/713888"),
-        MerchPreview(id: "Team jacket", imageName: "TeamJacket", category: "Layers",
-                     storeURLString: "https://shop.astonmartinf1.com/")
-    ]
-}
-
 struct RewardsScreen: View {
+    let driver: Driver
+    @Binding var demoState: DemoFanState
     let open: (FanDestination) -> Void
-    @State private var selectedSection = "Redemption"
+    @State private var selectedSection = "Rewards"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
@@ -28,23 +13,12 @@ struct RewardsScreen: View {
                 SectionHeader(title: "Rewards.", description: "Your points. Your choices.")
                     .padding(.top, 30)
 
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("0")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                    Text("points available")
-                        .font(.subheadline)
-                        .foregroundStyle(FanStyle.muted)
-                    Spacer()
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(FanStyle.teal)
-                }
-                .padding(21)
-                .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 23))
+                racePointsHeader
 
                 HStack(spacing: 9) {
-                    ForEach(["Redemption", "History"], id: \.self) { section in
+                    ForEach(["Rewards", "Coupons"], id: \.self) { section in
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) { selectedSection = section }
+                            withAnimation(reduceMotion ? nil : FanMotion.quick) { selectedSection = section }
                         } label: {
                             Text(section)
                                 .font(.subheadline.bold())
@@ -58,22 +32,16 @@ struct RewardsScreen: View {
                     }
                 }
 
-                if selectedSection == "History" {
-                    FeatureCard {
-                        Label("No activity yet", systemImage: "clock.arrow.circlepath")
-                            .font(.headline)
-                        Text("Your earned and spent points will appear here once your account is connected.")
-                            .font(.subheadline)
-                            .foregroundStyle(FanStyle.muted)
-                            .padding(.top, 7)
+                Group {
+                    if selectedSection == "Coupons" {
+                        couponsSection
+                    } else {
+                        redemptionCategories
                     }
-                } else {
-                    redemptionCategories
                 }
+                .id(selectedSection)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98)))
 
-                Text("Preview only · Points and discounts aren't connected yet.")
-                    .font(.caption)
-                    .foregroundStyle(FanStyle.muted)
                     .padding(.bottom, 110)
             }
             .padding(.horizontal, 22)
@@ -121,37 +89,115 @@ struct RewardsScreen: View {
             .accessibilityLabel("Explore fan challenges")
 
                 HStack {
-                    Text("Shop")
+                    Text("Merchandise")
                         .font(.title3.bold())
                     Spacer()
-                    Button("Explore shop", systemImage: "chevron.right") { open(.offers) }
+                    Button("Open store", systemImage: "chevron.right") { open(.offers) }
                         .font(.caption.bold())
                         .tint(FanStyle.teal)
                 }
 
-                ScrollView(.horizontal) {
-                    HStack(spacing: 12) {
-                        ForEach(MerchPreview.examples) { product in
-                            Button { open(.offers) } label: {
-                                MerchPreviewCard(product: product)
-                            }
-                            .buttonStyle(.plain)
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        Button { open(.caps) } label: {
+                            DriverShopPreviewCard(
+                                imageName: driver.capPortraitImageName,
+                                title: "Caps",
+                                driver: driver
+                            )
                         }
+                        .buttonStyle(FanPressStyle())
+
+                        Button { open(.tshirts) } label: {
+                            DriverShopPreviewCard(
+                                imageName: driver.teamwearPortraitImageName,
+                                title: "T-shirts",
+                                driver: driver
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button { open(.outerwear) } label: {
+                            DriverShopPreviewCard(
+                                imageName: driver.outerwearPortraitImageName,
+                                title: "Outerwear",
+                                driver: driver
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button { open(.other) } label: {
+                            DriverShopPreviewCard(
+                                imageName: "AMR26CarFront",
+                                title: "Other",
+                                driver: driver
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                }
-                .scrollIndicators(.hidden)
+                .frame(maxWidth: .infinity)
 
                 HStack(spacing: 12) {
                     Button { open(.tree) } label: {
-                        categoryCard("Trees", detail: "0 planted", symbol: "tree.fill")
+                        categoryCard("Trees", detail: "\(demoState.plantedTrees.count) pending", symbol: "tree.fill")
                     }
                     Button { open(.content) } label: {
                         categoryCard("Stories", detail: "Team access", symbol: "play.rectangle.fill")
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(FanPressStyle())
 
         }
+    }
+
+    private var couponsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Your coupon codes", systemImage: "ticket.fill")
+                .font(.headline)
+            if demoState.coupons.isEmpty {
+                Text("Claim a merchandise offer to see its code here.")
+                    .font(.subheadline)
+                    .foregroundStyle(FanStyle.muted)
+            } else {
+                ForEach(demoState.coupons) { coupon in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(coupon.code)
+                                .font(.headline.monospaced())
+                            Spacer()
+                            Text(coupon.status)
+                                .font(.caption.bold())
+                                .foregroundStyle(FanStyle.teal)
+                        }
+                        Text("\(coupon.discountPercent)% off · \(coupon.productName)")
+                            .font(.subheadline.bold())
+                        Text("\(coupon.pointsSpent) points · expires in \(coupon.expiry) · \(coupon.createdAt)")
+                            .font(.caption)
+                            .foregroundStyle(FanStyle.muted)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
+    }
+
+    private var racePointsHeader: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Race points")
+                    .font(.subheadline)
+                    .foregroundStyle(FanStyle.muted)
+                Text(demoState.racePoints.formatted())
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+            }
+            Spacer()
+            Image(systemName: "bolt.fill")
+                .font(.title2)
+                .foregroundStyle(FanStyle.teal)
+        }
+        .padding(18)
+        .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private func categoryCard(_ name: String, detail: String, symbol: String) -> some View {
@@ -166,6 +212,31 @@ struct RewardsScreen: View {
         .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
         .padding(16)
         .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 20))
+    }
+}
+
+private struct DriverShopPreviewCard: View {
+    let imageName: String
+    let title: String
+    let driver: Driver
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 141, height: 118)
+                .clipped()
+                .accessibilityLabel("\(driver.firstName) \(driver.rawValue) wearing \(title.lowercased())")
+            Text(title)
+                .font(.subheadline.bold())
+            Text("Official team collection")
+                .font(.caption2)
+                .foregroundStyle(FanStyle.muted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(10)
+        .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 19))
     }
 }
 
@@ -186,7 +257,7 @@ struct MerchPreviewCard: View {
                 .font(.caption2)
                 .foregroundStyle(FanStyle.muted)
         }
-        .frame(width: 141)
+        .frame(maxWidth: .infinity)
         .padding(10)
         .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 19))
     }

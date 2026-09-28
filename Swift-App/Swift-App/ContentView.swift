@@ -5,9 +5,13 @@ struct ContentView: View {
     @AppStorage("hasSeenFeatureTour") private var hasSeenFeatureTour = false
     @State private var selectedTab: FanTab = .home
     @State private var destination: FanDestination?
+    @State private var pushedDestination: FanDestination?
     @State private var showShop = false
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
+    @State private var demoState = DemoFanState()
+    @State private var tabDirection: PageDirection = .forward
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var driver: Driver? { Driver(rawValue: supportedDriver) }
 
@@ -18,27 +22,27 @@ struct ContentView: View {
 
             if let driver {
                 ZStack {
-                    switch selectedTab {
-                    case .home:
-                        HomeScreen(driver: driver, open: openPage)
-                            .transition(.opacity)
-                    case .rewards:
-                        RewardsScreen(open: openPage)
-                            .transition(.opacity)
-                    case .impact:
-                        ImpactScreen(open: openPage)
-                            .transition(.opacity)
+                    Group {
+                        switch selectedTab {
+                        case .home:
+                            HomeScreen(driver: driver, demoState: demoState, open: openPage)
+                        case .rewards:
+                            RewardsScreen(driver: driver, demoState: $demoState, open: openPage)
+                        case .impact:
+                            ImpactScreen(demoState: demoState, open: openPage)
+                        }
                     }
+                    .id(selectedTab)
+                    .transition(FanMotion.pageTransition(direction: tabDirection, reduceMotion: reduceMotion))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.easeInOut(duration: 0.22), value: selectedTab)
                 .overlay(alignment: .bottom) {
-                    BottomBar(selectedTab: $selectedTab, openTravel: { destination = .travel })
+                    BottomBar(selectedTab: $selectedTab, openTravel: { pushedDestination = .travel }, selectTab: selectTab)
                 }
                 .transition(.opacity)
             } else {
                 DriverSelectionScreen(select: { choice in
-                    withAnimation(.easeInOut(duration: 0.45)) {
+                    withAnimation(reduceMotion ? nil : FanMotion.page) {
                         supportedDriver = choice.rawValue
                     }
                     if !hasSeenFeatureTour { showFeatureTour = true }
@@ -48,7 +52,11 @@ struct ContentView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $showShop) {
-            ShopScreen()
+            ShopScreen(driver: driver, demoState: $demoState, category: .all)
+        }
+        .navigationDestination(item: $pushedDestination) { page in
+            destinationView(for: page)
+                .toolbar(.visible, for: .navigationBar)
         }
         }
         .preferredColorScheme(.dark)
@@ -82,9 +90,23 @@ struct ContentView: View {
         }
     }
 
+    private func selectTab(_ tab: FanTab) {
+        guard tab != selectedTab else { return }
+        tabDirection = tabIndex(tab) >= tabIndex(selectedTab) ? .forward : .backward
+        withAnimation(reduceMotion ? nil : FanMotion.page) {
+            selectedTab = tab
+        }
+    }
+
+    private func tabIndex(_ tab: FanTab) -> Int {
+        FanTab.allCases.firstIndex(of: tab) ?? 0
+    }
+
     private func openPage(_ page: FanDestination) {
         if page == .offers {
             showShop = true
+        } else if page == .travel || page == .tree {
+            pushedDestination = page
         } else {
             destination = page
         }
@@ -113,18 +135,26 @@ struct ContentView: View {
         case .travel:
             TravelScreen()
         case .challenges:
-            ChallengesScreen()
+            ChallengesScreen(demoState: $demoState)
         case .history:
             HistoryScreen()
         case .tree:
-            TreeScreen()
+            TreeScreen(demoState: $demoState)
         case .offers:
-            ShopScreen()
+            ShopScreen(driver: driver, demoState: $demoState, category: .all)
+        case .caps:
+            ShopScreen(driver: driver, demoState: $demoState, category: .caps)
+        case .tshirts:
+            ShopScreen(driver: driver, demoState: $demoState, category: .tshirts)
+        case .outerwear:
+            ShopScreen(driver: driver, demoState: $demoState, category: .outerwear)
+        case .other:
+            ShopScreen(driver: driver, demoState: $demoState, category: .other)
         case .content:
             EditorialScreen(title: "Exclusive.", symbol: "play.rectangle.fill",
                             description: "Team stories, coming soon.")
         case .quiz:
-            QuizScreen()
+            QuizScreen(demoState: $demoState)
         }
     }
 }

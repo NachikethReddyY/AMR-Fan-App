@@ -3,13 +3,14 @@ import SwiftUI
 struct BottomBar: View {
     @Binding var selectedTab: FanTab
     let openTravel: () -> Void
+    let selectTab: (FanTab) -> Void
 
     var body: some View {
         HStack(spacing: 9) {
             HStack(spacing: 0) {
                 ForEach(FanTab.allCases) { tab in
                     Button {
-                        selectedTab = tab
+                        selectTab(tab)
                     } label: {
                         VStack(spacing: 2) {
                             Image(systemName: tab.symbol)
@@ -23,7 +24,7 @@ struct BottomBar: View {
                         .frame(height: 52)
                         .background(selectedTab == tab ? .white.opacity(0.13) : .clear, in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(FanPressStyle())
                 }
             }
             .padding(4)

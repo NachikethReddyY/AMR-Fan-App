@@ -2,8 +2,10 @@ import SwiftUI
 
 struct HomeScreen: View {
     let driver: Driver
+    let demoState: DemoFanState
     let open: (FanDestination) -> Void
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: .now)
@@ -43,9 +45,15 @@ struct HomeScreen: View {
                         }
                         .padding(.top, 22)
                         .padding(.horizontal, 28)
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared || reduceMotion ? 0 : 12)
+                        .animation(reduceMotion ? nil : FanMotion.page, value: appeared)
 
-                        HeroCards()
+                        HeroCards(demoState: demoState)
                             .padding(.top, 10)
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared || reduceMotion ? 0 : 12)
+                            .animation(reduceMotion ? nil : FanMotion.page.delay(0.06), value: appeared)
 
                         HStack {
                             quickAction("newspaper.fill", label: "News", page: .news)
@@ -56,6 +64,9 @@ struct HomeScreen: View {
                         }
                         .padding(.horizontal, 30)
                         .padding(.top, 22)
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared || reduceMotion ? 0 : 12)
+                        .animation(reduceMotion ? nil : FanMotion.page.delay(0.12), value: appeared)
                     }
                 }
                 .frame(height: 394, alignment: .top)
@@ -70,7 +81,7 @@ struct HomeScreen: View {
                                 .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Race IQ").font(.headline)
-                                Text("A quick pit stop for your brain.")
+                                Text("Play daily and earn race points.")
                                     .font(.caption).foregroundStyle(FanStyle.muted)
                             }
                             Spacer()
@@ -80,19 +91,20 @@ struct HomeScreen: View {
                         .padding(17)
                         .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 21))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(FanPressStyle())
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 35)
                 .padding(.bottom, 110)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared || reduceMotion ? 0 : 12)
+                .animation(reduceMotion ? nil : FanMotion.page.delay(0.18), value: appeared)
             }
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
-            .opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? 0 : 14)
         }
         .scrollIndicators(.hidden)
-        .onAppear { withAnimation(.easeOut(duration: 0.55)) { appeared = true } }
+        .onAppear { appeared = true }
     }
 
     private func quickAction(_ symbol: String, label: String, page: FanDestination) -> some View {
@@ -106,17 +118,19 @@ struct HomeScreen: View {
                     .foregroundStyle(FanStyle.muted)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FanPressStyle())
         .accessibilityLabel(label)
     }
 }
 
 struct HeroCards: View {
+    let demoState: DemoFanState
+
     var body: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
             ZStack {
-                metricCard(value: "0", caption: "Race Points", symbol: "bolt.fill", isPoints: true)
+                metricCard(value: demoState.racePoints.formatted(), caption: "Race Points", symbol: "bolt.fill", isPoints: true)
                     .frame(width: width * 0.52, height: 151)
                     .rotationEffect(.degrees(-18))
                     .position(x: width * 0.78, y: 100)

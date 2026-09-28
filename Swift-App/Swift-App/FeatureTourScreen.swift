@@ -3,6 +3,7 @@ import SwiftUI
 struct FeatureTourScreen: View {
     let complete: () -> Void
     @State private var step = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let pages: [(symbol: String, title: String, detail: String)] = [
         ("house.fill", "Your home", "Follow your driver and find your fan activities."),
@@ -27,19 +28,23 @@ struct FeatureTourScreen: View {
                     .foregroundStyle(FanStyle.muted)
             }
 
-            Image(systemName: pages[step].symbol)
-                .font(.system(size: 34))
-                .foregroundStyle(FanStyle.teal)
-                .frame(height: 48)
-                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 18) {
+                Image(systemName: pages[step].symbol)
+                    .font(.system(size: 34))
+                    .foregroundStyle(FanStyle.teal)
+                    .frame(height: 48)
+                    .accessibilityHidden(true)
 
-            Text(pages[step].title)
-                .font(.system(size: 27, weight: .bold, design: .rounded))
+                Text(pages[step].title)
+                    .font(.system(size: 27, weight: .bold, design: .rounded))
 
-            Text(pages[step].detail)
-                .font(.subheadline)
-                .foregroundStyle(FanStyle.muted)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(pages[step].detail)
+                    .font(.subheadline)
+                    .foregroundStyle(FanStyle.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .id(step)
+            .transition(reduceMotion ? .opacity : .push(from: .trailing))
 
             Spacer(minLength: 0)
 
@@ -47,7 +52,7 @@ struct FeatureTourScreen: View {
                 if step == pages.count - 1 {
                     complete()
                 } else {
-                    withAnimation(.easeInOut(duration: 0.2)) { step += 1 }
+                    withAnimation(reduceMotion ? nil : FanMotion.content) { step += 1 }
                 }
             } label: {
                 HStack {
@@ -60,7 +65,7 @@ struct FeatureTourScreen: View {
                 .padding(16)
                 .background(FanStyle.teal, in: RoundedRectangle(cornerRadius: 15))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(FanPressStyle())
         }
         .padding(25)
         .presentationDetents([.height(330)])

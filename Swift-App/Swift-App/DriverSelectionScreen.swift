@@ -4,6 +4,7 @@ struct DriverSelectionScreen: View {
     let select: (Driver) -> Void
     let openAccount: () -> Void
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { geometry in
@@ -55,7 +56,7 @@ struct DriverSelectionScreen: View {
                                    height: min(geometry.size.width * 0.73, 290))
                             .clipShape(RoundedRectangle(cornerRadius: 22))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(FanPressStyle())
                         .accessibilityLabel("Support \(driver.firstName) \(driver.rawValue)")
                         .padding(.bottom, 20)
                     }
@@ -82,6 +83,12 @@ struct DriverSelectionScreen: View {
                 .offset(y: appeared ? 0 : 20)
             }
         }
-        .onAppear { withAnimation(.easeOut(duration: 0.65)) { appeared = true } }
+        .onAppear {
+            if reduceMotion {
+                appeared = true
+            } else {
+                withAnimation(FanMotion.page) { appeared = true }
+            }
+        }
     }
 }
