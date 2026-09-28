@@ -1,12 +1,7 @@
 import SwiftUI
 
 struct AccountScreen: View {
-    @State private var isCreatingAccount = false
-    @State private var email = ""
-    @State private var password = ""
-    @State private var displayName = ""
-    @State private var showsPassword = false
-    @State private var showsUnavailableNotice = false
+    @EnvironmentObject private var backend: BackendSession
 
     var body: some View {
         ScrollView {
@@ -16,97 +11,48 @@ struct AccountScreen: View {
                     .foregroundStyle(FanStyle.teal)
                     .padding(.top, 24)
 
-                SectionHeader(title: isCreatingAccount ? "Join the team." : "Welcome back.",
-                              description: isCreatingAccount ? "Create your fan account." : "Sign in to your fan account.")
+                SectionHeader(
+                    title: backend.isConnected ? "Your account." : "Connect your account.",
+                    description: backend.isConnected ? "Your backend profile and earned balance." : "Use a local test account while live sign-in is being configured."
+                )
 
-                HStack(spacing: 8) {
-                    modeButton("Sign in", isSelected: !isCreatingAccount) { isCreatingAccount = false }
-                    modeButton("Create account", isSelected: isCreatingAccount) { isCreatingAccount = true }
-                }
-
-                VStack(spacing: 12) {
-                    if isCreatingAccount {
-                        TextField("Name", text: $displayName)
-                            .textContentType(.name)
-                            .textInputAutocapitalization(.words)
-                            .accountField()
+                if let profile = backend.realProfile {
+                    FeatureCard {
+                        Text(profile.displayName)
+                            .font(.title3.bold())
+                        Text("\(profile.balance) earned points")
+                            .font(.headline)
+                            .foregroundStyle(FanStyle.teal)
+                        Text("This balance is stored by the backend. Local demo Green Points remain separate.")
+                            .font(.footnote)
+                            .foregroundStyle(FanStyle.muted)
                     }
-
-                    TextField("Email address", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .accountField()
-
-                    HStack {
-                        Group {
-                            if showsPassword {
-                                TextField("Password", text: $password)
-                            } else {
-                                SecureField("Password", text: $password)
-                            }
-                        }
-                        .textContentType(isCreatingAccount ? .newPassword : .password)
-
-                        Button(showsPassword ? "Hide password" : "Show password",
-                               systemImage: showsPassword ? "eye.slash" : "eye") {
-                            showsPassword.toggle()
-                        }
-                        .labelStyle(.iconOnly)
-                        .tint(FanStyle.muted)
+                    Button("Sign out") { Task { await backend.signOut() } }
+                        .foregroundStyle(FanStyle.teal)
+                } else {
+                    Button {
+                        Task { await backend.signInForLocalDemo() }
+                    } label: {
+                        Text(backend.isBusy ? "Connecting…" : "Use local test account")
+                            .font(.headline)
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(17)
+                            .background(FanStyle.teal, in: RoundedRectangle(cornerRadius: 16))
                     }
-                    .accountField()
+                    .disabled(backend.isBusy)
                 }
 
-                Button {
-                    showsUnavailableNotice = true
-                } label: {
-                    Text(isCreatingAccount ? "Create account" : "Sign in")
-                        .font(.headline)
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(17)
-                        .background(FanStyle.teal, in: RoundedRectangle(cornerRadius: 16))
+                if let error = backend.errorMessage {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
                 }
-                .disabled(email.isEmpty || password.isEmpty || (isCreatingAccount && displayName.isEmpty))
-                .opacity(email.isEmpty || password.isEmpty || (isCreatingAccount && displayName.isEmpty) ? 0.55 : 1)
-
-                Label("Account access will be available when connected.", systemImage: "info.circle")
-                    .font(.caption)
-                    .foregroundStyle(FanStyle.muted)
             }
             .padding(24)
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
         }
-        .scrollDismissesKeyboard(.interactively)
         .background(FanStyle.background)
-        .alert("Account unavailable", isPresented: $showsUnavailableNotice) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Sign-in and account creation will be available when the authentication service is connected. No account was created.")
-        }
-    }
-
-    private func modeButton(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.subheadline.bold())
-                .foregroundStyle(isSelected ? .white : FanStyle.muted)
-                .frame(maxWidth: .infinity)
-                .padding(13)
-                .background(isSelected ? FanStyle.darkTeal : FanStyle.panel, in: Capsule())
-                .overlay(Capsule().strokeBorder(isSelected ? FanStyle.teal : .clear))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private extension View {
-    func accountField() -> some View {
-        self
-            .padding(16)
-            .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 15))
     }
 }

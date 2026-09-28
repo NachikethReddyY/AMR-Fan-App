@@ -2951,3 +2951,29 @@ older build and still showed transient overlap, so fresh visual verification of
 this final build remains unavailable. Reduced Motion remains unverified.
 
 Recorded by Codex through Xcode (model ID unavailable).
+
+
+## 2026-09-28: guarded Swift and backend connection slice
+
+Connected the Swift port to the local backend contract. Added a Keychain-backed
+backend session, development fixture sign-in, transient photo upload, server
+response handling, and backend route-query consumption alongside the existing
+MapKit route preview. The sustainability screen now reports server results and
+shows a clearly labelled local fixture action. Arbitrary images are rejected with
+zero points until a reviewed vision provider is activated.
+
+Added explicit pnpm workspace units for the API, admin surface, and shared wire
+contracts, plus Turbo task configuration. Added the gpt-6-astra-authored photo
+classifier prompt contract under `docs/backend-prompts/`; it is prepared only,
+not an activated provider prompt.
+
+Verification: Xcode simulator build passed; Turbo API activity and admin tests
+passed; TypeScript typecheck and ESLint passed; focused backend activity, AI, and
+fixture tests passed; `git diff --check` passed. Full Prettier check remains
+red because of pre-existing asset/spec formatting and Turbo cache metadata.
+Database HTTP integration proof remains unavailable because this worktree lacks
+the private local PostgreSQL namespace configuration. Emulator recording and
+interactive device proof are pending a fresh signed build and the local API.
+
+Implemented by gpt-6-sol through Codex (T3 Code); photo prompt authored by
+gpt-6-astra through Codex (T3 Code).

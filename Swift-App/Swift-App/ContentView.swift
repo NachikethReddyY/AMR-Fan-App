@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
+    @StateObject private var backend = BackendSession()
     @State private var tabDirection: PageDirection = .forward
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -68,7 +69,9 @@ struct ContentView: View {
                 .toolbar(.visible, for: .navigationBar)
         }
         }
+        .environmentObject(backend)
         .preferredColorScheme(.dark)
+        .task { await backend.resume() }
         .onAppear {
             if driver != nil && !hasSeenFeatureTour { showFeatureTour = true }
         }

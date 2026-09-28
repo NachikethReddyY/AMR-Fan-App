@@ -25,10 +25,10 @@ atomicity, replay, concurrency and isolation. See [points operations](../operati
 
 ## Design defaults
 
-Keep the existing root Expo package. Database-only TypeScript modules live in
+Keep the existing root Expo package while the explicit workspace units coexist. The Swift app remains an Xcode project outside the JavaScript package graph. Database-only TypeScript modules live in
 `server/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
-service ownership, per-worktree databases, commands and cloud setup gates. Do not introduce a monorepo, service layer or event system speculatively.
+service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
 Azure is the selected backend platform. No Azure service, deployment or auth provider
 has been selected or provisioned. The configurable account adapter and local
 setup are documented in [account operations](../operations/accounts.md). Earlier Convex plans are superseded.
@@ -76,3 +76,22 @@ endpoint remains an honest failure; local availability fixtures do not establish
 hosted readiness. Expo camera access excludes microphone and photo-library access.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+
+
+## Swift and local photo integration, 28 September 2026
+
+`Swift-App/` now has a Keychain-backed backend session, a local synthetic sign-in
+button, transient JPEG upload client, and a route-query consumer. The Swift map
+still uses MapKit for route geometry and navigation. Backend route options and
+legs appear in the expanded planner when a signed-in local backend is available.
+
+The photo POST is enabled only with explicit loopback development flags. The
+server awards exactly 50 points only for one pinned synthetic fixture image
+and activity. Arbitrary photos return zero. Production remains disabled and no
+vision provider is called. The gpt-6-astra classifier prompt is prepared under
+`docs/backend-prompts/photo-activity-astro.md`, not activated.
+
+The repo is now recognized by pnpm as root Expo, `@amr/admin`,
+`@amr/api`, and `@amr/contracts`; Turbo runs focused package tasks. Runtime
+source and deployment files remain at their existing paths. The admin package
+builds the existing static pages; it is not a new admin product.

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 enum FanStyle {
     static let background = Color(red: 10 / 255, green: 10 / 255, blue: 10 / 255)

@@ -1,0 +1,9 @@
+{
+  "name": "@amr/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ../../server/api/start.ts",
+    "test:activity": "node --test ../../server/activity/claims.test.ts ../../server/activity/media.test.ts"
+  }
+}

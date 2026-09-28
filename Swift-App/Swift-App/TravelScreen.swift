@@ -31,6 +31,9 @@ struct TravelScreen: View {
     @State private var expandedContentHeight: CGFloat = 260
     @FocusState private var focusedField: PlaceSearchModel.Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var backend: BackendSession
+    @State private var backendRoutes: [BackendRouteOption] = []
+    @State private var selectedBackendRouteID: String?
 
     private static let defaultRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 1.2868, longitude: 103.8545),
@@ -436,6 +439,37 @@ struct TravelScreen: View {
                         Task { await calculateRoute(for: selectedMode) }
                     }
 
+                    if !backendRoutes.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Backend route options").font(.subheadline.bold())
+                            ForEach(backendRoutes) { option in
+                                Button {
+                                    selectedBackendRouteID = option.id
+                                } label: {
+                                    HStack {
+                                        Text(option.mode.capitalized)
+                                        Spacer()
+                                        if let seconds = option.durationSeconds {
+                                            Text("\(Int(seconds / 60)) min")
+                                        }
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(.white)
+                                    .padding(12)
+                                    .background(selectedBackendRouteID == option.id ? FanStyle.darkTeal : FanStyle.panel, in: RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                                if selectedBackendRouteID == option.id {
+                                    ForEach(option.legs) { leg in
+                                        Text("\(leg.mode.capitalized) · \(Int(leg.durationSeconds / 60)) min · \(leg.description)")
+                                            .font(.caption)
+                                            .foregroundStyle(FanStyle.muted)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if isCalculatingRoute {
                         HStack(spacing: 10) {
                             ProgressView().tint(FanStyle.teal)
@@ -586,6 +620,16 @@ struct TravelScreen: View {
         request.transportType = mode.transportType
 
         do {
+            if backend.isConnected {
+                do {
+                    let response = try await backend.routes(origin: origin.displayName, destination: destination.displayName)
+                    backendRoutes = response.result.routes ?? []
+                    selectedBackendRouteID = backendRoutes.first?.id
+                } catch {
+                    backendRoutes = []
+                    selectedBackendRouteID = nil
+                }
+            }
             let directions = MKDirections(request: request)
             if mode == .transit {
                 let response = try await directions.calculateETA()

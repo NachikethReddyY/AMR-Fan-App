@@ -1385,3 +1385,12 @@ camera framing until the final detent, ignored zero-height measurements, and
 kept expanded content scrollable within the available viewport.
 
 Recorded by Codex through Xcode (model ID unavailable).
+
+
+## 2026-09-28: Swift/backend connection request
+
+Actionable request: connect the Swift port to backend authentication, photo
+activity, sustainability points, route options, onboarding, and admin surfaces.
+Implemented locally as a guarded development fixture slice. Production AI, Render
+configuration, provider credentials, and hosted database migration remain
+unconfigured and were not activated. Tracker: PR #65, no merge requested.

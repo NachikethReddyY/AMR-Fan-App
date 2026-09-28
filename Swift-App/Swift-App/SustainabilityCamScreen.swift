@@ -4,6 +4,7 @@ import UIKit
 
 struct SustainabilityCamScreen: View {
     @Binding var demoState: DemoFanState
+    @EnvironmentObject private var backend: BackendSession
     @State private var selectedAction: SustainabilityAction = .publicTransport
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var capturedImage: UIImage?
@@ -11,6 +12,8 @@ struct SustainabilityCamScreen: View {
     @State private var showCameraUnavailable = false
     @State private var isLoadingPhoto = false
     @State private var verificationState: PhotoVerificationState = .ready
+    @State private var lastCreditedPoints = 0
+    @State private var detectedObject: String?
 
     var body: some View {
         ScrollView {
@@ -88,6 +91,27 @@ struct SustainabilityCamScreen: View {
                                 .background(FanStyle.background, in: RoundedRectangle(cornerRadius: 16))
                         }
 
+                        Button {
+                            selectedAction = .publicTransport
+                            Task {
+                                isLoadingPhoto = true
+                                verificationState = .uploading
+                                defer { isLoadingPhoto = false }
+                                do {
+                                    let result = try await backend.verifyFixture()
+                                    lastCreditedPoints = result.creditedPoints
+                                    detectedObject = result.object
+                                    verificationState = result.kind == .verified ? .verified : .failed(result.message ?? "The fixture was not accepted.")
+                                } catch {
+                                    verificationState = .failed(error.localizedDescription)
+                                }
+                            }
+                        } label: {
+                            Label("Try backend sample", systemImage: "bolt.horizontal.circle")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(SustainabilityActionButtonStyle())
+
                         HStack(spacing: 10) {
                             Button {
                                 guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
@@ -108,7 +132,7 @@ struct SustainabilityCamScreen: View {
                             .buttonStyle(SustainabilityActionButtonStyle())
                         }
 
-                        Text("Photo verification is not connected yet. No photo is uploaded or saved by this demo app.")
+                        Text("Photos are sent transiently to the connected backend. The sample is a clearly labelled local fixture; arbitrary photos receive no points until a reviewed vision provider is enabled.")
                             .font(.footnote)
                             .foregroundStyle(FanStyle.muted)
                     }
@@ -119,9 +143,14 @@ struct SustainabilityCamScreen: View {
                         .tint(FanStyle.teal)
                 } else if case .verified = verificationState {
                     FeatureCard {
-                        Label("+100 Green Points added", systemImage: "checkmark.seal.fill")
+                        Label("+\(lastCreditedPoints) Green Points added", systemImage: "checkmark.seal.fill")
                             .font(.headline)
                             .foregroundStyle(FanStyle.teal)
+                        if let detectedObject {
+                            Text("Detected: \(detectedObject)")
+                                .font(.subheadline)
+                                .foregroundStyle(FanStyle.muted)
+                        }
                     }
                 } else if case .rejected = verificationState {
                     FeatureCard {
@@ -183,16 +212,19 @@ struct SustainabilityCamScreen: View {
         verificationState = .uploading
 
         do {
-            let result = try await LunaVerificationClient.verify(image: image, action: selectedAction)
-            switch result {
+            let result = try await backend.verify(image: image, action: selectedAction)
+            lastCreditedPoints = result.creditedPoints
+            detectedObject = result.object
+            switch result.kind {
             case .verified:
-                demoState.completeSustainabilityAction()
                 verificationState = .verified
             case .rejected:
                 verificationState = .rejected
+            case .unavailable:
+                verificationState = .failed(result.message ?? "Photo verification is unavailable.")
             }
         } catch {
-            verificationState = .failed("Luna verification is not connected. No photo was uploaded and no Green Points were awarded.")
+            verificationState = .failed(error.localizedDescription)
         }
     }
 }
@@ -203,21 +235,6 @@ private enum PhotoVerificationState {
     case verified
     case rejected
     case failed(String)
-}
-
-private enum VerificationResult {
-    case verified
-    case rejected
-}
-
-private enum LunaVerificationClient {
-    static func verify(image: UIImage, action: SustainabilityAction) async throws -> VerificationResult {
-        guard image.jpegData(compressionQuality: 0.82) != nil else {
-            throw URLError(.cannotDecodeContentData)
-        }
-        _ = action
-        throw URLError(.unsupportedURL)
-    }
 }
 
 private struct SustainabilityActionButtonStyle: ButtonStyle {
@@ -278,5 +295,6 @@ private struct CameraPicker: UIViewControllerRepresentable {
 
 #Preview {
     SustainabilityCamScreen(demoState: .constant(DemoFanState()))
+        .environmentObject(BackendSession())
         .preferredColorScheme(.dark)
 }
