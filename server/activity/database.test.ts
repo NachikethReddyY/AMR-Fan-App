@@ -366,13 +366,146 @@ test('balance overflow rolls back receipt and permits a corrected retry', async 
   );
 });
 
+test('development photo endpoint assesses, credits, replays and rejects duplicate or foreign requests', async () => {
+  const { createServer } = await import('node:http');
+  const { createPhotoHandler } = await import('./http.ts');
+  const { default: sharp } = await import('sharp');
+  const f = await fixture();
+  const other = await fixture();
+  const handler = createPhotoHandler(pool, {
+    NODE_ENV: 'development',
+    API_HOST: '127.0.0.1',
+    AUTH_DEV_ENABLED: 'true',
+    PHOTO_ACTIVITY_DEV_ENABLED: 'true',
+  });
+  const server = createServer(async (req, res) => {
+    try {
+      const result = await handler(
+        req,
+        new URL(req.url ?? '/', 'http://local.invalid').pathname,
+      );
+      res.writeHead(result?.status ?? 404, {
+        'Content-Type': 'application/json',
+      });
+      res.end(JSON.stringify(result?.body ?? {}));
+    } catch (error) {
+      const status =
+        error instanceof Error && 'status' in error
+          ? Number(error.status)
+          : 500;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          error: error instanceof Error ? error.message : 'error',
+        }),
+      );
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const bytes = await sharp({
+      create: { width: 10, height: 10, channels: 3, background: '#004a4d' },
+    })
+      .jpeg()
+      .toBuffer();
+    const requestId = randomUUID();
+    const payload = {
+      profileId: f.profile.id,
+      capture: 'camera',
+      mime: 'image/jpeg',
+      photoBase64: bytes.toString('base64'),
+      description: 'Synthetic transit photo',
+      requestId,
+      activity: 'bus-trip',
+    };
+    const endpoint = `http://127.0.0.1:${address.port}/v1/profiles/${f.profile.id}/activity/photos`;
+    const headers = {
+      Authorization: `Bearer ${f.token}`,
+      'Content-Type': 'application/json',
+    };
+    const first = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    assert.equal(first.status, 201);
+    const receipt = await first.json();
+    assert.equal(receipt.kind, 'verified');
+    assert.equal(receipt.object, 'Synthetic fixture');
+    assert.equal(receipt.creditedPoints, 50);
+    const replay = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    assert.equal(replay.status, 201);
+    assert.deepEqual(await replay.json(), receipt);
+    const duplicate = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...payload, requestId: randomUUID() }),
+    });
+    assert.equal(duplicate.status, 409);
+    const arbitrary = await sharp({
+      create: { width: 10, height: 10, channels: 3, background: '#aa1133' },
+    })
+      .jpeg()
+      .toBuffer();
+    const rejectedPhoto = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...payload,
+        requestId: randomUUID(),
+        photoBase64: arbitrary.toString('base64'),
+      }),
+    });
+    assert.equal(rejectedPhoto.status, 200);
+    assert.deepEqual(await rejectedPhoto.json(), {
+      kind: 'rejected',
+      activity: 'bus-trip',
+      object: 'Synthetic fixture',
+      creditedPoints: 0,
+      source: 'local_fixture',
+      message: 'Only the server-owned local fixture can earn points.',
+    });
+    const foreign = await fetch(
+      `http://127.0.0.1:${address.port}/v1/profiles/${f.profile.id}/activity/photos`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${other.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+    assert.equal(foreign.status, 404);
+    assert.equal(
+      (await readPointsHistory(pool, f.token, f.profile.id)).balance,
+      50,
+    );
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
+
 test('registered production API keeps activity disabled, guards owners and applies rate/origin limits', async () => {
   const { createApi } = await import('../api/app.ts');
   const f = await fixture();
   const other = await fixture();
   const api = createApi({
     pool,
-    env: { NODE_ENV: 'production', AUTH_PROVIDER: 'supabase' },
+    env: {
+      NODE_ENV: 'production',
+      AUTH_PROVIDER: 'supabase',
+      PHOTO_ACTIVITY_DEV_ENABLED: 'true',
+      API_HOST: '127.0.0.1',
+    },
   });
   await new Promise<void>((resolve) => api.listen(0, '127.0.0.1', resolve));
   try {

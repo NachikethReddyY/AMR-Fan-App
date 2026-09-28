@@ -130,7 +130,7 @@ export function createApi({
   });
   const reports = reportRuntime(pool, env);
   const awards = createAwardsHandler({ pool });
-  const photoActivity = createPhotoHandler(pool);
+  const photoActivity = createPhotoHandler(pool, env);
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =

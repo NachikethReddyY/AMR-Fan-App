@@ -21,6 +21,8 @@ const receiptSchema = z.strictObject({
   journeyId: z.uuid().nullable(),
 });
 
+export type PhotoCreditContext = 'synthetic_test' | 'live';
+
 /** Test-only accounting seam. No HTTP adapter imports it. Live activation needs reviewed AI admission. */
 export async function claimSyntheticPhoto(
   pool: Pool,
@@ -29,6 +31,16 @@ export async function claimSyntheticPhoto(
 ) {
   if (process.env.NODE_ENV !== 'test')
     throw new Error('Synthetic photo accounting is test-only.');
+  return claimPhotoActivity(pool, token, value, 'synthetic_test');
+}
+
+/** Server-owned photo accounting seam. The caller must supply a reviewed assessment. */
+export async function claimPhotoActivity(
+  pool: Pool,
+  token: string,
+  value: unknown,
+  context: PhotoCreditContext,
+) {
   const input = claimSchema.parse(value);
   if (!photoAward(input))
     throw new ApiError(
@@ -62,7 +74,7 @@ export async function claimSyntheticPhoto(
           profile.id,
           input.journeyId,
         );
-        if (journey.source.kind !== 'fixture')
+        if (context === 'synthetic_test' && journey.source.kind !== 'fixture')
           throw new ApiError(
             403,
             'Synthetic accounting requires a fixture journey.',
@@ -89,7 +101,7 @@ export async function claimSyntheticPhoto(
         throw new ApiError(409, 'Photo or journey already rewarded.');
       const receiptId = randomUUID();
       await client.query(
-        `INSERT INTO app.photo_activity_claims(id,profile_id,photo_hash,journey_id,operation_id,activity,confidence,credited_points,credit_context) VALUES ($1,$2,$3,$4,$5,$6,$7,50,'synthetic_test')`,
+        `INSERT INTO app.photo_activity_claims(id,profile_id,photo_hash,journey_id,operation_id,activity,confidence,credited_points,credit_context) VALUES ($1,$2,$3,$4,$5,$6,$7,50,$8)`,
         [
           receiptId,
           profile.id,
@@ -98,11 +110,15 @@ export async function claimSyntheticPhoto(
           operationId,
           input.activity,
           input.confidence,
+          context,
         ],
       );
       return {
         delta: 50,
-        reason: 'Synthetic test photo activity; no real-world assessment.',
+        reason:
+          context === 'live'
+            ? 'Verified photo activity.'
+            : 'Synthetic test photo activity; no real-world assessment.',
         outcome: {
           receiptId,
           creditedPoints: 50 as const,
