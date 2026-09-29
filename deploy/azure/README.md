@@ -34,20 +34,20 @@ Tasks fallback; the selected subscription rejected that path with
    is part of this package.
 4. Complete and review the runtime table/column ACL plan, then use the
    controlled, one-shot migration operation. The current helper is a
-   fail-closed refusal guard and cannot apply schema changes:
+   fail-closed refusal guard and cannot apply schema changes; do not run it as
+   a deployment step until the reviewed replacement is committed:
 
    ```powershell
    .\deploy\azure\scripts\migrate.ps1 -ConfigPath C:\private\amr-azure-db.json
    ```
 
-   The private JSON file has `migrationDatabaseUrl` for the
-   `amr_migration_owner` login and a random `runtimePassword` (48–128 URL-safe
-   characters). It must be outside the repository. The operation refuses local
-   URLs, query parameters, the runtime login, unsafe role flags, and absent or
-   changed migration history. The Azure Flexible Server bootstrap administrator
-   is not the API runtime role. Creating a no-login migration owner and a
-   least-privilege runtime login is blocked pending ACL review and an
-   authenticated path into the private database network.
+   The private JSON file has `migrationDatabaseUrl` for the Azure bootstrap
+   administrator `amr_staging_admin` and a random `runtimePassword` (48–128
+   URL-safe characters). It must be outside the repository. The operation
+   refuses local URLs, query parameters, the runtime login, unsafe role flags,
+   and absent or changed migration history. The bootstrap administrator is not
+   the API runtime role; it creates the restricted `amr_api` login and proves
+   the runtime cannot alter schema, roles, migration history or admin fields.
 5. After that reviewed migration operation creates and grants the runtime
    login, store its TLS URL as Key Vault secret `database-url`. The value is
    never written to this repository or printed.

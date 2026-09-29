@@ -11,8 +11,8 @@ if (-not $config.migrationDatabaseUrl -or -not $config.runtimePassword) {
   throw 'Config requires migrationDatabaseUrl and runtimePassword.'
 }
 $uri = [Uri]$config.migrationDatabaseUrl
-if ($uri.UserInfo -notmatch '^amr_migration_owner:') {
-  throw 'migrationDatabaseUrl must use amr_migration_owner.'
+if ($uri.UserInfo -notmatch '^amr_staging_admin:') {
+  throw 'migrationDatabaseUrl must use the Azure bootstrap administrator amr_staging_admin.'
 }
 if ($uri.Host -in @('localhost', '127.0.0.1', '::1')) {
   throw 'Azure migration refuses a local database URL.'
@@ -22,7 +22,6 @@ if ($config.runtimePassword -notmatch '^[A-Za-z0-9_-]{48,128}$') {
 }
 $env:AZURE_MIGRATION_DATABASE_URL = [string]$config.migrationDatabaseUrl
 $env:AZURE_RUNTIME_DATABASE_PASSWORD = [string]$config.runtimePassword
-$env:AZURE_REVIEWED_RUNTIME_GRANTS = 'false'
 try {
   node services/api/database/azure-migrate.mjs
   if ($LASTEXITCODE -ne 0) { throw 'Azure migration failed.' }
