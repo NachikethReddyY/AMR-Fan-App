@@ -1,5 +1,17 @@
 # Steering and bug inbox
 
+## CI-BACKEND-001: first backend workflow
+
+Requested on 2026-09-29: add a workflow named `backend` that checks backend
+quality, mergeability-related signals and tests, then push it to `main` and
+monitor the run. The workflow should report pass/fail and may include a simple
+rating when the checks support one. Tracking: unlinked.
+
+The hosted route gate exposed a boundary bug: `prepareOneMapSecret` treated the
+repository root as an allowed temporary base because its relative path was `..`.
+Staged token copies must stay outside the repository tree, so the root is now
+rejected while external temporary bases remain valid.
+
 ## SWIFT-SUSTAINABILITY-CAM-002: connect gallery proof to reviewed results (unlinked)
 
 Requested on 2026-09-29: remove the sustainability camera demo fixture path and

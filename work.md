@@ -3161,3 +3161,15 @@ versioned claims for the same journey credit only once. The existing owned
 profile lock serializes these operations before either takes further locks.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-29: first backend quality workflow
+
+Tracking: CI-BACKEND-001, unlinked. Added `.github/workflows/backend.yml` with
+the pinned checkout, Node and pnpm actions, self-hosted `black-box-linux`
+execution, backend typecheck, unit/API tests, formatting, tooling and source
+security checks. The final step publishes a 7-check pass/fail summary to the
+Actions run and fails the job if any check is not successful. The workflow is
+intended as the first backend test of the WSL2 runner; a numeric quality score
+was not added because no agreed scoring model exists.
+
+Edited by gpt-6-astra through Codex (T3 Code).
