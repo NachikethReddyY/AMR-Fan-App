@@ -50,8 +50,17 @@ test('migration helper refuses before opening a database without reviewed ACLs',
   const result = spawnSync(
     process.execPath,
     ['services/api/database/azure-migrate.mjs'],
-    { cwd: new URL('../', import.meta.url), encoding: 'utf8' },
+    {
+      cwd: new URL('../', import.meta.url),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        AZURE_MIGRATION_DATABASE_URL:
+          'postgresql://amr_migration_owner:synthetic@db.example.test:5432/postgres',
+        AZURE_RUNTIME_DATABASE_PASSWORD: 'x'.repeat(48),
+      },
+    },
   );
   assert.notEqual(result.status, 0);
-  assert.match(`${result.stderr}${result.stdout}`, /Migration credentials/);
+  assert.match(`${result.stderr}${result.stdout}`, /Azure migration is held/);
 });

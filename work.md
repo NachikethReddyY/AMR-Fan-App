@@ -3077,7 +3077,7 @@ plan is supplied; it cannot silently apply guessed broad grants.
 
 No cloud resources, database, secrets or endpoint were created. ACR Tasks was
 read-only attempted and returned `TasksOperationsNotAllowed`; local Docker is
-unavailable, so an approved external builder is still required. The selected
-Swift identity metadata remains in `deploy/azure/auth-staging.md`.
+unavailable. The approved next image path is the pinned GitHub OIDC workflow;
+the selected Swift identity metadata remains in `deploy/azure/auth-staging.md`.
 
 Implemented by gpt-6-luna through Codex (local Windows).

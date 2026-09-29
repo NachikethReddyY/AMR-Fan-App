@@ -16,11 +16,12 @@ API image is a digest reference; mutable tags are not accepted by the template.
 The API image is built from the repository root with
 `services/api/Dockerfile.azure`. The existing `services/api/api/Dockerfile`
 remains the local DAST fixture and is not a release image. The image starts
-`services/api/api/start.ts` on port 8080. `build-image.ps1` archives the clean
-commit before invoking `az acr build`, then prints only the resulting immutable
-image reference. ACR Tasks are currently unavailable in the selected
-subscription (`TasksOperationsNotAllowed`); use an approved external builder
-or obtain subscription support before attempting this command again.
+`services/api/api/start.ts` on port 8080. The approved build path is the pinned
+GitHub Actions workflow [`azure-image.yml`](../../.github/workflows/azure-image.yml),
+which uses GitHub OIDC and the scoped ACR push identity, then publishes only an
+immutable digest artifact. `build-image.ps1` remains a local archive-based ACR
+Tasks fallback; the selected subscription rejected that path with
+`TasksOperationsNotAllowed`.
 
 ## Controlled order
 
