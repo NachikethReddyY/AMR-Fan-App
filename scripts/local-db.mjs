@@ -21,6 +21,9 @@ import { seedLocal } from '../services/api/database/seed.ts';
 const root = realpathSync.native(
   resolve(dirname(fileURLToPath(import.meta.url)), '..'),
 );
+// Consumers and the runner must derive the database name from this same
+// repository root. A test file's parent directory is not a worktree namespace.
+export const repositoryRoot = root;
 const auth = join(homedir(), '.auth', 'amr-local-postgres');
 const ownerFile = join(auth, 'owner.json');
 const passwordFile = join(auth, 'postgres-password');
@@ -42,6 +45,9 @@ export function namespaceFor(worktree) {
       .digest('hex')
       .slice(0, 12)
   );
+}
+export function testDatabaseName(worktree = root) {
+  return namespaceFor(worktree) + '_test';
 }
 function privateWrite(path, value) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });

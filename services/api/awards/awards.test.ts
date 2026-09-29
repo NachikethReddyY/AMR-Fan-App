@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { assignRole, ensureAccount } from '../accounts/store.ts';
@@ -18,7 +17,7 @@ import { awardRoute, awardReleaseFixture } from './testing/fixtures.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Use only the allocated awards worktree test database.');
 const pool = createDatabase();

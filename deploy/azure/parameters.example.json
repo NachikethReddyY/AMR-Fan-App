@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "southeastasia" },
+    "namePrefix": { "value": "amr-fan" },
+    "registryName": { "value": "amrfanstaging044956" },
+    "imageRepository": { "value": "amr-api" },
+    "imageDigest": {
+      "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "postgresAdminLogin": { "value": "amr_staging_admin" },
+    "postgresAdminPassword": { "value": "REPLACE_WITH_PRIVATE_ADMIN_PASSWORD" },
+    "authIssuer": { "value": "REPLACE_WITH_AUTH_ISSUER" },
+    "authAudience": { "value": "REPLACE_WITH_AUTH_AUDIENCE" },
+    "authJwksUrl": { "value": "REPLACE_WITH_AUTH_JWKS_URL" },
+    "authRequiredScope": { "value": "account.access" },
+    "minReplicas": { "value": 0 },
+    "maxReplicas": { "value": 1 },
+    "deployApi": { "value": false }
+  }
+}

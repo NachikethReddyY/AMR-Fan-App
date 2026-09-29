@@ -144,6 +144,47 @@ test('HTTP rejects anonymous, invalid, expired, wrong issuer/audience/signature 
     404,
   );
 });
+test('health is liveness while ready reports database dependency state', async () => {
+  const health = await request('/health');
+  assert.equal(health.status, 200);
+  assert.deepEqual(await health.json(), { status: 'ok' });
+  const ready = await request('/ready');
+  assert.equal(ready.status, 200);
+  assert.deepEqual(await ready.json(), {
+    status: 'ready',
+    dependencies: { database: 'ok' },
+  });
+
+  const unavailable = createApi({
+    pool: {
+      query: async () => {
+        throw new Error('synthetic database outage');
+      },
+    } as never,
+    env,
+  });
+  unavailable.listen(0, '127.0.0.1');
+  await once(unavailable, 'listening');
+  const address = unavailable.address();
+  assert.ok(address && typeof address !== 'string');
+  try {
+    const unavailableHealth = await fetch(
+      `http://127.0.0.1:${address.port}/health`,
+    );
+    assert.equal(unavailableHealth.status, 200);
+    const unavailableReady = await fetch(
+      `http://127.0.0.1:${address.port}/ready`,
+    );
+    assert.equal(unavailableReady.status, 503);
+    assert.deepEqual(await unavailableReady.json(), {
+      status: 'unavailable',
+      dependencies: { database: 'unavailable' },
+    });
+  } finally {
+    unavailable.close();
+    await once(unavailable, 'close');
+  }
+});
 test('HTTP concurrent first sign-ins create one zero-balance real/demo account, ignore forged roles', async () => {
   const credential = await token('a', {
     role: 'admin',

@@ -5,7 +5,9 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 
 // Reuse the installed Jest environment's DOM implementation; no browser or dependency install.
-const require = createRequire(import.meta.url);
+const require = createRequire(
+  new URL('../../../../../apps/fan/package.json', import.meta.url),
+);
 const { JSDOM } = createRequire(require.resolve('jest-environment-jsdom'))(
   'jsdom',
 );

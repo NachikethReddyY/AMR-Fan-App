@@ -1,5 +1,13 @@
 # Tasks
 
+## PR #67 merge-readiness correction, 2026-09-29
+
+- [x] Fix database namespace guards and runner wiring.
+- [x] Remove the activity daily cap and prove four awards.
+- [x] Preserve the photo/journey accounting boundary and regressions.
+- [x] Repair Docker context, CI placement, docs, and PR verification record.
+- [x] Run focused and requested checks; inspect final diff and blockers.
+
 ## SPEC-011: Final specification on Postplan
 
 - [x] Read the accepted 12-feature specification and check Postplan access.

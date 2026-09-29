@@ -359,27 +359,6 @@ Prepared by gpt-6-astra through Codex (T3 Code).
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
-The workflow was pushed to `main` as `ff07918` and monitored in GitHub Actions
-run [36560350631](https://github.com/NachikethReddyY/AMR-Fan-App/actions/runs/36560350631).
-The WSL2 runner completed six of seven gates: typecheck, API unit tests,
-AI/activity tests, report/impact tests, formatting/tooling and source security
-passed. The route/awards gate failed because the existing OneMap startup suite
-had 94 passes and one failure in `unsafe, missing, oversized and malformed
-mounted files fail with sanitized errors and no copy`. The workflow summary
-reported `FAIL`, preserving the failure for follow-up instead of assigning a
-misleading numeric rating.
-
-Observed by gpt-6-astra through Codex (T3 Code).
-
-Follow-up fix: the failing OneMap test was caused by the temporary-base boundary
-accepting the repository root (`..` relative to `services`). The staging guard
-now rejects that exact path and still permits external temporary directories.
-
-Fixed by gpt-6-astra through Codex (T3 Code).
-
-Focused proof now passes: `onemap-start.test.ts` passes 38/38 and `pnpm
-route:test` passes 95/95, including the previously failing OneMap staging case.
-
 ## 2026-09-25: shared question and challenge process
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-005 under SPEC-001; unlinked.
@@ -3061,6 +3040,128 @@ interactive device proof are pending a fresh signed build and the local API.
 
 Implemented by gpt-6-sol through Codex (T3 Code); photo prompt authored by
 gpt-6-astra through Codex (T3 Code).
+
+
+## 2026-09-29: port reviewed activity backend into Turbo workspace
+
+Ported the reviewed backend slice into `services/api/` on `feat/azure-staging`.
+The API now owns bounded multi-photo submissions with canonical pixel hashes,
+durable assessment request replay/recovery, a disabled-by-default provider
+contract, deterministic 50-point accounting with daily and duplicate guards,
+mission enrollment/progress and separate fan/community/official impact data.
+Added migrations `0014` through `0017`, focused pure/provider tests and the
+database integration tests used by the existing local PostgreSQL runner. The
+new provider is never enabled by default and no credentials or cloud resources
+were added.
+
+Verification: the focused activity and impact contract tests pass (11 tests);
+the broader activity command passes 13 tests. PostgreSQL integration proof was
+not available because this worktree has no private local database configuration.
+API typecheck still reports seven existing errors in database config, journey
+timer typing, report `import.meta.main` and report test EventEmitter typing; no
+new activity or impact type errors remain. Existing impact factor-release tests
+also report a baseline digest mismatch.
+
+Implemented by gpt-6-luna through Codex (local Windows).
+## 2026-09-29: Azure staging package (historical preparation checkpoint)
+
+Prepared a no-deploy Azure package under `deploy/azure/`. It uses a new
+resource-group deployment in southeastasia, private PostgreSQL Flexible Server
+with a linked private DNS zone, Consumption Container Apps, Key Vault and a
+managed identity with ACR pull and secret-read roles. The API image is pinned
+by digest and Luna/activity assessment are explicitly disabled. The production
+Dockerfile starts `services/api/api/start.ts`; the existing DAST Dockerfile is
+unchanged. A controlled migration helper validates separate `amr_api` and
+`amr_migration_owner` inputs but fails closed until a reviewed table/column ACL
+plan is supplied; it cannot silently apply guessed broad grants.
+
+No cloud resources, database, secrets or endpoint were created. ACR Tasks was
+read-only attempted and returned `TasksOperationsNotAllowed`; local Docker is
+unavailable. The approved next image path is the pinned GitHub OIDC workflow;
+the selected Swift identity metadata remains in `deploy/azure/auth-staging.md`.
+
+Implemented by gpt-6-luna through Codex (local Windows).
+
+## 2026-09-29: hosted API endpoint handoff and PR
+
+The preparation checkpoint above was superseded by the user-authorized Azure
+deployment. The running API uses source `36996ec`; its migration job succeeded
+and `/health` and `/ready` return 200. The current branch also contains later
+migration-tooling and secret-scope refinements. It does not automatically replace
+the running revision. [Swift integration](deploy/azure/swift-integration.md)
+records the deployed image and tenant identifiers.
+
+Added the [complete endpoint directory](docs/operations/staging-endpoints.md)
+from the deployed HTTP handlers, including RSS, auth, admin, and disabled routes.
+Fresh read-only checks confirmed health/readiness 200, an empty public rewards
+catalogue 200, RSS 200, and admin browser auth unavailable. Luna, live routes,
+report storage and real Swift sign-in remain disabled or unverified as documented.
+
+Local proof for PR preparation: 25 focused tests passed and one live Azure
+integration test skipped; Bicep compilation and endpoint-document formatting
+passed. `pnpm check` stops at seven type errors in files unchanged from main.
+`pnpm security:check` cannot start the Docker scanner; `agents:check` reports
+existing Windows skill-frontmatter/symlink failures. No full green gate is claimed.
+The branch is based on current main `728c8a0`. No merge is authorized.
+
+Documented by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-29: PR #67 merge-readiness correction
+
+Corrected PR #67 on its existing `feat/azure-staging` branch. Database guards
+now use the exported repository-root namespace from `scripts/local-db.mjs`, and
+the new activity and impact suites are placed only in the owned PostgreSQL CI
+job. Removed the activity daily cap from code and schema indexing, and changed
+the accounting regression to credit four distinct eligible activities for 200
+points. The versioned activity submission route now accepts optional journey
+linking. It stores one preliminary claim under the journey lock, and the
+existing journey settlement credits only the remaining difference. Cross-table
+image and journey checks prevent conflict with the legacy photo path.
+
+Moved test/fixture exclusions out of the global `.dockerignore` into the Azure
+Dockerfile-specific ignore, preserving report and AI test image inputs while
+retaining secret/private exclusions. Reconciled the architecture, photo
+integration, staging endpoint, and Azure deployment records: staging runs
+`36996ec`, while this PR head is `c2aba734` and is not deployed. GitHub's Vercel
+status remains red with `Deployment was blocked`; GitHub reports no required
+checks for this branch, so no green-check claim is made.
+
+Verification on the unpushed working tree: frozen install, `pnpm check`,
+`pnpm security:check`, 43 activity database tests, eight impact database tests,
+eight database runner tests, the Azure package tests and Bicep compilation
+passed. One database casing test and the credential-gated live Azure migration
+test remain explicitly skipped. All four requested image contexts build from
+the repository root, as does the offline report parser. The initial full check
+exposed a OneMap temporary-directory guard and participation test defects. The
+participation PostgreSQL guard now uses the same repository-root runner
+namespace, its admin asset regression reads the hosted application files, and
+its profile-lock success case has a deterministic test window; the separate
+expiry and revocation cases remain intact. All causes were fixed and the
+complete check then passed. Security reports no secrets/SAST findings and one
+existing moderate dependency advisory.
+
+The PR description now records these local results and limitations. No commit,
+push, merge, deployment or GitHub comment occurred. The failed Vercel status,
+disabled Checks/Security workflows and unpushed correction remain explicit
+merge-readiness blockers. Live Swift, Entra, provider and current-PR cloud
+behavior remain unverified.
+
+The Vercel failure is an external Hobby-plan access restriction: the deployment
+details identify commit author `ashura-oss` without access to the private Vercel
+project, and state that private-repository collaboration requires Pro. It is
+documented as unrelated infrastructure. No upgrade, collaborator change, or
+deployment action was performed.
+
+The correction responds to a failed criterion in the original branch: an
+unapproved daily activity cap contradicted the accepted no-cap rule. This is
+project guidance; no shared or skill guidance change is proposed.
+
+A cross-route concurrency regression also verifies that concurrent legacy and
+versioned claims for the same journey credit only once. The existing owned
+profile lock serializes these operations before either takes further locks.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-29: first backend quality workflow
 
 Tracking: CI-BACKEND-001, unlinked. Added `.github/workflows/backend.yml` with

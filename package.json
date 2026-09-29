@@ -66,8 +66,10 @@
     "awards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/awards/awards.test.ts services/api/awards/http.test.ts services/api/awards/testing/registered-api.test.ts",
     "participation:test": "node --test --test-concurrency=1 services/api/submissions/participation-contracts.test.ts services/api/submissions/participation-http.test.ts services/api/submissions/participation/admin/assets.test.ts services/api/submissions/participation/admin/app.test.mjs",
     "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/submissions/participation.test.ts services/api/submissions/participation/admin/read.database.test.ts services/api/submissions/participation-http.database.test.ts services/api/submissions/participation/admin/registration.database.test.ts",
-    "activity:test": "node --test services/api/activity/claims.test.ts services/api/activity/media.test.ts",
-    "impact:test": "node --test services/api/impact/aggregate.test.ts services/api/impact/limits.test.ts",
+    "activity:test": "node --test services/api/activity/claims.test.ts services/api/activity/media.test.ts services/api/activity/fixture.test.ts services/api/activity/submission-contract.test.ts services/api/activity/gate1-regressions.test.ts services/api/ai/activity-submission.test.ts",
+    "activity:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/activity/assessment-store.database.test.ts services/api/activity/submission-http.database.test.ts services/api/activity/gate2-missions.database.test.ts services/api/activity/rewards.database.test.ts services/api/activity/gate2-accounting.database.test.ts services/api/activity/database.test.ts",
+    "impact:test": "node --test services/api/impact/aggregate.test.ts services/api/impact/limits.test.ts services/api/impact/overview-compose.test.ts",
+    "impact:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/impact/overview.database.test.ts services/api/impact/store.test.ts",
     "workspace:check": "pnpm exec turbo run typecheck test --filter=@amr/fan --filter=@amr/api --filter=@amr/admin && pnpm --filter @amr/api test:activity"
   },
   "dependencies": {

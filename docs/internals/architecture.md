@@ -9,7 +9,7 @@ owns product behavior.
 | Swift phone app | `Swift-App/` is an independent Xcode app with the native fan flows and backend client | Native release and device acceptance |
 | React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
 | Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
-| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers | Feature operations and persistence on the selected hosted platform |
+| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers. The activity submission slice adds canonical multi-photo evidence, durable assessment recovery, deterministic rewards, missions and the combined impact overview. | Feature operations and persistence on the selected hosted platform |
 | Shared packages | `packages/contracts/` owns wire types; `packages/travel-domain/` owns pure route, emissions and recommendation logic | Stable cross-client contracts and domain calculations |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
 | Operations | Root scripts, Compose, Render and security configuration orchestrate the workspace; `pnpm-workspace.yaml` and Turbo own package discovery and task ordering | Release environment remains a maintainer decision |
@@ -18,7 +18,9 @@ The account API has an isolated application DAST target and authenticated HTTP
 boundary tests. The points admin flow has local browser and PostgreSQL-backed
 HTTP proof. The held phone History consumer has state and actual HTTP/PostgreSQL
 proof; its new UI has no native observation yet. Required small-iPhone largest
-Dynamic Type and actual VoiceOver proof remain pending. No upload URL or deployed service exists. Passive DAST
+Dynamic Type and actual VoiceOver proof remain pending. No upload URL exists.
+Azure staging has a deployed service from the older `36996ec` revision; the
+current PR head is not deployed there. Passive DAST
 covers public HTTP only; authenticated tests prove points authorization,
 atomicity, replay, concurrency and isolation. See [points operations](../operations/points.md).
 
@@ -28,9 +30,16 @@ Keep Swift as an independent Xcode project outside the JavaScript package graph.
 `services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
-Azure is the selected backend platform. No Azure service, deployment or auth provider
-has been selected or provisioned. The configurable account adapter and local
-setup are documented in [account operations](../operations/accounts.md). Earlier Convex plans are superseded.
+Azure is the selected backend platform. The reviewable staging package is under
+[`deploy/azure`](../../deploy/azure/README.md): it targets a new resource group
+in southeastasia, private PostgreSQL Flexible Server, Key Vault managed
+identity, and a Consumption Container Apps API. An authorized deployment
+created the staging resources and runs image source
+`36996ec95b1cc62a3c1ef583e1e30714a814efe0`. The current PR head is
+`c2aba734e0d8036fb4f83a738354ee49722ba11e`, which is newer than that running
+revision and has not been deployed. The configurable account adapter and local
+setup are documented in [account operations](../operations/accounts.md). Earlier
+Convex plans are superseded.
 
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.
@@ -59,20 +68,67 @@ accepted tradeoffs in `docs/adr/` and link them here.
 
 Written by gpt-6-astra through Codex (T3 Code).
 
-## Disabled photo client
+## Sustainability activity assessment API
 
-Home offers Photo activity to a signed-in real profile. The system camera opens
-before description entry. Capture bytes and draft text stay on the phone and are
-cleared after checks, retake, close, Home navigation blur, or identity invalidation.
-Same-account foreground refresh keeps the flow mounted and blocks checks while
-loading. Explicit logout, replacement sign-in, profile switching and confirmed
-expiry notify draft owners before the controller publishes loading.
+The backend exposes the Swift integration contract locally through the API
+service. `GET /v1/profiles/:profileId/activity-submissions/availability`
+reports whether the assessment provider is enabled. `POST
+/v1/profiles/:profileId/activity-submissions` accepts a request UUID, a
+description and one to five base64 JPEG/PNG photos. `GET
+/v1/profiles/:profileId/activity-submissions/:requestId` recovers a prior
+assessment by its idempotency key. The server canonicalizes decoded pixels,
+rejects duplicates, bounds media and description size, and never persists raw
+photo bytes.
 
-The client can only GET authenticated activity availability. It cannot upload
-photos, call an AI provider or award points. The photo backend, API registration
-and accounting migration are not included in PR28's client integration. A missing
-endpoint remains an honest failure; local availability fixtures do not establish
-hosted readiness. Expo camera access excludes microphone and photo-library access.
+The provider adapter is disabled unless `ACTIVITY_ASSESSMENT_ENABLED=true` and
+an explicitly supplied server-side provider exists. A disabled deployment
+returns `{ "kind": "unavailable", "reason": "disabled" }`; it does not read
+or process the submitted media. When a reviewed provider is enabled, accepted
+assessments settle exactly 50 points through the existing points ledger, apply
+duplicate protections, and optionally advance an enrolled mission. There is no
+daily activity cap.
+
+`GET /v1/missions?profileId=...` and `POST
+/v1/missions/:missionId/enroll` expose mission state. `GET
+/v1/impact/overview?profileId=...` returns separate fan, community and official
+impact sections. Migrations `0014` through `0019` own the assessment,
+reward-claim, duplicate-image, mission and optional journey-link tables; impact
+overview reads the existing journey and activity provenance instead of adding a
+separate impact provenance schema.
+
+The contract is implemented and locally unit-tested. The Azure migration job ran
+before the deployed `36996ec` image started. Migrations `0018` and `0019`, added
+by this PR for the no-cap policy and optional journey-linked preliminary claims,
+are newer and remain unapplied in staging.
+The provider remains disabled by default; live Swift, Entra and provider
+behavior are unverified.
+
+Implemented by gpt-6-luna through Codex (local Windows).
+
+## Photo route compatibility
+
+The current Swift client in `Swift-App/` still calls the earlier local-only
+routes `GET /v1/profiles/:profileId/activity/availability` and `POST
+/v1/profiles/:profileId/activity/photos`. Those routes remain registered for the
+existing loopback fixture flow and are intentionally unavailable in a hosted
+deployment; they accept one photo and do not represent the multi-photo contract.
+
+New Swift work should use the versioned assessment routes documented above:
+`GET /v1/profiles/:profileId/activity-submissions/availability`, `POST
+/v1/profiles/:profileId/activity-submissions`, and `GET
+/v1/profiles/:profileId/activity-submissions/:requestId`. The POST body is
+`{requestId, description, photos:[{mime,base64}], missionId, journeyId?}`.
+`journeyId` optionally links accepted active-transport evidence to an owned
+journey for preliminary settlement. A disabled server
+returns `503` with `{kind:"unavailable",reason:"disabled"}` before reading
+media. A provider-enabled server returns the validated assessment result and,
+when accepted, the reward and mission decisions.
+
+This keeps the Swift migration additive: clients can detect the new availability
+route first, then fall back to the old loopback route only for local fixture
+development. Do not send the old `profileId`, `capture` or `activity` fields to
+the new endpoint; profile ownership comes from the authenticated path/session,
+and the server decides the category and points.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
 

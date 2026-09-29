@@ -1,11 +1,13 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { ApiError } from '../accounts/types.ts';
+import { MAX_DECODED_PHOTO_BYTES } from './submission-contract.ts';
 
 // One bounded decode per process. No pixel cache survives a request.
 sharp.cache(false);
 let decoding = false;
-export const MAX_PHOTO_BYTES = 2_000_000;
+/** The decoded and canonical media limit is frozen at two mebibytes. */
+export const MAX_PHOTO_BYTES = MAX_DECODED_PHOTO_BYTES;
 export const MAX_PHOTO_PIXELS = 16_000_000;
 
 /** Consumes the input; returns only stripped JPEG bytes and a canonical pixel hash. */
@@ -17,7 +19,7 @@ export async function decodePhoto(
   let admitted = false;
   try {
     if (!bytes.byteLength || bytes.byteLength > MAX_PHOTO_BYTES)
-      throw new ApiError(413, 'Photo must be at most 2 MB.');
+      throw new ApiError(413, 'Photo must be at most 2 MiB.');
     const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
     const png = [137, 80, 78, 71, 13, 10, 26, 10].every(
       (byte, index) => bytes[index] === byte,
