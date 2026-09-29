@@ -3063,7 +3063,7 @@ new activity or impact type errors remain. Existing impact factor-release tests
 also report a baseline digest mismatch.
 
 Implemented by gpt-6-luna through Codex (local Windows).
-## 2026-09-29: Azure staging package
+## 2026-09-29: Azure staging package (historical preparation checkpoint)
 
 Prepared a no-deploy Azure package under `deploy/azure/`. It uses a new
 resource-group deployment in southeastasia, private PostgreSQL Flexible Server
@@ -3081,3 +3081,27 @@ unavailable. The approved next image path is the pinned GitHub OIDC workflow;
 the selected Swift identity metadata remains in `deploy/azure/auth-staging.md`.
 
 Implemented by gpt-6-luna through Codex (local Windows).
+
+## 2026-09-29: hosted API endpoint handoff and PR
+
+The preparation checkpoint above was superseded by the user-authorized Azure
+deployment. The running API uses source `36996ec`; its migration job succeeded
+and `/health` and `/ready` return 200. The current branch also contains later
+migration-tooling and secret-scope refinements. It does not automatically replace
+the running revision. [Swift integration](deploy/azure/swift-integration.md)
+records the deployed image and tenant identifiers.
+
+Added the [complete endpoint directory](docs/operations/staging-endpoints.md)
+from the deployed HTTP handlers, including RSS, auth, admin, and disabled routes.
+Fresh read-only checks confirmed health/readiness 200, an empty public rewards
+catalogue 200, RSS 200, and admin browser auth unavailable. Luna, live routes,
+report storage and real Swift sign-in remain disabled or unverified as documented.
+
+Local proof for PR preparation: 25 focused tests passed and one live Azure
+integration test skipped; Bicep compilation and endpoint-document formatting
+passed. `pnpm check` stops at seven type errors in files unchanged from main.
+`pnpm security:check` cannot start the Docker scanner; `agents:check` reports
+existing Windows skill-frontmatter/symlink failures. No full green gate is claimed.
+The branch is based on current main `728c8a0`. No merge is authorized.
+
+Documented by gpt-6-astra through Codex (T3 Code).

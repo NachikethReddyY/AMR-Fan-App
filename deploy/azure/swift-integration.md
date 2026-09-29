@@ -1,5 +1,7 @@
 # Swift staging integration
 
+Full feature URLs, methods and availability: [staging endpoint directory](../../docs/operations/staging-endpoints.md).
+
 API base URL:
 
 `https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io`
@@ -12,14 +14,14 @@ complete that test in the Swift client before treating sign-in as verified.
 
 ## Identity
 
-| Setting | Value |
-| --- | --- |
-| External ID tenant | `9dcdff78-04a7-49fc-90bd-e9c7b76e4774` |
-| Swift client ID | `616286cc-a22b-49a2-b5a3-27011fd615a1` |
-| Authority | `https://amrfancustomers.ciamlogin.com/9dcdff78-04a7-49fc-90bd-e9c7b76e4774` |
-| Bundle ID | `com.amr.fanapp` |
-| Redirect URI | `msauth.com.amr.fanapp://auth` |
-| API scope | `api://f278be1f-21a5-455b-bb14-b2fc60373939/account.access` |
+| Setting            | Value                                                                        |
+| ------------------ | ---------------------------------------------------------------------------- |
+| External ID tenant | `9dcdff78-04a7-49fc-90bd-e9c7b76e4774`                                       |
+| Swift client ID    | `616286cc-a22b-49a2-b5a3-27011fd615a1`                                       |
+| Authority          | `https://amrfancustomers.ciamlogin.com/9dcdff78-04a7-49fc-90bd-e9c7b76e4774` |
+| Bundle ID          | `com.amr.fanapp`                                                             |
+| Redirect URI       | `msauth.com.amr.fanapp://auth`                                               |
+| API scope          | `api://f278be1f-21a5-455b-bb14-b2fc60373939/account.access`                  |
 
 Use native authorization code flow with PKCE. The email/password customer
 flow is attached to this public client; no client secret belongs in the app.

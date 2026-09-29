@@ -1454,3 +1454,15 @@ Container Apps. Cloud creation and deployment remain separately authorized.
 Observed blocker: the selected subscription rejects ACR Tasks with
 `TasksOperationsNotAllowed`, and this Windows host has no local Docker builder.
 Owner: deployment maintainer. Revisit when an approved builder is available.
+
+Update: the user subsequently approved GitHub Actions builds and hosting.
+The image was built with GitHub OIDC and deployed to Azure; health and database
+readiness return 200. ACR Tasks remains blocked, with the approved builder in use.
+
+## AZURE-STAGING-002 (unlinked)
+
+Request on 2026-09-29: provide every feature URL and open a PR for the staging
+backend code. Added the route directory with access requirements and disabled
+feature limits, linked it from the Swift handoff, and prepared the branch PR.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
