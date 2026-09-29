@@ -3040,3 +3040,26 @@ interactive device proof are pending a fresh signed build and the local API.
 
 Implemented by gpt-6-sol through Codex (T3 Code); photo prompt authored by
 gpt-6-astra through Codex (T3 Code).
+
+
+## 2026-09-29: port reviewed activity backend into Turbo workspace
+
+Ported the reviewed backend slice into `services/api/` on `feat/azure-staging`.
+The API now owns bounded multi-photo submissions with canonical pixel hashes,
+durable assessment request replay/recovery, a disabled-by-default provider
+contract, deterministic 50-point accounting with daily and duplicate guards,
+mission enrollment/progress and separate fan/community/official impact data.
+Added migrations `0014` through `0017`, focused pure/provider tests and the
+database integration tests used by the existing local PostgreSQL runner. The
+new provider is never enabled by default and no credentials or cloud resources
+were added.
+
+Verification: the focused activity and impact contract tests pass (11 tests);
+the broader activity command passes 13 tests. PostgreSQL integration proof was
+not available because this worktree has no private local database configuration.
+API typecheck still reports seven existing errors in database config, journey
+timer typing, report `import.meta.main` and report test EventEmitter typing; no
+new activity or impact type errors remain. Existing impact factor-release tests
+also report a baseline digest mismatch.
+
+Implemented by gpt-6-luna through Codex (local Windows).

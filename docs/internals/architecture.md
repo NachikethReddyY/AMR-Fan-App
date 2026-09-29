@@ -9,7 +9,7 @@ owns product behavior.
 | Swift phone app | `Swift-App/` is an independent Xcode app with the native fan flows and backend client | Native release and device acceptance |
 | React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
 | Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
-| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers | Feature operations and persistence on the selected hosted platform |
+| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers. The activity submission slice adds canonical multi-photo evidence, durable assessment recovery, deterministic rewards, missions and the combined impact overview. | Feature operations and persistence on the selected hosted platform |
 | Shared packages | `packages/contracts/` owns wire types; `packages/travel-domain/` owns pure route, emissions and recommendation logic | Stable cross-client contracts and domain calculations |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
 | Operations | Root scripts, Compose, Render and security configuration orchestrate the workspace; `pnpm-workspace.yaml` and Turbo own package discovery and task ordering | Release environment remains a maintainer decision |
@@ -58,6 +58,36 @@ Update this map when adding an entry point or integration. Record hard-to-revers
 accepted tradeoffs in `docs/adr/` and link them here.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+## Sustainability activity assessment API
+
+The backend exposes the Swift integration contract locally through the API
+service. `GET /v1/profiles/:profileId/activity-submissions/availability`
+reports whether the assessment provider is enabled. `POST
+/v1/profiles/:profileId/activity-submissions` accepts a request UUID, a
+description and one to five base64 JPEG/PNG photos. `GET
+/v1/profiles/:profileId/activity-submissions/:requestId` recovers a prior
+assessment by its idempotency key. The server canonicalizes decoded pixels,
+rejects duplicates, bounds media and description size, and never persists raw
+photo bytes.
+
+The provider adapter is disabled unless `ACTIVITY_ASSESSMENT_ENABLED=true` and
+an explicitly supplied server-side provider exists. A disabled deployment
+returns `{ "kind": "unavailable", "reason": "disabled" }`; it does not read
+or process the submitted media. When a reviewed provider is enabled, accepted
+assessments settle exactly 50 points through the existing points ledger, apply
+daily and duplicate protections, and optionally advance an enrolled mission.
+
+`GET /v1/missions?profileId=...` and `POST
+/v1/missions/:missionId/enroll` expose mission state. `GET
+/v1/impact/overview?profileId=...` returns separate fan, community and official
+impact sections. Migrations `0014` through `0017` own the assessment,
+reward-claim, duplicate-image, mission and impact provenance tables.
+
+The contract is implemented and locally unit-tested. Azure resources, the
+database migration and a live provider remain unprovisioned.
+
+Implemented by gpt-6-luna through Codex (local Windows).
 
 ## Disabled photo client
 

@@ -44,8 +44,13 @@ import { reportRuntime, isReportPath } from '../reports/runtime.ts';
 import { handleReports } from '../reports/http.ts';
 import { serveReportsAdmin } from '../reports/admin.ts';
 import { readContributions } from '../impact/store.ts';
+import { readImpactOverview } from '../impact/overview.ts';
 import { createAwardsHandler } from '../awards/http.ts';
 import { createPhotoHandler } from '../activity/http.ts';
+import { handleActivitySubmission } from '../activity/submission-http.ts';
+import { createActivitySubmissionService } from '../activity/submission-service.ts';
+import { enrollMission, listMissions } from '../activity/missions.ts';
+import type { ActivitySubmissionProvider } from '../ai/activity-submission.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const syntheticIdentities: Record<string, Identity> = {
@@ -90,14 +95,36 @@ function send(res: ServerResponse, status: number, value: unknown) {
   res.end(JSON.stringify(value));
 }
 
+async function databaseReady(pool: Pool) {
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      pool.query('SELECT 1 FROM app.principals LIMIT 1'),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('readiness timeout')),
+          1000,
+        );
+      }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 export function createApi({
   pool,
   env = process.env,
   verifyIdentity,
+  activityProvider,
 }: {
   pool: Pool;
   env?: Record<string, string | undefined>;
   verifyIdentity?: (token: string) => Promise<Identity>;
+  activityProvider?: ActivitySubmissionProvider;
 }) {
   const config = authConfig(env);
   const adminAuth =
@@ -131,6 +158,14 @@ export function createApi({
   const reports = reportRuntime(pool, env);
   const awards = createAwardsHandler({ pool });
   const photoActivity = createPhotoHandler(pool, env);
+  const activitySubmission = createActivitySubmissionService({
+    pool,
+    provider:
+      activityProvider &&
+      (env.NODE_ENV === 'test' || env.ACTIVITY_ASSESSMENT_ENABLED === 'true')
+        ? activityProvider
+        : undefined,
+  });
   if (verifyIdentity && env.NODE_ENV !== 'test')
     throw new Error('Verifier injection is test-only.');
   const verifier =
@@ -194,6 +229,17 @@ export function createApi({
         return;
       if (req.method === 'GET' && (path === '/' || path === '/health'))
         return send(res, 200, { status: 'ok' });
+      if (req.method === 'GET' && path === '/ready') {
+        if (await databaseReady(pool))
+          return send(res, 200, {
+            status: 'ready',
+            dependencies: { database: 'ok' },
+          });
+        return send(res, 503, {
+          status: 'unavailable',
+          dependencies: { database: 'unavailable' },
+        });
+      }
       if (Date.now() - windowStart >= 60000) {
         windowStart = Date.now();
         requests = 0;
@@ -242,6 +288,68 @@ export function createApi({
       const photoResponse = await photoActivity(req, path);
       if (photoResponse)
         return send(res, photoResponse.status, photoResponse.body);
+      const activitySubmissionResponse = await handleActivitySubmission({
+        req,
+        path,
+        pool,
+        token,
+        service: activitySubmission,
+      });
+      if (activitySubmissionResponse)
+        return send(
+          res,
+          activitySubmissionResponse.status,
+          activitySubmissionResponse.body,
+        );
+      if (path === '/v1/missions' && req.method === 'GET') {
+        const query = new URL(req.url ?? '/', 'http://api.invalid')
+          .searchParams;
+        if (
+          [...query.keys()].some((key) => key !== 'profileId') ||
+          query.getAll('profileId').length !== 1
+        )
+          throw new ApiError(400, 'Provide one profileId.');
+        return send(
+          res,
+          200,
+          await listMissions(pool, token, {
+            profileId: query.get('profileId'),
+          }),
+        );
+      }
+      const missionEnrollment = /^\/v1\/missions\/([^/]+)\/enroll$/.exec(path);
+      if (missionEnrollment && req.method === 'POST')
+        return send(
+          res,
+          200,
+          await enrollMission(
+            pool,
+            token,
+            missionEnrollment[1],
+            await body(req),
+          ),
+        );
+      if (path === '/v1/impact/overview' && req.method === 'GET') {
+        const query = new URL(req.url ?? '/', 'http://api.invalid')
+          .searchParams;
+        if (
+          [...query.keys()].some((key) => key !== 'profileId') ||
+          query.getAll('profileId').length !== 1 ||
+          !uuid.test(query.get('profileId') ?? '')
+        )
+          throw new ApiError(400, 'Provide one valid profileId.');
+        return send(
+          res,
+          200,
+          await readImpactOverview({
+            pool,
+            token,
+            profileId: query.get('profileId')!,
+            readOfficial: async (officialToken) =>
+              (await reports()).official(officialToken),
+          }),
+        );
+      }
       const impactProfile = /^\/v1\/profiles\/([^/]+)\/impact$/.exec(path);
       if (impactProfile && req.method === 'GET')
         return send(
