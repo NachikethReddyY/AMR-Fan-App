@@ -14,7 +14,8 @@ async function inPhase(name, operation) {
     return await operation();
   } catch (error) {
     const code =
-      error && typeof error === 'object' &&
+      error &&
+      typeof error === 'object' &&
       typeof error.code === 'string' &&
       /^[A-Z0-9_]+$/.test(error.code)
         ? error.code
@@ -27,9 +28,13 @@ export function migrationConfig(env = process.env) {
   const connectionString = env.AZURE_MIGRATION_DATABASE_URL;
   const runtimePassword = env.AZURE_RUNTIME_DATABASE_PASSWORD;
   if (!connectionString || !runtimePassword)
-    throw new Error('Migration credentials must be supplied through the process environment.');
+    throw new Error(
+      'Migration credentials must be supplied through the process environment.',
+    );
   if (!/^[A-Za-z0-9_-]{48,128}$/.test(runtimePassword))
-    throw new Error('Runtime password must be a random 48-128 character value.');
+    throw new Error(
+      'Runtime password must be a random 48-128 character value.',
+    );
   let url;
   try {
     url = new URL(connectionString);
@@ -41,11 +46,15 @@ export function migrationConfig(env = process.env) {
   if (url.username !== ADMIN || !url.password)
     throw new Error(`Migration URL must use ${ADMIN} with a password.`);
   if (url.search || url.hash)
-    throw new Error('Migration URL must not contain query or fragment parameters.');
+    throw new Error(
+      'Migration URL must not contain query or fragment parameters.',
+    );
   if (url.pathname !== '/postgres')
     throw new Error('Migration URL must target the fresh postgres database.');
   if (!url.hostname.toLowerCase().endsWith('.postgres.database.azure.com'))
-    throw new Error('Migration URL must target an Azure PostgreSQL Flexible Server.');
+    throw new Error(
+      'Migration URL must target an Azure PostgreSQL Flexible Server.',
+    );
   return { url, runtimePassword };
 }
 
@@ -100,12 +109,13 @@ async function ensureRuntimeRole(client, password) {
       WHERE subject.rolname = $1`,
     [RUNTIME],
   );
-  if (memberships.rowCount) throw new Error('Existing amr_api role has role memberships.');
+  if (memberships.rowCount)
+    throw new Error('Existing amr_api role has role memberships.');
 }
 
 async function applyRuntimeGrants(client) {
-  const database = (await client.query('SELECT current_database() AS name')).rows[0]
-    ?.name;
+  const database = (await client.query('SELECT current_database() AS name'))
+    .rows[0]?.name;
   if (typeof database !== 'string' || !database)
     throw new Error('Could not identify the migration database.');
   await client.query(`
@@ -215,12 +225,36 @@ async function verifyRuntime(adminPool, runtimePool) {
     if (readable.rowCount !== 1 || readable.rows[0].profile_id !== profile.id)
       throw new Error('Runtime account/profile/session smoke test failed.');
 
-    await assertDenied(client, 'CREATE TABLE public.amr_privilege_probe(id integer)', 'public DDL');
-    await assertDenied(client, 'CREATE TABLE app.amr_privilege_probe(id integer)', 'app DDL');
-    await assertDenied(client, 'CREATE ROLE amr_privilege_probe', 'role creation');
-    await assertDenied(client, `UPDATE app.principals SET role = 'admin' WHERE false`, 'principal role write');
-    await assertDenied(client, 'UPDATE app.role_assignments SET role = role WHERE false', 'role assignment write');
-    await assertDenied(client, `INSERT INTO public.schema_migrations(name, checksum) VALUES ('amr_privilege_probe.sql', 'probe')`, 'migration ledger write');
+    await assertDenied(
+      client,
+      'CREATE TABLE public.amr_privilege_probe(id integer)',
+      'public DDL',
+    );
+    await assertDenied(
+      client,
+      'CREATE TABLE app.amr_privilege_probe(id integer)',
+      'app DDL',
+    );
+    await assertDenied(
+      client,
+      'CREATE ROLE amr_privilege_probe',
+      'role creation',
+    );
+    await assertDenied(
+      client,
+      `UPDATE app.principals SET role = 'admin' WHERE false`,
+      'principal role write',
+    );
+    await assertDenied(
+      client,
+      'UPDATE app.role_assignments SET role = role WHERE false',
+      'role assignment write',
+    );
+    await assertDenied(
+      client,
+      `INSERT INTO public.schema_migrations(name, checksum) VALUES ('amr_privilege_probe.sql', 'probe')`,
+      'migration ledger write',
+    );
     await client.query('ROLLBACK');
   } catch (error) {
     try {
@@ -234,13 +268,19 @@ async function verifyRuntime(adminPool, runtimePool) {
   }
 }
 
-export async function runAzureMigration({ adminPool, runtimePool, runtimePassword }) {
+export async function runAzureMigration({
+  adminPool,
+  runtimePool,
+  runtimePassword,
+}) {
   const identity = await inPhase('admin identity', async () => {
     const row = (
       await adminPool.query('SELECT current_user, current_database()')
     ).rows[0];
     if (row?.current_user !== ADMIN)
-      throw new Error('Connected identity is not the Azure bootstrap administrator.');
+      throw new Error(
+        'Connected identity is not the Azure bootstrap administrator.',
+      );
     await adminPool.query(`
       REVOKE CREATE ON DATABASE ${pg.escapeIdentifier(row.current_database)} FROM PUBLIC;
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;
@@ -248,7 +288,9 @@ export async function runAzureMigration({ adminPool, runtimePool, runtimePasswor
     return row;
   });
   const firstPass = await inPhase('migration', () => migrate(adminPool));
-  const secondPass = await inPhase('migration replay', () => migrate(adminPool));
+  const secondPass = await inPhase('migration replay', () =>
+    migrate(adminPool),
+  );
   if (firstPass !== secondPass)
     throw new Error('Migration replay count changed.');
 
@@ -289,7 +331,9 @@ export async function main(env = process.env) {
       runtimePool,
       runtimePassword,
     });
-    process.stdout.write(JSON.stringify({ status: 'migrated', migrations: applied }) + '\n');
+    process.stdout.write(
+      JSON.stringify({ status: 'migrated', migrations: applied }) + '\n',
+    );
   } finally {
     await Promise.all([adminPool.end(), runtimePool.end()]);
   }

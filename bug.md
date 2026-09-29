@@ -1466,3 +1466,42 @@ backend code. Added the route directory with access requirements and disabled
 feature limits, linked it from the Swift handoff, and prepared the branch PR.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## PR67-MERGE-READINESS-001 (unlinked)
+
+Actionable request on 2026-09-29: repair PR #67 on its existing branch without
+merge, push, deploy or GitHub comments. Scope includes repository-root database
+namespaces and owned PostgreSQL CI suites, Docker test-image context, removal of
+the unapproved activity daily cap, photo/journey accounting compatibility,
+deployment-state documentation, and required-check disposition.
+
+Observed before correction: the activity reward settlement rejected the fourth
+eligible same-day activity as `daily_cap`, contrary to the accepted rule that a
+supported assessment above 0.5 earns 50 points with no daily activity cap. The
+new database tests derived their namespace from `services/`, while
+`scripts/local-db.mjs` derives it from the repository root. GitHub reports a red
+Vercel status with description `Deployment was blocked`; GitHub reports no
+required checks for this branch. The deployed Azure source remains `36996ec`,
+while PR #67 head is `c2aba734`.
+
+Failed criterion: the PR did not preserve the accepted reward policy or provide
+merge-ready verification. Classification: project guidance; update the PR
+description and durable records to the observed state, while leaving merge and
+deployment authority with the maintainer.
+
+Follow-up correction: the versioned activity route now accepts optional journey
+linking and records one preliminary claim under the owned journey lock. Existing
+journey settlement reads that claim and pays only the remaining difference;
+legacy and versioned image/journey checks share the duplicate boundary. Local
+proof covers four no-cap activity awards, the linked 50-plus-70 settlement,
+runner-root namespace regression, Docker contexts, Bicep compilation and the
+complete pure check. The remote Vercel status remains red and local corrections
+are unpushed.
+
+Vercel disposition: the attached deployment details identify the Hobby team,
+private repository collaboration, and commit author `ashura-oss` without project
+access as the cause of `Deployment Blocked`. Vercel states that private-repository
+collaboration requires Pro. This is external account infrastructure, not a PR
+failure; no upgrade, collaborator change, or deployment action is authorized.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

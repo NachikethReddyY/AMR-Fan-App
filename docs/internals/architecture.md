@@ -18,7 +18,9 @@ The account API has an isolated application DAST target and authenticated HTTP
 boundary tests. The points admin flow has local browser and PostgreSQL-backed
 HTTP proof. The held phone History consumer has state and actual HTTP/PostgreSQL
 proof; its new UI has no native observation yet. Required small-iPhone largest
-Dynamic Type and actual VoiceOver proof remain pending. No upload URL or deployed service exists. Passive DAST
+Dynamic Type and actual VoiceOver proof remain pending. No upload URL exists.
+Azure staging has a deployed service from the older `36996ec` revision; the
+current PR head is not deployed there. Passive DAST
 covers public HTTP only; authenticated tests prove points authorization,
 atomicity, replay, concurrency and isolation. See [points operations](../operations/points.md).
 
@@ -31,8 +33,11 @@ service ownership, per-worktree databases, commands and cloud setup gates. The a
 Azure is the selected backend platform. The reviewable staging package is under
 [`deploy/azure`](../../deploy/azure/README.md): it targets a new resource group
 in southeastasia, private PostgreSQL Flexible Server, Key Vault managed
-identity, and a Consumption Container Apps API. No resource has been created or
-deployed by preparing that package. The configurable account adapter and local
+identity, and a Consumption Container Apps API. An authorized deployment
+created the staging resources and runs image source
+`36996ec95b1cc62a3c1ef583e1e30714a814efe0`. The current PR head is
+`c2aba734e0d8036fb4f83a738354ee49722ba11e`, which is newer than that running
+revision and has not been deployed. The configurable account adapter and local
 setup are documented in [account operations](../operations/accounts.md). Earlier
 Convex plans are superseded.
 
@@ -80,16 +85,23 @@ an explicitly supplied server-side provider exists. A disabled deployment
 returns `{ "kind": "unavailable", "reason": "disabled" }`; it does not read
 or process the submitted media. When a reviewed provider is enabled, accepted
 assessments settle exactly 50 points through the existing points ledger, apply
-daily and duplicate protections, and optionally advance an enrolled mission.
+duplicate protections, and optionally advance an enrolled mission. There is no
+daily activity cap.
 
 `GET /v1/missions?profileId=...` and `POST
 /v1/missions/:missionId/enroll` expose mission state. `GET
 /v1/impact/overview?profileId=...` returns separate fan, community and official
-impact sections. Migrations `0014` through `0017` own the assessment,
-reward-claim, duplicate-image, mission and impact provenance tables.
+impact sections. Migrations `0014` through `0019` own the assessment,
+reward-claim, duplicate-image, mission and optional journey-link tables; impact
+overview reads the existing journey and activity provenance instead of adding a
+separate impact provenance schema.
 
-The contract is implemented and locally unit-tested. Azure resources, the
-database migration and a live provider remain unprovisioned.
+The contract is implemented and locally unit-tested. The Azure migration job ran
+before the deployed `36996ec` image started. Migrations `0018` and `0019`, added
+by this PR for the no-cap policy and optional journey-linked preliminary claims,
+are newer and remain unapplied in staging.
+The provider remains disabled by default; live Swift, Entra and provider
+behavior are unverified.
 
 Implemented by gpt-6-luna through Codex (local Windows).
 
@@ -105,7 +117,9 @@ New Swift work should use the versioned assessment routes documented above:
 `GET /v1/profiles/:profileId/activity-submissions/availability`, `POST
 /v1/profiles/:profileId/activity-submissions`, and `GET
 /v1/profiles/:profileId/activity-submissions/:requestId`. The POST body is
-`{requestId, description, photos:[{mime,base64}], missionId}`. A disabled server
+`{requestId, description, photos:[{mime,base64}], missionId, journeyId?}`.
+`journeyId` optionally links accepted active-transport evidence to an owned
+journey for preliminary settlement. A disabled server
 returns `503` with `{kind:"unavailable",reason:"disabled"}` before reading
 media. A provider-enabled server returns the validated assessment result and,
 when accepted, the reward and mission decisions.

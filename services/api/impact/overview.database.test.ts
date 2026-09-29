@@ -7,8 +7,7 @@ import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { assignRole, ensureAccount } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { createApi } from '../api/app.ts';
 import { once } from 'node:events';
 import { createHash, randomUUID } from 'node:crypto';
@@ -20,7 +19,7 @@ import type { SourceStorage } from '../reports/storage.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Owned test database required');
 const pool = createDatabase();

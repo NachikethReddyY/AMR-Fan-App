@@ -1,20 +1,14 @@
 import { createServer } from 'node:http';
-import { createHash } from 'node:crypto';
-import { realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import type { Pool } from 'pg';
 import { ApiError } from '../../accounts/types.ts';
 import { handleParticipationRequest } from '../participation-http.ts';
+import { testDatabaseName } from '../../../../scripts/local-db.mjs';
 
 export function requireOwnTestDatabase() {
-  const root = realpathSync.native(
-    fileURLToPath(new URL('../../../', import.meta.url)),
-  );
-  const expected = `amr_${createHash('sha256').update(root).digest('hex').slice(0, 12)}_test`;
   if (
     process.env.NODE_ENV !== 'test' ||
     new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-      `/${expected}`
+      `/${testDatabaseName()}`
   )
     throw new Error('Use only this canonical worktree test database.');
 }

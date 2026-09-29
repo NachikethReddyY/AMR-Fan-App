@@ -40,14 +40,29 @@ const enabled =
   process.env.AZURE_MIGRATION_DATABASE_URL &&
   process.env.AZURE_RUNTIME_DATABASE_PASSWORD;
 
-test('Azure migration job applies and verifies the database bootstrap', { skip: !enabled }, () => {
-  const result = spawnSync(process.execPath, ['services/api/database/azure-migrate.mjs'], {
-    encoding: 'utf8',
-    timeout: 120_000,
-    env: process.env,
-  });
-  assert.equal(result.status, 0, 'Azure migration job failed. See sanitized stderr from the job.');
-  assert.match(result.stdout, /"status":"migrated"/);
-  assert.doesNotMatch(result.stdout, /postgresql:\/\//i);
-  assert.doesNotMatch(result.stderr, /password|secret|token|postgresql:\/\//i);
-});
+test(
+  'Azure migration job applies and verifies the database bootstrap',
+  { skip: !enabled },
+  () => {
+    const result = spawnSync(
+      process.execPath,
+      ['services/api/database/azure-migrate.mjs'],
+      {
+        encoding: 'utf8',
+        timeout: 120_000,
+        env: process.env,
+      },
+    );
+    assert.equal(
+      result.status,
+      0,
+      'Azure migration job failed. See sanitized stderr from the job.',
+    );
+    assert.match(result.stdout, /"status":"migrated"/);
+    assert.doesNotMatch(result.stdout, /postgresql:\/\//i);
+    assert.doesNotMatch(
+      result.stderr,
+      /password|secret|token|postgresql:\/\//i,
+    );
+  },
+);

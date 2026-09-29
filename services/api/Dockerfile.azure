@@ -19,8 +19,8 @@ RUN corepack enable \
     && pnpm install --frozen-lockfile --ignore-scripts --prod --filter @amr/api...
 
 # Keep runtime TypeScript, SQL migrations, shared contracts and the allowlisted
-# admin assets available to the API. Tests and fixtures are removed by the
-# root build-context policy in .dockerignore.
+# admin assets available to the API. Azure-only test and fixture exclusions live
+# in Dockerfile.azure.dockerignore; the root context keeps them for test images.
 COPY packages/contracts packages/contracts
 COPY packages/travel-domain packages/travel-domain
 COPY services/api services/api

@@ -1,3 +1,6 @@
+# The Azure runtime image does not need tests, fixtures, documentation or
+# maintainer-only material. Keep credential and private-file exclusions
+# explicit here because this file takes precedence over the root ignore file.
 .git
 node_modules
 **/node_modules
@@ -17,6 +20,11 @@ node_modules
 **/*.mobileprovision
 **/secrets/**
 **/private/**
+**/*.test.*
+**/*.spec.*
+**/testing/**
+**/fixtures/**
+**/__tests__/**
 coverage
 **/coverage/**
 docs

@@ -41,8 +41,8 @@ function databaseUnavailableResult(error: unknown) {
 
 /**
  * Composes authenticated parsing, transient media canonicalization, durable
- * request-key ownership and the provider call. It intentionally has no points
- * or mission dependencies; Gate 2 owns those side effects.
+ * request-key ownership and the provider call. Accepted results enter the
+ * transactional reward settlement before the durable result is returned.
  */
 export function createActivitySubmissionService({
   pool,
@@ -132,6 +132,7 @@ export function createActivitySubmissionService({
         requestId: parsed.requestId,
         payloadDigest: canonical.payloadDigest,
         missionId: parsed.missionId,
+        journeyId: parsed.journeyId,
         imageHashes: canonical.photos.map((photo) => photo.fingerprint),
       });
       if (input.signal?.aborted && begun.kind !== 'started') {
@@ -186,6 +187,7 @@ export function createActivitySubmissionService({
             requestId: parsed.requestId,
             payloadDigest: canonical.payloadDigest,
             missionId: parsed.missionId,
+            journeyId: parsed.journeyId,
             imageHashes: canonical.photos.map((photo) => photo.fingerprint),
             assessment: { ...result, assessmentId: completedAssessmentId },
             sourceContext: creditContext,

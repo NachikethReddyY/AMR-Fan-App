@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { ensureAccount } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { settleAcceptedActivity } from './rewards.ts';
+import { claimPhotoActivity } from './claims.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Owned test database required');
 
@@ -79,6 +79,7 @@ async function settle(
     requestId,
     payloadDigest,
     missionId,
+    journeyId: null,
     imageHashes: [f.hash],
     assessment: f.result,
     sourceContext: 'synthetic_test',
@@ -176,7 +177,7 @@ test('same request key with a different payload is rejected', async () => {
   );
 });
 
-test('four concurrent credits permit exactly three awards', async () => {
+test('four distinct eligible activities credit 200 points without a daily cap', async () => {
   const a = await account();
   const results = await Promise.all(
     (await Promise.all([0, 1, 2, 3].map(() => fixture(a.profileId)))).map((f) =>
@@ -185,14 +186,25 @@ test('four concurrent credits permit exactly three awards', async () => {
   );
   assert.equal(
     results.filter((r) => r.outcome.reward.kind === 'awarded').length,
-    3,
+    4,
   );
-  const fourth = results.find((r) => r.outcome.reward.kind === 'not_awarded')!;
-  assert.deepEqual(fourth.outcome.reward, {
-    kind: 'not_awarded',
-    points: 0,
-    reason: 'daily_cap',
-  });
+  assert.equal(
+    (
+      await pool.query('SELECT balance FROM app.profiles WHERE id=$1', [
+        a.profileId,
+      ])
+    ).rows[0].balance,
+    200,
+  );
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT count(*)::int AS n FROM app.activity_reward_claims WHERE profile_id=$1',
+        [a.profileId],
+      )
+    ).rows[0].n,
+    4,
+  );
 });
 
 test('cross-profile concurrent duplicate image has one durable award', async () => {
@@ -216,6 +228,41 @@ test('cross-profile concurrent duplicate image has one durable award', async () 
       )
     ).rows[0].n,
     1,
+  );
+});
+
+test('legacy journey-linked photo and versioned evidence cannot credit the same image twice', async () => {
+  const a = await account();
+  const hash = createHash('sha256').update(randomUUID()).digest('hex');
+  const legacy = await claimPhotoActivity(
+    pool,
+    a.token,
+    {
+      profileId: a.profileId,
+      requestId: randomUUID(),
+      fingerprint: hash,
+      journeyId: null,
+      activity: 'other',
+      verdict: 'supported',
+      confidence: 0.9,
+    },
+    'synthetic_test',
+  );
+  assert.equal(legacy.outcome.creditedPoints, 50);
+  const assessed = await fixture(a.profileId, hash);
+  const result = await settle(a, assessed);
+  assert.deepEqual(result.outcome.reward, {
+    kind: 'not_awarded',
+    points: 0,
+    reason: 'duplicate_evidence',
+  });
+  assert.equal(
+    (
+      await pool.query('SELECT balance FROM app.profiles WHERE id=$1', [
+        a.profileId,
+      ])
+    ).rows[0].balance,
+    50,
   );
 });
 
@@ -245,7 +292,7 @@ test('revoked session and demo profile cannot settle activity', async () => {
   );
 });
 
-test('historical UTC-day claims do not consume current day allowance', async () => {
+test('historical UTC-day claims do not restrict current activity rewards', async () => {
   const a = await account();
   for (let i = 0; i < 3; i++) {
     const f = await fixture(a.profileId);
@@ -284,13 +331,8 @@ test('historical UTC-day claims do not consume current day allowance', async () 
     results.push(await settle(a, await fixture(a.profileId)));
   assert.equal(
     results.filter((r) => r.outcome.reward.kind === 'awarded').length,
-    3,
+    4,
   );
-  assert.deepEqual(results[3].outcome.reward, {
-    kind: 'not_awarded',
-    points: 0,
-    reason: 'daily_cap',
-  });
 });
 
 test('late ledger failure rolls back mission progress and permits exact retry', async () => {

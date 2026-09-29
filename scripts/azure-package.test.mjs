@@ -21,13 +21,39 @@ test('Azure template keeps the database private and image immutable', async () =
 
 test('production image starts the real API and excludes local material', async () => {
   const dockerfile = await text('services/api/Dockerfile.azure');
-  const ignore = await text('.dockerignore');
+  const ignore = await text('services/api/Dockerfile.azure.dockerignore');
   assert.match(dockerfile, /services\/api\/api\/start\.ts/);
   assert.doesNotMatch(dockerfile, /dast-start/);
   assert.match(dockerfile, /pnpm install --frozen-lockfile/);
   assert.match(ignore, /node_modules/);
   assert.match(ignore, /\.env/);
   assert.match(ignore, /Swift-App/);
+});
+
+test('root context preserves test-image inputs and both contexts exclude private files', async () => {
+  const rootIgnore = await text('.dockerignore');
+  const azureIgnore = await text('services/api/Dockerfile.azure.dockerignore');
+  for (const rule of [
+    '**/*.test.*',
+    '**/*.spec.*',
+    '**/testing/**',
+    '**/fixtures/**',
+    '**/__tests__/**',
+  ]) {
+    assert.ok(!rootIgnore.split(/\r?\n/).includes(rule));
+    assert.ok(azureIgnore.split(/\r?\n/).includes(rule));
+  }
+  for (const ignore of [rootIgnore, azureIgnore]) {
+    for (const rule of [
+      '**/.env.*',
+      '**/.auth/**',
+      '**/*.pem',
+      '**/*.key',
+      '**/secrets/**',
+      '**/private/**',
+    ])
+      assert.ok(ignore.split(/\r?\n/).includes(rule));
+  }
 });
 
 test('deployment helpers use private inputs and the reviewed runtime surface', async () => {
@@ -50,11 +76,19 @@ test('deployment helpers use private inputs and the reviewed runtime surface', a
 
 test('migration helper refuses before opening a database without credentials', async () => {
   const { spawnSync } = await import('node:child_process');
-  const result = spawnSync(process.execPath, ['services/api/database/azure-migrate.mjs'], {
-    cwd: new URL('../', import.meta.url),
-    encoding: 'utf8',
-    env: { ...process.env, AZURE_MIGRATION_DATABASE_URL: '', AZURE_RUNTIME_DATABASE_PASSWORD: '' },
-  });
+  const result = spawnSync(
+    process.execPath,
+    ['services/api/database/azure-migrate.mjs'],
+    {
+      cwd: new URL('../', import.meta.url),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        AZURE_MIGRATION_DATABASE_URL: '',
+        AZURE_RUNTIME_DATABASE_PASSWORD: '',
+      },
+    },
+  );
   assert.notEqual(result.status, 0);
   assert.match(`${result.stderr}${result.stdout}`, /Migration credentials/);
 });

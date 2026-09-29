@@ -14,6 +14,7 @@ export type CanonicalActivitySubmission = {
   requestId: string;
   description: string;
   missionId: string | null;
+  journeyId?: string | null;
   payloadDigest: string;
   photos: CanonicalActivityPhoto[];
 };
@@ -52,12 +53,14 @@ export async function canonicalizeActivitySubmission(
       ACTIVITY_EVIDENCE_POLICY_VERSION,
       input.description,
       input.missionId,
+      input.journeyId,
       photos.map(({ fingerprint }) => fingerprint),
     ]);
     return {
       requestId: input.requestId,
       description: input.description,
       missionId: input.missionId,
+      journeyId: input.journeyId ?? null,
       payloadDigest: createHash('sha256').update(binding).digest('hex'),
       photos,
     };

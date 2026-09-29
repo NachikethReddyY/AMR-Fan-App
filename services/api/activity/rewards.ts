@@ -12,6 +12,8 @@ import {
 import { checkMissionEligibility } from './missions.ts';
 import type { StoredActivityAssessment } from './assessment-store.ts';
 import { activitySubmissionAssessmentResultSchema } from '../ai/activity-submission.ts';
+import { lockJourneyForSettlement } from '../journeys/settlement.ts';
+import { readPhotoPreliminary } from './claims.ts';
 
 const outcomeSchema = z.strictObject({
   reward: activityReward,
@@ -42,12 +44,14 @@ export async function settleAcceptedActivity(input: {
   requestId: string;
   payloadDigest: string;
   missionId: string | null;
+  journeyId?: string | null;
   imageHashes: string[];
   assessment: Extract<StoredActivityAssessment, { kind: 'accepted' }>;
   sourceContext?: 'production' | 'synthetic_test';
   signal?: AbortSignal;
 }) {
   const sourceContext = input.sourceContext ?? 'production';
+  const journeyId = input.journeyId ?? null;
   if (sourceContext === 'synthetic_test' && process.env.NODE_ENV !== 'test')
     throw new ApiError(403, 'Synthetic accounting is test-only.');
   const hashes = imageHashes(input.imageHashes);
@@ -56,6 +60,7 @@ export async function settleAcceptedActivity(input: {
     input.assessmentId,
     input.payloadDigest,
     input.missionId,
+    journeyId,
     POLICY_VERSION,
     sourceContext,
   ]);
@@ -85,12 +90,13 @@ export async function settleAcceptedActivity(input: {
         request_id: string;
         payload_digest: string;
         mission_id: string | null;
+        journey_id: string | null;
         status: string;
         image_hashes: unknown;
         result: unknown;
         expired: boolean;
       }>(
-        `SELECT id, profile_id, request_id, payload_digest, mission_id, status, image_hashes, result,
+        `SELECT id, profile_id, request_id, payload_digest, mission_id, journey_id, status, image_hashes, result,
                 started_at < clock_timestamp() - interval '30 seconds' AS expired
          FROM app.activity_assessments WHERE id=$1 AND profile_id=$2 FOR UPDATE`,
         [input.assessmentId, profile.id],
@@ -107,6 +113,8 @@ export async function settleAcceptedActivity(input: {
       if (row.status === 'processing' && row.expired)
         throw new ApiError(409, 'Assessment expired before reward settlement.');
       if (row.mission_id !== input.missionId)
+        throw new ApiError(409, 'Assessment payload changed.');
+      if (row.journey_id !== journeyId)
         throw new ApiError(409, 'Assessment payload changed.');
       const persistedHashes = imageHashes(row.image_hashes);
       if (digest(persistedHashes) !== digest(hashes))
@@ -199,8 +207,19 @@ export async function settleAcceptedActivity(input: {
         };
       }
       const duplicate = await client.query(
-        'SELECT 1 FROM app.activity_credited_images WHERE image_hash = ANY($1::text[]) AND source_context=$2 LIMIT 1',
-        [sorted, sourceContext],
+        `SELECT 1 FROM app.activity_credited_images
+           WHERE image_hash = ANY($1::text[])
+         UNION ALL
+         SELECT 1 FROM app.photo_activity_claims
+           WHERE photo_hash = ANY($1::text[])
+         UNION ALL
+         SELECT 1 FROM app.activity_reward_claims
+            WHERE $2::uuid IS NOT NULL AND journey_id=$2
+         UNION ALL
+         SELECT 1 FROM app.photo_activity_claims
+            WHERE $2::uuid IS NOT NULL AND journey_id=$2
+         LIMIT 1`,
+        [sorted, journeyId],
       );
       if (duplicate.rowCount) {
         const reward: ActivityReward = {
@@ -219,27 +238,42 @@ export async function settleAcceptedActivity(input: {
           outcome: { reward, mission },
         };
       }
-      const day = await client.query<{ count: number }>(
-        `SELECT count(*)::int AS count FROM app.activity_reward_claims
-         WHERE profile_id=$1 AND credited_at >= date_trunc('day', clock_timestamp() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
-        [profile.id],
-      );
-      if (Number(day.rows[0]?.count ?? 0) >= 3) {
-        const reward: ActivityReward = {
-          kind: 'not_awarded',
-          points: 0,
-          reason: 'daily_cap',
-        };
-        const persisted = { ...input.assessment, reward, mission };
-        await client.query(
-          `UPDATE app.activity_assessments SET status='accepted', result=$1, completed_at=clock_timestamp() WHERE id=$2 AND status='processing'`,
-          [persisted, input.assessmentId],
+      if (journeyId) {
+        if (input.assessment.category !== 'active_transport')
+          throw new ApiError(
+            409,
+            'Only active transport evidence can link to a journey.',
+          );
+        const journey = await lockJourneyForSettlement(
+          client,
+          actor.principalId,
+          profile.id,
+          journeyId,
         );
-        return {
-          delta: 0,
-          reason: 'Daily activity reward cap reached.',
-          outcome: { reward, mission },
-        };
+        if (
+          sourceContext === 'synthetic_test' &&
+          journey.source.kind !== 'fixture'
+        )
+          throw new ApiError(
+            403,
+            'Synthetic accounting requires a fixture journey.',
+          );
+        const prior = await client.query<{
+          cumulative_automatic_credit: number;
+        }>(
+          'SELECT cumulative_automatic_credit FROM app.journey_award_state WHERE journey_id=$1',
+          [journeyId],
+        );
+        const preliminary = await readPhotoPreliminary(
+          client,
+          profile.id,
+          journeyId,
+        );
+        if (
+          (prior.rows[0]?.cumulative_automatic_credit ?? 0) > 0 ||
+          preliminary > 0
+        )
+          throw new ApiError(409, 'Journey already rewarded.');
       }
       const reward: ActivityReward = {
         kind: 'awarded',
@@ -274,7 +308,7 @@ export async function settleAcceptedActivity(input: {
         );
       }
       await client.query(
-        'INSERT INTO app.activity_reward_claims(assessment_id,operation_id,profile_id,request_id,payload_digest,image_hashes,source_context) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        'INSERT INTO app.activity_reward_claims(assessment_id,operation_id,profile_id,request_id,payload_digest,image_hashes,source_context,journey_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
         [
           input.assessmentId,
           operationId,
@@ -283,6 +317,7 @@ export async function settleAcceptedActivity(input: {
           input.payloadDigest,
           JSON.stringify(hashes),
           sourceContext,
+          journeyId,
         ],
       );
       for (const hash of sorted)

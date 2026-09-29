@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { after, beforeEach, test } from 'node:test';
 import { createDatabase } from '../database/index.ts';
@@ -10,6 +8,7 @@ import { assignRole, ensureAccount } from '../accounts/store.ts';
 import { createSession, revokeSession } from '../auth/session.ts';
 import { adjustPoints, readPointsHistory } from '../points/index.ts';
 import { ApiError } from '../accounts/types.ts';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import {
   createSubmission,
   listOwnSubmissions,
@@ -25,10 +24,7 @@ import {
   resolveSubmissionSelection,
 } from './participation.ts';
 
-const root = realpathSync.native(
-  fileURLToPath(new URL('../../', import.meta.url)),
-);
-const expectedDatabase = `amr_${createHash('sha256').update(root).digest('hex').slice(0, 12)}_test`;
+const expectedDatabase = testDatabaseName();
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
@@ -665,7 +661,7 @@ test('valid authority survives a later profile-lock wait, and initial role/sessi
     .pid;
   const hash = createHash('sha256').update(fan.token).digest('hex');
   await pool.query(
-    "UPDATE app.sessions SET expires_at=clock_timestamp()+interval '1 second' WHERE token_hash=$1",
+    "UPDATE app.sessions SET expires_at=clock_timestamp()+interval '3 seconds' WHERE token_hash=$1",
     [hash],
   );
   await blocker.query('BEGIN');

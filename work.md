@@ -3105,3 +3105,59 @@ existing Windows skill-frontmatter/symlink failures. No full green gate is claim
 The branch is based on current main `728c8a0`. No merge is authorized.
 
 Documented by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-29: PR #67 merge-readiness correction
+
+Corrected PR #67 on its existing `feat/azure-staging` branch. Database guards
+now use the exported repository-root namespace from `scripts/local-db.mjs`, and
+the new activity and impact suites are placed only in the owned PostgreSQL CI
+job. Removed the activity daily cap from code and schema indexing, and changed
+the accounting regression to credit four distinct eligible activities for 200
+points. The versioned activity submission route now accepts optional journey
+linking. It stores one preliminary claim under the journey lock, and the
+existing journey settlement credits only the remaining difference. Cross-table
+image and journey checks prevent conflict with the legacy photo path.
+
+Moved test/fixture exclusions out of the global `.dockerignore` into the Azure
+Dockerfile-specific ignore, preserving report and AI test image inputs while
+retaining secret/private exclusions. Reconciled the architecture, photo
+integration, staging endpoint, and Azure deployment records: staging runs
+`36996ec`, while this PR head is `c2aba734` and is not deployed. GitHub's Vercel
+status remains red with `Deployment was blocked`; GitHub reports no required
+checks for this branch, so no green-check claim is made.
+
+Verification on the unpushed working tree: frozen install, `pnpm check`,
+`pnpm security:check`, 43 activity database tests, eight impact database tests,
+eight database runner tests, the Azure package tests and Bicep compilation
+passed. One database casing test and the credential-gated live Azure migration
+test remain explicitly skipped. All four requested image contexts build from
+the repository root, as does the offline report parser. The initial full check
+exposed a OneMap temporary-directory guard and participation test defects. The
+participation PostgreSQL guard now uses the same repository-root runner
+namespace, its admin asset regression reads the hosted application files, and
+its profile-lock success case has a deterministic test window; the separate
+expiry and revocation cases remain intact. All causes were fixed and the
+complete check then passed. Security reports no secrets/SAST findings and one
+existing moderate dependency advisory.
+
+The PR description now records these local results and limitations. No commit,
+push, merge, deployment or GitHub comment occurred. The failed Vercel status,
+disabled Checks/Security workflows and unpushed correction remain explicit
+merge-readiness blockers. Live Swift, Entra, provider and current-PR cloud
+behavior remain unverified.
+
+The Vercel failure is an external Hobby-plan access restriction: the deployment
+details identify commit author `ashura-oss` without access to the private Vercel
+project, and state that private-repository collaboration requires Pro. It is
+documented as unrelated infrastructure. No upgrade, collaborator change, or
+deployment action was performed.
+
+The correction responds to a failed criterion in the original branch: an
+unapproved daily activity cap contradicted the accepted no-cap rule. This is
+project guidance; no shared or skill guidance change is proposed.
+
+A cross-route concurrency regression also verifies that concurrent legacy and
+versioned claims for the same journey credit only once. The existing owned
+profile lock serializes these operations before either takes further locks.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

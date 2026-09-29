@@ -1,10 +1,16 @@
 # Azure staging package
 
 This package prepares the API for the selected Azure staging target. It does
-not create resources or deploy code by itself. The approved target is a new
-resource group in `southeastasia`, using the existing ACR
+not create resources or deploy code by itself. An authorized deployment created
+the staging target in `southeastasia`, using the existing ACR
 `amrfanstaging044956` in `rg-amr-fan-staging` and the Entra External ID values
 recorded in [`auth-staging.md`](auth-staging.md).
+
+The running API image is from `36996ec95b1cc62a3c1ef583e1e30714a814efe0`.
+PR #67 currently ends at `c2aba734e0d8036fb4f83a738354ee49722ba11e`; that head
+has not been deployed, so this package does not claim that its later code is
+live. Its new migrations `0018_activity_rewards_no_daily_cap.sql` and
+`0019_activity_journey_link.sql` are not applied to the running database.
 
 The Bicep template creates a VNet with separate delegated subnets, a private
 PostgreSQL Flexible Server, its private DNS zone/link, a Key Vault, a user
@@ -48,6 +54,7 @@ Tasks fallback; the selected subscription rejected that path with
    and proves normal account/profile/session writes work while schema, role,
    migration-ledger and admin-field writes fail. The bootstrap administrator
    never becomes the API runtime identity.
+
 5. After that reviewed migration operation creates and grants the runtime
    login, store its TLS URL as Key Vault secret `database-url`. The value is
    never written to this repository or printed.
@@ -60,6 +67,5 @@ Tasks fallback; the selected subscription rejected that path with
 
 Do not run migrations from API startup, and do not put the migration URL,
 runtime password, OIDC client secret or Luna key in `EXPO_PUBLIC_*`, Bicep
-source, image layers, logs or deployment output. This package does not claim a
-live endpoint, database migration, image build, or mobile integration until
-those separately authorized actions have completed.
+source, image layers, logs or deployment output. Live mobile authentication and
+protected feature flows remain unverified.

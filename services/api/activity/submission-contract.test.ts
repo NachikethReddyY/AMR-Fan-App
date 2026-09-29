@@ -40,6 +40,13 @@ test('rejects invalid UUID, empty/overlong description, count, MIME and strict b
     assert.throws(() => parseActivitySubmission(value));
 });
 
+test('normalizes optional journey linking', () => {
+  assert.equal(
+    parseActivitySubmission(request({ journeyId: id })).journeyId,
+    id,
+  );
+});
+
 test('rejects a single decoded photo over 2 MiB and aggregate photos over 8 MiB', () => {
   const overSingle = Buffer.alloc(2 * 1024 * 1024 + 1).toString('base64');
   assert.throws(() =>

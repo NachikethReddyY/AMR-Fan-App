@@ -27,7 +27,7 @@
     "security:check": "pnpm security:secrets && pnpm security:sast && pnpm security:audit && pnpm security:self-test",
     "security:dast": "node scripts/security.mjs dast",
     "security:dast:self-test": "node scripts/security.mjs dast-self-test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test && pnpm reports:test && pnpm awards:test && pnpm participation:test && pnpm activity:test && pnpm activity:test:database && pnpm impact:test",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm test:tooling && pnpm agents:check && pnpm test:web && pnpm test:database:unit && pnpm ai:test && pnpm account:test && pnpm route:test && pnpm journey:test && pnpm submissions:test && pnpm rewards:test && pnpm reports:test && pnpm awards:test && pnpm participation:test && pnpm activity:test && pnpm impact:test",
     "test:web": "pnpm --filter @amr/fan test:web",
     "test:database:unit": "node --test services/api/database/config.test.ts",
     "db:up": "node scripts/local-db.mjs up",
@@ -66,10 +66,10 @@
     "awards:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/awards/awards.test.ts services/api/awards/http.test.ts services/api/awards/testing/registered-api.test.ts",
     "participation:test": "node --test --test-concurrency=1 services/api/submissions/participation-contracts.test.ts services/api/submissions/participation-http.test.ts services/api/submissions/participation/admin/assets.test.ts services/api/submissions/participation/admin/app.test.mjs",
     "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/submissions/participation.test.ts services/api/submissions/participation/admin/read.database.test.ts services/api/submissions/participation-http.database.test.ts services/api/submissions/participation/admin/registration.database.test.ts",
-    "activity:test": "node --test services/api/activity/claims.test.ts services/api/activity/media.test.ts services/api/activity/submission-contract.test.ts services/api/activity/gate1-regressions.test.ts services/api/ai/activity-submission.test.ts",
-    "activity:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/activity/assessment-store.database.test.ts services/api/activity/submission-http.database.test.ts services/api/activity/gate2-missions.database.test.ts services/api/activity/rewards.database.test.ts services/api/activity/gate2-accounting.database.test.ts",
+    "activity:test": "node --test services/api/activity/claims.test.ts services/api/activity/media.test.ts services/api/activity/fixture.test.ts services/api/activity/submission-contract.test.ts services/api/activity/gate1-regressions.test.ts services/api/ai/activity-submission.test.ts",
+    "activity:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/activity/assessment-store.database.test.ts services/api/activity/submission-http.database.test.ts services/api/activity/gate2-missions.database.test.ts services/api/activity/rewards.database.test.ts services/api/activity/gate2-accounting.database.test.ts services/api/activity/database.test.ts",
     "impact:test": "node --test services/api/impact/aggregate.test.ts services/api/impact/limits.test.ts services/api/impact/overview-compose.test.ts",
-    "impact:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/impact/overview.database.test.ts",
+    "impact:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/impact/overview.database.test.ts services/api/impact/store.test.ts",
     "workspace:check": "pnpm exec turbo run typecheck test --filter=@amr/fan --filter=@amr/api --filter=@amr/admin && pnpm --filter @amr/api test:activity"
   },
   "dependencies": {

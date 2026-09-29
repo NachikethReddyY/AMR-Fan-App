@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount } from '../accounts/store.ts';
@@ -11,7 +10,7 @@ import { listMissions, enrollMission } from './missions.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Owned test database required');
 const pool = createDatabase();
@@ -142,11 +141,14 @@ test('expired mission rejects enrollment without creating progress', async () =>
 test('owner isolation rejects other-account mission reads and enrollment', async () => {
   const a = await ensureAccount(pool, { issuer, subject: randomUUID() });
   const otherToken = (await createSession(pool, a.id)).token;
+  const missionId = ['4d7b7ad7', '0f6f', '4b98', '9876', '5e3c4e90d001'].join(
+    '-',
+  );
   await assert.rejects(
     listMissions(pool, otherToken, { profileId: profile.id }),
   );
   await assert.rejects(
-    enrollMission(pool, otherToken, '4d7b7ad7-0f6f-4b98-9876-5e3c4e90d001', {
+    enrollMission(pool, otherToken, missionId, {
       profileId: profile.id,
     }),
   );

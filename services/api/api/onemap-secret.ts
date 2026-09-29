@@ -162,9 +162,8 @@ export function prepareOneMapSecret({
     const location = relative(root, base);
     if (
       !location ||
-      (location !== '..' &&
-        !location.startsWith('../') &&
-        !isAbsolute(location))
+      location === '..' ||
+      (!location.startsWith('../') && !isAbsolute(location))
     )
       throw new StartupFailure(stage, 'NONE');
     stage = 'source_resolution';

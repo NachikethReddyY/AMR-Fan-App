@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount } from '../accounts/store.ts';
@@ -12,11 +11,12 @@ import { readPointsHistory } from '../points/index.ts';
 import { settleSyntheticJourneyAward } from '../awards/testing/service.ts';
 import { awardRoute } from '../awards/testing/fixtures.ts';
 import { claimSyntheticPhoto } from './claims.ts';
+import { settleAcceptedActivity } from './rewards.ts';
 import { readJourneyAward } from '../awards/store.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Use only the owned disposable photo database.');
 const pool = createDatabase();
@@ -112,6 +112,129 @@ function settle(f: Awaited<ReturnType<typeof fixture>>) {
   });
 }
 
+test('versioned activity journey linking is preliminary and settles only the remaining award', async () => {
+  const f = await fixture();
+  const assessmentId = randomUUID();
+  const requestId = randomUUID();
+  const hash = randomUUID().replaceAll('-', '').repeat(2);
+  const payloadDigest = createHash('sha256').update(requestId).digest('hex');
+  const result = {
+    kind: 'accepted' as const,
+    assessmentId,
+    category: 'active_transport' as const,
+    evidenceScore: 80,
+    confidence: 0.9,
+    rationale: 'fixture',
+    evidenceItems: ['public transport'],
+    modelVersion: 'fixture',
+    policyVersion: 'activity-evidence-v1' as const,
+  };
+  await pool.query(
+    `INSERT INTO app.activity_assessments
+      (id,profile_id,request_id,payload_digest,mission_id,journey_id,status,image_hashes,result)
+     VALUES ($1,$2,$3,$4,NULL,$5,'processing',$6,$7)`,
+    [
+      assessmentId,
+      f.profile.id,
+      requestId,
+      payloadDigest,
+      f.journeyId,
+      JSON.stringify([hash]),
+      result,
+    ],
+  );
+  const preliminary = await settleAcceptedActivity({
+    pool,
+    token: f.token,
+    principalId: f.account.id,
+    profileId: f.profile.id,
+    assessmentId,
+    requestId,
+    payloadDigest,
+    missionId: null,
+    journeyId: f.journeyId,
+    imageHashes: [hash],
+    assessment: result,
+    sourceContext: 'synthetic_test',
+  });
+  assert.equal(preliminary.entry?.delta, 50);
+  await assert.rejects(
+    claimSyntheticPhoto(pool, f.token, {
+      ...claimInput(f),
+      fingerprint: randomUUID().replaceAll('-', '').repeat(2),
+    }),
+    /already rewarded/,
+  );
+  assert.equal((await settle(f)).entry.delta, 70);
+  assert.equal(
+    (await readJourneyAward({ pool, token: f.token, journeyId: f.journeyId }))
+      .cumulativeAutomaticCredit,
+    120,
+  );
+});
+
+test('legacy preliminary blocks a second linked versioned claim while settlement pays the difference', async () => {
+  const f = await fixture();
+  const legacy = await claimSyntheticPhoto(pool, f.token, claimInput(f));
+  assert.equal(legacy.entry?.delta, 50);
+
+  const assessmentId = randomUUID();
+  const requestId = randomUUID();
+  const hash = randomUUID().replaceAll('-', '').repeat(2);
+  const payloadDigest = createHash('sha256').update(requestId).digest('hex');
+  const result = {
+    kind: 'accepted' as const,
+    assessmentId,
+    category: 'active_transport' as const,
+    evidenceScore: 80,
+    confidence: 0.9,
+    rationale: 'fixture',
+    evidenceItems: ['public transport'],
+    modelVersion: 'fixture',
+    policyVersion: 'activity-evidence-v1' as const,
+  };
+  await pool.query(
+    `INSERT INTO app.activity_assessments
+      (id,profile_id,request_id,payload_digest,mission_id,journey_id,status,image_hashes,result)
+     VALUES ($1,$2,$3,$4,NULL,$5,'processing',$6,$7)`,
+    [
+      assessmentId,
+      f.profile.id,
+      requestId,
+      payloadDigest,
+      f.journeyId,
+      JSON.stringify([hash]),
+      result,
+    ],
+  );
+  const versioned = await settleAcceptedActivity({
+    pool,
+    token: f.token,
+    principalId: f.account.id,
+    profileId: f.profile.id,
+    assessmentId,
+    requestId,
+    payloadDigest,
+    missionId: null,
+    journeyId: f.journeyId,
+    imageHashes: [hash],
+    assessment: result,
+    sourceContext: 'synthetic_test',
+  });
+  assert.equal(versioned.entry?.delta ?? 0, 0);
+  assert.deepEqual(versioned.outcome.reward, {
+    kind: 'not_awarded',
+    points: 0,
+    reason: 'duplicate_evidence',
+  });
+  assert.equal((await settle(f)).entry.delta, 70);
+  assert.equal(
+    (await readJourneyAward({ pool, token: f.token, journeyId: f.journeyId }))
+      .cumulativeAutomaticCredit,
+    120,
+  );
+});
+
 test('photo first: 50 now, 70 remaining, replay and new keys cannot duplicate', async () => {
   const f = await fixture();
   const input = claimInput(f);
@@ -171,6 +294,70 @@ test('concurrent different photo claims and settlement serialize one journey awa
     120,
   );
 });
+
+test('concurrent legacy and versioned journey claims credit once', async () => {
+  const f = await fixture();
+  const assessmentId = randomUUID();
+  const requestId = randomUUID();
+  const versionedHash = randomUUID().replaceAll('-', '').repeat(2);
+  const payloadDigest = createHash('sha256').update(requestId).digest('hex');
+  const result = {
+    kind: 'accepted' as const,
+    assessmentId,
+    category: 'active_transport' as const,
+    evidenceScore: 80,
+    confidence: 0.9,
+    rationale: 'fixture',
+    evidenceItems: ['public transport'],
+    modelVersion: 'fixture',
+    policyVersion: 'activity-evidence-v1' as const,
+  };
+  await pool.query(
+    `INSERT INTO app.activity_assessments
+      (id,profile_id,request_id,payload_digest,mission_id,journey_id,status,image_hashes,result)
+     VALUES ($1,$2,$3,$4,NULL,$5,'processing',$6,$7)`,
+    [
+      assessmentId,
+      f.profile.id,
+      requestId,
+      payloadDigest,
+      f.journeyId,
+      JSON.stringify([versionedHash]),
+      result,
+    ],
+  );
+  const results = await Promise.allSettled([
+    claimSyntheticPhoto(pool, f.token, claimInput(f)),
+    settleAcceptedActivity({
+      pool,
+      token: f.token,
+      principalId: f.account.id,
+      profileId: f.profile.id,
+      assessmentId,
+      requestId,
+      payloadDigest,
+      missionId: null,
+      journeyId: f.journeyId,
+      imageHashes: [versionedHash],
+      assessment: result,
+      sourceContext: 'synthetic_test',
+    }),
+  ]);
+  assert.equal(
+    results.filter(
+      (item) => item.status === 'fulfilled' && item.value.entry?.delta === 50,
+    ).length,
+    1,
+  );
+  for (const item of results)
+    if (item.status === 'rejected')
+      assert.match(String(item.reason), /already rewarded/);
+  assert.equal(
+    (await readPointsHistory(pool, f.token, f.profile.id)).balance,
+    50,
+  );
+});
+
 test('reused pixels across accounts are denied; forged ownership, demo, expired and conflicting replay fail', async () => {
   const a = await fixture();
   const b = await fixture();

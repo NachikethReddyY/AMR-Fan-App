@@ -90,11 +90,18 @@ export async function claimPhotoActivity(
       }
       // Global pixel hash also serializes different accounts without disclosing the owner.
       await client.query(
-        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-        [`photo:${input.fingerprint}`],
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 1809231))',
+        [input.fingerprint],
       );
       const duplicate = await client.query(
-        'SELECT 1 FROM app.photo_activity_claims WHERE photo_hash=$1 OR ($2::uuid IS NOT NULL AND journey_id=$2)',
+        `SELECT 1 FROM app.photo_activity_claims
+           WHERE photo_hash=$1 OR ($2::uuid IS NOT NULL AND journey_id=$2)
+         UNION ALL
+         SELECT 1 FROM app.activity_credited_images WHERE image_hash=$1
+         UNION ALL
+         SELECT 1 FROM app.activity_reward_claims
+          WHERE $2::uuid IS NOT NULL AND journey_id=$2
+         LIMIT 1`,
         [input.fingerprint, input.journeyId],
       );
       if (duplicate.rowCount)
@@ -136,7 +143,14 @@ export async function readPhotoPreliminary(
   journeyId: string,
 ) {
   const rows = await client.query<{ credited_points: number }>(
-    'SELECT credited_points FROM app.photo_activity_claims WHERE profile_id=$1 AND journey_id=$2',
+    `SELECT COALESCE(SUM(credited_points), 0)::int AS credited_points
+       FROM (
+         SELECT credited_points FROM app.photo_activity_claims
+          WHERE profile_id=$1 AND journey_id=$2
+         UNION ALL
+         SELECT 50 AS credited_points FROM app.activity_reward_claims
+          WHERE profile_id=$1 AND journey_id=$2
+       ) claims`,
     [profileId, journeyId],
   );
   return rows.rows[0]?.credited_points ?? 0;

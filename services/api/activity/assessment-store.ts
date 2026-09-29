@@ -49,6 +49,7 @@ export type BeginAssessmentInput = {
   requestId: string;
   payloadDigest: string;
   missionId: string | null;
+  journeyId?: string | null;
   imageHashes: string[];
 };
 export type BeginAssessmentResult =
@@ -63,6 +64,7 @@ export async function beginAssessment(
   hash.parse(input.payloadDigest);
   hashes.parse(input.imageHashes);
   const requestId = z.uuid().parse(input.requestId).toLowerCase();
+  const journeyId = input.journeyId ?? null;
   return transaction(input.pool, async (client) => {
     // One short global admission transaction coordinates every API instance.
     // Provider I/O always happens after commit, with at most eight active keys.
@@ -84,6 +86,13 @@ export async function beginAssessment(
     if (!profileRow) throw new ApiError(404, 'Profile not found.');
     if (profileRow.kind !== 'real')
       throw new ApiError(409, 'Photo activity requires a real profile.');
+    if (journeyId) {
+      const journey = await client.query(
+        'SELECT 1 FROM app.journeys WHERE id=$1 AND profile_id=$2',
+        [journeyId, input.profileId],
+      );
+      if (!journey.rowCount) throw new ApiError(404, 'Journey not found.');
+    }
 
     const existing = await client.query<Record<string, unknown>>(
       `SELECT id, status, payload_digest, result, started_at
@@ -129,14 +138,15 @@ export async function beginAssessment(
     const id = randomUUID();
     await client.query(
       `INSERT INTO app.activity_assessments
-       (id, profile_id, request_id, payload_digest, mission_id, status, image_hashes, result)
-       VALUES ($1,$2,$3,$4,$5,'processing',$6,$7)`,
+       (id, profile_id, request_id, payload_digest, mission_id, journey_id, status, image_hashes, result)
+       VALUES ($1,$2,$3,$4,$5,$6,'processing',$7,$8)`,
       [
         id,
         input.profileId,
         requestId,
         input.payloadDigest,
         input.missionId,
+        journeyId,
         JSON.stringify(input.imageHashes),
         { kind: 'unavailable', reason: 'busy' },
       ],

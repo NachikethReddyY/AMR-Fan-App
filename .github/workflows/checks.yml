@@ -46,6 +46,8 @@ jobs:
       - run: pnpm db:up --port 55432
       - run: pnpm db:verify
       - run: pnpm db:test
+      - run: pnpm activity:test:database
+      - run: pnpm impact:test:database
       - run: pnpm participation:test:database
       - run: pnpm account:test:database
       - run: pnpm points:test:database

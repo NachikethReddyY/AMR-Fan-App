@@ -11,7 +11,12 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { namespaceFor, requireLocalMode } from './local-db.mjs';
+import {
+  namespaceFor,
+  repositoryRoot,
+  requireLocalMode,
+  testDatabaseName,
+} from './local-db.mjs';
 
 test('stable real worktree namespaces differ and resolve directory aliases', (t) => {
   const parent = mkdtempSync(join(tmpdir(), 'amr-namespace-'));
@@ -26,6 +31,14 @@ test('stable real worktree namespaces differ and resolve directory aliases', (t)
   assert.notEqual(namespaceFor(first), namespaceFor(second));
   assert.match(namespaceFor(first), /^amr_[a-f0-9]{12}$/);
   assert.equal(namespaceFor(first), namespaceFor(alias));
+});
+
+test('test database name uses the repository root, matching the runner', () => {
+  assert.equal(testDatabaseName(), `${namespaceFor(repositoryRoot)}_test`);
+  assert.notEqual(
+    testDatabaseName(),
+    `${namespaceFor(join(repositoryRoot, 'services'))}_test`,
+  );
 });
 
 test('same-inode casing aliases select the same namespace on case-insensitive volumes', (t) => {

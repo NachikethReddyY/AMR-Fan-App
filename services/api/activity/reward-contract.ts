@@ -12,7 +12,7 @@ export const activityReward = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('not_awarded'),
     points: z.literal(0),
-    reason: z.enum(['daily_cap', 'duplicate_evidence', 'mission_ineligible']),
+    reason: z.enum(['duplicate_evidence', 'mission_ineligible']),
   }),
 ]);
 export type ActivityReward = z.infer<typeof activityReward>;

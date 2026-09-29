@@ -2,6 +2,10 @@
 
 Full feature URLs, methods and availability: [staging endpoint directory](../../docs/operations/staging-endpoints.md).
 
+The running deployment is source `36996ec95b1cc62a3c1ef583e1e30714a814efe0`.
+PR #67 head `c2aba734e0d8036fb4f83a738354ee49722ba11e` is newer and remains
+un-deployed.
+
 API base URL:
 
 `https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io`
@@ -43,7 +47,8 @@ When enabled, `POST /v1/profiles/{profileId}/activity-submissions` accepts:
   "requestId": "a UUID generated once for this submission",
   "description": "I travelled by public transport",
   "photos": [{ "mime": "image/jpeg", "base64": "..." }],
-  "missionId": null
+  "missionId": null,
+  "journeyId": null
 }
 ```
 

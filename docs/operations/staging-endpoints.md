@@ -2,8 +2,10 @@
 
 Base URL: `https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io`
 
-This inventory is checked against deployed source `36996ec`. The latest branch
-has the same HTTP handlers. Replace every `{...}` placeholder with its actual ID.
+This inventory is checked against deployed source `36996ec`. PR #67 currently
+ends at `c2aba734e0d8036fb4f83a738354ee49722ba11e`; that newer head is not
+deployed, although it keeps the same endpoint shapes. Replace every `{...}`
+placeholder with its actual ID.
 These are API request URLs: POST/PATCH/PUT/DELETE require the indicated method
 and payload, not a browser visit. Feature paths alone do not establish end-to-end
 verification.
@@ -170,4 +172,3 @@ Client/tenant IDs and deployment evidence: [Swift integration](../../deploy/azur
 RSS is hosted separately; there is no RSS/news endpoint on this API. No Swagger,
 OpenAPI, generic image-recognition endpoint or database HTTP endpoint is registered.
 The PostgreSQL host is private and is not a URL for the Swift app.
-

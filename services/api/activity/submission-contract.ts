@@ -21,6 +21,7 @@ const wire = z.strictObject({
   description: z.string(),
   photos: z.array(photo).min(1).max(MAX_SUBMISSION_PHOTOS),
   missionId: z.uuid().nullable().optional(),
+  journeyId: z.uuid().nullable().optional(),
 });
 
 export type ActivitySubmissionPhoto = z.infer<typeof photo>;
@@ -29,6 +30,7 @@ export type ActivitySubmissionInput = {
   description: string;
   photos: ActivitySubmissionPhoto[];
   missionId: string | null;
+  journeyId: string | null;
 };
 
 function decodedLength(encoded: string) {
@@ -94,5 +96,6 @@ export function parseActivitySubmission(
     description,
     photos: parsed.data.photos.map((item) => ({ ...item })),
     missionId: parsed.data.missionId?.toLowerCase() ?? null,
+    journeyId: parsed.data.journeyId?.toLowerCase() ?? null,
   };
 }

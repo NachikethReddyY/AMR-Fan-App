@@ -6,7 +6,9 @@
     "namePrefix": { "value": "amr-fan" },
     "registryName": { "value": "amrfanstaging044956" },
     "imageRepository": { "value": "amr-api" },
-    "imageDigest": { "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000" },
+    "imageDigest": {
+      "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
     "postgresAdminLogin": { "value": "amr_staging_admin" },
     "postgresAdminPassword": { "value": "REPLACE_WITH_PRIVATE_ADMIN_PASSWORD" },
     "authIssuer": { "value": "REPLACE_WITH_AUTH_ISSUER" },

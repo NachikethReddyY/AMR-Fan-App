@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { ensureAccount } from '../accounts/store.ts';
 import { createSession } from '../auth/session.ts';
 import { createDatabase } from '../database/index.ts';
@@ -12,7 +11,7 @@ import { settleAcceptedActivity } from './rewards.ts';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Owned test database required');
 
@@ -76,6 +75,7 @@ test('accepted evidence awards fixed 50 points and exact same-key replay', async
     requestId: fixture.requestId,
     payloadDigest: fixture.payloadDigest,
     missionId: null,
+    journeyId: null,
     imageHashes: [hash],
     assessment: fixture.result,
     sourceContext: 'synthetic_test',
@@ -91,6 +91,7 @@ test('accepted evidence awards fixed 50 points and exact same-key replay', async
     requestId: fixture.requestId,
     payloadDigest: fixture.payloadDigest,
     missionId: null,
+    journeyId: null,
     imageHashes: [hash],
     assessment: fixture.result,
     sourceContext: 'synthetic_test',
@@ -126,6 +127,7 @@ test('cross-profile duplicate evidence is denied without a zero ledger row', asy
     requestId: firstFixture.requestId,
     payloadDigest: firstFixture.payloadDigest,
     missionId: null,
+    journeyId: null,
     imageHashes: [hash],
     assessment: firstFixture.result,
     sourceContext: 'synthetic_test',
@@ -141,6 +143,7 @@ test('cross-profile duplicate evidence is denied without a zero ledger row', asy
     requestId: secondFixture.requestId,
     payloadDigest: secondFixture.payloadDigest,
     missionId: null,
+    journeyId: null,
     imageHashes: [hash],
     assessment: secondFixture.result,
     sourceContext: 'synthetic_test',

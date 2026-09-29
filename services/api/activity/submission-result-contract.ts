@@ -124,6 +124,7 @@ export const activitySubmissionRequestSchema = z.strictObject({
     .min(1)
     .max(5),
   missionId: z.uuid().nullable(),
+  journeyId: z.uuid().nullable().optional(),
 });
 export type ActivitySubmissionRequest = z.infer<
   typeof activitySubmissionRequestSchema

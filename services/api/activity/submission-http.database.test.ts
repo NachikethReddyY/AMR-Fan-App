@@ -2,8 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { once } from 'node:events';
-import { fileURLToPath } from 'node:url';
-import { namespaceFor } from '../../../scripts/local-db.mjs';
+import { testDatabaseName } from '../../../scripts/local-db.mjs';
 import { createDatabase } from '../database/index.ts';
 import { migrate } from '../database/migrate.ts';
 import { ensureAccount } from '../accounts/store.ts';
@@ -13,7 +12,7 @@ import sharp from 'sharp';
 if (
   process.env.NODE_ENV !== 'test' ||
   new URL(process.env.DATABASE_URL ?? 'http://invalid').pathname !==
-    `/${namespaceFor(fileURLToPath(new URL('../../', import.meta.url)))}_test`
+    `/${testDatabaseName()}`
 )
   throw new Error('Owned test database required');
 const pool = createDatabase();
@@ -42,7 +41,12 @@ before(async () => {
   await migrate(pool);
   image64 = (
     await sharp({
-      create: { width: 12, height: 8, channels: 3, background: '#004a4d' },
+      create: {
+        width: 12,
+        height: 8,
+        channels: 3,
+        background: `#${randomUUID().replaceAll('-', '').slice(0, 6)}`,
+      },
     })
       .png()
       .toBuffer()
@@ -153,6 +157,26 @@ test('injected provider accepted then GET replay', async () => {
   assert.equal(r.status, 200);
   const j = await r.json();
   assert.equal(j.kind, 'accepted');
+  // Without journeyId this versioned route owns a standalone evidence award;
+  // linked submissions share the journey settlement's preliminary accounting.
+  assert.equal(
+    (
+      await pool.query(
+        'SELECT count(*)::int AS n FROM app.photo_activity_claims WHERE profile_id=$1',
+        [a.profile.id],
+      )
+    ).rows[0].n,
+    0,
+  );
+  assert.equal(
+    (
+      await pool.query(
+        "SELECT count(*)::int AS n FROM app.points_operations WHERE profile_id=$1 AND kind='activity_evidence'",
+        [a.profile.id],
+      )
+    ).rows[0].n,
+    1,
+  );
   const g = await req(a.profile.id, a.session, 'GET', v);
   assert.equal(g.status, 200);
   assert.equal((await g.json()).kind, 'replay');

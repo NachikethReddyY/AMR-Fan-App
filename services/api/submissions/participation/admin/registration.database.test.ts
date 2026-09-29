@@ -26,6 +26,10 @@ test('actual createApi serves participation admin assets', async () => {
   );
   try {
     const base = `http://127.0.0.1:${address.port}`;
+    const assetRoot = new URL(
+      '../../../../../apps/admin/pages/participation/',
+      import.meta.url,
+    );
     for (const [path, file] of [
       ['', 'index.html'],
       ['app.js', 'app.js'],
@@ -35,7 +39,7 @@ test('actual createApi serves participation admin assets', async () => {
       assert.equal(response.status, 200);
       assert.equal(
         await response.text(),
-        await readFile(new URL(file, import.meta.url), 'utf8'),
+        await readFile(new URL(file, assetRoot), 'utf8'),
       );
       assert.equal(response.headers.get('cache-control'), 'no-store');
     }

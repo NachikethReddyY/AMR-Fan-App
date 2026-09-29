@@ -1,10 +1,10 @@
 # Photo activity server integration
 
-This branch contains only the server slice, rebased onto the PR 28 squash
-`1dd01419ef689cf6e316ef27005f3c4fbf765e5d`. The camera client is on main; PR 28
-owns its native proof. The AI assessment module is already on main from PR 45
-and has no difference here. No App, auth, dock, client tests or native dependency changes are
-part of this PR. Original client evidence remains associated with `ca71166`.
+This document describes the server slice in PR #67. The current PR head is
+`c2aba734e0d8036fb4f83a738354ee49722ba11e`. Azure staging runs the earlier
+`36996ec95b1cc62a3c1ef583e1e30714a814efe0` image; later branch changes are not
+deployed automatically. The camera client remains owned by PR 28 and its native
+proof is separate.
 
 ## Registered, disabled API
 
@@ -74,12 +74,14 @@ or UPDATE/DELETE grant is needed. Preserve schema USAGE and existing principal/p
 migration authority to the API role. Hosted upgrade must deny PUBLIC, anon and
 authenticated access under the existing deployment privilege contract.
 
-**Deployment hold:** migration 0010 and its reviewed grants must be applied before
-running this version of the existing award reader or settlement endpoint. Those
-hooks query the new table even though production photo credit is disabled. Code
-merge is not activation or deployment. With automatic deployment disabled and
-this order enforced, the missing upgrader blocks deployment, not review or merge
-of the code. The manager owns any later merge/deploy turn.
+The authorized staging migration job applied the repository migrations through
+the deployed `36996ec` revision before the API started. Migrations `0018`, which
+removes the former daily-cap index, and `0019`, which adds the optional journey
+link to versioned activity claims, are newer and remain unapplied in staging.
+The current PR head is a later local revision and has not been deployed. Code
+merge is not activation or
+deployment; the activity provider remains disabled until its separate provider,
+privacy and budget gates are satisfied.
 
 ## Accounting
 
@@ -88,7 +90,24 @@ and owned-profile lock, then journey lock, then domain receipt and points/Histor
 writes in one transaction. Global pixel-hash serialization and unique constraints
 prevent reused-image and duplicate linked-journey payment across concurrent claims.
 Same-key replay returns the receipt; different intent with the same key fails.
-A previously paid journey rejects a late photo.
+A previously paid journey rejects a late photo. The legacy photo route and the
+versioned activity route share one linked-preliminary boundary: at most one
+50-point claim may reference a journey across both routes. If either route has
+already made that preliminary claim, a second linked photo is rejected; the
+existing journey settlement then reads the one claim and pays only the
+remaining difference. This keeps the versioned route from creating a second
+accounting path for an already-linked journey.
+
+The versioned `/activity-submissions` route accepts an optional `journeyId`.
+Without it, the evidence claim is standalone. With it, only accepted
+`active_transport` evidence may link to an owned journey; the same transaction
+locks the journey, stores one preliminary claim, and leaves `journey_award_state`
+to the existing journey settlement. That settlement reads the preliminary 50
+points and credits only the remaining difference. A unique journey claim and
+cross-table image/journey checks prevent the versioned and legacy paths from
+paying the same evidence twice. Production activation remains blocked until the
+provider and action-identity gates are satisfied; database tests use only
+server-owned fixture provenance.
 
 A supported verdict with confidence strictly above 0.5 selects exactly 50 points
 in code. No daily cap exists. Settlement pays only
@@ -104,19 +123,24 @@ journey, remain explicit activation gates.
 
 ## Verification scope
 
-`pnpm activity:test` runs five policy/media tests. The separate disposable
-database runs contain nine activity tests and thirteen award tests, all without
-skips. These counts are test declarations, not assertion or scenario counts.
+`pnpm activity:test` runs the pure policy/media/contract suite. The separate
+disposable database runs contain the activity assessment, submission, mission,
+reward, accounting and journey-link regressions, all without skips. The current
+activity database command runs 43 test declarations; these counts are test
+declarations, not assertion or scenario counts.
 Disposable PostgreSQL tests in
-`services/api/activity/database.test.ts` cover replay, early/late ordering, concurrency,
+`services/api/activity/database.test.ts` and the Gate 2 suites cover replay, early/late ordering, concurrency,
 zero-clawback, ownership/revocation/demo denial, rollback, no daily cap, and the
 registered production API's unavailable/no-credit, origin and rate behavior.
-The database suite refuses any database name except `amr_photo_disposable`.
-Existing award database regressions use a second database inside the same owned
-container. No shared database is used.
+All database suites run through `scripts/local-db.mjs` and refuse any database
+name except the repository-root namespace selected by that runner. Existing
+award database regressions use the same owned disposable PostgreSQL service. No
+shared database is used.
 
-The full check and frozen install pass on the PR28 base. Source/dependency
-security checks pass with no source findings and one existing moderate advisory.
+The historical PR28 baseline passed its frozen install and full check. On the
+current local PR head, frozen install, `pnpm check`, and the focused pure and
+database suites pass; `pnpm security:check` reports no secrets or SAST findings
+and one existing moderate dependency advisory.
 The standard ZAP 2.17.0 passive crawl on the pre-PR28 server tree reported three
 informational admin-page alerts: 10024 (scanner-generated email/password query
 parameters), 10109 (modern web app) and 10111 (authentication detected). No blocking
@@ -130,13 +154,16 @@ local hook attempt failed due to a ZAP Python API mismatch; the corrected reruns
 passed. No active/browser scan or external provider ran. The pinned scanner is
 `ghcr.io/zaproxy/zaproxy@sha256:781a2bdaea47324e7bab583e2263f21d257b0aee61ed51521a5be45f5f5081ef`.
 Passive scanning does not prove authorization or accounting; the real DB tests
-provide those behavioral checks. All owned containers, networks and image tags
-were removed. Shared services were untouched.
+provide those behavioral checks. The current local verification also builds the
+hosted report, report Linux fixture, AI isolated and Azure API images from the
+repository root. Shared services were untouched.
 
 Raw evidence remains ignored under `.evidence/photo-activity/`. Native camera
-return, permission behavior and accessibility are PR 28's proof, not a claim of
-this backend PR. Live TokenRouter protocol, Luna image/retention, pricing/token
-bounds and the shared $10 hard admission cap remain unresolved. No inference,
-cloud mutation or spend is authorized by this change.
+return, permission behavior and accessibility remain unverified for this PR.
+Live Entra sign-in, Swift protected flows, provider protocol and retention,
+pricing/token bounds, report ingestion and the shared $10 hard admission cap
+remain unresolved. The hosted endpoint is observed only for health/readiness,
+anonymous rejection and public catalogue/RSS checks; no latest-PR deployment or
+live provider claim is made.
 
 Prepared by gpt-6-astra through Codex (T3 Code).
