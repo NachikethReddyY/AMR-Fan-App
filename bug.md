@@ -1444,3 +1444,13 @@ activity, sustainability points, route options, onboarding, and admin surfaces.
 Implemented locally as a guarded development fixture slice. Production AI, Render
 configuration, provider credentials, and hosted database migration remain
 unconfigured and were not activated. Tracker: PR #65, no merge requested.
+## AZURE-STAGING-001 (unlinked)
+
+Actionable request on 2026-09-29: prepare Azure-only staging infrastructure so
+the Swift client can use a hosted API, with a fresh resource group, private
+database, separate migration/runtime roles, managed identity and digest-pinned
+Container Apps. Cloud creation and deployment remain separately authorized.
+
+Observed blocker: the selected subscription rejects ACR Tasks with
+`TasksOperationsNotAllowed`, and this Windows host has no local Docker builder.
+Owner: deployment maintainer. Revisit when an approved builder is available.

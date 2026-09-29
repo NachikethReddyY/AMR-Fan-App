@@ -3063,3 +3063,21 @@ new activity or impact type errors remain. Existing impact factor-release tests
 also report a baseline digest mismatch.
 
 Implemented by gpt-6-luna through Codex (local Windows).
+## 2026-09-29: Azure staging package
+
+Prepared a no-deploy Azure package under `deploy/azure/`. It uses a new
+resource-group deployment in southeastasia, private PostgreSQL Flexible Server
+with a linked private DNS zone, Consumption Container Apps, Key Vault and a
+managed identity with ACR pull and secret-read roles. The API image is pinned
+by digest and Luna/activity assessment are explicitly disabled. The production
+Dockerfile starts `services/api/api/start.ts`; the existing DAST Dockerfile is
+unchanged. A controlled migration helper validates separate `amr_api` and
+`amr_migration_owner` inputs but fails closed until a reviewed table/column ACL
+plan is supplied; it cannot silently apply guessed broad grants.
+
+No cloud resources, database, secrets or endpoint were created. ACR Tasks was
+read-only attempted and returned `TasksOperationsNotAllowed`; local Docker is
+unavailable, so an approved external builder is still required. The selected
+Swift identity metadata remains in `deploy/azure/auth-staging.md`.
+
+Implemented by gpt-6-luna through Codex (local Windows).

@@ -28,9 +28,13 @@ Keep Swift as an independent Xcode project outside the JavaScript package graph.
 `services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
-Azure is the selected backend platform. No Azure service, deployment or auth provider
-has been selected or provisioned. The configurable account adapter and local
-setup are documented in [account operations](../operations/accounts.md). Earlier Convex plans are superseded.
+Azure is the selected backend platform. The reviewable staging package is under
+[`deploy/azure`](../../deploy/azure/README.md): it targets a new resource group
+in southeastasia, private PostgreSQL Flexible Server, Key Vault managed
+identity, and a Consumption Container Apps API. No resource has been created or
+deployed by preparing that package. The configurable account adapter and local
+setup are documented in [account operations](../operations/accounts.md). Earlier
+Convex plans are superseded.
 
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.

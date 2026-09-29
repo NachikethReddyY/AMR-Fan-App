@@ -17,7 +17,7 @@ Provisioned in customer tenant `9dcdff78-04a7-49fc-90bd-e9c7b76e4774` (`amrFanCu
 
 The native app has delegated `account.access` permission and tenant-wide admin consent (`AllPrincipals`) through the customer-tenant service principals. No client secret was created.
 
-Customer sign-up still requires an External ID user flow. Create an email/password or email one-time-passcode flow in the customer tenant, then attach the native application to that flow. Microsoft documents this at https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-user-flow-sign-up-sign-in-customers.
+The customer tenant has an External ID email/password sign-up and sign-in flow attached to the native application. Microsoft documents this flow model at https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-user-flow-sign-up-sign-in-customers.
 
 ## User flow
 - Graph flow ID: c05a2de2-bdbf-4870-acfa-ec2ded2e1357
