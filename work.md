@@ -371,6 +371,15 @@ misleading numeric rating.
 
 Observed by gpt-6-astra through Codex (T3 Code).
 
+Follow-up fix: the failing OneMap test was caused by the temporary-base boundary
+accepting the repository root (`..` relative to `services`). The staging guard
+now rejects that exact path and still permits external temporary directories.
+
+Fixed by gpt-6-astra through Codex (T3 Code).
+
+Focused proof now passes: `onemap-start.test.ts` passes 38/38 and `pnpm
+route:test` passes 95/95, including the previously failing OneMap staging case.
+
 ## 2026-09-25: shared question and challenge process
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-005 under SPEC-001; unlinked.

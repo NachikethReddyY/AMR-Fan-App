@@ -156,16 +156,12 @@ export function prepareOneMapSecret({
       throw new StartupFailure(stage, 'NONE');
     stage = 'temp_resolution';
     const root = fs.realpathSync(
-      fileURLToPath(new URL('../..', import.meta.url)),
+      fileURLToPath(new URL('../../..', import.meta.url)),
     );
     const base = fs.realpathSync(temporaryBase);
     const location = relative(root, base);
-    if (
-      !location ||
-      (location !== '..' &&
-        !location.startsWith('../') &&
-        !isAbsolute(location))
-    )
+    // Keep staged credentials outside the repository tree, including its root.
+    if (!location || (!location.startsWith('../') && !isAbsolute(location)))
       throw new StartupFailure(stage, 'NONE');
     stage = 'source_resolution';
     // Only the fixed provider-managed mount may select a target through indirection.
