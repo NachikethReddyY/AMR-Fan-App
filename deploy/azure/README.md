@@ -32,10 +32,8 @@ Tasks fallback; the selected subscription rejected that path with
    `parameters.example.json` contains placeholders only. The admin password is
    supplied only to PostgreSQL provisioning. No Luna or route-provider secret
    is part of this package.
-4. Complete and review the runtime table/column ACL plan, then use the
-   controlled, one-shot migration operation. The current helper is a
-   fail-closed refusal guard and cannot apply schema changes; do not run it as
-   a deployment step until the reviewed replacement is committed:
+4. Run the controlled, one-shot migration operation from a worker that can
+   reach the private PostgreSQL subnet:
 
    ```powershell
    .\deploy\azure\scripts\migrate.ps1 -ConfigPath C:\private\amr-azure-db.json
@@ -44,10 +42,12 @@ Tasks fallback; the selected subscription rejected that path with
    The private JSON file has `migrationDatabaseUrl` for the Azure bootstrap
    administrator `amr_staging_admin` and a random `runtimePassword` (48–128
    URL-safe characters). It must be outside the repository. The operation
-   refuses local URLs, query parameters, the runtime login, unsafe role flags,
-   and absent or changed migration history. The bootstrap administrator is not
-   the API runtime role; it creates the restricted `amr_api` login and proves
-   the runtime cannot alter schema, roles, migration history or admin fields.
+   refuses non-Azure/local URLs, query parameters, the runtime login, unsafe
+   role flags, and absent or changed migration history. It applies migrations
+   twice through the checksum ledger, creates the restricted `amr_api` login,
+   and proves normal account/profile/session writes work while schema, role,
+   migration-ledger and admin-field writes fail. The bootstrap administrator
+   never becomes the API runtime identity.
 5. After that reviewed migration operation creates and grants the runtime
    login, store its TLS URL as Key Vault secret `database-url`. The value is
    never written to this repository or printed.

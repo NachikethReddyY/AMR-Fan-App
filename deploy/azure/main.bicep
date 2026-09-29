@@ -187,9 +187,14 @@ resource apiIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-3
   location: location
 }
 
-resource vaultSecretReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(vault.id, apiIdentity.id, keyVaultSecretsUserRole)
-  scope: vault
+resource databaseSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' existing = {
+  parent: vault
+  name: 'database-url'
+}
+
+resource vaultSecretReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployApi) {
+  name: guid(databaseSecret.id, apiIdentity.id, keyVaultSecretsUserRole)
+  scope: databaseSecret
   properties: {
     roleDefinitionId: keyVaultSecretsUserRole
     principalId: apiIdentity.properties.principalId

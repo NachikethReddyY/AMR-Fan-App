@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
@@ -30,7 +30,7 @@ test('production image starts the real API and excludes local material', async (
   assert.match(ignore, /Swift-App/);
 });
 
-test('deployment helpers require traceable commits and private migration inputs', async () => {
+test('deployment helpers use private inputs and the reviewed runtime surface', async () => {
   const build = await text('deploy/azure/scripts/build-image.ps1');
   const migrate = await text('deploy/azure/scripts/migrate.ps1');
   const runner = await text('services/api/database/azure-migrate.mjs');
@@ -39,28 +39,22 @@ test('deployment helpers require traceable commits and private migration inputs'
   assert.match(build, /sha256:\[0-9a-f\]\{64\}/);
   assert.match(migrate, /outside the repository/);
   assert.match(migrate, /Remove-Item Env:AZURE_/);
-  assert.match(runner, /amr_migration_owner/);
-  assert.match(runner, /fail closed|held/i);
-  assert.match(runner, /throw new Error/);
+  assert.match(runner, /amr_staging_admin/);
+  assert.match(runner, /CREATE ROLE \$\{RUNTIME\}/);
+  assert.match(runner, /GRANT SELECT ON public\.schema_migrations/);
+  assert.match(runner, /ON CONFLICT \(issuer, subject\)/);
+  assert.match(runner, /SAVEPOINT/);
+  assert.match(runner, /inPhase/);
   assert.doesNotMatch(runner, /console\.log\(.*Password/i);
 });
 
-test('migration helper refuses before opening a database without reviewed ACLs', async () => {
+test('migration helper refuses before opening a database without credentials', async () => {
   const { spawnSync } = await import('node:child_process');
-  const result = spawnSync(
-    process.execPath,
-    ['services/api/database/azure-migrate.mjs'],
-    {
-      cwd: new URL('../', import.meta.url),
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        AZURE_MIGRATION_DATABASE_URL:
-          'postgresql://amr_migration_owner:synthetic@db.example.test:5432/postgres',
-        AZURE_RUNTIME_DATABASE_PASSWORD: 'x'.repeat(48),
-      },
-    },
-  );
+  const result = spawnSync(process.execPath, ['services/api/database/azure-migrate.mjs'], {
+    cwd: new URL('../', import.meta.url),
+    encoding: 'utf8',
+    env: { ...process.env, AZURE_MIGRATION_DATABASE_URL: '', AZURE_RUNTIME_DATABASE_PASSWORD: '' },
+  });
   assert.notEqual(result.status, 0);
-  assert.match(`${result.stderr}${result.stdout}`, /Azure migration is held/);
+  assert.match(`${result.stderr}${result.stdout}`, /Migration credentials/);
 });

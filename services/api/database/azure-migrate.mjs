@@ -1,34 +1,53 @@
 ﻿import { createHash, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import pg from 'pg';
 import { migrate } from './migrate.ts';
 
 const ADMIN = 'amr_staging_admin';
 const RUNTIME = 'amr_api';
-const ownerUrl = process.env.AZURE_MIGRATION_DATABASE_URL;
-const runtimePassword = process.env.AZURE_RUNTIME_DATABASE_PASSWORD;
+const DIGEST = (value) => createHash('sha256').update(value).digest('hex');
 
-function fail(message) {
-  throw new Error(message);
+async function inPhase(name, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    const code =
+      error && typeof error === 'object' &&
+      typeof error.code === 'string' &&
+      /^[A-Z0-9_]+$/.test(error.code)
+        ? error.code
+        : 'validation';
+    throw new Error(`${name} failed (${code})`);
+  }
 }
 
-if (!ownerUrl || !runtimePassword)
-  fail('Migration credentials must be supplied through the process environment.');
-if (!/^[A-Za-z0-9_-]{48,128}$/.test(runtimePassword))
-  fail('Runtime password must be a random 48-128 character value.');
-let parsed;
-try {
-  parsed = new URL(ownerUrl);
-} catch {
-  fail('Migration URL must be a PostgreSQL URL.');
+export function migrationConfig(env = process.env) {
+  const connectionString = env.AZURE_MIGRATION_DATABASE_URL;
+  const runtimePassword = env.AZURE_RUNTIME_DATABASE_PASSWORD;
+  if (!connectionString || !runtimePassword)
+    throw new Error('Migration credentials must be supplied through the process environment.');
+  if (!/^[A-Za-z0-9_-]{48,128}$/.test(runtimePassword))
+    throw new Error('Runtime password must be a random 48-128 character value.');
+  let url;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    throw new Error('Migration URL must be a PostgreSQL URL.');
+  }
+  if (!['postgres:', 'postgresql:'].includes(url.protocol))
+    throw new Error('Migration URL must be a PostgreSQL URL.');
+  if (url.username !== ADMIN || !url.password)
+    throw new Error(`Migration URL must use ${ADMIN} with a password.`);
+  if (url.search || url.hash)
+    throw new Error('Migration URL must not contain query or fragment parameters.');
+  if (url.pathname !== '/postgres')
+    throw new Error('Migration URL must target the fresh postgres database.');
+  if (!url.hostname.toLowerCase().endsWith('.postgres.database.azure.com'))
+    throw new Error('Migration URL must target an Azure PostgreSQL Flexible Server.');
+  return { url, runtimePassword };
 }
-if (!['postgres:', 'postgresql:'].includes(parsed.protocol))
-  fail('Migration URL must be a PostgreSQL URL.');
-if (parsed.username !== ADMIN)
-  fail(`Migration URL must use ${ADMIN}; the runtime role is not accepted.`);
-if (parsed.search || parsed.hash)
-  fail('Migration URL must not contain query or fragment parameters.');
-if (['localhost', '127.0.0.1', '::1'].includes(parsed.hostname))
-  fail('Azure migration refuses a local database URL.');
 
 function poolFor(url, applicationName) {
   return new pg.Pool({
@@ -42,7 +61,7 @@ function poolFor(url, applicationName) {
   });
 }
 
-async function roleState(client) {
+async function inspectRuntimeRole(client) {
   return (
     await client.query(
       `SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole,
@@ -53,50 +72,52 @@ async function roleState(client) {
   ).rows[0];
 }
 
-async function ensureRuntimeRole(client) {
-  const state = await roleState(client);
+async function ensureRuntimeRole(client, password) {
+  const state = await inspectRuntimeRole(client);
   if (!state) {
     await client.query(
-      `CREATE ROLE ${RUNTIME} LOGIN NOINHERIT PASSWORD ${pg.escapeLiteral(runtimePassword)}
+      `CREATE ROLE ${RUNTIME} LOGIN NOINHERIT PASSWORD ${pg.escapeLiteral(password)}
        NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
     );
-    return;
+  } else {
+    if (
+      !state.rolcanlogin ||
+      state.rolsuper ||
+      state.rolcreatedb ||
+      state.rolcreaterole ||
+      state.rolreplication ||
+      state.rolbypassrls
+    )
+      throw new Error('Existing amr_api role has unsafe privilege flags.');
+    await client.query(
+      `ALTER ROLE ${RUNTIME} LOGIN NOINHERIT PASSWORD ${pg.escapeLiteral(password)}`,
+    );
   }
-  if (
-    !state.rolcanlogin ||
-    state.rolsuper ||
-    state.rolcreatedb ||
-    state.rolcreaterole ||
-    state.rolreplication ||
-    state.rolbypassrls ||
-    state.rolinherit
-  )
-    fail('Existing amr_api role has unsafe privileges.');
-  await client.query(
-    `ALTER ROLE ${RUNTIME} LOGIN NOINHERIT PASSWORD ${pg.escapeLiteral(runtimePassword)}`,
-  );
   const memberships = await client.query(
     `SELECT 1
-       FROM pg_auth_members member
-       JOIN pg_roles granted ON granted.oid = member.roleid
-       JOIN pg_roles subject ON subject.oid = member.member
+       FROM pg_auth_members membership
+       JOIN pg_roles subject ON subject.oid = membership.member
       WHERE subject.rolname = $1`,
     [RUNTIME],
   );
-  if (memberships.rowCount) fail('Existing amr_api role has role memberships.');
+  if (memberships.rowCount) throw new Error('Existing amr_api role has role memberships.');
 }
 
-async function grantRuntimeSurface(client) {
+async function applyRuntimeGrants(client) {
   const database = (await client.query('SELECT current_database() AS name')).rows[0]
-    .name;
+    ?.name;
+  if (typeof database !== 'string' || !database)
+    throw new Error('Could not identify the migration database.');
   await client.query(`
     REVOKE CREATE ON DATABASE ${pg.escapeIdentifier(database)} FROM PUBLIC;
     REVOKE CREATE ON SCHEMA public FROM PUBLIC;
     REVOKE ALL ON SCHEMA app FROM PUBLIC, ${RUNTIME};
+    REVOKE ALL ON ALL TABLES IN SCHEMA app FROM PUBLIC;
+    REVOKE ALL ON ALL SEQUENCES IN SCHEMA app FROM PUBLIC;
+    REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA app FROM PUBLIC;
     GRANT USAGE ON SCHEMA app TO ${RUNTIME};
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app TO ${RUNTIME};
     GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app TO ${RUNTIME};
-    GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO ${RUNTIME};
     REVOKE ALL ON public.schema_migrations FROM PUBLIC, ${RUNTIME};
     GRANT SELECT ON public.schema_migrations TO ${RUNTIME};
     REVOKE INSERT, UPDATE, DELETE ON app.principals, app.role_assignments FROM ${RUNTIME};
@@ -105,51 +126,62 @@ async function grantRuntimeSurface(client) {
 }
 
 async function assertDenied(client, sql, label) {
-  await client.query('SAVEPOINT azure_privilege_probe');
+  await client.query('SAVEPOINT amr_privilege_probe');
   try {
     await client.query(sql);
-    fail(`Runtime privilege probe unexpectedly succeeded: ${label}`);
+    throw new Error(`Runtime privilege probe unexpectedly succeeded: ${label}`);
   } catch (error) {
-    if (error?.code !== '42501') fail(`Runtime privilege probe failed: ${label}`);
+    if (error?.code !== '42501') throw error;
   } finally {
-    await client.query('ROLLBACK TO SAVEPOINT azure_privilege_probe');
-    await client.query('RELEASE SAVEPOINT azure_privilege_probe');
+    await client.query('ROLLBACK TO SAVEPOINT amr_privilege_probe');
+    await client.query('RELEASE SAVEPOINT amr_privilege_probe');
   }
 }
 
-async function verifyRuntime(adminPool, runtimePool) {
-  const state = await adminPool.query(
+async function verifyRoleFlags(adminPool) {
+  const { rows } = await adminPool.query(
     `SELECT r.rolcanlogin, r.rolsuper, r.rolcreatedb, r.rolcreaterole,
-            r.rolreplication, r.rolbypassrls, r.rolinherit,
+            r.rolreplication, r.rolbypassrls,
             has_database_privilege($1, current_database(), 'CREATE') AS database_create,
             EXISTS (
               SELECT 1 FROM pg_class c
               JOIN pg_namespace n ON n.oid = c.relnamespace
               WHERE pg_get_userbyid(c.relowner) = $1
-            ) AS owns_table
+                AND (n.nspname = 'app' OR (n.nspname = 'public' AND c.relname = 'schema_migrations'))
+            ) AS owns_application_tables,
+            EXISTS (
+              SELECT 1 FROM pg_auth_members membership
+              JOIN pg_roles subject ON subject.oid = membership.member
+              WHERE subject.rolname = $1
+            ) AS has_memberships
        FROM pg_roles r WHERE r.rolname = $1`,
     [RUNTIME],
   );
-  const row = state.rows[0];
+  const role = rows[0];
   if (
-    !row ||
-    !row.rolcanlogin ||
-    row.rolsuper ||
-    row.rolcreatedb ||
-    row.rolcreaterole ||
-    row.rolreplication ||
-    row.rolbypassrls ||
-    row.rolinherit ||
-    row.database_create ||
-    row.owns_table
+    !role ||
+    !role.rolcanlogin ||
+    role.rolsuper ||
+    role.rolcreatedb ||
+    role.rolcreaterole ||
+    role.rolreplication ||
+    role.rolbypassrls ||
+    role.database_create ||
+    role.owns_application_tables ||
+    role.has_memberships
   )
-    fail('Runtime role privilege or ownership verification failed.');
+    throw new Error('Runtime role privilege or ownership verification failed.');
+}
 
+async function verifyRuntime(adminPool, runtimePool) {
+  await verifyRoleFlags(adminPool);
   const client = await runtimePool.connect();
   try {
     await client.query('BEGIN');
-    const identity = (await client.query('SELECT current_user')).rows[0].current_user;
-    if (identity !== RUNTIME) fail('Runtime smoke test connected as the wrong role.');
+    const identity = (await client.query('SELECT current_user')).rows[0]
+      ?.current_user;
+    if (identity !== RUNTIME)
+      throw new Error('Runtime smoke test connected as the wrong role.');
     const issuer = `urn:amr:azure-migration-smoke:${randomUUID()}`;
     const subject = randomUUID();
     const principal = (
@@ -166,7 +198,7 @@ async function verifyRuntime(adminPool, runtimePool) {
         [principal.id],
       )
     ).rows[0];
-    const tokenHash = createHash('sha256').update(randomUUID()).digest('hex');
+    const tokenHash = DIGEST(randomUUID());
     await client.query(
       `INSERT INTO app.sessions (token_hash, principal_id, expires_at)
        VALUES ($1, $2, now() + interval '5 minutes')`,
@@ -181,19 +213,20 @@ async function verifyRuntime(adminPool, runtimePool) {
       [principal.id],
     );
     if (readable.rowCount !== 1 || readable.rows[0].profile_id !== profile.id)
-      fail('Runtime account/profile/session smoke test failed.');
-    await assertDenied(client, 'CREATE TABLE public.azure_migration_probe(id integer)', 'public DDL');
-    await assertDenied(client, 'CREATE TABLE app.azure_migration_probe(id integer)', 'app DDL');
-    await assertDenied(client, 'CREATE ROLE azure_migration_probe', 'role creation');
+      throw new Error('Runtime account/profile/session smoke test failed.');
+
+    await assertDenied(client, 'CREATE TABLE public.amr_privilege_probe(id integer)', 'public DDL');
+    await assertDenied(client, 'CREATE TABLE app.amr_privilege_probe(id integer)', 'app DDL');
+    await assertDenied(client, 'CREATE ROLE amr_privilege_probe', 'role creation');
     await assertDenied(client, `UPDATE app.principals SET role = 'admin' WHERE false`, 'principal role write');
     await assertDenied(client, 'UPDATE app.role_assignments SET role = role WHERE false', 'role assignment write');
-    await assertDenied(client, `INSERT INTO public.schema_migrations(name, checksum) VALUES ('azure_probe.sql', 'probe')`, 'migration ledger write');
+    await assertDenied(client, `INSERT INTO public.schema_migrations(name, checksum) VALUES ('amr_privilege_probe.sql', 'probe')`, 'migration ledger write');
     await client.query('ROLLBACK');
   } catch (error) {
     try {
       await client.query('ROLLBACK');
     } catch {
-      // The connection is discarded by release below.
+      // Rollback can fail only after the connection has already been lost.
     }
     throw error;
   } finally {
@@ -201,39 +234,75 @@ async function verifyRuntime(adminPool, runtimePool) {
   }
 }
 
-const adminPool = poolFor(parsed, 'amr-azure-migration');
-const runtimeUrl = new URL(parsed.href);
-runtimeUrl.username = RUNTIME;
-runtimeUrl.password = runtimePassword;
-const runtimePool = poolFor(runtimeUrl, 'amr-api-runtime-smoke');
-try {
-  const identity = (await adminPool.query('SELECT current_user, current_database()')).rows[0];
-  if (identity?.current_user !== ADMIN) fail('Connected identity is not the Azure migration administrator.');
-  const applied = await migrate(adminPool);
-  const replayed = await migrate(adminPool);
-  if (applied !== replayed) fail('Migration replay count changed.');
-  const client = await adminPool.connect();
-  try {
-    await client.query('BEGIN');
-    await ensureRuntimeRole(client);
-    await grantRuntimeSurface(client);
-    await client.query('COMMIT');
-  } catch (error) {
+export async function runAzureMigration({ adminPool, runtimePool, runtimePassword }) {
+  const identity = await inPhase('admin identity', async () => {
+    const row = (
+      await adminPool.query('SELECT current_user, current_database()')
+    ).rows[0];
+    if (row?.current_user !== ADMIN)
+      throw new Error('Connected identity is not the Azure bootstrap administrator.');
+    await adminPool.query(`
+      REVOKE CREATE ON DATABASE ${pg.escapeIdentifier(row.current_database)} FROM PUBLIC;
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+    `);
+    return row;
+  });
+  const firstPass = await inPhase('migration', () => migrate(adminPool));
+  const secondPass = await inPhase('migration replay', () => migrate(adminPool));
+  if (firstPass !== secondPass)
+    throw new Error('Migration replay count changed.');
+
+  await inPhase('runtime role and grants', async () => {
+    const client = await adminPool.connect();
     try {
-      await client.query('ROLLBACK');
-    } catch {
-      // The connection is discarded by release below.
+      await client.query('BEGIN');
+      await ensureRuntimeRole(client, runtimePassword);
+      await applyRuntimeGrants(client);
+      await client.query('COMMIT');
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        // Connection is discarded below.
+      }
+      throw error;
+    } finally {
+      client.release(true);
     }
-    throw error;
+  });
+  await inPhase('runtime privilege smoke test', () =>
+    verifyRuntime(adminPool, runtimePool),
+  );
+  return secondPass;
+}
+
+export async function main(env = process.env) {
+  const { url, runtimePassword } = migrationConfig(env);
+  const adminPool = poolFor(url, 'amr-azure-migration');
+  const runtimeUrl = new URL(url.href);
+  runtimeUrl.username = RUNTIME;
+  runtimeUrl.password = runtimePassword;
+  const runtimePool = poolFor(runtimeUrl, 'amr-api-runtime-smoke');
+  try {
+    const applied = await runAzureMigration({
+      adminPool,
+      runtimePool,
+      runtimePassword,
+    });
+    process.stdout.write(JSON.stringify({ status: 'migrated', migrations: applied }) + '\n');
   } finally {
-    client.release(true);
+    await Promise.all([adminPool.end(), runtimePool.end()]);
   }
-  await verifyRuntime(adminPool, runtimePool);
-  process.stdout.write(JSON.stringify({ status: 'migrated', migrations: replayed }) + '\n');
-} catch {
-  // Never expose connection strings, SQL text, provider responses or passwords.
-  process.stderr.write('Azure database migration failed; no credentials or SQL details were printed.\n');
-  process.exitCode = 1;
-} finally {
-  await Promise.all([adminPool.end(), runtimePool.end()]);
+}
+
+if (
+  process.argv[1] &&
+  existsSync(resolve(process.argv[1])) &&
+  pathToFileURL(resolve(process.argv[1])).href === import.meta.url
+) {
+  main().catch((error) => {
+    const message = error instanceof Error ? error.message : 'unknown failure';
+    process.stderr.write(`Azure database migration failed: ${message}.\n`);
+    process.exitCode = 1;
+  });
 }
