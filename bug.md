@@ -1,5 +1,30 @@
 # Steering and bug inbox
 
+## SWIFT-SUSTAINABILITY-CAM-002: connect gallery proof to reviewed results (unlinked)
+
+Requested on 2026-09-29: remove the sustainability camera demo fixture path and
+let a fan choose a gallery photo that moves through backend analysis, returning
+confidence, awarded points and impact metrics. The Swift client now uses the
+gallery path only and checks photo availability before upload. The current
+server contract still returns unavailable outside its local synthetic mode, so
+backend activation and the result schema remain owned by the backend agent.
+
+Recorded by Codex through Xcode (exact model ID unavailable).
+
+## REPO-STRUCTURE-001: organize the repository into a Turbo workspace (unlinked)
+
+Requested on 2026-09-29: separate the Swift app, fan app, backend, admin app,
+shared packages and documentation. Completed the local workspace migration and
+removed the obsolete Convex placeholder. Swift remains at `Swift-App`; no RS
+directory was invented without a defined owner or purpose.
+
+Recorded by gpt-6-sol through Codex (T3 Code).
+
+Follow-up on 2026-09-29: the Home camera action had been routed to the full
+sustainability page. It now presents the camera full-screen immediately on
+devices, while simulator fallback opens Photos directly; captured media then
+enters the shared verification flow.
+
 ## SWIFT-REWARDS-003: admin assigns planting location (unlinked)
 
 The user corrected the planting rule: fans never choose a location. Redemption

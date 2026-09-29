@@ -91,6 +91,16 @@ struct BackendActivityResponse: Codable {
     let receiptId: String?
     let confidence: Double?
     let message: String?
+    let source: String?
+}
+
+private struct BackendActivityAvailability: Decodable {
+    let kind: String
+}
+
+enum PhotoCapture: String {
+    case camera
+    case gallery
 }
 
 @MainActor
@@ -138,22 +148,18 @@ final class BackendSession: ObservableObject {
         return try await client.routes(token: token, origin: origin, destination: destination)
     }
 
-    func verifyFixture() async throws -> BackendActivityResponse {
+    func verify(image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
         guard let token, let profile = realProfile else { throw BackendError.notSignedIn }
-        let result = try await client.uploadFixtureActivity(token: token, profileId: profile.id)
-        if result.creditedPoints > 0 { account = try await client.account(token: token) }
-        return result
-    }
-
-    func verify(image: UIImage, action: SustainabilityAction) async throws -> BackendActivityResponse {
-        guard let token, let profile = realProfile else { throw BackendError.notSignedIn }
+        guard try await client.activityAvailable(token: token, profileId: profile.id) else {
+            throw BackendError.verificationUnavailable
+        }
         let result = try await client.uploadActivity(
             token: token,
             profileId: profile.id,
             image: image,
-            action: action
+            capture: capture
         )
-        if result.creditedPoints > 0 { account = try await client.account(token: token) }
+        if result.creditedPoints > 0 { account = try? await client.account(token: token) }
         return result
     }
 
@@ -171,13 +177,15 @@ enum BackendError: LocalizedError {
     case invalidResponse
     case server(Int, String)
     case unsupportedImage
+    case verificationUnavailable
 
     var errorDescription: String? {
         switch self {
         case .notSignedIn: "Connect a fan account before verifying a photo."
         case .invalidResponse: "The backend returned an invalid response."
         case .server(_, let message): message
-        case .unsupportedImage: "Choose a JPEG or PNG image."
+        case .unsupportedImage: "Choose a photo smaller than 2 MB after compression."
+        case .verificationUnavailable: "Photo analysis is not available on this backend yet. Your photo was not uploaded."
         }
     }
 }
@@ -190,10 +198,6 @@ private struct ActivityRequest: Encodable {
     let description: String
     let requestId: String
     let activity: String
-}
-
-enum BackendFixture {
-    static let jpegBase64 = "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oKSj/2wBDAQcHBwoIChMKGhMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAKAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABQb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCNAEEq/9k="
 }
 
 private final class BackendClient {
@@ -223,26 +227,24 @@ private final class BackendClient {
     }
 
 
-    func uploadActivity(token: String, profileId: String, image: UIImage, action: SustainabilityAction) async throws -> BackendActivityResponse {
+    func activityAvailable(token: String, profileId: String) async throws -> Bool {
+        let response: BackendActivityAvailability = try await request(
+            path: "v1/profiles/\(profileId)/activity/availability", method: "GET", token: token, body: EmptyBody()
+        )
+        return response.kind == "available"
+    }
+
+    func uploadActivity(token: String, profileId: String, image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
         guard let data = image.jpegData(compressionQuality: 0.82) else { throw BackendError.unsupportedImage }
-        return try await uploadActivityData(token: token, profileId: profileId, data: data, action: action)
-    }
-
-    func uploadFixtureActivity(token: String, profileId: String) async throws -> BackendActivityResponse {
-        guard let data = Data(base64Encoded: BackendFixture.jpegBase64) else { throw BackendError.unsupportedImage }
-        return try await uploadActivityData(token: token, profileId: profileId, data: data, action: .publicTransport)
-    }
-
-    private func uploadActivityData(token: String, profileId: String, data: Data, action: SustainabilityAction) async throws -> BackendActivityResponse {
         guard data.count <= 2_000_000 else { throw BackendError.unsupportedImage }
         let payload = ActivityRequest(
             profileId: profileId,
-            capture: "camera",
+            capture: capture.rawValue,
             mime: "image/jpeg",
             photoBase64: data.base64EncodedString(),
-            description: action.rawValue,
+            description: "Identify the sustainable activity visible in this photo.",
             requestId: UUID().uuidString.lowercased(),
-            activity: action == .publicTransport ? "bus-trip" : "other"
+            activity: "other"
         )
         return try await request(path: "v1/profiles/\(profileId)/activity/photos", method: "POST", token: token, body: payload)
     }

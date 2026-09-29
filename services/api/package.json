@@ -3,7 +3,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node ../../server/api/start.ts",
-    "test:activity": "node --test ../../server/activity/claims.test.ts ../../server/activity/media.test.ts"
+    "start": "node api/start.ts",
+    "start:onemap": "node api/start-onemap.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:activity": "node --test activity/claims.test.ts activity/media.test.ts",
+    "test:ai": "node --test --test-concurrency=1 ai/*.test.ts",
+    "test:routes": "node --test --test-concurrency=1 routes/*.test.ts api/onemap-start.test.ts",
+    "test:awards": "node --test awards/policy.test.ts awards/readiness.test.ts awards/factors.test.ts",
+    "test:reports": "node --test --test-concurrency=1 reports/contracts.test.ts reports/extraction.test.ts reports/disabled.test.ts reports/retention.test.ts reports/storage-supabase.test.ts reports/parser-hosted.test.ts reports/hosted/service.test.ts",
+    "test": "pnpm run test:activity"
+  },
+  "dependencies": {
+    "@amr/contracts": "workspace:*",
+    "@amr/travel-domain": "workspace:*",
+    "jose": "6.2.2",
+    "pdfjs-dist": "6.3.289",
+    "pg": "8.23.0",
+    "sharp": "0.35.4",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "@types/pg": "8.23.1"
   }
 }

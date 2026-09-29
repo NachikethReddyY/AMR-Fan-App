@@ -60,13 +60,13 @@ Do not edit an applied SQL migration. Append a numbered migration after handoff.
 
 ## Server integration and test access
 
-`server/database/index.ts` exports `createDatabase({ NODE_ENV, DATABASE_URL })`
+`services/api/database/index.ts` exports `createDatabase({ NODE_ENV, DATABASE_URL })`
 and `transaction(pool, async client => result)`. A transaction checks out one
 connection, commits all statements together, rolls back failures, and returns
 or discards the connection. Put authorization and feature policy in the owning
 server operation. The helper does not grant authorization or retry an operation.
 
-`migrate(pool)` applies sorted SQL files under `server/database/migrations/`.
+`migrate(pool)` applies sorted SQL files under `services/api/database/migrations/`.
 An advisory transaction lock serializes migrations, and stored checksums reject
 changed migration contents. The initial migration creates only the `app` schema.
 `seedLocal` creates a separate `local_fixture` schema with a labelled synthetic

@@ -1,6 +1,6 @@
 # Shared AI cost storage
 
-`server/ai/postgres-cost-store.ts` implements the PR45 `AiCostStore` contract.
+`services/api/ai/postgres-cost-store.ts` implements the PR45 `AiCostStore` contract.
 It is an inactive server adapter. It does not dispatch providers or establish
 gateway prices, token bounds, account funds, or permission to spend.
 
@@ -119,7 +119,7 @@ There is no client-facing cost endpoint or account/points coupling.
 
 ## Isolated verification
 
-Run `node server/ai/testing/run-isolated.mjs` only with the coordinated heavy
+Run `node services/api/ai/testing/run-isolated.mjs` only with the coordinated heavy
 test slot. It builds from the repository's pinned Node 24 and PostgreSQL 17
 images, starts one disposable container on its own internal network, and uses
 generated credentials. It publishes no host ports, mounts no host files, and

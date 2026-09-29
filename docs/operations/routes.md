@@ -1,6 +1,6 @@
 # Server route queries
 
-The server route boundary in `server/routes/` supports the user-selected
+The server route boundary in `services/api/routes/` supports the user-selected
 Singapore-first OneMap provider and the preserved Google adapter. Both use
 existing fetch, Zod and native TypeScript tooling. Credentials, queries, provider
 bodies and geometry are not logged or sent to AI. The existing prepared-journey
@@ -8,14 +8,14 @@ flow consumes the returned snapshot without a second provider query.
 
 ## Entry point and authentication
 
-`createRouteQuery({env, googleBudget})` in `server/routes/query.ts` constructs one query function
+`createRouteQuery({env, googleBudget})` in `services/api/routes/query.ts` constructs one query function
 at API startup. It takes the actor returned by `authenticateSession` and an
 unknown request body. A null actor fails with 401 before a provider call. The
 actor is trusted server context, never a request field. Unknown fields, including
 account/profile IDs, endpoints, factors and geometry, fail validation.
 
 `POST /v1/routes/query` runs after the existing bearer session check in
-`server/api/app.ts`. Actual local HTTP tests use persisted revocable sessions in
+`services/api/api/app.ts`. Actual local HTTP tests use persisted revocable sessions in
 the worktree's isolated PostgreSQL test namespace. There is no saved query or
 cross-account query identifier to retrieve.
 
@@ -28,7 +28,7 @@ Input has `origin` and `destination`, each either a nonempty address of at most
 endpoints, normalized routes and ordered legs, per-mode outcomes, per-route
 estimates, the deterministic recommendation and factor/source metadata. A route
 success has a non-null UTC ISO-8601 `fetchedAt` string; failures have no timestamp.
-Each `RouteEvidence` in `server/routes/normalize.ts` names the exact route ID and
+Each `RouteEvidence` in `services/api/routes/normalize.ts` names the exact route ID and
 primary request mode. Its geometry is either validated returned endpoints and
 ordered decoded polyline5 points or `unavailable: missing_geometry`. Invalid
 geometry rejects that mode's response. Fixture/live provenance belongs to the
@@ -97,8 +97,8 @@ deployment authority.
 
 ### Opt-in hosted private copy
 
-`pnpm api:start:onemap` runs `server/api/start-onemap.ts`. The default
-`pnpm api:start` and `server/api/start.ts` are unchanged. This wrapper reads only
+`pnpm api:start:onemap` runs `services/api/api/start-onemap.ts`. The default
+`pnpm api:start` and `services/api/api/start.ts` are unchanged. This wrapper reads only
 `/etc/secrets/amr-onemap-access-token.txt`; there is no CLI or environment override
 for the mounted source. It accepts `AMR_ROUTES_PROVIDER=disabled` or `onemap`
 and requires a syntactically valid explicit `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT`
@@ -448,7 +448,7 @@ No official endorsement is implied. The dataset describes indicative planning
 regions, not a legal national border or a complete present-day coastline.
 
 The unmodified 1,477,466-byte GeoJSON is pinned as deterministic gzip at
-`server/routes/data/singapore-regions.geojson.gz`. Compression preserves upstream
+`services/api/routes/data/singapore-regions.geojson.gz`. Compression preserves upstream
 line endings independently of Git text conversion and formatting. Dataset period: December 2019;
 catalog revision: 3 December 2025. SHA-256:
 `2ac87b6da63c39d6311c7bc018aafddbffcfa18fd8faed09243207c9b502627d`.
@@ -486,7 +486,7 @@ their own small-iPhone Dynamic Type/VoiceOver proof; this candidate does not
 approve phone behavior or close #6/#7.
 
 Run `pnpm route:test`, `pnpm route:test:database`, `pnpm account:test:database`,
-`pnpm exec jest src/features/routes --runInBand`, `pnpm check`,
+`pnpm exec jest apps/fan/src/features/routes --runInBand`, `pnpm check`,
 `pnpm security:check` and `pnpm security:dast`. The database commands use only
 the namespace assigned to this checkout; see [local setup](local-development.md).
 The root check and CI include route unit/HTTP tests. Synthetic tests run temporary

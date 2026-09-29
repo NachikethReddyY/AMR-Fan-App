@@ -57,10 +57,10 @@ before leaving a section. Login does not create or grant an admin role.
 
 ## Verification and limits
 
-Run `node --test scripts/admin-web.test.mjs server/auth/admin-origin.test.ts
-server/auth/admin.test.mjs`, `pnpm check`, `pnpm security:check` and the isolated
+Run `node --test scripts/admin-web.test.mjs services/api/auth/admin-origin.test.ts
+services/api/auth/admin.test.mjs`, `pnpm check`, `pnpm security:check` and the isolated
 `pnpm security:dast`. Database authorization checks include
-`server/submissions/participation/admin/registration.database.test.ts` against
+`services/api/submissions/participation/admin/registration.database.test.ts` against
 an owned disposable database. Browser checks use synthetic identities and the
 actual API and prove navigation, fan rejection, assigned-admin reads and logout.
 

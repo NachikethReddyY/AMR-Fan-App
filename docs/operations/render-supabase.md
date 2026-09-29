@@ -305,7 +305,7 @@ redirect fixture without real credentials.
 
 ## Email/password administration
 
-All four existing admin screens share `server/auth/admin.js`, served only at
+All four existing admin screens share `services/api/auth/admin.js`, served only at
 `/auth/admin.js`. The public config endpoint exposes the fixed project URL and a
 new `sb_publishable_` key only when Supabase auth is selected; secret/legacy keys
 refuse startup. The helper submits passwords directly to the fixed Supabase
@@ -397,5 +397,5 @@ cleared, local/session storage stayed empty and no runtime errors appeared.
 This proves client behavior with synthetic responses. Real PostgreSQL API tests
 separately prove server-owned roles, identity replay and production auth guards.
 Live Supabase authentication/storage and full accessibility auditing remain
-unverified. All owned browser/server/database fixtures were closed and removed;
+unverified. All owned browser/services/api/database fixtures were closed and removed;
 the retained shared PostgreSQL service and Supabase local link were untouched.

@@ -3,85 +3,40 @@ import SwiftUI
 import UIKit
 
 struct SustainabilityCamScreen: View {
-    @Binding var demoState: DemoFanState
+    var initialImage: UIImage? = nil
+    var openGalleryOnAppear = false
     @EnvironmentObject private var backend: BackendSession
-    @State private var selectedAction: SustainabilityAction = .publicTransport
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var capturedImage: UIImage?
+    @State private var selectedImage: UIImage?
+    @State private var pendingCameraImage: UIImage?
     @State private var showCamera = false
     @State private var showCameraUnavailable = false
-    @State private var isLoadingPhoto = false
+    @State private var isProcessing = false
     @State private var verificationState: PhotoVerificationState = .ready
-    @State private var lastCreditedPoints = 0
-    @State private var detectedObject: String?
+    @State private var didAutoOpenCamera = false
+    @State private var showPhotoPicker = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 SectionHeader(
-                    title: "Sustainability cam.",
-                    description: "Capture the everyday choices that make a difference."
+                    title: "Camera",
+                    description: "Take a photo or choose one from Photos."
                 )
-
-                FeatureCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Label("CHOOSE AN ACTION", systemImage: "leaf.fill")
-                            .font(.caption.bold())
-                            .foregroundStyle(FanStyle.teal)
-
-                        Text("What are you doing today?")
-                            .font(.title3.bold())
-
-                        ForEach(SustainabilityAction.allCases) { action in
-                            Button {
-                                selectedAction = action
-                                verificationState = .ready
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: action.symbol)
-                                        .frame(width: 24)
-                                        .foregroundStyle(selectedAction == action ? FanStyle.teal : FanStyle.muted)
-                                    Text(action.rawValue)
-                                    Spacer()
-                                    if selectedAction == action {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(FanStyle.teal)
-                                    }
-                                }
-                                .foregroundStyle(.white)
-                                .padding(14)
-                                .background(
-                                    selectedAction == action ? FanStyle.darkTeal : FanStyle.background,
-                                    in: RoundedRectangle(cornerRadius: 14)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .strokeBorder(selectedAction == action ? FanStyle.teal : .white.opacity(0.08))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Text("For public transport, use a photo taken inside a bus or train showing seats, doors, or railings. Recycling verification is a future feature.")
-                            .font(.footnote)
-                            .foregroundStyle(FanStyle.muted)
-                    }
-                }
 
                 FeatureCard {
                     VStack(alignment: .leading, spacing: 16) {
                         Label("ADD PROOF", systemImage: "camera.fill")
                             .font(.caption.bold())
                             .foregroundStyle(FanStyle.teal)
-
-                        if let capturedImage {
-                            Image(uiImage: capturedImage)
+                        if let selectedImage {
+                            Image(uiImage: selectedImage)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 220)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .accessibilityLabel("Photo of your sustainability action")
+                                .accessibilityLabel("Selected proof photo")
                         } else {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 48))
@@ -90,85 +45,41 @@ struct SustainabilityCamScreen: View {
                                 .frame(height: 180)
                                 .background(FanStyle.background, in: RoundedRectangle(cornerRadius: 16))
                         }
-
-                        Button {
-                            selectedAction = .publicTransport
-                            Task {
-                                isLoadingPhoto = true
-                                verificationState = .uploading
-                                defer { isLoadingPhoto = false }
-                                do {
-                                    let result = try await backend.verifyFixture()
-                                    lastCreditedPoints = result.creditedPoints
-                                    detectedObject = result.object
-                                    verificationState = result.kind == .verified ? .verified : .failed(result.message ?? "The fixture was not accepted.")
-                                } catch {
-                                    verificationState = .failed(error.localizedDescription)
-                                }
-                            }
-                        } label: {
-                            Label("Try backend sample", systemImage: "bolt.horizontal.circle")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(SustainabilityActionButtonStyle())
-
                         HStack(spacing: 10) {
                             Button {
-                                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-                                    showCameraUnavailable = true
-                                    return
-                                }
-                                showCamera = true
+                                openCamera()
                             } label: {
                                 Label("Take photo", systemImage: "camera.fill")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(SustainabilityActionButtonStyle())
 
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images, preferredItemEncoding: .automatic) {
                                 Label("Choose photo", systemImage: "photo.on.rectangle")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(SustainabilityActionButtonStyle())
                         }
-
-                        Text("Photos are sent transiently to the connected backend. The sample is a clearly labelled local fixture; arbitrary photos receive no points until a reviewed vision provider is enabled.")
+                        .disabled(isProcessing)
+                        Text("When analysis is available, your selected photo is sent to the backend for review. The app does not save it.")
                             .font(.footnote)
                             .foregroundStyle(FanStyle.muted)
                     }
                 }
 
-                if isLoadingPhoto {
-                    ProgressView("Checking photo…")
-                        .tint(FanStyle.teal)
-                } else if case .verified = verificationState {
+                if isProcessing {
                     FeatureCard {
-                        Label("+\(lastCreditedPoints) Green Points added", systemImage: "checkmark.seal.fill")
-                            .font(.headline)
-                            .foregroundStyle(FanStyle.teal)
-                        if let detectedObject {
-                            Text("Detected: \(detectedObject)")
-                                .font(.subheadline)
+                        VStack(alignment: .leading, spacing: 14) {
+                            Label("ANALYSING PHOTO", systemImage: "sparkles")
+                                .font(.caption.bold())
+                                .foregroundStyle(FanStyle.teal)
+                            ProgressView().tint(FanStyle.teal)
+                            Text("Checking your proof with the sustainability service…")
                                 .foregroundStyle(FanStyle.muted)
                         }
                     }
-                } else if case .rejected = verificationState {
-                    FeatureCard {
-                        Label("0 Green Points awarded", systemImage: "xmark.seal.fill")
-                            .font(.headline)
-                            .foregroundStyle(.orange)
-                        Text("The selected sustainable action could not be confirmed.")
-                            .font(.subheadline)
-                            .foregroundStyle(FanStyle.muted)
-                    }
-                } else if case .failed(let message) = verificationState {
-                    FeatureCard {
-                        Label("Verification unavailable", systemImage: "wifi.exclamationmark")
-                            .font(.headline)
-                        Text(message)
-                            .font(.subheadline)
-                            .foregroundStyle(FanStyle.muted)
-                    }
+                } else {
+                    resultCard
                 }
             }
             .padding(22)
@@ -178,9 +89,14 @@ struct SustainabilityCamScreen: View {
         }
         .scrollIndicators(.hidden)
         .background(FanStyle.background)
-        .sheet(isPresented: $showCamera) {
+        .sheet(isPresented: $showCamera, onDismiss: {
+            if let image = pendingCameraImage {
+                pendingCameraImage = nil
+                Task { await verify(image, capture: .camera) }
+            }
+        }) {
             CameraPicker { image in
-                Task { await verify(image) }
+                pendingCameraImage = image
                 showCamera = false
             }
             .ignoresSafeArea()
@@ -190,38 +106,102 @@ struct SustainabilityCamScreen: View {
         } message: {
             Text("Choose a photo from your library instead.")
         }
-        .task(id: selectedPhotoItem) {
-            await loadSelectedPhoto()
+        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images, preferredItemEncoding: .automatic)
+        .task(id: selectedPhotoItem) { await loadSelectedPhoto() }
+        .onAppear {
+            guard !didAutoOpenCamera else { return }
+            didAutoOpenCamera = true
+            if let initialImage {
+                selectedImage = initialImage
+                Task { await verify(initialImage, capture: .camera) }
+            } else if openGalleryOnAppear {
+                showPhotoPicker = true
+            }
+        }
+    }
+
+    private func openCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showCameraUnavailable = true
+            return
+        }
+        showCamera = true
+    }
+
+    @ViewBuilder private var resultCard: some View {
+        switch verificationState {
+        case .ready:
+            EmptyView()
+        case .verified(let result):
+            FeatureCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("VERIFIED", systemImage: "checkmark.seal.fill")
+                        .font(.caption.bold())
+                        .foregroundStyle(FanStyle.teal)
+                    Text("+\(result.creditedPoints) Green Points")
+                        .font(.title2.bold())
+                    if let object = result.object { Text(object.capitalized).foregroundStyle(FanStyle.muted) }
+                    if let confidence = result.confidence {
+                        Text("Confidence \(confidence, format: .percent.precision(.fractionLength(0)))")
+                            .foregroundStyle(FanStyle.muted)
+                    }
+                    if let message = result.message {
+                        Text(message).font(.footnote).foregroundStyle(FanStyle.muted)
+                    }
+                }
+            }
+        case .rejected(let result):
+            FeatureCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("NOT VERIFIED", systemImage: "xmark.seal.fill")
+                        .font(.caption.bold())
+                        .foregroundStyle(.orange)
+                    Text("No Green Points awarded").font(.title3.bold())
+                    Text(result.message ?? "The photo did not provide enough evidence for this action.")
+                        .foregroundStyle(FanStyle.muted)
+                }
+            }
+        case .failed(let message):
+            FeatureCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("VERIFICATION UNAVAILABLE", systemImage: "wifi.exclamationmark")
+                        .font(.caption.bold())
+                    Text(message).foregroundStyle(FanStyle.muted)
+                }
+            }
         }
     }
 
     private func loadSelectedPhoto() async {
         guard let selectedPhotoItem else { return }
-        isLoadingPhoto = true
-        defer { isLoadingPhoto = false }
-
-        guard let data = try? await selectedPhotoItem.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return }
-        await verify(image)
+        isProcessing = true
+        verificationState = .ready
+        selectedImage = nil
+        defer { isProcessing = false }
+        do {
+            guard let data = try await selectedPhotoItem.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                verificationState = .failed("The selected photo could not be read. Choose another image.")
+                return
+            }
+            guard !Task.isCancelled else { return }
+            await verify(image, capture: .gallery)
+        } catch {
+            verificationState = .failed(error.localizedDescription)
+        }
     }
 
-    private func verify(_ image: UIImage) async {
-        capturedImage = image
-        isLoadingPhoto = true
-        defer { isLoadingPhoto = false }
-        verificationState = .uploading
-
+    private func verify(_ image: UIImage, capture: PhotoCapture) async {
+        selectedImage = image
+        isProcessing = true
+        verificationState = .ready
+        defer { isProcessing = false }
         do {
-            let result = try await backend.verify(image: image, action: selectedAction)
-            lastCreditedPoints = result.creditedPoints
-            detectedObject = result.object
+            let result = try await backend.verify(image: image, capture: capture)
             switch result.kind {
-            case .verified:
-                verificationState = .verified
-            case .rejected:
-                verificationState = .rejected
-            case .unavailable:
-                verificationState = .failed(result.message ?? "Photo verification is unavailable.")
+            case .verified: verificationState = .verified(result)
+            case .rejected: verificationState = .rejected(result)
+            case .unavailable: verificationState = .failed(result.message ?? "Photo verification is unavailable.")
             }
         } catch {
             verificationState = .failed(error.localizedDescription)
@@ -231,9 +211,8 @@ struct SustainabilityCamScreen: View {
 
 private enum PhotoVerificationState {
     case ready
-    case uploading
-    case verified
-    case rejected
+    case verified(BackendActivityResponse)
+    case rejected(BackendActivityResponse)
     case failed(String)
 }
 
@@ -249,7 +228,7 @@ private struct SustainabilityActionButtonStyle: ButtonStyle {
     }
 }
 
-private struct CameraPicker: UIViewControllerRepresentable {
+struct CameraPicker: UIViewControllerRepresentable {
     let onImagePicked: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -294,7 +273,7 @@ private struct CameraPicker: UIViewControllerRepresentable {
 }
 
 #Preview {
-    SustainabilityCamScreen(demoState: .constant(DemoFanState()))
+    SustainabilityCamScreen()
         .environmentObject(BackendSession())
         .preferredColorScheme(.dark)
 }

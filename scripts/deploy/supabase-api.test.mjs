@@ -6,17 +6,17 @@ import { once } from 'node:events';
 import { createServer } from 'node:http';
 import pg from 'pg';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { createApi } from '../../server/api/app.ts';
+import { createApi } from '../../services/api/api/app.ts';
 import {
   createSupabaseVerifier,
   SUPABASE_ISSUER,
   SUPABASE_URL,
-} from '../../server/auth/supabase.ts';
-import { passwordSession } from '../../server/auth/admin.js';
+} from '../../services/api/auth/supabase.ts';
+import { passwordSession } from '../../services/api/auth/admin.js';
 import { bootstrapDatabase } from './supabase-database.mjs';
-import { createJourneyService } from '../../server/journeys/store.ts';
-import { routeFixture } from '../../server/journeys/fixtures.ts';
-import { readJourneyAward } from '../../server/awards/store.ts';
+import { createJourneyService } from '../../services/api/journeys/store.ts';
+import { routeFixture } from '../../services/api/journeys/fixtures.ts';
+import { readJourneyAward } from '../../services/api/awards/store.ts';
 if (process.env.AMR_OPS123_DISPOSABLE !== 'true')
   throw new Error('Owned disposable fixture only.');
 const targetCount = process.env.AMR_OPS123_SCHEMA_ONLY === 'true' ? 12 : 10;

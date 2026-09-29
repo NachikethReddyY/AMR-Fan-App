@@ -56,7 +56,7 @@ jobs:
       - run: pnpm rewards:test:database
       - name: Build the pinned offline report parser
         run: |
-          docker build --tag amr-report-parser:ci --iidfile "$RUNNER_TEMP/report-parser-image" -f server/reports/Dockerfile .
+          docker build --tag amr-report-parser:ci --iidfile "$RUNNER_TEMP/report-parser-image" -f services/api/reports/Dockerfile .
           echo "REPORT_PARSER_IMAGE=$(cat "$RUNNER_TEMP/report-parser-image")" >> "$GITHUB_ENV"
           node --input-type=module -e 'import {namespaceFor} from "./scripts/local-db.mjs"; import {appendFileSync} from "node:fs"; appendFileSync(process.env.GITHUB_ENV, "REPORT_TEST_STORAGE="+process.env.RUNNER_TEMP+"/"+namespaceFor(process.cwd())+"/test\n");'
       - run: pnpm reports:test:container

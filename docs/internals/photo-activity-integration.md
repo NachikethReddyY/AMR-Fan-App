@@ -8,7 +8,7 @@ part of this PR. Original client evidence remains associated with `ca71166`.
 
 ## Registered, disabled API
 
-`server/api/app.ts` constructs `createPhotoHandler(pool)` once and dispatches it
+`services/api/api/app.ts` constructs `createPhotoHandler(pool)` once and dispatches it
 after the existing global rate/origin checks and bearer extraction. The handler
 validates the profile UUID, authenticates the server session and checks ownership.
 Demo profiles are rejected. It exposes:
@@ -28,7 +28,7 @@ a client-supplied photo, points amount or verdict cannot trigger assessment.
 
 ## Offline decoder
 
-`server/activity/media.ts` uses exact sharp 0.35.4 (Node >=20.9, compatible with
+`services/api/activity/media.ts` uses exact sharp 0.35.4 (Node >=20.9, compatible with
 Node24). It accepts JPEG/PNG signatures, at most 2 MB input, one frame and 16 MP,
 with one decode at a time per process and no Sharp cache. It hashes normalized
 pixels before bounded JPEG output, strips metadata, and clears owned byte buffers
@@ -108,7 +108,7 @@ journey, remain explicit activation gates.
 database runs contain nine activity tests and thirteen award tests, all without
 skips. These counts are test declarations, not assertion or scenario counts.
 Disposable PostgreSQL tests in
-`server/activity/database.test.ts` cover replay, early/late ordering, concurrency,
+`services/api/activity/database.test.ts` cover replay, early/late ordering, concurrency,
 zero-clawback, ownership/revocation/demo denial, rollback, no daily cap, and the
 registered production API's unavailable/no-credit, origin and rate behavior.
 The database suite refuses any database name except `amr_photo_disposable`.

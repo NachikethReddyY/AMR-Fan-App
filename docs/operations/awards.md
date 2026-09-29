@@ -166,11 +166,11 @@ future rule publication. Neither child is implemented here.
 
 ## Registered API and checks
 
-Owned runtime files are `server/awards/contracts.ts`, `decimal.ts`, `policy.ts`,
+Owned runtime files are `services/api/awards/contracts.ts`, `decimal.ts`, `policy.ts`,
 `operation.ts`, `store.ts` and `http.ts`; test-only files are `policy.test.ts`,
 `awards.test.ts`, `http.test.ts`, `testing/fixtures.ts`, `testing/service.ts`,
 `testing/api-process.ts` and `testing/registered-api.test.ts`.
-The only schema addition is `server/database/migrations/0008_journey_awards.sql`.
+The only schema addition is `services/api/database/migrations/0008_journey_awards.sql`.
 
 The shared API registers only the public handler:
 

@@ -147,8 +147,6 @@ private struct CatalogProductCard: View {
                 .font(.subheadline.bold())
             HStack {
                 Text(product.isAvailable ? "In stock" : "Currently unavailable")
-                Spacer()
-                Text("Green Points offer")
             }
                 .font(.caption.bold())
                 .foregroundStyle(FanStyle.teal)

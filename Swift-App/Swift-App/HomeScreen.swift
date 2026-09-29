@@ -4,6 +4,7 @@ struct HomeScreen: View {
     let driver: Driver
     let demoState: DemoFanState
     let open: (FanDestination) -> Void
+    let openCamera: () -> Void
     @State private var appeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -58,7 +59,7 @@ struct HomeScreen: View {
                         HStack {
                             quickAction("newspaper.fill", label: "News", page: .news)
                             Spacer()
-                            quickAction("camera.fill", label: "Sustainability", page: .sustainabilityCam)
+                            quickCameraAction
                             Spacer()
                             quickAction("flag.checkered", label: "Challenges", page: .challenges)
                         }
@@ -120,6 +121,21 @@ struct HomeScreen: View {
         }
         .buttonStyle(FanPressStyle())
         .accessibilityLabel(label)
+        .contentShape(Rectangle())
+        .frame(minWidth: 84, minHeight: 92)
+    }
+
+    private var quickCameraAction: some View {
+        Button(action: openCamera) {
+            VStack(spacing: 7) {
+                CircleIcon(symbol: "camera.fill", size: 66)
+                Text("Camera")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(FanStyle.muted)
+            }
+        }
+        .buttonStyle(FanPressStyle())
+        .accessibilityLabel("Camera")
         .contentShape(Rectangle())
         .frame(minWidth: 84, minHeight: 92)
     }

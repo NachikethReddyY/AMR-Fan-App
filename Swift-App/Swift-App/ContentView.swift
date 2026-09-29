@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @AppStorage("supportedDriver") private var supportedDriver = ""
@@ -7,6 +8,9 @@ struct ContentView: View {
     @State private var destination: FanDestination?
     @State private var pushedDestination: FanDestination?
     @State private var showShop = false
+    @State private var showCameraCapture = false
+    @State private var capturedCameraImage: UIImage?
+    @State private var openGalleryOnAppear = false
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
@@ -35,7 +39,7 @@ struct ContentView: View {
                     Group {
                         switch selectedTab {
                         case .home:
-                            HomeScreen(driver: driver, demoState: demoState, open: openPage)
+                            HomeScreen(driver: driver, demoState: demoState, open: openPage, openCamera: openCamera)
                         case .rewards:
                             RewardsScreen(driver: driver, demoState: $demoState, open: openPage)
                         case .impact:
@@ -112,6 +116,18 @@ struct ContentView: View {
             }
             .preferredColorScheme(.dark)
         }
+        .fullScreenCover(isPresented: $showCameraCapture, onDismiss: {
+            if capturedCameraImage != nil {
+                openGalleryOnAppear = false
+                destination = .sustainabilityCam
+            }
+        }) {
+            CameraPicker { image in
+                capturedCameraImage = image
+                showCameraCapture = false
+            }
+            .ignoresSafeArea()
+        }
     }
 
     private func selectTab(_ tab: FanTab) {
@@ -136,6 +152,16 @@ struct ContentView: View {
         }
     }
 
+    private func openCamera() {
+        capturedCameraImage = nil
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showCameraCapture = true
+        } else {
+            openGalleryOnAppear = true
+            destination = .sustainabilityCam
+        }
+    }
+
     @ViewBuilder
     private func destinationView(for page: FanDestination) -> some View {
         switch page {
@@ -153,7 +179,7 @@ struct ContentView: View {
             EditorialScreen(title: "The Paddock.", symbol: "sparkles.tv",
                             description: "Exclusive stories are coming soon.")
         case .sustainabilityCam:
-            SustainabilityCamScreen(demoState: $demoState)
+            SustainabilityCamScreen(initialImage: capturedCameraImage, openGalleryOnAppear: openGalleryOnAppear)
         case .travel:
             TravelScreen()
         case .challenges:

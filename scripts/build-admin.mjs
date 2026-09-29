@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -50,12 +50,20 @@ export async function buildAdmin(destination) {
     for (const file of files) {
       const target = resolve(destination, 'admin', section, file);
       await mkdir(dirname(target), { recursive: true });
-      await copyFile(resolve(root, 'server', source, 'admin', file), target);
+      await copyFile(
+        resolve(
+          root,
+          'apps/admin/pages',
+          source === 'submissions/participation' ? 'participation' : source,
+          file,
+        ),
+        target,
+      );
     }
   }
   await mkdir(resolve(destination, 'auth'), { recursive: true });
   await copyFile(
-    resolve(root, 'server/auth/admin.js'),
+    resolve(root, 'services/api/auth/admin.js'),
     resolve(destination, 'auth/admin.js'),
   );
   const config = {
@@ -94,6 +102,8 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   const destination = resolve(process.argv[2] ?? 'dist/admin-vercel');
+  if (process.argv[2] === undefined)
+    await rm(destination, { recursive: true, force: true });
   await buildAdmin(destination);
   console.log(`Admin public assets built in ${destination}`);
 }

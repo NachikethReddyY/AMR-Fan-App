@@ -1,5 +1,28 @@
 # Work record
 
+## 2026-09-29: gallery-first sustainability verification flow
+
+Tracking: SWIFT-SUSTAINABILITY-CAM-002, unlinked. Removed the visible backend
+sample fixture from the Swift sustainability screen. Fans can select a gallery
+image or take a photo, see an analysing state, and receive verified,
+rejected or unavailable result states. The client sends `capture: gallery`,
+checks `/activity/availability` first, limits image payloads to 2 MB and renders
+server confidence/object/message fields when present. Server points are not
+added to the local demo balance.
+
+Focused Xcode diagnostics and `BuildProject` pass. Device/gallery interaction is
+unverified because device automation was not authorized. The current backend
+returns unavailable outside local synthetic mode; no real confidence,
+emissions, or points result can be claimed until the backend agent enables a
+reviewed provider and response contract.
+
+Implemented by Codex through Xcode (exact model ID unavailable).
+
+Follow-up: split the Home camera entry from the sustainability destination.
+Home Camera now presents the live camera directly on camera-capable devices;
+the simulator falls back to Photos, and the resulting image enters the same
+backend verification path. Focused diagnostics and the Xcode build pass.
+
 ## 2026-09-28: remove fan-selected planting locations
 
 Tracking: SWIFT-REWARDS-003, unlinked. Removed location selection from the
@@ -111,11 +134,28 @@ keys, account-wide billing, taxes or currency effects. Root owns review/deployme
 
 Implemented by gpt-6-astra through Codex (T3 Code).
 
+## 2026-09-29: organize the Turbo workspace
+
+Moved the React fan app to `apps/fan`, the backend to `services/api`, and the
+admin pages to `apps/admin/pages`. Added `packages/contracts` and
+`packages/travel-domain`, removed the superseded Convex placeholder, and updated
+workspace scripts, deployment paths and documentation. Swift remains in
+`Swift-App` because it is an independent Xcode target. The requested RS area was
+not added because its ownership and purpose were not defined.
+
+Verified with frozen install, Turbo workspace checks, fan tests and export, API
+typecheck and focused suites, admin build/tests, participation, AI, tooling,
+formatting and agents checks. Docker DAST and database-backed suites remain
+unverified because the local Docker socket and private database configuration
+are unavailable.
+
+Implemented by gpt-6-sol through Codex (T3 Code).
+
 ## 2026-09-27: labelled illustrative test data
 
 Tracking: TEST-DATA-001, unlinked. Root approved a data-only slice on
 `feat/labelled-test-data`, based on `7754117`. The public
-[getTestDataView()](src/features/test-data/index.ts) export takes no arguments and
+[getTestDataView()](apps/fan/src/features/test-data/index.ts) export takes no arguments and
 returns a deeply readonly display type with string leaves: label, notice,
 summary, activity, rewards, travelNotice and travel. It uses no account hooks,
 session selection, callbacks, API requests, storage or provider objects. Each

@@ -34,3 +34,6 @@ xcuserdata/
 .claude/settings.local.json
 .pi/sessions/
 TODO.md
+
+# Turborepo cache
+.turbo/

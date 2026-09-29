@@ -17,8 +17,8 @@ report is shipped. The [award rules](../features/05-points-and-history.md) retai
 | Ledger integration | Passed, synthetic journeys with retained factors | 60 distinct isolated PostgreSQL/HTTP scenarios across initial and corrected runs | Includes explicit CAG CO2 credit/replay, current-client default decoding and 9 photo regressions; no physical calibration claim. |
 
 The exact dataset and source limitations are retained in
-[the factor evidence note](../../server/awards/factors/cag-surface-access-co2-v1.md)
-and [configuration](../../server/awards/factors/cag-surface-access-co2-v1.json).
+[the factor evidence note](../../services/api/awards/factors/cag-surface-access-co2-v1.md)
+and [configuration](../../services/api/awards/factors/cag-surface-access-co2-v1.json).
 CAG publishes .1901 car per vehicle-km, .0441 bus and .0578 MRT per passenger-km.
 These values numerically match EPA's CO2 column after mile-to-kilometre conversion.
 CAG's table says CO2e while its methodology focuses on CO2. The application uses
@@ -61,7 +61,7 @@ Do not tune them merely to make one trip pass. For each mode proposed for releas
    GPS consistency must never be described as proof of bus/train use.
 
 Produce one concise JSON report per physical platform matching
-`physicalReportSchema` in `server/awards/readiness.ts`. Include observations,
+`physicalReportSchema` in `services/api/awards/readiness.ts`. Include observations,
 counts, failed cases, corrective actions and accepted limits in `findings`.
 The reviewer must accept the observations for the exact policy, distance method
 and every released mode. No new raw-report format is required beyond this small
@@ -90,7 +90,7 @@ approved unique factors, exact unit conversion, the declared single-occupant
 baseline, gas basis, fingerprint and the factor review file bytes. With no explicit
 configuration, both API and journey service preserve legacy indicative responses.
 After the compatible native client reaches main, a reviewed deployment may set
-`JOURNEY_FACTOR_RELEASE_FILE` to `server/awards/factors/cag-surface-access-co2-v1.json`.
+`JOURNEY_FACTOR_RELEASE_FILE` to `services/api/awards/factors/cag-surface-access-co2-v1.json`.
 There is no automatic activation or new flag. A configured physical release supplies
 its own factors; an explicit factor file must match any configured physical release.
 If both files are configured, their factor datasets must match. Physical release

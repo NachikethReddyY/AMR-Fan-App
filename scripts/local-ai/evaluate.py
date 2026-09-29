@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     if args.output.exists(): raise SystemExit('Refusing to overwrite evaluation evidence')
-    fixtures=json.loads((ROOT/f'server/ai/evaluation/laya-{args.split}.json').read_text())
+    fixtures=json.loads((ROOT/f'services/api/ai/evaluation/laya-{args.split}.json').read_text())
     health,_,_=request('/health')
     results=[]
     for fixture in fixtures:

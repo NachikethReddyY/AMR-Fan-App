@@ -80,9 +80,9 @@ instead of reopening that account. Network failures hide account data and offer
 retry; invalid/expired sessions return to sign-in. Switching demo/real stores a
 local preference without changing ownership.
 
-Issue #5 uses `transaction(pool, client => ...)` from `server/database/index.ts`
+Issue #5 uses `transaction(pool, client => ...)` from `services/api/database/index.ts`
 and `lockOwnedProfile(client, verifiedPrincipalId, profileId)` from
-`server/accounts/store.ts`. The latter enforces ownership and takes `FOR UPDATE`.
+`services/api/accounts/store.ts`. The latter enforces ownership and takes `FOR UPDATE`.
 The accounting module must keep balance, History, idempotency and outcomes in
 that same transaction. This slice has no award, spend, reset or ledger API.
 A role is read from PostgreSQL on every request; a client badge grants nothing.
@@ -90,11 +90,11 @@ An admin role alone does not bypass personal profile reads or writes.
 
 ## Authorized role assignment
 
-A maintainer with server/database setup access can assign an already-created
+A maintainer with services/api/database setup access can assign an already-created
 principal, with a reason, using:
 
 ```sh
-pnpm db:run -- node server/accounts/assign-role.ts <principal-uuid> admin "<authorized reason>"
+pnpm db:run -- node services/api/accounts/assign-role.ts <principal-uuid> admin "<authorized reason>"
 ```
 
 Use `fan` to revoke that role. The assignment and reason are recorded atomically.

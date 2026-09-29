@@ -160,7 +160,10 @@ export async function bootstrapDatabase(pool, runtimePassword, options = {}) {
   const migrations = await Promise.all(
     migrationNames.slice(0, targetCount).map(async (name) => {
       const sql = await readFile(
-        new URL(`../../server/database/migrations/${name}`, import.meta.url),
+        new URL(
+          `../../services/api/database/migrations/${name}`,
+          import.meta.url,
+        ),
         'utf8',
       );
       return { name, sql, checksum: digest(sql) };

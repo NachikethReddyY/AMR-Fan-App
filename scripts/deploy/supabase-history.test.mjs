@@ -4,7 +4,10 @@ import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { bootstrapDatabase } from './supabase-database.mjs';
 
-const directory = new URL('../../server/database/migrations/', import.meta.url);
+const directory = new URL(
+  '../../services/api/database/migrations/',
+  import.meta.url,
+);
 const history = await Promise.all(
   (await readdir(directory))
     .filter((name) => /^\d{4}_.*\.sql$/.test(name))

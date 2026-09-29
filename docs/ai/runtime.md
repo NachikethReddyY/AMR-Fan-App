@@ -7,7 +7,7 @@ cannot publish, grant access, award points, change balances or discard reports.
 
 ## Server interface
 
-Create one `createAi` instance per backend process from `server/ai/index.ts`.
+Create one `createAi` instance per backend process from `services/api/ai/index.ts`.
 Pass only explicit server configuration; never spread `process.env` or place a
 credential in `EXPO_PUBLIC_*`. Configuration errors return a fixed message.
 
@@ -69,7 +69,7 @@ The later [gateway verification](gateway-contract.md) establishes the Jev gatewa
 request path, displayed tiered rates and the existing AMR key quota. Full response,
 image and billing bounds remain unresolved; this preparation stays disabled.
 
-`server/ai/tokenrouter.ts` exports `createTokenRouter(configuration)` separately
+`services/api/ai/tokenrouter.ts` exports `createTokenRouter(configuration)` separately
 from `createAi`. No product caller selects it. Its config accepts only
 `TOKENROUTER_BASE_URL` (exact `https://api.tokenrouter.com/v1`), optional
 `TOKENROUTER_API_KEY`, `TOKENROUTER_ENABLED` (default false), and `timeoutMs`
@@ -139,14 +139,14 @@ reserved budget. None of those live prerequisites is claimed complete.
 
 Exact peer handoff, not edits in this slice:
 
-- `server/reports/runtime.ts`: currently selects `createAi` using explicit local
+- `services/api/reports/runtime.ts`: currently selects `createAi` using explicit local
   Luna/Laya env names. Add a separately reviewed provider selection only after
   budget admission and authorized transfer checks exist; retain the local path.
-- `server/reports/extraction.ts`: accepts model `gpt-6-luna` (or synthetic fixture),
+- `services/api/reports/extraction.ts`: accepts model `gpt-6-luna` (or synthetic fixture),
   exact review metadata and source spans. It must deliberately accept the hosted
   model/version after a grounded report wrapper exists. Do not pass this generic
   transport result directly or relabel the hosted model as the local one.
-- `server/ai/luna.ts`: keep its source-grounding and failure/human-review contract
+- `services/api/ai/luna.ts`: keep its source-grounding and failure/human-review contract
   when preparing that later wrapper. No automatic approval or data writer belongs
   in transport. Keep usage/budget records outside the strict report result.
 - Root config owner: future server-only names are `TOKENROUTER_BASE_URL`,
@@ -235,7 +235,7 @@ integration and authenticated gateway conformance remain separate pending gates.
 
 ## Jev submission moderation preparation
 
-`server/ai/jev-moderation.ts` defines an internal normalized result contract, not
+`services/api/ai/jev-moderation.ts` defines an internal normalized result contract, not
 a claimed Jev gateway response format. `prepareJevModeration({text})` validates
 at most 1,600 characters and returns unavailable/protocol-unverified without
 network I/O. There is no enable switch until a reviewed provider mapping exists,
@@ -272,14 +272,14 @@ extra debit or refund. This preparation performs none of those state changes.
 Exact transactional handoff, read at main
 `95e5be89060ff130c63019deb935c25ef1c93194`:
 
-- `server/submissions/contracts.ts` already validates explicit `confirmedFee:500`.
-  `server/submissions/http.ts` sends explicit POST submissions to
-  `createSubmission` in `server/submissions/index.ts`.
+- `services/api/submissions/contracts.ts` already validates explicit `confirmedFee:500`.
+  `services/api/submissions/http.ts` sends explicit POST submissions to
+  `createSubmission` in `services/api/submissions/index.ts`.
 - `createSubmission` uses `runPointsOperation` with the request ID and exact
   text/tag/fee/resubmission intent, returns the normal `-SUBMISSION_FEE` delta,
   and creates the retained pending record. Preserve this one fee path for every
   semantic outcome. No model call belongs inside its locked transaction.
-- `server/points/index.ts:runPointsOperation` authenticates, serializes the request
+- `services/api/points/index.ts:runPointsOperation` authenticates, serializes the request
   key, locks the profile, checks stored replay before `perform`, and commits only
   an affordable delta together with History and the stored outcome. Provider
   retries or review must never call it to charge the same submission again.
@@ -298,7 +298,7 @@ Exact transactional handoff, read at main
   integration is claimed here; do not infer a points/DB regression pass from
   these pure AI tests.
 
-`server/ai/evaluation/jev-moderation-prospective.json` contains 24 newly authored,
+`services/api/ai/evaluation/jev-moderation-prospective.json` contains 24 newly authored,
 unevaluated English cases: eight harmful (two per risk), ten benign context
 controls and six uncertain cases. It covers criticism, negation, quoted
 condemnation, harmless profanity and injection. Nine additional integration
@@ -350,7 +350,7 @@ curl --fail --silent http://127.0.0.1:55434/health
 ```
 
 The adapter uses `/v1/systemone` with `state` and the exact questions in
-`server/ai/questions.json`. This is a restricted subset of Jev, not complete Jev
+`services/api/ai/questions.json`. This is a restricted subset of Jev, not complete Jev
 compatibility: no arbitrary questions, batch routes, model switching, tools or
 browser requests. The service checks 8 KiB body bytes, 1,600 state characters,
 question equality and the selected tokenizer's actual remaining context budget.
@@ -373,7 +373,7 @@ mode 600. The service itself needs no provider credentials.
 ## Verification and later revalidation
 
 ```sh
-node --test server/ai/*.test.ts
+node --test services/api/ai/*.test.ts
 ~/.cache/amr/laya/venv/bin/python -m unittest discover \
   -s scripts/local-ai -p '*_test.py'
 ```

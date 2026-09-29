@@ -6,14 +6,13 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Phone app | `src/App.tsx` retains four tabs; held account UI and server balance/History consumer in `src/features/account/` and `src/features/points/`; Travel/Impact placeholders and unavailable Redemption | Native verification, journeys, fan submissions and other accepted rewards, plus ESG views |
-| Admin web | Separate `/admin/` points adjustment and History page with synthetic local sign-in; live browser sign-in remains pending | Authorized content, price, rule, moderation and demo administration |
-| Backend | `server/api/` account HTTP API, `server/accounts/` PostgreSQL ownership and independent real/demo profiles, and `server/points/` integer adjustments with immutable History and stored outcomes; no deployment | Feature operations and persistence on Azure |
+| Swift phone app | `Swift-App/` is an independent Xcode app with the native fan flows and backend client | Native release and device acceptance |
+| React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
+| Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
+| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers | Feature operations and persistence on the selected hosted platform |
+| Shared packages | `packages/contracts/` owns wire types; `packages/travel-domain/` owns pure route, emissions and recommendation logic | Stable cross-client contracts and domain calculations |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
-| Maps and tracking | Absent | POC route comparison, real location collection and journey assessment; physical-device proof required |
-| AI media pipeline | Absent; future proposal | Bounded transient processing and validated results |
-| ESG integration | Source documents and proposals only | POC report upload, extraction, admin review and approved metrics with source evidence |
-| Operations | Local Expo commands, repository checks and isolated worktree PostgreSQL tooling | Release environment remains a maintainer decision |
+| Operations | Root scripts, Compose, Render and security configuration orchestrate the workspace; `pnpm-workspace.yaml` and Turbo own package discovery and task ordering | Release environment remains a maintainer decision |
 
 The account API has an isolated application DAST target and authenticated HTTP
 boundary tests. The points admin flow has local browser and PostgreSQL-backed
@@ -25,8 +24,8 @@ atomicity, replay, concurrency and isolation. See [points operations](../operati
 
 ## Design defaults
 
-Keep the existing root Expo package while the explicit workspace units coexist. The Swift app remains an Xcode project outside the JavaScript package graph. Database-only TypeScript modules live in
-`server/database/`; its private module marker supports Node ESM without moving
+Keep Swift as an independent Xcode project outside the JavaScript package graph. The JavaScript workspace has explicit fan, admin, API, contracts and travel-domain units. Database-only TypeScript modules live in
+`services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
 Azure is the selected backend platform. No Azure service, deployment or auth provider
@@ -91,7 +90,7 @@ and activity. Arbitrary photos return zero. Production remains disabled and no
 vision provider is called. The gpt-6-astra classifier prompt is prepared under
 `docs/backend-prompts/photo-activity-astro.md`, not activated.
 
-The repo is now recognized by pnpm as root Expo, `@amr/admin`,
-`@amr/api`, and `@amr/contracts`; Turbo runs focused package tasks. Runtime
-source and deployment files remain at their existing paths. The admin package
-builds the existing static pages; it is not a new admin product.
+The repo is recognized by pnpm as the root workspace plus `@amr/fan`,
+`@amr/admin`, `@amr/api`, `@amr/contracts`, and `@amr/travel-domain`. Turbo runs
+package-local checks. The admin package builds the static pages from its own
+`pages/` directory, while the API serves the same allowlisted files locally.

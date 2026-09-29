@@ -67,7 +67,10 @@ for (const [retainedCount, targetCount] of [
       await client.query(
         'CREATE TABLE public.schema_migrations(name text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())',
       );
-      const dir = new URL('../../server/database/migrations/', import.meta.url);
+      const dir = new URL(
+        '../../services/api/database/migrations/',
+        import.meta.url,
+      );
       for (const name of (await readdir(dir))
         .filter((name) => /^000[1-8]_/.test(name))
         .sort()) {
@@ -471,7 +474,7 @@ for (const [retainedCount, targetCount] of [
       const expectedHistory = await Promise.all(
         (
           await readdir(
-            new URL('../../server/database/migrations/', import.meta.url),
+            new URL('../../services/api/database/migrations/', import.meta.url),
           )
         )
           .filter((name) => /^\d{4}_.*\.sql$/.test(name))
@@ -483,7 +486,7 @@ for (const [retainedCount, targetCount] of [
               .update(
                 await readFile(
                   new URL(
-                    `../../server/database/migrations/${name}`,
+                    `../../services/api/database/migrations/${name}`,
                     import.meta.url,
                   ),
                 ),
@@ -500,7 +503,7 @@ for (const [retainedCount, targetCount] of [
         .update(
           await readFile(
             new URL(
-              `../../server/database/migrations/${migration}`,
+              `../../services/api/database/migrations/${migration}`,
               import.meta.url,
             ),
           ),
