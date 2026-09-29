@@ -23,6 +23,29 @@ Home Camera now presents the live camera directly on camera-capable devices;
 the simulator falls back to Photos, and the resulting image enters the same
 backend verification path. Focused diagnostics and the Xcode build pass.
 
+Added a visible `Photos` button to the live camera overlay because the stock
+camera controls do not expose the gallery. It transitions directly to Photos
+and preserves the same verification flow. Diagnostics and build pass again.
+
+Reworked the control to an icon at the requested lower-left position. It now
+presents the Photos sheet over the camera using `PHPickerViewController`; the
+old page redirect path is removed. Diagnostics and `BuildProject` pass.
+
+Removed the remaining intermediate capture page from the active route. The
+camera/gallery flow now renders only processing and final verification results,
+with a points total, confidence when returned, and Next/Done actions. Build and
+focused diagnostics pass.
+
+Fixed the blank post-selection page by removing the nested legacy destination
+presentation. Camera and gallery now hand off an identifiable image to a
+dedicated verification cover after dismissal; source checks and `BuildProject`
+pass. Actual device timing and interaction remain unverified without device
+automation consent.
+
+Fixed the follow-up crash by passing `BackendSession` explicitly into
+`SustainabilityCamScreen` instead of relying on `@EnvironmentObject` inside the
+new modal boundary. Swift diagnostics, diff check and `BuildProject` pass.
+
 ## 2026-09-28: remove fan-selected planting locations
 
 Tracking: SWIFT-REWARDS-003, unlinked. Removed location selection from the

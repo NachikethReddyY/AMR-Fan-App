@@ -25,6 +25,31 @@ sustainability page. It now presents the camera full-screen immediately on
 devices, while simulator fallback opens Photos directly; captured media then
 enters the shared verification flow.
 
+Follow-up: the stock camera UI did not include a gallery control. Added a
+visible `Photos` button to the camera overlay; it closes the camera and opens
+the gallery without returning through the sustainability form.
+
+Follow-up on 2026-09-29: replaced that redirect callback with an icon-only
+lower-left camera control that presents `PHPickerViewController` over the live
+camera. Gallery selection now stays in the capture flow and enters verification
+directly.
+
+Final follow-up: removed the intermediate Camera / ADD PROOF page from the
+active route. Capture now transitions directly to image processing and then to
+the points result screen, matching the supplied flow drawing.
+
+Reported on 2026-09-29: camera presentation felt delayed and selecting a photo
+could open a blank page. Root cause was presenting the legacy `destination`
+sheet while the camera/gallery modal was still dismissing. Removed that route,
+use an identifiable pending-photo handoff, and present verification as its own
+full-screen flow only after a non-optional image exists.
+
+Reported on 2026-09-29: `Fatal error: No ObservableObject of type
+BackendSession found` when verification opened. The result screen depended on
+an environment lookup across the full-screen presentation boundary. It now
+receives the owning `BackendSession` explicitly, eliminating that runtime
+precondition failure.
+
 ## SWIFT-REWARDS-003: admin assigns planting location (unlinked)
 
 The user corrected the planting rule: fans never choose a location. Redemption

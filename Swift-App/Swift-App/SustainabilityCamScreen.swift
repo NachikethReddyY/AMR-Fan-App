@@ -3,228 +3,148 @@ import SwiftUI
 import UIKit
 
 struct SustainabilityCamScreen: View {
-    var initialImage: UIImage? = nil
-    var openGalleryOnAppear = false
-    @EnvironmentObject private var backend: BackendSession
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var selectedImage: UIImage?
-    @State private var pendingCameraImage: UIImage?
-    @State private var showCamera = false
-    @State private var showCameraUnavailable = false
-    @State private var isProcessing = false
-    @State private var verificationState: PhotoVerificationState = .ready
-    @State private var didAutoOpenCamera = false
-    @State private var showPhotoPicker = false
+    let initialImage: UIImage
+    let initialCapture: PhotoCapture
+    let backend: BackendSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var result: BackendActivityResponse?
+    @State private var errorMessage: String?
+    @State private var isProcessing = true
+    @State private var hasStarted = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                SectionHeader(
-                    title: "Camera",
-                    description: "Take a photo or choose one from Photos."
-                )
-
-                FeatureCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Label("ADD PROOF", systemImage: "camera.fill")
-                            .font(.caption.bold())
-                            .foregroundStyle(FanStyle.teal)
-                        if let selectedImage {
-                            Image(uiImage: selectedImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 220)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .accessibilityLabel("Selected proof photo")
-                        } else {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 48))
-                                .foregroundStyle(FanStyle.teal)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 180)
-                                .background(FanStyle.background, in: RoundedRectangle(cornerRadius: 16))
-                        }
-                        HStack(spacing: 10) {
-                            Button {
-                                openCamera()
-                            } label: {
-                                Label("Take photo", systemImage: "camera.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(SustainabilityActionButtonStyle())
-
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images, preferredItemEncoding: .automatic) {
-                                Label("Choose photo", systemImage: "photo.on.rectangle")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(SustainabilityActionButtonStyle())
-                        }
-                        .disabled(isProcessing)
-                        Text("When analysis is available, your selected photo is sent to the backend for review. The app does not save it.")
-                            .font(.footnote)
-                            .foregroundStyle(FanStyle.muted)
+        ZStack {
+            FanStyle.background.ignoresSafeArea()
+            VStack(spacing: 26) {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
                     }
+                    Spacer()
                 }
+
+                Spacer()
 
                 if isProcessing {
-                    FeatureCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Label("ANALYSING PHOTO", systemImage: "sparkles")
-                                .font(.caption.bold())
-                                .foregroundStyle(FanStyle.teal)
-                            ProgressView().tint(FanStyle.teal)
-                            Text("Checking your proof with the sustainability service…")
-                                .foregroundStyle(FanStyle.muted)
-                        }
-                    }
-                } else {
-                    resultCard
-                }
-            }
-            .padding(22)
-            .padding(.bottom, 30)
-            .frame(maxWidth: 520)
-            .frame(maxWidth: .infinity)
-        }
-        .scrollIndicators(.hidden)
-        .background(FanStyle.background)
-        .sheet(isPresented: $showCamera, onDismiss: {
-            if let image = pendingCameraImage {
-                pendingCameraImage = nil
-                Task { await verify(image, capture: .camera) }
-            }
-        }) {
-            CameraPicker { image in
-                pendingCameraImage = image
-                showCamera = false
-            }
-            .ignoresSafeArea()
-        }
-        .alert("Camera unavailable", isPresented: $showCameraUnavailable) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Choose a photo from your library instead.")
-        }
-        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images, preferredItemEncoding: .automatic)
-        .task(id: selectedPhotoItem) { await loadSelectedPhoto() }
-        .onAppear {
-            guard !didAutoOpenCamera else { return }
-            didAutoOpenCamera = true
-            if let initialImage {
-                selectedImage = initialImage
-                Task { await verify(initialImage, capture: .camera) }
-            } else if openGalleryOnAppear {
-                showPhotoPicker = true
-            }
-        }
-    }
-
-    private func openCamera() {
-        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            showCameraUnavailable = true
-            return
-        }
-        showCamera = true
-    }
-
-    @ViewBuilder private var resultCard: some View {
-        switch verificationState {
-        case .ready:
-            EmptyView()
-        case .verified(let result):
-            FeatureCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("VERIFIED", systemImage: "checkmark.seal.fill")
-                        .font(.caption.bold())
-                        .foregroundStyle(FanStyle.teal)
-                    Text("+\(result.creditedPoints) Green Points")
-                        .font(.title2.bold())
-                    if let object = result.object { Text(object.capitalized).foregroundStyle(FanStyle.muted) }
-                    if let confidence = result.confidence {
-                        Text("Confidence \(confidence, format: .percent.precision(.fractionLength(0)))")
-                            .foregroundStyle(FanStyle.muted)
-                    }
-                    if let message = result.message {
-                        Text(message).font(.footnote).foregroundStyle(FanStyle.muted)
-                    }
-                }
-            }
-        case .rejected(let result):
-            FeatureCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("NOT VERIFIED", systemImage: "xmark.seal.fill")
-                        .font(.caption.bold())
+                    ProgressView()
+                        .tint(.blue)
+                        .padding(.horizontal, 36)
+                    Text("Image processing…")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                } else if let result {
+                    resultView(result)
+                } else if let errorMessage {
+                    Label("Could not process photo", systemImage: "exclamationmark.triangle.fill")
+                        .font(.title3.bold())
                         .foregroundStyle(.orange)
-                    Text("No Green Points awarded").font(.title3.bold())
-                    Text(result.message ?? "The photo did not provide enough evidence for this action.")
+                    Text(errorMessage)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(FanStyle.muted)
+                        .padding(.horizontal, 28)
+                    Button("Try again") {
+                        Task { await verify() }
+                    }
+                    .buttonStyle(ResultButtonStyle())
+                }
+
+                Spacer()
+            }
+            .padding(24)
+        }
+        .task {
+            guard !hasStarted else { return }
+            hasStarted = true
+            await verify()
+        }
+    }
+
+    @ViewBuilder
+    private func resultView(_ result: BackendActivityResponse) -> some View {
+        switch result.kind {
+        case .verified:
+            VStack(spacing: 14) {
+                Text("\(result.creditedPoints)")
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("Sustainability Points")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                if let confidence = result.confidence {
+                    Text("Confidence \(confidence, format: .percent.precision(.fractionLength(0)))")
+                        .foregroundStyle(.blue)
+                }
+                if let object = result.object {
+                    Text(object.capitalized)
                         .foregroundStyle(FanStyle.muted)
                 }
-            }
-        case .failed(let message):
-            FeatureCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("VERIFICATION UNAVAILABLE", systemImage: "wifi.exclamationmark")
-                        .font(.caption.bold())
-                    Text(message).foregroundStyle(FanStyle.muted)
+                if let message = result.message {
+                    Text(message)
+                        .font(.footnote)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(FanStyle.muted)
+                        .padding(.horizontal, 24)
                 }
+                Button("Next") { dismiss() }
+                    .buttonStyle(ResultButtonStyle())
+                    .padding(.top, 18)
+            }
+        case .rejected:
+            VStack(spacing: 14) {
+                Text("0")
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("Sustainability Points")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text(result.message ?? "The photo was not verified.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(FanStyle.muted)
+                Button("Done") { dismiss() }
+                    .buttonStyle(ResultButtonStyle())
+                    .padding(.top, 18)
+            }
+        case .unavailable:
+            VStack(spacing: 14) {
+                Label("Analysis unavailable", systemImage: "wifi.exclamationmark")
+                    .font(.title3.bold())
+                    .foregroundStyle(.orange)
+                Text(result.message ?? "Photo verification is unavailable.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(FanStyle.muted)
+                Button("Done") { dismiss() }
+                    .buttonStyle(ResultButtonStyle())
+                    .padding(.top, 18)
             }
         }
     }
 
-    private func loadSelectedPhoto() async {
-        guard let selectedPhotoItem else { return }
+    private func verify() async {
         isProcessing = true
-        verificationState = .ready
-        selectedImage = nil
-        defer { isProcessing = false }
+        errorMessage = nil
         do {
-            guard let data = try await selectedPhotoItem.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data) else {
-                verificationState = .failed("The selected photo could not be read. Choose another image.")
-                return
-            }
-            guard !Task.isCancelled else { return }
-            await verify(image, capture: .gallery)
+            result = try await backend.verify(image: initialImage, capture: initialCapture)
         } catch {
-            verificationState = .failed(error.localizedDescription)
+            errorMessage = error.localizedDescription
         }
-    }
-
-    private func verify(_ image: UIImage, capture: PhotoCapture) async {
-        selectedImage = image
-        isProcessing = true
-        verificationState = .ready
-        defer { isProcessing = false }
-        do {
-            let result = try await backend.verify(image: image, capture: capture)
-            switch result.kind {
-            case .verified: verificationState = .verified(result)
-            case .rejected: verificationState = .rejected(result)
-            case .unavailable: verificationState = .failed(result.message ?? "Photo verification is unavailable.")
-            }
-        } catch {
-            verificationState = .failed(error.localizedDescription)
-        }
+        isProcessing = false
     }
 }
 
-private enum PhotoVerificationState {
-    case ready
-    case verified(BackendActivityResponse)
-    case rejected(BackendActivityResponse)
-    case failed(String)
-}
-
-private struct SustainabilityActionButtonStyle: ButtonStyle {
+private struct ResultButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.subheadline.bold())
+            .font(.headline)
             .foregroundStyle(.white)
-            .padding(.vertical, 13)
-            .background(FanStyle.darkTeal, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(FanStyle.teal.opacity(0.55)))
-            .opacity(configuration.isPressed ? 0.78 : 1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 15)
+            .background(Color.green.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
+            .opacity(configuration.isPressed ? 0.75 : 1)
     }
 }
 
@@ -241,24 +161,51 @@ struct CameraPicker: UIViewControllerRepresentable {
         picker.sourceType = .camera
         picker.cameraCaptureMode = .photo
         picker.delegate = context.coordinator
+        context.coordinator.cameraController = picker
+
+        let overlay = UIView(frame: picker.view.bounds)
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        let photosButton = UIButton(type: .system)
+        photosButton.setImage(UIImage(systemName: "photo.on.rectangle"), for: .normal)
+        photosButton.tintColor = .white
+        photosButton.accessibilityLabel = "Photos"
+        photosButton.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        photosButton.layer.cornerRadius = 24
+        photosButton.addTarget(context.coordinator, action: #selector(Coordinator.chooseLibrary), for: .touchUpInside)
+        photosButton.translatesAutoresizingMaskIntoConstraints = false
+        overlay.addSubview(photosButton)
+        NSLayoutConstraint.activate([
+            photosButton.leadingAnchor.constraint(equalTo: overlay.leadingAnchor, constant: 24),
+            photosButton.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -128),
+            photosButton.widthAnchor.constraint(equalToConstant: 48),
+            photosButton.heightAnchor.constraint(equalToConstant: 48)
+        ])
+        picker.cameraOverlayView = overlay
         return picker
     }
 
     func updateUIViewController(_: UIImagePickerController, context _: Context) { }
 
-    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate, PHPickerViewControllerDelegate {
         let onImagePicked: (UIImage) -> Void
         let dismiss: DismissAction
+        weak var cameraController: UIImagePickerController?
 
         init(onImagePicked: @escaping (UIImage) -> Void, dismiss: DismissAction) {
             self.onImagePicked = onImagePicked
             self.dismiss = dismiss
         }
 
-        func imagePickerController(
-            _: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
+        @objc func chooseLibrary() {
+            var configuration = PHPickerConfiguration(photoLibrary: .shared())
+            configuration.filter = .images
+            configuration.selectionLimit = 1
+            let picker = PHPickerViewController(configuration: configuration)
+            picker.delegate = self
+            cameraController?.present(picker, animated: true)
+        }
+
+        func imagePickerController(_: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
                 onImagePicked(image)
             } else {
@@ -269,11 +216,25 @@ struct CameraPicker: UIViewControllerRepresentable {
         func imagePickerControllerDidCancel(_: UIImagePickerController) {
             dismiss()
         }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            guard let result = results.first else {
+                picker.dismiss(animated: true)
+                return
+            }
+            result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
+                guard let self, let image = object as? UIImage else { return }
+                DispatchQueue.main.async {
+                    picker.dismiss(animated: true) {
+                        self.onImagePicked(image)
+                    }
+                }
+            }
+        }
     }
 }
 
 #Preview {
-    SustainabilityCamScreen()
-        .environmentObject(BackendSession())
+    SustainabilityCamScreen(initialImage: UIImage(), initialCapture: .gallery, backend: BackendSession())
         .preferredColorScheme(.dark)
 }

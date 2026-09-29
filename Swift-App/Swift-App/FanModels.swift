@@ -410,7 +410,7 @@ enum FanTab: String, CaseIterable, Identifiable {
 }
 
 enum FanDestination: String, Identifiable {
-    case profile, account, news, paddock, sustainabilityCam, travel, challenges, history, tree, offers, caps, tshirts, outerwear, other, content, quiz
+    case profile, account, news, paddock, travel, challenges, history, tree, offers, caps, tshirts, outerwear, other, content, quiz
 
     var id: String { rawValue }
 }

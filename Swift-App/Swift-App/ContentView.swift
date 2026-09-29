@@ -1,5 +1,12 @@
 import SwiftUI
 import UIKit
+import PhotosUI
+
+private struct PendingPhoto: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let capture: PhotoCapture
+}
 
 struct ContentView: View {
     @AppStorage("supportedDriver") private var supportedDriver = ""
@@ -9,8 +16,10 @@ struct ContentView: View {
     @State private var pushedDestination: FanDestination?
     @State private var showShop = false
     @State private var showCameraCapture = false
-    @State private var capturedCameraImage: UIImage?
-    @State private var openGalleryOnAppear = false
+    @State private var capturedPhoto: PendingPhoto?
+    @State private var verificationPhoto: PendingPhoto?
+    @State private var showGalleryPicker = false
+    @State private var selectedGalleryItem: PhotosPickerItem?
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
@@ -117,16 +126,30 @@ struct ContentView: View {
             .preferredColorScheme(.dark)
         }
         .fullScreenCover(isPresented: $showCameraCapture, onDismiss: {
-            if capturedCameraImage != nil {
-                openGalleryOnAppear = false
-                destination = .sustainabilityCam
+            if let capturedPhoto {
+                verificationPhoto = capturedPhoto
+                self.capturedPhoto = nil
             }
         }) {
             CameraPicker { image in
-                capturedCameraImage = image
+                capturedPhoto = PendingPhoto(image: image, capture: .camera)
                 showCameraCapture = false
             }
             .ignoresSafeArea()
+        }
+        .photosPicker(isPresented: $showGalleryPicker, selection: $selectedGalleryItem, matching: .images)
+        .task(id: selectedGalleryItem) {
+            guard let selectedGalleryItem else { return }
+            guard let data = try? await selectedGalleryItem.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data), !Task.isCancelled else { return }
+            verificationPhoto = PendingPhoto(image: image, capture: .gallery)
+        }
+        .fullScreenCover(item: $verificationPhoto) { photo in
+            SustainabilityCamScreen(
+                initialImage: photo.image,
+                initialCapture: photo.capture,
+                backend: backend
+            )
         }
     }
 
@@ -153,12 +176,12 @@ struct ContentView: View {
     }
 
     private func openCamera() {
-        capturedCameraImage = nil
+        capturedPhoto = nil
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             showCameraCapture = true
         } else {
-            openGalleryOnAppear = true
-            destination = .sustainabilityCam
+            selectedGalleryItem = nil
+            showGalleryPicker = true
         }
     }
 
@@ -178,8 +201,6 @@ struct ContentView: View {
         case .paddock:
             EditorialScreen(title: "The Paddock.", symbol: "sparkles.tv",
                             description: "Exclusive stories are coming soon.")
-        case .sustainabilityCam:
-            SustainabilityCamScreen(initialImage: capturedCameraImage, openGalleryOnAppear: openGalleryOnAppear)
         case .travel:
             TravelScreen()
         case .challenges:
