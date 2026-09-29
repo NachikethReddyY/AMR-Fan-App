@@ -359,6 +359,18 @@ Prepared by gpt-6-astra through Codex (T3 Code).
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+The workflow was pushed to `main` as `ff07918` and monitored in GitHub Actions
+run [36560350631](https://github.com/NachikethReddyY/AMR-Fan-App/actions/runs/36560350631).
+The WSL2 runner completed six of seven gates: typecheck, API unit tests,
+AI/activity tests, report/impact tests, formatting/tooling and source security
+passed. The route/awards gate failed because the existing OneMap startup suite
+had 94 passes and one failure in `unsafe, missing, oversized and malformed
+mounted files fail with sanitized errors and no copy`. The workflow summary
+reported `FAIL`, preserving the failure for follow-up instead of assigning a
+misleading numeric rating.
+
+Observed by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: shared question and challenge process
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-005 under SPEC-001; unlinked.
