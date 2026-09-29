@@ -48,7 +48,7 @@ verified response mapping exists. Unknown response fields do not prevent a
 separately authorized diagnostic probe; such a probe returns unavailable for
 product use and retains its full reservation when accounting is unknown.
 
-`server/ai/tokenrouter-jev-request.ts` now prepares only the documented request
+`services/api/ai/tokenrouter-jev-request.ts` now prepares only the documented request
 from an already validated route/activity decision. It serializes the bounded
 state as JSON text and uses option IDs as descriptions for null route criteria.
 It preserves existing instructions, observations, eligibility filtering and

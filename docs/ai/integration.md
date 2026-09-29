@@ -51,7 +51,7 @@ bound is unchanged; the text transport is not a photo uploader.
 
 ## Smallest offline mapping
 
-`server/ai/jev-decisions.ts` exports `prepareJevRouteChoice(snapshot)` and
+`services/api/ai/jev-decisions.ts` exports `prepareJevRouteChoice(snapshot)` and
 `prepareJevActivityChoice({observations})`. Each returns a bounded request plus
 `read(unknown)` for the documented **upstream** `jev-1.13.0` format, labelled
 `protocol: "typesafe-upstream-only"`. No URL, fetch, key or automatic gateway model
@@ -65,7 +65,7 @@ a private snapshot for response validation. One Choice compares eligible IDs
 using code-supplied time, emissions and points. The complete distribution orders
 relative preferences; exact ties use duration then ID. This is an offline mapping
 proposal for the accepted relative recommendation, not a calibrated utility
-score or a policy change in `server/routes/query.ts`. Confidence does not sort.
+score or a policy change in `services/api/routes/query.ts`. Confidence does not sort.
 No numeric weights, recalculated metrics or generated geometry are accepted.
 The [confidence reference](https://docs.typesafe.ai/confidence) describes
 concentration, not probability of correctness. [Jev's limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13)
@@ -81,7 +81,7 @@ fixtures and the two-stage synthetic composition are in `jev-decisions.test.ts`.
 
 ## Durable USD admission seam
 
-`server/ai/cost-reservation.ts` has no default rates or store. `quoteAiCost` parses
+`services/api/ai/cost-reservation.ts` has no default rates or store. `quoteAiCost` parses
 an explicit versioned, expiring rate card and a plan with one or two calls. It
 uses integer nano-USD: one dollar is 1,000,000,000 units. Verified fractional
 nano-USD rates must be rounded **up** by the config owner. Products use `bigint`
@@ -130,7 +130,7 @@ Do not use the fan points ledger for this USD budget.
 
 Inspected on main `1ea07e1b2d83ae148ed3e0817cd49cb1af395b38`:
 
-- `server/routes/query.ts:createRouteQuery` owns authentication, provider search,
+- `services/api/routes/query.ts:createRouteQuery` owns authentication, provider search,
   factors and deterministic `recommendRoute`. Form an opaque snapshot after
   code metrics exist, reserve one Jev call, and consume only original IDs/metrics.
   Preserve unknown-metric fallback and recheck the active snapshot before display.
@@ -143,19 +143,19 @@ Inspected on main `1ea07e1b2d83ae148ed3e0817cd49cb1af395b38`:
   hold profile/points locks while waiting for Luna or Jev. Cleanup releases string
   references and overwrites the supplied buffer; this is not heap zeroization or
   provider deletion. No original image or description may be durably retained.
-- `server/points/index.ts:runPointsOperation` is the transaction seam for a later
+- `services/api/points/index.ts:runPointsOperation` is the transaction seam for a later
   activity service, not callable by the model. In `perform`, recheck current
   authority/profile and unique fingerprint/action/journey links, then persist the
   minimal decision, receipt/fingerprint and one code-selected ledger effect.
   Successful same-key replay returns the stored receipt before any new assessment
   or credit; a conflicting intent fails. No daily award cap is introduced.
 - Eligible no-location photos and preliminary bus photos receive 50 in owner code.
-  `server/awards/operation.ts:executeSettlement` already retains cumulative journey
+  `services/api/awards/operation.ts:executeSettlement` already retains cumulative journey
   credit, but currently gates production credit. The award owner must link the
   preliminary payment to the same verified journey and pay only the remaining
   difference. Existing action/trip payment must prevent a second photo payment.
   No production gate is bypassed by these AI modules.
-- `server/submissions/index.ts:createSubmission` keeps the same normal 500-point
+- `services/api/submissions/index.ts:createSubmission` keeps the same normal 500-point
   confirmed, affordable, non-refundable fee. Harmful paid content cannot enter
   voting and retains its reason/record; uncertainty stays pending admin review.
   No extra penalty, typing charge, provider-retry debit or automatic approval.

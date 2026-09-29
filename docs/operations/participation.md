@@ -148,7 +148,7 @@ causes denial. No client role, badge or actor field grants authority.
 
 ## Registered API and remaining caller handoff
 
-The registered imports in `server/api/app.ts` are:
+The registered imports in `services/api/api/app.ts` are:
 
 ```ts
 import { handleParticipationRequest } from '../submissions/participation-http.ts';
@@ -212,8 +212,8 @@ Registered root scripts:
 
 ```json
 {
-  "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs",
-  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts"
+  "participation:test": "node --test --test-concurrency=1 services/api/submissions/participation-contracts.test.ts services/api/submissions/participation-http.test.ts services/api/submissions/participation/admin/assets.test.ts services/api/submissions/participation/admin/app.test.mjs",
+  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/submissions/participation.test.ts services/api/submissions/participation/admin/read.database.test.ts services/api/submissions/participation-http.database.test.ts services/api/submissions/participation/admin/registration.database.test.ts"
 }
 ```
 

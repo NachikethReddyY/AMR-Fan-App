@@ -20,3 +20,8 @@ prototypes/
 .claude/
 security/fixtures/
 /supabase/.temp/
+
+.turbo/
+bug.md
+work.md
+Swift-App/

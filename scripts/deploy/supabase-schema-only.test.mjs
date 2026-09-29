@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import pg from 'pg';
-import { createGoogleRouteBudget } from '../../server/routes/google-budget.ts';
-import { createRouteProvider } from '../../server/routes/provider.ts';
+import { createGoogleRouteBudget } from '../../services/api/routes/google-budget.ts';
+import { createRouteProvider } from '../../services/api/routes/provider.ts';
 import { bootstrapDatabase, OWNER, RUNTIME } from './supabase-database.mjs';
-import { createPostgresAiCostStore } from '../../server/ai/postgres-cost-store.ts';
+import { createPostgresAiCostStore } from '../../services/api/ai/postgres-cost-store.ts';
 import {
   quoteAiCost,
   reserveAiCost,
-} from '../../server/ai/cost-reservation.ts';
+} from '../../services/api/ai/cost-reservation.ts';
 
 if (process.env.AMR_OPS123_DISPOSABLE !== 'true')
   throw new Error('Owned disposable fixture only.');

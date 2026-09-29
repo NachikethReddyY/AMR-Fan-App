@@ -1,7 +1,7 @@
 {
   "status": "implemented",
   "target": {
-    "dockerfile": "server/api/Dockerfile",
+    "dockerfile": "services/api/api/Dockerfile",
     "port": 3000,
     "path": "/admin/participation/"
   }

@@ -24,9 +24,16 @@ android/
 *.jks
 *.keystore
 
+# Xcode user-specific state
+xcuserdata/
+*.xcuserstate
+
 # Local work, reports and agent settings. Existing tracked history is preserved.
 .scratch/
 .evidence/
 .claude/settings.local.json
 .pi/sessions/
 TODO.md
+
+# Turborepo cache
+.turbo/

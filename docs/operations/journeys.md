@@ -1,9 +1,9 @@
 # Server journey recording
 
-Issue #8's server module is under `server/journeys/`. It persists preparation,
+Issue #8's server module is under `services/api/journeys/`. It persists preparation,
 Start, original-timestamp evidence, finish and a deterministic assessment in the
 same PostgreSQL service as accounts through the authenticated API. Native
-collection is implemented under `src/features/journeys/`; device verification,
+collection is implemented under `apps/fan/src/features/journeys/`; device verification,
 physical calibration and deployment are separate acceptance gates.
 
 ## Authority and retained data
@@ -219,7 +219,7 @@ calibration thresholds or claiming physically verified travel.
 
 ## Future settlement interface
 
-`server/journeys/settlement.ts` exports the compile-ready
+`services/api/journeys/settlement.ts` exports the compile-ready
 `lockJourneyForSettlement(client: PoolClient, principalId, profileId, journeyId)`
 and `JourneySettlementProjection`. The caller must already be inside its current
 authority/request transaction. The function reacquires the owned profile lock,

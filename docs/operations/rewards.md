@@ -55,7 +55,7 @@ redemption still re-reads the offer and confirms its current version and price.
 The guest reader cancels publication on unmount; returning after logout starts a
 fresh catalogue. It never supplies a fake authenticated context.
 
-Local verification adds `server/rewards/testing/guest-api.test.ts`, intended only
+Local verification adds `services/api/rewards/testing/guest-api.test.ts`, intended only
 for a disposable isolated `amr_c787guest_test` database, plus client catalogue
 lifecycle/API tests. Real HTTP proof covers redaction, pagination, exact method
 and path boundaries, origin checks and the rate limit. This does not establish
@@ -65,7 +65,7 @@ Edited by gpt-6-astra through Codex (T3 Code).
 
 ## Transaction and ownership
 
-`server/rewards/index.ts` accepts the existing opaque session. A purchase supplies
+`services/api/rewards/index.ts` accepts the existing opaque session. A purchase supplies
 only profile, offer, accepted offer version and request UUID. Identity, name,
 price, balance and paid amount come from locked server data. Unknown fields fail.
 `runPointsOperation` holds current authorization, request-key binding and the
@@ -135,7 +135,7 @@ repeats, price/availability changes, funds, key conflicts, mixed purchases,
 owner/real/demo/admin/session boundaries and immutable stored records. Both
 simultaneous first unlocks and concurrent new-key repeat acknowledgements are
 covered. The database script runs both the top-level rewards tests and
-`server/rewards/testing/registered-api.test.ts` serially. The latter starts the real
+`services/api/rewards/testing/registered-api.test.ts` serially. The latter starts the real
 `createApi`, including a child-process restart with the same stored receipt/text.
 The suites need at most two temporary loopback listeners in total. Stop a leased
 fixed API before running them. Raw synthetic evidence stays in ignored
@@ -143,8 +143,8 @@ fixed API before running them. Raw synthetic evidence stays in ignored
 
 ## API registration
 
-`server/api/app.ts` imports `dispatchRewards` from `server/rewards/http.ts` and
-`serveRewardsAdmin` from `server/rewards/admin.ts`. GET assets are served beside
+`services/api/api/app.ts` imports `dispatchRewards` from `services/api/rewards/http.ts` and
+`serveRewardsAdmin` from `services/api/rewards/admin.ts`. GET assets are served beside
 the existing admin assets before the bearer requirement. The dispatcher runs
 after the existing origin/rate guards and bearer parsing, with the existing
 bounded JSON body callback and query parameters. Accounts, points, routes and
@@ -157,7 +157,7 @@ Unknown routes return `null`. `pnpm check` includes the rewards HTTP unit tests;
 `pnpm rewards:test:database` and its CI step run **both** database suites:
 
 ```sh
-pnpm db:run-test -- node --test --test-concurrency=1 server/rewards/*.test.ts server/rewards/testing/registered-api.test.ts
+pnpm db:run-test -- node --test --test-concurrency=1 services/api/rewards/*.test.ts services/api/rewards/testing/registered-api.test.ts
 ```
 
 | Route | Method and result |

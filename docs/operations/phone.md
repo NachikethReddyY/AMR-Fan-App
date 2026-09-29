@@ -92,7 +92,7 @@ Run `pnpm exec jest src/features --runInBand`, then the required checks in
 [verification](verification.md). The isolated HTTP proof is:
 
 ```sh
-pnpm db:run-test -- node --test --test-concurrency=1 src/features/rewards/testing/phone-http-proof.ts
+pnpm db:run-test -- node --test --test-concurrency=1 apps/fan/src/features/rewards/testing/phone-http-proof.ts
 ```
 
 That command is restricted to the author's disposable test namespace. It uses

@@ -1,11 +1,7 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
     "allowImportingTsExtensions": true,
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "exclude": ["node_modules", "convex/_generated"]
+    "noEmit": true,
+    "skipLibCheck": true
+  }
 }

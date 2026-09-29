@@ -78,8 +78,8 @@ Run the focused state proof and the actual API adapter proof with an operations
 port lease and the worktree's disposable test namespace:
 
 ```sh
-pnpm exec jest src/features/account/session.test.ts src/features/points/history.test.ts --runInBand
-API_PORT=<leased-api-port> pnpm db:run-test -- node --test src/features/points/testing/http-proof.ts
+pnpm exec jest apps/fan/src/features/account/session.test.ts apps/fan/src/features/points/history.test.ts --runInBand
+API_PORT=<leased-api-port> pnpm db:run-test -- node --test apps/fan/src/features/points/testing/http-proof.ts
 ```
 
 The HTTP proof creates unique controlled identities, assigns only its synthetic
@@ -97,7 +97,7 @@ Android nor iPad substitutes for them. Live OIDC provisioning is separately pend
 
 ## Atomic integration contract
 
-`server/points/index.ts` exports `runPointsOperation` for trusted server callers.
+`services/api/points/index.ts` exports `runPointsOperation` for trusted server callers.
 It uses the account principal/session, foundation `transaction` and
 `lockOwnedProfile`. A caller supplies a parsed request, access mode, canonical
 intent string, outcome schema and `perform` callback. There is no generic

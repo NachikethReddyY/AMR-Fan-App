@@ -55,12 +55,12 @@ assigned-admin reads remain unverified without legitimate access.
 
 | Source | SHA-256 |
 | --- | --- |
-| `server/submissions/participation/admin/index.html` | `c129921b3f534cf175c56e990f70f488234e1b7a991b5dbb5a13d6787f57d652` |
-| `server/reports/admin/index.html` | `7e75f634112f06a9f143e8682b1f2e31b747f07fc264b4b805a5b49a2810196f` |
-| `server/submissions/admin/index.html` | `51be36a220eab2fa252d93d23624857b14a73389b52f3f5a820f843ec71ccae1` |
-| `server/auth/admin.js` | `37de50089ba8a0f43d564763ae00ecb508726a3b8a29c9a3ace75bba27522f5c` |
-| `server/api/app.ts` | `1b84221a9c15c6233a3e25e76440a38fd360bba2d8fca645e64d135c44f50787` |
-| `server/points/admin.ts` | `0e710fea2c546c1579d1bf7a2d97ff2189c4ae48cd79c05e9ed6d155e2490602` |
+| `services/api/submissions/participation/admin/index.html` | `c129921b3f534cf175c56e990f70f488234e1b7a991b5dbb5a13d6787f57d652` |
+| `services/api/reports/admin/index.html` | `7e75f634112f06a9f143e8682b1f2e31b747f07fc264b4b805a5b49a2810196f` |
+| `services/api/submissions/admin/index.html` | `51be36a220eab2fa252d93d23624857b14a73389b52f3f5a820f843ec71ccae1` |
+| `services/api/auth/admin.js` | `37de50089ba8a0f43d564763ae00ecb508726a3b8a29c9a3ace75bba27522f5c` |
+| `services/api/api/app.ts` | `1b84221a9c15c6233a3e25e76440a38fd360bba2d8fca645e64d135c44f50787` |
+| `services/api/points/admin.ts` | `0e710fea2c546c1579d1bf7a2d97ff2189c4ae48cd79c05e9ed6d155e2490602` |
 | `scripts/build-admin.mjs` | `3b2cca0eb1a79b09d7855bcb8b8b43a67ad8634c231fff80ef642e803b820b52` |
 
 Original private evidence is retained unchanged at
@@ -106,15 +106,15 @@ the final commit after rebasing. Any relevant change requires reassessment.
 
 | Source | SHA-256 |
 | --- | --- |
-| `server/api/app.ts` | `1b84221a9c15c6233a3e25e76440a38fd360bba2d8fca645e64d135c44f50787` |
-| `server/auth/admin.js` | `37de50089ba8a0f43d564763ae00ecb508726a3b8a29c9a3ace75bba27522f5c` |
-| `server/auth/session.ts` | `7c9db0e7799671d0500af83975ae6c71709db1b5725219b4b143334a15e3428b` |
-| `server/points/admin.ts` | `0e710fea2c546c1579d1bf7a2d97ff2189c4ae48cd79c05e9ed6d155e2490602` |
-| `server/points/admin/index.html` | `10e7fde74ae1e3be2ee5163c18c3689279ffa178fc5b4cab8b0f775b44bd6c91` |
-| `server/reports/admin/index.html` | `4ae42d5883db7cb1afe1fe333672f68ec2c408d2fd12cab4c358cf32f694bb5a` |
-| `server/rewards/admin/index.html` | `f701e483368ef298340862fe9edb5dfded5dbb05646ab8d55047f5622d9b571a` |
-| `server/submissions/admin/index.html` | `51be36a220eab2fa252d93d23624857b14a73389b52f3f5a820f843ec71ccae1` |
-| `server/submissions/participation/admin/index.html` | `c129921b3f534cf175c56e990f70f488234e1b7a991b5dbb5a13d6787f57d652` |
+| `services/api/api/app.ts` | `1b84221a9c15c6233a3e25e76440a38fd360bba2d8fca645e64d135c44f50787` |
+| `services/api/auth/admin.js` | `37de50089ba8a0f43d564763ae00ecb508726a3b8a29c9a3ace75bba27522f5c` |
+| `services/api/auth/session.ts` | `7c9db0e7799671d0500af83975ae6c71709db1b5725219b4b143334a15e3428b` |
+| `services/api/points/admin.ts` | `0e710fea2c546c1579d1bf7a2d97ff2189c4ae48cd79c05e9ed6d155e2490602` |
+| `services/api/points/admin/index.html` | `10e7fde74ae1e3be2ee5163c18c3689279ffa178fc5b4cab8b0f775b44bd6c91` |
+| `services/api/reports/admin/index.html` | `4ae42d5883db7cb1afe1fe333672f68ec2c408d2fd12cab4c358cf32f694bb5a` |
+| `services/api/rewards/admin/index.html` | `f701e483368ef298340862fe9edb5dfded5dbb05646ab8d55047f5622d9b571a` |
+| `services/api/submissions/admin/index.html` | `51be36a220eab2fa252d93d23624857b14a73389b52f3f5a820f843ec71ccae1` |
+| `services/api/submissions/participation/admin/index.html` | `c129921b3f534cf175c56e990f70f488234e1b7a991b5dbb5a13d6787f57d652` |
 
 
 Private reports and source reconciliation remain under
@@ -132,7 +132,7 @@ The pagination correction rebases through actual main
 `458cae125437692c03d036139063c4a99bae2c5d`. The original failed scan and its
 image/source hashes above remain unchanged historical evidence. Main's Awards
 commit changes only award/factor configuration imports and route/journey
-construction in `server/api/app.ts`; this report branch preserves that file
+construction in `services/api/api/app.ts`; this report branch preserves that file
 exactly. Its new SHA-256 is
 `5306e324a52ea84d1a03990b650ddb8a4746e6b20f744b6d52c634136d17a3cf`.
 The other eight listed HTML/helper/session sources retain their scanned hashes.

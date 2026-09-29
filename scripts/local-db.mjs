@@ -14,9 +14,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { Pool, escapeIdentifier, escapeLiteral } from 'pg';
-import { createDatabase } from '../server/database/index.ts';
-import { migrate } from '../server/database/migrate.ts';
-import { seedLocal } from '../server/database/seed.ts';
+import { createDatabase } from '../services/api/database/index.ts';
+import { migrate } from '../services/api/database/migrate.ts';
+import { seedLocal } from '../services/api/database/seed.ts';
 
 const root = realpathSync.native(
   resolve(dirname(fileURLToPath(import.meta.url)), '..'),
@@ -485,7 +485,7 @@ async function main([action, ...args]) {
     if (action === 'test')
       command(
         process.execPath,
-        ['--test', 'server/database/integration.test.ts'],
+        ['--test', 'services/api/database/integration.test.ts'],
         env,
       );
     else {

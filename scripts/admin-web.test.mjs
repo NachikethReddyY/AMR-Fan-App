@@ -15,7 +15,7 @@ test('deploy artifact contains only public admin assets and fixed API routes', a
     assert.equal(files.length, 15);
     assert.ok(files.every((p) => /\.(html|js|css|json)$/.test(p)));
     assert.ok(
-      files.every((p) => !/test|\.env|evidence|package|server/.test(p)),
+      files.every((p) => !/test|\.env|evidence|package|services\/api/.test(p)),
     );
     for (const section of [
       '',

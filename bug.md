@@ -1,5 +1,103 @@
 # Steering and bug inbox
 
+## SWIFT-SUSTAINABILITY-CAM-002: connect gallery proof to reviewed results (unlinked)
+
+Requested on 2026-09-29: remove the sustainability camera demo fixture path and
+let a fan choose a gallery photo that moves through backend analysis, returning
+confidence, awarded points and impact metrics. The Swift client now uses the
+gallery path only and checks photo availability before upload. The current
+server contract still returns unavailable outside its local synthetic mode, so
+backend activation and the result schema remain owned by the backend agent.
+
+Recorded by Codex through Xcode (exact model ID unavailable).
+
+## REPO-STRUCTURE-001: organize the repository into a Turbo workspace (unlinked)
+
+Requested on 2026-09-29: separate the Swift app, fan app, backend, admin app,
+shared packages and documentation. Completed the local workspace migration and
+removed the obsolete Convex placeholder. Swift remains at `Swift-App`; no RS
+directory was invented without a defined owner or purpose.
+
+Recorded by gpt-6-sol through Codex (T3 Code).
+
+Follow-up on 2026-09-29: the Home camera action had been routed to the full
+sustainability page. It now presents the camera full-screen immediately on
+devices, while simulator fallback opens Photos directly; captured media then
+enters the shared verification flow.
+
+Follow-up: the stock camera UI did not include a gallery control. Added a
+visible `Photos` button to the camera overlay; it closes the camera and opens
+the gallery without returning through the sustainability form.
+
+Follow-up on 2026-09-29: replaced that redirect callback with an icon-only
+lower-left camera control that presents `PHPickerViewController` over the live
+camera. Gallery selection now stays in the capture flow and enters verification
+directly.
+
+Final follow-up: removed the intermediate Camera / ADD PROOF page from the
+active route. Capture now transitions directly to image processing and then to
+the points result screen, matching the supplied flow drawing.
+
+Reported on 2026-09-29: camera presentation felt delayed and selecting a photo
+could open a blank page. Root cause was presenting the legacy `destination`
+sheet while the camera/gallery modal was still dismissing. Removed that route,
+use an identifiable pending-photo handoff, and present verification as its own
+full-screen flow only after a non-optional image exists.
+
+Reported on 2026-09-29: `Fatal error: No ObservableObject of type
+BackendSession found` when verification opened. The result screen depended on
+an environment lookup across the full-screen presentation boundary. It now
+receives the owning `BackendSession` explicitly, eliminating that runtime
+precondition failure.
+
+## SWIFT-REWARDS-003: admin assigns planting location (unlinked)
+
+The user corrected the planting rule: fans never choose a location. Redemption
+deducts race points immediately and creates a pending planting; AMR/admin later
+confirms the real planting, date and location, which then appears on the front
+end. Quantity and per-kind estimated CO₂e remain fan-visible at redemption.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-SUSTAINABILITY-CAM-001: replace Gallery placeholder (unlinked)
+
+Requested on 2026-09-28: the Home quick action labeled Gallery was misleading.
+It now opens a Sustainability cam flow where a fan selects an everyday action,
+takes a photo or chooses one from Photos, and receives local demo race points.
+The selected image remains in transient app memory only; no upload or server image
+storage was added. Camera permission text explicitly states that behavior.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-REWARDS-002: forest catalog and pending planting flow (unlinked)
+
+The user requested a full-height digital forest with an add action, catalog
+cards, quantity and confirmation steps, country-grouped planting summaries,
+search/filtering, and pending state until AMR confirmation. Provisional demo
+locations are Singapore, Bangkok and AMR Technology Campus. Existing demo prices
+remain 2,000 / 1,250 / 750 race points for Tree / Bush / Plant. Real locations,
+prices, planting fulfilment and confirmation notifications remain unconnected.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-REWARDS-001: local planting redemption demo (unlinked)
+
+The user requested a local demo flow with 9,000 starting race points, multiple
+tree/bush/plant choices, point deductions, forest population and per-plant
+CO₂e-saved totals. Real planting, fulfilment and carbon removal remain
+unconnected; the demo must stay labelled as local preview data.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-PORT-001: integrate the Swift app into the main repository
+
+Tracking: unlinked. The user requested that the existing Swift port be managed
+by this repository and pushed to GitHub. Preserve the port's committed source and
+assets while excluding the former nested Git metadata, Xcode user state, copied
+agent files, copied planning files and unrelated root `.scratch` deletions.
+
+Recorded by gpt-5.6-sol through Pi.
+
 ## GOOGLE-001: enforce the authorized USD 1 total routing allowance
 
 Tracking: unlinked follow-up to route planning. User authorized Google billing
@@ -1147,3 +1245,202 @@ startup cases pass after implementation. Arbitrary paths and final-target swaps
 still reject symlinks. Hosted mount/private-copy/runtime-path proof remains pending.
 
 Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## SWIFT-MERCH-CHALLENGES-001: merch filtering and fan challenge flow (unlinked)
+
+Actionable request recorded on 2026-09-28: merch category selections must show only
+matching products and discounts; Rewards replaces History with coupon-code space;
+Fan challenges needs race filtering, idea voting, 500-point submission, an outbox,
+and selected ideas in past races shown with gold and a star. Backend-managed data
+and moderation remain integration work; this implementation uses local demo data.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## MERCH-STORE-001: official store catalog capture (unlinked)
+
+The user requested a local handoff for the Aston Martin F1 merch store so the Swift
+app's Apple coding agent can build the shop. Captured 21 official storefront routes
+on 2026-09-28, merged 70 unique product variation IDs, preserved live EUR list/sale
+prices and promotion labels, and downloaded 216 product JPEGs. The Swift handoff has
+216 product images plus `MerchStoreCatalog.json`. Reward discount percentages
+and race-point costs remain null because the product spec leaves them admin-set.
+
+Recorded by gpt-6-sol through Codex (T3 Code).
+
+## SWIFT-MERCH-CHALLENGES-002: supplied imagery and contribution ranking (unlinked)
+
+Clarified on 2026-09-28: category pages use driver/category hero imagery from the
+provided assets; the full catalog is loaded from MerchStoreCatalog.json; cards show
+availability and a green point amount; clicking a category produces a category-only
+page while All shows the complete catalog. Challenges default to the next local
+upcoming race, order ideas by ranking points with incremental loading, and accept
+point contributions of at least 10 rather than one-toggle votes. Submissions are
+fan submissions tagged activity and must not include a race in the payload. The
+backend owns race/calendar data, moderation, balances, ranking, and participation.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## SWIFT-MERCH-CHALLENGES-003: separate category pages and reference layout (unlinked)
+
+Correction requested on 2026-09-28: Open store must remain the full catalog; Caps,
+T-shirts, Outerwear, and Other must navigate to separate category pages. Each page
+must contain only its own full-width image-led header, title/content below the image,
+and filtered products. The category screen must not repeat the category cards or
+store title. Simulator verification now passes this contract on iPhone 17.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## SWIFT-REWARDS-004: admin-managed merch discounts, coupons, and daily Race IQ (unlinked)
+
+The user requested that merchandise remain a catalog but expose admin-configured
+percentage discounts and race-point costs, create coupon records on claim, and
+show claimed coupons as a list. The user also requested Race IQ become a daily
+points-earning quiz with one reward claim per day. The user separately clarified
+that driver-specific merch must be filtered from catalog ownership metadata and
+that sweaters belong to Outerwear. Backend routes, atomic claim behavior,
+admin controls, and quiz authority remain integration work; the backend brief is
+in `docs/backend-prompts/merch-rewards-and-daily-quiz.md`.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-NEWS-001: RSES feed page (unlinked)
+
+The user requested a separate News page inspired by Apple News/Mobbin that loads
+official Aston Martin Aramco stories from the supplied RSS feed at
+`https://green-sky-08b27ad10.4.azurestaticapps.net/feed.xml`. The local Swift app
+should keep existing navigation intact, validate feed item links as HTTPS, and
+show loading, unavailable and retry states without inventing article content.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-DEMO-001: device-only seeded balance and truthful verification states (unlinked)
+
+Requested on 2026-09-28: keep enough Green Points on the tested device to demo
+store and forest redemption, without making seeded points the product default.
+Also requested consistent Green Points naming, persisted one-per-day streaks,
+truthful camera verification states, and explicit preview/demo labels for
+unconnected Travel, Impact, News, moderation, and fulfilment behavior.
+
+Implemented in the Swift port. The local Rewards screen offers one explicit
+9,000 Green Point seed stored in device UserDefaults; normal state starts at
+zero. Photo verification fails closed because the current repository endpoint
+reports Luna unavailable. Tracking: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-005: place-to-place route planning (unlinked)
+
+Actionable request recorded on 2026-09-28: replace the Travel preview's Outbound/
+Return selector with searchable From and To places. Travel options should use
+Apple Maps-style circular mode controls for public transport, walking, cycling,
+and car; selecting a mode should calculate and display a route, and navigation
+should continue in Apple Maps with the selected mode. This local implementation
+uses MapKit search and directions only; journey tracking, emissions, points,
+and backend route-provider integration remain separate work.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-006: travel sheet edge and segmented mode control (unlinked)
+
+Correction requested on 2026-09-28 from simulator screenshots: extend the travel
+screen's dark background through the bottom edge and replace the separate circular
+travel mode controls with one full pill-shaped segmented selector. The selector
+keeps Public transport, Walking, Cycling, and Car as independently selectable
+sections.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-007: draggable route sheet and exposed map (unlinked)
+
+Correction requested on 2026-09-28 from iPhone 17 screenshots: the prior travel
+overlay leaves map visible below its black panel, covers the route, and cannot
+be minimized. Replace the overlay with one draggable bottom sheet that stays
+partially open, expands for searching and mode changes, and collapses to expose
+the map after a route is selected. Keep the travel-mode selector and Apple Maps
+handoff. Tracker link: unlinked.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-008: edge-aligned sheet and explicit route search (unlinked)
+
+Correction requested on 2026-09-28: widen the native travel sheet toward the
+left and right edges and add a visible Search route action after place text is
+entered. Autocomplete remains available, but typed place names now have an
+explicit search path that resolves both locations and calculates the selected
+route mode.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-009: remove floating sheet insets (unlinked)
+
+Correction requested on 2026-09-28: the travel planner sheet still appeared as a
+floating card with visible left, right, and bottom gaps. Keep the native SwiftUI
+sheet and remove page-style floating sizing; the presentation must use the full
+available horizontal width while preserving its draggable vertical detents.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-010: hard edge-to-edge travel panel (unlinked)
+
+Correction requested on 2026-09-28: the native short-detent sheet continued to
+render as a floating card with left, right, and bottom gaps. The travel panel
+must touch the app viewport edges, keep safe-area handling inside content, and
+round only the top corners. The outer presentation container was replaced with
+a viewport-width, bottom-aligned panel because the platform sheet style retained
+those margins despite presentation sizing modifiers.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-011: grabber spacing and live sheet dragging (unlinked)
+
+Correction requested on 2026-09-28 from an iPhone 17 screenshot: add space below
+the grabber and make the travel panel draggable up and down instead of snapping
+only after a grabber release. The panel must track the finger between compact and
+expanded positions and settle with a restrained animation.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-012: stabilize route-sheet transition and camera (unlinked)
+
+Requested on 2026-09-28: the map entry, route-sheet transition and camera
+behavior must remain coherent. The planner now uses one persistent edge-to-edge
+panel with measured compact and expanded content heights, a live gesture state,
+and guarded camera framing based on the rendered sheet height. Initial overlays
+remain hidden until the map reports its first settled camera state. A collapsed
+planner tap expands the same panel so the route-search flow remains reachable
+even when a narrow button hit target is missed.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-013: eliminate overlapping sheet animation (unlinked)
+
+Requested on 2026-09-28: the collapsed and expanded planner content appeared
+simultaneously during animation, causing ghosted text, duplicate handles and an
+unstable map presentation. The cause was animation being applied to the
+conditional content subtree and drag updates resetting from the target detent.
+The planner now renders one persistent sheet background and handle, disables
+implicit animation on content replacement, animates only the panel height, and
+tracks the current rendered height through interruptions. All actions use one
+interruptible transition path and one `PlannerState` source of truth.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+## SWIFT-TRAVEL-014: guard interrupted detent measurements (unlinked)
+
+Follow-up correction after simulator evidence showed transient overlap, map
+movement during a drag, and a clipped field with the keyboard visible. Removed
+the root route animation, made content replacement identity-only, prioritized
+sheet gestures over subviews, cancelled pending camera work during drags, delayed
+camera framing until the final detent, ignored zero-height measurements, and
+kept expanded content scrollable within the available viewport.
+
+Recorded by Codex through Xcode (model ID unavailable).
+
+
+## 2026-09-28: Swift/backend connection request
+
+Actionable request: connect the Swift port to backend authentication, photo
+activity, sustainability points, route options, onboarding, and admin surfaces.
+Implemented locally as a guarded development fixture slice. Production AI, Render
+configuration, provider credentials, and hosted database migration remain
+unconfigured and were not activated. Tracker: PR #65, no merge requested.

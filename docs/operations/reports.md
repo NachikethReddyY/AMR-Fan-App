@@ -161,7 +161,7 @@ The service receives only a public job-verification key; the API holds the priva
 signing key. Short-lived signed jobs bind audience, UUID, source hash and bytes.
 Both response association and page/text bounds are revalidated by the API.
 
-The [service artifact and exact trial proposal](../../server/reports/hosted/README.md)
+The [service artifact and exact trial proposal](../../services/api/reports/hosted/README.md)
 describe the credential-free Docker service, Landlock/seccomp launcher, strict
 readiness checks, default-disabled synthetic-only trial endpoint, and cleanup.
 The root must review the exact candidate before cloud creation. Zero spend must
@@ -202,7 +202,7 @@ remote transfer. Synthetic injected candidates prove the handoff, not model qual
 
 ## Registered API and admin
 
-`server/api/app.ts` serves the three allowlisted `/admin/reports/` assets, which
+`services/api/api/app.ts` serves the three allowlisted `/admin/reports/` assets, which
 reuse `/admin/style.css`. No shell/navigation or phone changes are required.
 It lazily composes the report runtime after existing origin/rate/bearer checks.
 An unconfigured report feature returns controlled 503 without breaking unrelated
@@ -246,7 +246,7 @@ export REPORT_PARSER_IMAGE="$(docker image inspect amr-report-parser:local --for
 export REPORT_PARSER_MODE=docker
 # Set REPORT_STORAGE_ROOT and REPORT_TEST_STORAGE to the allocated dev/test paths.
 # Set API_PORT to the leased loopback port; ADMIN_ORIGIN must match it exactly.
-pnpm db:run -- node server/api/start.ts
+pnpm db:run -- node services/api/api/start.ts
 ```
 
 Use `API_HOST=127.0.0.1`, `AUTH_DEV_ENABLED=true` only for authorized local synthetic
