@@ -1,8 +1,8 @@
 import SwiftUI
 import Foundation
 import UIKit
-import Security
 import Combine
+import AuthenticationServices
 
 struct BackendProfile: Codable, Equatable {
     let id: String
@@ -26,8 +26,11 @@ struct BackendSessionResponse: Codable {
 }
 
 enum BackendActivityKind: String, Codable {
-    case verified
+    case accepted
+    case uncertain
     case rejected
+    case cancelled
+    case expired
     case unavailable
 }
 
@@ -83,15 +86,30 @@ private struct RouteRequest: Encodable {
     let modes: [String]
 }
 
-struct BackendActivityResponse: Codable {
-    let kind: BackendActivityKind
-    let activity: String?
-    let object: String?
-    let creditedPoints: Int
+struct BackendActivityReward: Decodable {
+    let kind: String
+    let points: Int
     let receiptId: String?
+    let balanceAfter: Int?
+    let policyVersion: String?
+    let reason: String?
+}
+
+struct BackendActivityResponse: Decodable {
+    let kind: BackendActivityKind
+    let assessmentId: String?
+    let category: String?
+    let evidenceScore: Int?
     let confidence: Double?
-    let message: String?
-    let source: String?
+    let rationale: String?
+    let reason: String?
+    let reward: BackendActivityReward?
+
+    var activity: String? { category }
+    var object: String? { category }
+    var creditedPoints: Int { reward?.points ?? 0 }
+    var receiptId: String? { reward?.receiptId }
+    var message: String? { rationale ?? reason?.replacingOccurrences(of: "_", with: " ").capitalized }
 }
 
 private struct BackendActivityAvailability: Decodable {
@@ -110,13 +128,16 @@ final class BackendSession: ObservableObject {
     @Published var errorMessage: String?
 
     private let client = BackendClient()
+    private let sessionStore: SessionTokenStore
     private(set) var token: String?
 
     var isConnected: Bool { token != nil && account != nil }
     var realProfile: BackendProfile? { account?.realProfile }
 
-    init() {
-        token = KeychainStore.read("amr.session")
+    init(sessionStore: SessionTokenStore? = nil) {
+        let sessionStore = sessionStore ?? KeychainSessionStore()
+        self.sessionStore = sessionStore
+        token = sessionStore.read()
     }
 
     func resume() async {
@@ -124,12 +145,24 @@ final class BackendSession: ObservableObject {
         await run { self.account = try await self.client.account(token: token) }
     }
 
+    #if DEBUG
     func signInForLocalDemo() async {
         await run {
             let session = try await self.client.syntheticSignIn(fixture: "fan-a")
             self.token = session.token
             self.account = session.account
-            KeychainStore.write(session.token, key: "amr.session")
+            try self.sessionStore.write(session.token)
+        }
+    }
+    #endif
+
+    func signIn() async {
+        await run {
+            let providerToken = try await self.client.authorize()
+            let session = try await self.client.exchange(providerAccessToken: providerToken)
+            try self.sessionStore.write(session.token)
+            self.token = session.token
+            self.account = session.account
         }
     }
 
@@ -139,7 +172,7 @@ final class BackendSession: ObservableObject {
             try await self.client.logout(token: token)
             self.token = nil
             self.account = nil
-            KeychainStore.delete("amr.session")
+            try self.sessionStore.delete()
         }
     }
 
@@ -178,6 +211,7 @@ enum BackendError: LocalizedError {
     case server(Int, String)
     case unsupportedImage
     case verificationUnavailable
+    case authFailed
 
     var errorDescription: String? {
         switch self {
@@ -186,33 +220,112 @@ enum BackendError: LocalizedError {
         case .server(_, let message): message
         case .unsupportedImage: "Choose a photo smaller than 2 MB after compression."
         case .verificationUnavailable: "Photo analysis is not available on this backend yet. Your photo was not uploaded."
+        case .authFailed: "Sign-in could not be completed. Please try again."
         }
     }
 }
 
+private final class AuthPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = AuthPresentationContext()
+
+    func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow) ?? ASPresentationAnchor()
+    }
+}
+
 private struct ActivityRequest: Encodable {
-    let profileId: String
-    let capture: String
-    let mime: String
-    let photoBase64: String
-    let description: String
     let requestId: String
-    let activity: String
+    let description: String
+    let photos: [ActivityPhoto]
+    let missionId: String?
+    let journeyId: String?
+}
+
+private struct ActivityPhoto: Encodable {
+    let mime: String
+    let base64: String
 }
 
 private final class BackendClient {
     private let baseURL: URL
+    private let oidc: OIDCConfiguration
+    private let urlSession: URLSession
+    private var authenticationSession: ASWebAuthenticationSession?
 
-    init() {
+    init(
+        baseURL: URL? = nil,
+        oidc: OIDCConfiguration = .staging,
+        urlSession: URLSession = .shared
+    ) {
         let configured = UserDefaults.standard.string(forKey: "amr.apiBaseURL")
             ?? ProcessInfo.processInfo.environment["AMR_API_URL"]
-            ?? "http://127.0.0.1:8787/"
-        baseURL = URL(string: configured.hasSuffix("/") ? configured : configured + "/")!
+            ?? "https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io/"
+        self.baseURL = baseURL ?? URL(string: configured.hasSuffix("/") ? configured : configured + "/")!
+        self.oidc = oidc
+        self.urlSession = urlSession
     }
 
+    @MainActor
+    func authorize() async throws -> String {
+        let pkce = try PKCECodePair.make()
+        let state = try SecureRandom.token(byteCount: 32)
+        guard let url = oidc.authorizationURL(state: state, codeChallenge: pkce.challenge) else { throw BackendError.authFailed }
+
+        let callbackURL: URL = try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: oidc.callbackScheme) { [weak self] callback, error in
+                self?.authenticationSession = nil
+                if let error { continuation.resume(throwing: error); return }
+                guard let callback else { continuation.resume(throwing: BackendError.authFailed); return }
+                continuation.resume(returning: callback)
+            }
+            session.presentationContextProvider = AuthPresentationContext.shared
+            session.prefersEphemeralWebBrowserSession = false
+            authenticationSession = session
+            guard session.start() else {
+                authenticationSession = nil
+                continuation.resume(throwing: BackendError.authFailed)
+                return
+            }
+        }
+        guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
+            throw BackendError.authFailed
+        }
+        if components.queryItems?.contains(where: { $0.name == "error" }) == true { throw BackendError.authFailed }
+        guard let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+            throw BackendError.authFailed
+        }
+        guard components.queryItems?.first(where: { $0.name == "state" })?.value == state else {
+            throw BackendError.authFailed
+        }
+        return try await exchangeCode(code, verifier: pkce.verifier)
+    }
+
+    private func exchangeCode(_ code: String, verifier: String) async throws -> String {
+        var request = URLRequest(url: oidc.tokenURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = FormURLEncoder.encode([
+            "client_id": oidc.clientID, "grant_type": "authorization_code", "code": code,
+            "redirect_uri": oidc.redirectURI, "code_verifier": verifier, "scope": "openid profile email offline_access \(oidc.apiScope)"
+        ]).data(using: .utf8)
+        let (data, response) = try await urlSession.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let payload = try? JSONDecoder().decode(OIDCTokenResponse.self, from: data) else { throw BackendError.authFailed }
+        return payload.accessToken
+    }
+
+    func exchange(providerAccessToken: String) async throws -> BackendSessionResponse {
+        try await request(path: "v1/session", method: "POST", token: providerAccessToken, body: EmptyBody())
+    }
+
+    #if DEBUG
     func syntheticSignIn(fixture: String) async throws -> BackendSessionResponse {
         try await request(path: "v1/dev/session", method: "POST", token: nil, body: ["fixture": fixture])
     }
+    #endif
 
     func routes(token: String, origin: String, destination: String) async throws -> BackendRouteResponse {
         try await request(path: "v1/routes/query", method: "POST", token: token, body: RouteRequest(origin: origin, destination: destination, extraMinutes: 15, modes: ["DRIVE", "TRANSIT", "WALK", "BICYCLE"]))
@@ -229,24 +342,21 @@ private final class BackendClient {
 
     func activityAvailable(token: String, profileId: String) async throws -> Bool {
         let response: BackendActivityAvailability = try await request(
-            path: "v1/profiles/\(profileId)/activity/availability", method: "GET", token: token, body: EmptyBody()
+            path: "v1/profiles/\(profileId)/activity-submissions/availability", method: "GET", token: token, body: EmptyBody()
         )
         return response.kind == "available"
     }
 
-    func uploadActivity(token: String, profileId: String, image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
-        guard let data = image.jpegData(compressionQuality: 0.82) else { throw BackendError.unsupportedImage }
-        guard data.count <= 2_000_000 else { throw BackendError.unsupportedImage }
-        let payload = ActivityRequest(
-            profileId: profileId,
-            capture: capture.rawValue,
-            mime: "image/jpeg",
-            photoBase64: data.base64EncodedString(),
-            description: "Identify the sustainable activity visible in this photo.",
-            requestId: UUID().uuidString.lowercased(),
-            activity: "other"
-        )
-        return try await request(path: "v1/profiles/\(profileId)/activity/photos", method: "POST", token: token, body: payload)
+    func uploadActivity(token: String, profileId: String, image: UIImage, capture _: PhotoCapture) async throws -> BackendActivityResponse {
+        guard let data = PhotoUploadEncoder.jpegData(for: image) else { throw BackendError.unsupportedImage }
+        let payload = ActivityRequest(requestId: UUID().uuidString.lowercased(), description: "Identify the sustainable activity visible in this photo.", photos: [ActivityPhoto(mime: "image/jpeg", base64: data.base64EncodedString())], missionId: nil, journeyId: nil)
+        do {
+            return try await request(path: "v1/profiles/\(profileId)/activity-submissions", method: "POST", token: token, body: payload)
+        } catch BackendError.server(503, _) {
+            throw BackendError.verificationUnavailable
+        } catch BackendError.server(413, _) {
+            throw BackendError.unsupportedImage
+        }
     }
 
     private func request<T: Decodable, Body: Encodable>(path: String, method: String, token: String?, body: Body?) async throws -> T {
@@ -256,7 +366,7 @@ private final class BackendClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body { request.httpBody = try JSONEncoder().encode(body) }
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw BackendError.invalidResponse }
         if !(200..<300).contains(http.statusCode) {
             let message = (try? JSONDecoder().decode(ErrorResponse.self, from: data).error) ?? "The backend could not complete the request."
@@ -269,23 +379,4 @@ private final class BackendClient {
     private struct ErrorResponse: Decodable { let error: String }
     private struct EmptyResponse: Decodable { }
     private struct EmptyBody: Encodable { }
-}
-
-private enum KeychainStore {
-    static func write(_ value: String, key: String) {
-        let data = Data(value.utf8)
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: key]
-        SecItemDelete(query as CFDictionary)
-        SecItemAdd(query.merging([kSecValueData as String: data]) { _, new in new } as CFDictionary, nil)
-    }
-    static func read(_ key: String) -> String? {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: key, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-    static func delete(_ key: String) {
-        SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrAccount as String: key] as CFDictionary)
-    }
 }

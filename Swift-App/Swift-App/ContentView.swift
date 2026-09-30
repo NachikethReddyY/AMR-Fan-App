@@ -168,7 +168,7 @@ struct ContentView: View {
         .task(id: selectedGalleryItem) {
             guard let selectedGalleryItem else { return }
             guard let data = try? await selectedGalleryItem.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data), !Task.isCancelled else { return }
+                  let image = PhotoUploadEncoder.downsampledImage(data: data), !Task.isCancelled else { return }
             verificationPhoto = PendingPhoto(image: image, capture: .gallery)
         }
         .fullScreenCover(item: $verificationPhoto) { photo in
@@ -222,13 +222,13 @@ struct ContentView: View {
     private func destinationView(for page: FanDestination) -> some View {
         switch page {
         case .profile:
-            ProfileScreen(driver: driver ?? .alonso, changeDriver: { supportedDriver = "" },
+            ProfileScreen(backend: backend, driver: driver ?? .alonso, changeDriver: { supportedDriver = "" },
                           showTour: {
                               replayTourAfterDismiss = true
                               destination = nil
                           })
         case .account:
-            AccountScreen()
+            AccountScreen(backend: backend)
         case .news:
             NewsFeedScreen()
         case .paddock:

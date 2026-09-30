@@ -623,11 +623,18 @@ struct TravelScreen: View {
             if backend.isConnected {
                 do {
                     let response = try await backend.routes(origin: origin.displayName, destination: destination.displayName)
-                    backendRoutes = response.result.routes ?? []
-                    selectedBackendRouteID = backendRoutes.first?.id
+                    if response.result.kind == "unavailable" {
+                        backendRoutes = []
+                        selectedBackendRouteID = nil
+                        routeError = "AMR route comparison is unavailable right now. Showing the Apple Maps route only."
+                    } else {
+                        backendRoutes = response.result.routes ?? []
+                        selectedBackendRouteID = backendRoutes.first?.id
+                    }
                 } catch {
                     backendRoutes = []
                     selectedBackendRouteID = nil
+                    routeError = "AMR route comparison is unavailable right now. Showing the Apple Maps route only."
                 }
             }
             let directions = MKDirections(request: request)

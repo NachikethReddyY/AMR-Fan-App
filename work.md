@@ -21,6 +21,29 @@ The first animation pass assigned the car's initial and final offsets in the sam
 The first device snapshots were taken after the intro had already advanced, so they did not prove the car was absent. Added a debug-only, in-memory `-replay-f1-intro` argument that preserves the saved driver. The fresh iPhone 18 Pro recording and contact sheet show `WELCOME!`, `to`, the car over green, team name, and “Your fan experience awaits”. Evidence: `.evidence/f1-onboarding-animation/`. The Reduce Motion hypothesis was unsupported and is no longer treated as the cause.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
+## 2026-09-30: provider test-account check
+
+Tracking: SWIFT-BACKEND-004, unlinked. Resumed the iPhone 17 OIDC sheet and entered the supplied test email without recording it in project files. The live provider returned `We couldn't find an account with this email address.` No password, one-time code or other private factor was requested or handled. Callback completion, authenticated account exchange, `/v1/me` and logout revocation remain blocked by provider account availability.
+
+Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-09-30: live simulator authentication workflow
+
+Tracking: SWIFT-BACKEND-004, unlinked. Started OrbStack and ran `pnpm security:check`: secrets scan passed, SAST found zero findings across 377 targets, scanner self-tests passed, and `pnpm audit --audit-level high` reported one existing moderate advisory. The iPhone 17 simulator reached the profile sheet, rendered the account screen after an explicit `BackendSession` injection fix, showed the iOS OIDC consent prompt, and rendered the live Entra sign-in form. The workflow recording is `.evidence/swift-backend-live/swift-auth-workflow.mp4`.
+
+The simulator could not complete callback, authenticated `/v1/session` exchange, `/v1/me`, or `DELETE /v1/session` logout because no registered AMR account credentials were available. Anonymous invalid-token probes returned `401` for all three protected paths. `GET /health` and `GET /ready` returned `200`; production `POST /v1/dev/session` returned `404`. Debug and Release builds, deterministic auth checks and `pnpm agents:check` passed. No commit, push or deployment was performed.
+
+Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-09-30: Swift backend integration handoff
+
+Tracking: SWIFT-BACKEND-004, unlinked. Completed the native backend integration in the handoff worktree on `handoff/swift-backend-integration`. The Swift app now defaults to the deployed Azure API, uses Entra External ID authorization-code + PKCE with state validation through `ASWebAuthenticationSession`, exchanges the provider access token at `/v1/session`, stores only the opaque AMR session in Keychain, resumes through `/v1/me`, and revokes plus clears local state on logout. Synthetic sign-in is compiled only for Debug builds and is not part of the production flow. Activity code uses `/activity-submissions`; disabled staging returns an honest unavailable result without uploading the photo. Route fallback now tells the fan when AMR comparison is unavailable while Apple Maps remains usable.
+
+The prior flat activity-response assumption failed the backend contract criterion during final review. Swift now decodes the strict accepted, uncertain, rejected, cancelled, expired and unavailable result kinds with nested reward data. Project lesson: keep native response models aligned with the server's discriminated contract, not legacy UI field names.
+
+Focused proof passed: deterministic PKCE and authorize URL checks, safe form encoding, Keychain write/read/delete checks, public `GET /health` returned `200`, public `GET /ready` returned `200` with database `ok`, production `POST /v1/dev/session` returned `404`, and both requested iPhone simulator Debug and Release builds succeeded. The processed Release `Info.plist` contains `com.amr.fanapp` and `msauth.com.amr.fanapp`; the Release binary excludes `/v1/dev/session`. `pnpm agents:check` passed. `pnpm security:check` is unverified because the local Docker daemon is unavailable. Live OIDC callback, token exchange, authenticated `/v1/me`, logout revocation and device rendering remain unverified without a registered account/device flow. The original worktree remains unchanged; no commit, push or deployment was performed.
+
+Implemented by gpt-6.1-sol through Codex (T3 Code).
 
 ## 2026-09-29: gallery-first sustainability verification flow
 
@@ -3237,3 +3260,25 @@ Removed the debug Play/Replay launcher controls. `ContentView` now uses transien
 Verification: Swift simulator build passed, `pnpm check` passed, and `pnpm security:check` passed with the existing moderate audit advisory and expected self-test fixture findings. No commit or PR existed at the time of this entry.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+## 2026-09-30: Swift photo upload size fix
+
+Fixed the Swift sustainability-photo path in the uncommitted
+`handoff/swift-backend-integration` worktree. Added `PhotoUploadEncoder` for
+bounded ImageIO decoding and adaptive JPEG compression, used it for both
+PhotosPicker and the camera's library picker, and mapped backend 413 responses
+to the existing unsupported-image state. The client budget is 1,800,000 bytes,
+below the backend's 2 MiB decoded-photo limit.
+
+Focused proof generated a 6000x4000 synthetic image. The previous fixed-quality
+JPEG was 25,315,126 bytes; the bounded encoder returned 970,616 bytes and kept
+the long edge within 1600 pixels. Debug and Release simulator builds passed,
+`git diff --check` passed, and the rebuilt iPhone 17 simulator selected a
+library photo and reached the verification screen without a resource-size
+failure. This proves the intake path, not the authenticated server submission:
+the backend activity service remains disabled and the available provider
+account was not registered. No commit, push, deployment or original-worktree
+change occurred.
+
+Evidence is stored under `.evidence/swift-photo-upload/`.
+
+Implemented by gpt-6.1-sol through Codex (T3 Code).

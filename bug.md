@@ -1,5 +1,15 @@
 # Steering and bug inbox
 
+## SWIFT-BACKEND-004: continue backend integration (unlinked)
+
+Requested on 2026-09-30: continue the Swift backend handoff and build the integration out in the handoff worktree. Ported native authorization-code + PKCE sign-in, Azure API defaults, Keychain session persistence, activity-submission routes, and honest provider-disabled UI handling. Device automation is now authorized and recorded. The live provider reached its sign-in form, but callback, account exchange and logout still require a registered AMR account and confirmed deployed audience/scope configuration.
+
+The clean simulator run reproduced `No ObservableObject of type BackendSession found` when the profile sheet opened the account screen. Root cause: the modal account view relied on environment propagation across a nested presentation boundary. `AccountScreen` and `ProfileScreen` now receive the owning session explicitly, and the clean rerun reached the account screen and OIDC consent prompt without a new crash.
+
+Follow-up device check: the live provider accepted the supplied test-email input but returned `We couldn't find an account with this email address.` The account was not created, and no password or verification factor was requested or handled. Callback, account exchange and logout remain blocked until a registered provider account is supplied.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).
+
 ## CI-BACKEND-001: first backend workflow
 
 Requested on 2026-09-29: add a workflow named `backend` that checks backend
@@ -1561,3 +1571,34 @@ Recorded by gpt-6-astra through Codex (T3 Code).
 Account-gated launch correction: removed the debug Play/Replay controls. Before `hasCompletedAccountSetup` is true, the intro and onboarding advance only for the current process launch; closing and reopening starts the intro again. A connected BackendSession persists the account-completion bypass. The real sign-up screens remain a separate-thread handoff and must establish that session. Tracking: unlinked.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+## PHOTO-UPLOAD-001: oversized photo rejected during verification
+
+Reported on 2026-09-30: the Swift app showed `Could not process photo` with
+`resource exceeds maximum size` after selecting a photo. The client loaded the
+full gallery resource, then used one fixed-quality JPEG conversion and only
+checked the result against a limit close to the backend's exact 2 MiB decoded
+photo limit. This is a confirmed weakness in the client path, not a confirmed
+origin of the exact error message: authenticated upload could not be reproduced
+without a registered provider account. The fix bounds both pixel dimensions
+and JPEG bytes before upload.
+
+Fixed in the handoff worktree. `PhotoUploadEncoder` downsamples gallery and
+camera-library images to at most 1600 pixels on the long edge, tries bounded
+dimensions and JPEG qualities, and returns only data at or below 1,800,000
+bytes. HTTP 413 responses now map to the same user-facing unsupported-image
+state instead of exposing a raw server-size message. The existing disabled
+verification behavior remains unchanged.
+
+Proof: `PhotoUploadChecks` generated a 6000x4000 image whose old fixed-quality
+JPEG was 25,315,126 bytes and produced a 970,616-byte bounded JPEG. It also
+checked gallery downsampling, invalid data rejection, and a small image. Debug
+and Release simulator builds passed. The rebuilt iPhone 17 simulator reached
+the verification screen after selecting a library photo without the old size
+error while signed out. The exact failing photo and authenticated submission
+remain unverified because the available provider account was not registered.
+
+Evidence: `.evidence/swift-photo-upload/photo-upload-checks.log`,
+`.evidence/swift-photo-upload/photo-workflow.mp4`, and
+`.evidence/swift-photo-upload/photo-picker.png`.
+
+Implemented by gpt-6.1-sol through Codex (T3 Code).
