@@ -3,6 +3,10 @@ import Foundation
 import UIKit
 import Combine
 import AuthenticationServices
+<<<<<<< Updated upstream
+=======
+import CryptoKit
+>>>>>>> Stashed changes
 
 struct BackendProfile: Codable, Equatable {
     let id: String
@@ -166,6 +170,16 @@ final class BackendSession: ObservableObject {
         }
     }
 
+    func signIn() async {
+        await run {
+            let providerToken = try await self.client.authorize()
+            let session = try await self.client.exchange(providerAccessToken: providerToken)
+            self.token = session.token
+            self.account = session.account
+            KeychainStore.write(session.token, key: "amr.session")
+        }
+    }
+
     func signOut() async {
         guard let token else { return }
         await run {
@@ -263,6 +277,7 @@ private final class BackendClient {
         let configured = UserDefaults.standard.string(forKey: "amr.apiBaseURL")
             ?? ProcessInfo.processInfo.environment["AMR_API_URL"]
             ?? "https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io/"
+<<<<<<< Updated upstream
         self.baseURL = baseURL ?? URL(string: configured.hasSuffix("/") ? configured : configured + "/")!
         self.oidc = oidc
         self.urlSession = urlSession
@@ -277,12 +292,41 @@ private final class BackendClient {
         let callbackURL: URL = try await withCheckedThrowingContinuation { continuation in
             let session = ASWebAuthenticationSession(url: url, callbackURLScheme: oidc.callbackScheme) { [weak self] callback, error in
                 self?.authenticationSession = nil
+=======
+        baseURL = URL(string: configured.hasSuffix("/") ? configured : configured + "/")!
+    }
+
+    private let authority = URL(string: "https://amrfancustomers.ciamlogin.com/9dcdff78-04a7-49fc-90bd-e9c7b76e4774")!
+    private let clientID = "616286cc-a22b-49a2-b5a3-27011fd615a1"
+    private let apiScope = "api://f278be1f-21a5-455b-bb14-b2fc60373939/account.access"
+    private let redirectURI = "msauth.com.amr.fanapp://auth"
+
+    @MainActor
+    func authorize() async throws -> String {
+        let verifier = Self.randomString()
+        let challenge = Self.base64URL(Data(SHA256.hash(data: Data(verifier.utf8))))
+        var components = URLComponents(url: authority.appendingPathComponent("oauth2/v2.0/authorize"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: clientID),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "redirect_uri", value: redirectURI),
+            URLQueryItem(name: "response_mode", value: "query"),
+            URLQueryItem(name: "scope", value: "openid profile email offline_access \(apiScope)"),
+            URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256")
+        ]
+        guard let url = components.url else { throw BackendError.authFailed }
+
+        let callbackURL: URL = try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "msauth.com.amr.fanapp") { callback, error in
+>>>>>>> Stashed changes
                 if let error { continuation.resume(throwing: error); return }
                 guard let callback else { continuation.resume(throwing: BackendError.authFailed); return }
                 continuation.resume(returning: callback)
             }
             session.presentationContextProvider = AuthPresentationContext.shared
             session.prefersEphemeralWebBrowserSession = false
+<<<<<<< Updated upstream
             authenticationSession = session
             guard session.start() else {
                 authenticationSession = nil
@@ -312,6 +356,28 @@ private final class BackendClient {
             "redirect_uri": oidc.redirectURI, "code_verifier": verifier, "scope": "openid profile email offline_access \(oidc.apiScope)"
         ]).data(using: .utf8)
         let (data, response) = try await urlSession.data(for: request)
+=======
+            guard session.start() else { continuation.resume(throwing: BackendError.authFailed); return }
+        }
+        guard let code = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else {
+            throw BackendError.authFailed
+        }
+        return try await exchangeCode(code, verifier: verifier)
+    }
+
+    private func exchangeCode(_ code: String, verifier: String) async throws -> String {
+        var request = URLRequest(url: authority.appendingPathComponent("oauth2/v2.0/token"))
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = [
+            "client_id": clientID, "grant_type": "authorization_code", "code": code,
+            "redirect_uri": redirectURI, "code_verifier": verifier, "scope": "openid profile email offline_access \(apiScope)"
+        ].map { pair in
+            let encoded = pair.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? pair.value
+            return "\(pair.key)=\(encoded)"
+        }.joined(separator: "&").data(using: .utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+>>>>>>> Stashed changes
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
               let payload = try? JSONDecoder().decode(OIDCTokenResponse.self, from: data) else { throw BackendError.authFailed }
         return payload.accessToken
@@ -321,7 +387,22 @@ private final class BackendClient {
         try await request(path: "v1/session", method: "POST", token: providerAccessToken, body: EmptyBody())
     }
 
+<<<<<<< Updated upstream
     #if DEBUG
+=======
+    private struct OIDCTokenResponse: Decodable { let accessToken: String
+        enum CodingKeys: String, CodingKey { case accessToken = "access_token" }
+    }
+
+    private static func randomString() -> String {
+        base64URL(Data((0..<32).map { _ in UInt8.random(in: 0...255) }))
+    }
+
+    private static func base64URL(_ data: Data) -> String {
+        data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    }
+
+>>>>>>> Stashed changes
     func syntheticSignIn(fixture: String) async throws -> BackendSessionResponse {
         try await request(path: "v1/dev/session", method: "POST", token: nil, body: ["fixture": fixture])
     }
@@ -347,6 +428,7 @@ private final class BackendClient {
         return response.kind == "available"
     }
 
+<<<<<<< Updated upstream
     func uploadActivity(token: String, profileId: String, image: UIImage, capture _: PhotoCapture) async throws -> BackendActivityResponse {
         guard let data = PhotoUploadEncoder.jpegData(for: image) else { throw BackendError.unsupportedImage }
         let payload = ActivityRequest(requestId: UUID().uuidString.lowercased(), description: "Identify the sustainable activity visible in this photo.", photos: [ActivityPhoto(mime: "image/jpeg", base64: data.base64EncodedString())], missionId: nil, journeyId: nil)
@@ -357,6 +439,13 @@ private final class BackendClient {
         } catch BackendError.server(413, _) {
             throw BackendError.unsupportedImage
         }
+=======
+    func uploadActivity(token: String, profileId: String, image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
+        guard let data = image.jpegData(compressionQuality: 0.82) else { throw BackendError.unsupportedImage }
+        guard data.count <= 2_000_000 else { throw BackendError.unsupportedImage }
+        let payload = ActivityRequest(requestId: UUID().uuidString.lowercased(), description: "Identify the sustainable activity visible in this photo.", photos: [ActivityPhoto(mime: "image/jpeg", base64: data.base64EncodedString())], missionId: nil, journeyId: nil)
+        return try await request(path: "v1/profiles/\(profileId)/activity-submissions", method: "POST", token: token, body: payload)
+>>>>>>> Stashed changes
     }
 
     private func request<T: Decodable, Body: Encodable>(path: String, method: String, token: String?, body: Body?) async throws -> T {
