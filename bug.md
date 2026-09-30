@@ -1,5 +1,16 @@
 # Steering and bug inbox
 
+## CI-BLACKBOX-002: activate Ubuntu Worker workflow (unlinked)
+
+Requested on 2026-09-30: activate the full prepared Black Box Worker workflow
+and CI database isolation on Ubuntu. The consolidated dispatch workflow uses
+the `blackbox` runner label and preserves the Checks and Security jobs. Their
+original files remain available for manual recovery; automatic push, PR and
+weekly adaptation moves to the Worker. Backend and Azure deployment remain
+independent workflows. Live dispatch verification is pending activation.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).
+
 ## SWIFT-BACKEND-004: continue backend integration (unlinked)
 
 Requested on 2026-09-30: continue the Swift backend handoff and build the integration out in the handoff worktree. Ported native authorization-code + PKCE sign-in, Azure API defaults, Keychain session persistence, activity-submission routes, and honest provider-disabled UI handling. Device automation is now authorized and recorded. The live provider reached its sign-in form, but callback, account exchange and logout still require a registered AMR account and confirmed deployed audience/scope configuration.
