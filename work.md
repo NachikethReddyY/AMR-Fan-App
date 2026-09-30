@@ -3282,3 +3282,28 @@ change occurred.
 Evidence is stored under `.evidence/swift-photo-upload/`.
 
 Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-09-30: activate Black Box Worker on Ubuntu
+
+Tracking: CI-BLACKBOX-002, unlinked. Published the dispatch-only
+`black-box-ci.yml`, CI database overrides, Compose ownership labels and
+preflight. Worker push, PR and weekly adaptation replaces the automatic
+Checks/Security triggers; their original definitions remain for manual recovery.
+Backend now selects `blackbox`; Azure deployment is unchanged.
+
+Worker-triggered run `36748076602` tested commit `e3ad7d5` on Ubuntu runner
+`blackbox-bb-1`. `local-checks`, `local-postgres` and
+`source-and-dependencies` passed, including every database suite and report
+parser tests. Failed and successful database runs both removed their owned
+containers, volumes, parser image and transient auth. The DAST fixture build
+context is fixed, and the awards test now matches the existing post-lock session
+expiry check without changing production authorization. All 27 awards tests and
+both safe/unsafe scanner fixtures passed in the focused Ubuntu rerun.
+
+Full acceptance remains blocked by the application scan at
+`/admin/participation/`, which reports missing CSRF tokens (ZAP 10202).
+The scanner policy remains unchanged. An actual reboot and cancellation test
+remain unverified. The Worker returned the exact tested revision and recorded
+failure rather than treating the remaining application finding as a pass.
+
+Edited by gpt-6.1-sol through Codex (T3 Code).
