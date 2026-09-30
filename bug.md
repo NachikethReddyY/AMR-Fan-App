@@ -133,6 +133,7 @@ the separate production migration/deployment work remain pending.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
 
+
 ## TEST-DATA-001: labelled read-only examples
 
 Root requested representative points, activity, CO2 estimates, reward kinds and
@@ -1515,5 +1516,48 @@ private repository collaboration, and commit author `ashura-oss` without project
 access as the cause of `Deployment Blocked`. Vercel states that private-repository
 collaboration requires Pro. This is external account infrastructure, not a PR
 failure; no upgrade, collaborator change, or deployment action is authorized.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+# 2026-09-30: first-run F1 intro and login gate
+
+User requested an Aston Martin F1-style new-user sequence: welcome and “to” reveal, car rising from the bottom with a green trail expanding from behind the rear wheels, team name, “Your fan experience awaits,” green wipe to onboarding, driver selection, then login before app access. The login step must call the real sign-in/sign-up pages being built in the user's separate auth thread; do not add a duplicate local auth flow in this slice. Tracking: unlinked.
+
+Direction A, cinematic reveal, was selected. Production SwiftUI uses the existing car asset at `Swift-App/Swift-App/Assets.xcassets/AMR26Car.imageset/car.png`. The login step remains an explicit handoff to the real sign-in/sign-up pages from the separate auth thread.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up: user reported missing welcome/to/car on the iPhone 18 Pro preview. Post-launch snapshots only captured later screens, so they did not establish a cause. A recording started before a debug replay now captures the welcome, to, car, team name and fan message, followed by onboarding. The debug-only replay argument preserves the saved driver. Reduce Motion was not measured; the earlier diagnosis is withdrawn. Local evidence: `.evidence/f1-onboarding-animation/`. Sound is not implemented.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+Follow-up correction: the user has still never watched the intro firsthand and requests a rebuild named AMR Fan App. A recording is insufficient acceptance evidence. Add a debug-only, launch-argument-controlled Play intro entry so the animation waits for the user's action, with replay after completion. Reuse the original preview bundle instead of creating more icons. Classification: project guidance; proposed lesson is to leave timed previews ready for user initiation. No guidance file changed. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Resolution: rebuilt the existing preview bundle with display name `AMR Fan App` and a debug-only `Play intro` launcher. The app is open on iPhone 18 Pro waiting for the user to initiate it. Observed app inventory contains one AMR Fan App preview bundle and the device runner. Build and device launch passed. Sound effects remain unimplemented.
+
+Verified by gpt-6-astra through Codex (T3 Code).
+
+Choreography correction: the prior intro failed the user's motion requirement. The car stayed onscreen, the green appeared ahead of it, and the team/message shared layers. Required sequence: welcome morphs to "to", car enters below and exits above with a rectangular green fill attached behind its rear wheels, team appears at about 75% of the run, green clears to #0A0A0A, then "Welcome to your fan experience" appears separately. This supersedes the previous fan-message copy. Classification: project lesson; propose verifying relative positions during motion, not just presence in screenshots. Guidance files unchanged. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Latest steering: final copy must be "Welcome to your drive." Use more dramatic welcome/to motion and wider, italic motorsport-like typography. The car must fully leave the top edge and the trailing rectangle must cover the entire screen. Current correction uses a single animated progress value for car and trail with full-screen geometry, then a separate green exit and black message. No extra app bundle is created.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Latest steering: the car appeared to lead with the wrong end. The intro had an explicit 180-degree rotation on the asset. Removed that transform so the whole car reverses orientation while the shared car/trail motion stays unchanged. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Latest correction: user requested a faster F1 car and green slide, lines around the wheels, no "Welcome to your drive" gap, fan-focused copy, and a wipe revealing the copy underneath. The car run is now 1.65 seconds, speed lines render around both wheel rows, the final message is "Your fan experience awaits", and the green layer wipes upward to reveal it. Device recording is retained in `.evidence/f1-onboarding-animation/`. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Latest correction: removed the wheel-area wind/speed lines at the user's request. Car speed, green trail, wipe, copy, and onboarding flow are unchanged. Rebuilt and reopened the same preview bundle. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Account-gated launch correction: removed the debug Play/Replay controls. Before `hasCompletedAccountSetup` is true, the intro and onboarding advance only for the current process launch; closing and reopening starts the intro again. A connected BackendSession persists the account-completion bypass. The real sign-up screens remain a separate-thread handoff and must establish that session. Tracking: unlinked.
 
 Recorded by gpt-6-astra through Codex (T3 Code).

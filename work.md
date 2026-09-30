@@ -1,5 +1,27 @@
 # Work record
 
+## 2026-09-30: first-run F1 intro direction checkpoint
+
+Prepared three local static directions for the requested SwiftUI first-run flow in `.scratch/intro-design/intro-directions.html`: cinematic reveal, fast launch with skip, and guided reveal with a continue step. All preserve the required sequence through onboarding, driver selection and a login gate. The login handoff is reserved for the real sign-in/sign-up pages being built in the user's separate thread. No production SwiftUI files were changed pending direction selection.
+
+Verified the local HTML is readable with `curl` and contains all three directions and the login requirement. Rendered browser/device proof is unverified because no direction has been selected and no UI consent was given.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: cinematic first-run onboarding flow
+
+Implemented direction A in SwiftUI. New users now see the timed `WELCOME!` → `to` reveal, the Aston Martin car rising from the bottom, a green trail that expands from behind the car, team name, “Your fan experience awaits,” and the green exit wipe. The flow then shows first-run onboarding, driver selection, and a login gate. The main app renders only when a driver is selected and `BackendSession` is connected.
+
+The login button is a handoff placeholder for the real sign-in/sign-up pages owned by the user's separate auth thread. Existing driver/session state is migrated past the new intro flags so returning users are not forced through the cinematic sequence.
+
+`xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/amr-fan-app-build CODE_SIGNING_ALLOWED=NO build` passed. `git diff --check` passed. Device rendering, audio playback and interactive auth integration remain unverified or pending their owning thread.
+
+The first animation pass assigned the car's initial and final offsets in the same render turn, so the visible rise was not guaranteed. An insertion beat now renders the car and narrow trail before the upward motion and trail expansion. The focused simulator build was rerun and passed after this correction. Classified as a one-off implementation lesson.
+
+The first device snapshots were taken after the intro had already advanced, so they did not prove the car was absent. Added a debug-only, in-memory `-replay-f1-intro` argument that preserves the saved driver. The fresh iPhone 18 Pro recording and contact sheet show `WELCOME!`, `to`, the car over green, team name, and “Your fan experience awaits”. Evidence: `.evidence/f1-onboarding-animation/`. The Reduce Motion hypothesis was unsupported and is no longer treated as the cause.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-29: gallery-first sustainability verification flow
 
 Tracking: SWIFT-SUSTAINABILITY-CAM-002, unlinked. Removed the visible backend
@@ -3171,5 +3193,47 @@ security checks. The final step publishes a 7-check pass/fail summary to the
 Actions run and fails the job if any check is not successful. The workflow is
 intended as the first backend test of the WSL2 runner; a numeric quality score
 was not added because no agreed scoring model exists.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: firsthand intro replay and app naming
+
+Rebuilt the Swift preview with `CFBundleDisplayName` set to `AMR Fan App` and installed it using the existing `com.nachiketh.amr.fanapp.preview` bundle ID. The debug launch argument `-replay-f1-intro` now opens a waiting screen with a visible `Play intro` button; after completion, `Replay intro` is available. This lets the user initiate and watch the timed sequence directly instead of relying on a delayed capture.
+
+Observed proof on iPhone 18 Pro, iOS 27.0: the device accessibility snapshot exposes `AMR Fan App` and `Play intro`; the device app list shows one AMR Fan App preview plus the device runner. The user can press Play intro in the open Device panel. Build passed with xcodebuild using the iPhone simulator SDK. Sound effects remain unimplemented, and the separate real auth screens remain a handoff.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: final intro choreography correction
+
+The intro now uses one shared animated progress for the car and its trailing green rectangle. The car begins below the viewport, exits above the viewport, and the rectangle grows from the rear-wheel edge until it fills the screen. The welcome and "to" use a wider italic display treatment with spring scale and slide motion. After the green exit, the canvas clears to the existing #0A0A0A background, then shows exactly "Welcome to your drive." before the existing onboarding.
+
+Device proof: rebuilt with xcodebuild, installed and launched on iPhone 18 Pro, and recorded `.evidence/f1-onboarding-animation/drive-intro-fixed.mp4`. Its contact sheet shows the ordered phases and the final drive copy. The app is being returned to the debug `Play intro` launcher for direct user inspection.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: car orientation toggle
+
+Removed the explicit 180-degree rotation from the F1 asset after the user identified the car as backwards. The car's existing linked travel and rear-wheel trail calculation remain unchanged. Rebuild and device launch are pending this correction.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: speed lines and fan-message wipe
+
+Shortened the linked car/green run to 1.65 seconds, added eight wheel-row speed lines, removed the drive copy, and replaced the empty transition with a green wipe that reveals "Your fan experience awaits" on the black canvas. Build passed and a device recording/contact sheet plus speed-line frame are stored in `.evidence/f1-onboarding-animation/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: remove car wind lines
+
+Removed the decorative speed-line layer and helper around the car. The AMR Fan App preview rebuilt successfully and is open at Play intro on iPhone 18 Pro.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-30: account-gated automatic intro
+
+Removed the debug Play/Replay launcher controls. `ContentView` now uses transient launch state for intro, onboarding, and driver progression, while `hasCompletedAccountSetup` is the only persistent bypass. A connected `BackendSession` sets that flag; the real auth thread must establish the session after sign-up/sign-in. Fresh relaunches before account setup therefore return to the cinematic intro automatically. The iPhone 18 Pro snapshot showed `WELCOME!` on first launch and again after relaunch, with no launcher controls.
+
+Verification: Swift simulator build passed, `pnpm check` passed, and `pnpm security:check` passed with the existing moderate audit advisory and expected self-test fixture findings. No commit or PR existed at the time of this entry.
 
 Edited by gpt-6-astra through Codex (T3 Code).
