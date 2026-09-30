@@ -24,7 +24,6 @@ struct ContentView: View {
     @State private var showGalleryPicker = false
     @State private var selectedGalleryItem: PhotosPickerItem?
     @State private var showFeatureTour = false
-    @State private var showAuthenticationHandoff = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
     @StateObject private var backend = BackendSession()
@@ -129,11 +128,6 @@ struct ContentView: View {
             }
             .preferredColorScheme(.dark)
         }
-        .alert("Authentication pages pending", isPresented: $showAuthenticationHandoff) {
-            Button("Close", role: .cancel) { }
-        } message: {
-            Text("The real sign-in and sign-up screens from the separate auth thread should be presented here.")
-        }
         .sheet(item: $destination, onDismiss: {
             if replayTourAfterDismiss {
                 replayTourAfterDismiss = false
@@ -213,9 +207,7 @@ struct ContentView: View {
     }
 
     private func openAuthentication() {
-        // TODO: Present the real sign-in/sign-up pages from the separate auth thread here.
-        // That flow must establish BackendSession; its connected state persists the bypass.
-        showAuthenticationHandoff = true
+        destination = .account
     }
 
     @ViewBuilder
