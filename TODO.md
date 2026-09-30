@@ -188,3 +188,52 @@ Publishing, deployment, shared tracker writes, commits, and pushes are outside t
 - [x] Confirm Expo structure and preserve existing starter dependencies.
 - [x] Replace the custom dock with standard bottom tabs and wire four destinations.
 - [x] Finish local checks and verify tab interaction on a device.
+## F1 onboarding animation
+
+- [x] Add the cinematic welcome, car rise, expanding green trail and team message.
+- [x] Route through onboarding and driver selection before the login gate.
+- [x] Keep the main app unavailable without a backend session.
+- [x] Leave the real sign-in/sign-up handoff for the separate auth thread.
+- [x] Run the focused Swift simulator build and source checks.
+
+- [x] Record the welcome/to/car on iPhone 18 Pro before launch; preserve local video proof.
+- [x] Limit replay to Debug and preserve saved driver state.
+
+### Firsthand intro replay and app name, 30 September
+
+- [x] Add a debug preview start/replay control so the user starts the animation.
+- [x] Build and install AMR Fan App using the existing preview bundle ID.
+- [x] Verify the launch screen and leave it waiting for the user.
+- [x] Confirm the device app list contains one AMR Fan App preview bundle.
+
+### Intro choreography correction, 30 September
+
+- [x] Record acceptance: car enters below screen, rear-wheel rectangle follows one continuous run, car exits above, team at 75%, clear black, then new message.
+- [x] Replace independent car/trail timers with shared animated geometry and cancellation-safe phases.
+- [x] Build, record and inspect the corrected run; leave Play intro ready.
+
+### Car orientation correction, 30 September
+
+- [x] Remove the explicit 180-degree transform identified in the user screenshot.
+- [x] Rebuild and install the same AMR Fan App preview bundle.
+- [x] Leave the iPhone 18 Pro preview at Play intro for direct inspection.
+
+### Speed and fan-message correction, 30 September
+
+- [x] Speed up the car and linked green motion.
+- [x] Add wheel speed lines.
+- [x] Replace drive copy with fan-experience copy and add a green wipe reveal.
+- [x] Build, record and leave Play intro ready.
+
+### Remove car wind lines, 30 September
+
+- [x] Remove speed lines near the car.
+- [x] Rebuild and reopen Play intro on iPhone 18 Pro.
+
+### Account-gated automatic intro, 30 September
+
+- [x] Remove Play and Replay preview controls.
+- [x] Restart intro/onboarding on fresh launches before account setup.
+- [x] Persist only the connected-account bypass and leave auth integration note.
+- [x] Verify build, repository checks, security checks, and iPhone 18 Pro relaunch.
+- [ ] Commit, file PR, monitor CI/review, and merge to main as authorized.

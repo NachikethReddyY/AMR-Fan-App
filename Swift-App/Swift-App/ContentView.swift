@@ -10,7 +10,10 @@ private struct PendingPhoto: Identifiable {
 
 struct ContentView: View {
     @AppStorage("supportedDriver") private var supportedDriver = ""
+    @AppStorage("hasCompletedAccountSetup") private var hasCompletedAccountSetup = false
     @AppStorage("hasSeenFeatureTour") private var hasSeenFeatureTour = false
+    @State private var introCompletedThisLaunch = false
+    @State private var onboardingCompletedThisLaunch = false
     @State private var selectedTab: FanTab = .home
     @State private var destination: FanDestination?
     @State private var pushedDestination: FanDestination?
@@ -21,6 +24,7 @@ struct ContentView: View {
     @State private var showGalleryPicker = false
     @State private var selectedGalleryItem: PhotosPickerItem?
     @State private var showFeatureTour = false
+    @State private var showAuthenticationHandoff = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
     @StateObject private var backend = BackendSession()
@@ -43,7 +47,21 @@ struct ContentView: View {
         ZStack {
             FanStyle.background.ignoresSafeArea()
 
-            if let driver {
+            if !hasCompletedAccountSetup && !introCompletedThisLaunch {
+                F1IntroScreen {
+                    withAnimation(reduceMotion ? nil : FanMotion.page) {
+                        introCompletedThisLaunch = true
+                    }
+                }
+                .transition(.opacity)
+            } else if !hasCompletedAccountSetup && !onboardingCompletedThisLaunch {
+                FirstRunOnboardingScreen {
+                    withAnimation(reduceMotion ? nil : FanMotion.page) {
+                        onboardingCompletedThisLaunch = true
+                    }
+                }
+                .transition(.opacity)
+            } else if let driver, backend.isConnected {
                 ZStack {
                     Group {
                         switch selectedTab {
@@ -63,13 +81,15 @@ struct ContentView: View {
                     BottomBar(selectedTab: $selectedTab, openTravel: { pushedDestination = .travel }, selectTab: selectTab)
                 }
                 .transition(.opacity)
+            } else if driver != nil {
+                LoginGateScreen(openAuthentication: openAuthentication)
+                    .transition(.opacity)
             } else {
                 DriverSelectionScreen(select: { choice in
                     withAnimation(reduceMotion ? nil : FanMotion.page) {
                         supportedDriver = choice.rawValue
                     }
-                    if !hasSeenFeatureTour { showFeatureTour = true }
-                }, openAccount: { destination = .account })
+                }, openAccount: openAuthentication)
                 .transition(.opacity)
             }
         }
@@ -85,8 +105,10 @@ struct ContentView: View {
         .environmentObject(backend)
         .preferredColorScheme(.dark)
         .task { await backend.resume() }
-        .onAppear {
-            if driver != nil && !hasSeenFeatureTour { showFeatureTour = true }
+        .onChange(of: backend.isConnected) { _, isConnected in
+            if isConnected {
+                hasCompletedAccountSetup = true
+            }
         }
         .onChange(of: demoState.greenPoints) { _, value in
             UserDefaults.standard.set(value, forKey: "demoGreenPoints")
@@ -106,6 +128,11 @@ struct ContentView: View {
                 showFeatureTour = false
             }
             .preferredColorScheme(.dark)
+        }
+        .alert("Authentication pages pending", isPresented: $showAuthenticationHandoff) {
+            Button("Close", role: .cancel) { }
+        } message: {
+            Text("The real sign-in and sign-up screens from the separate auth thread should be presented here.")
         }
         .sheet(item: $destination, onDismiss: {
             if replayTourAfterDismiss {
@@ -183,6 +210,12 @@ struct ContentView: View {
             selectedGalleryItem = nil
             showGalleryPicker = true
         }
+    }
+
+    private func openAuthentication() {
+        // TODO: Present the real sign-in/sign-up pages from the separate auth thread here.
+        // That flow must establish BackendSession; its connected state persists the bypass.
+        showAuthenticationHandoff = true
     }
 
     @ViewBuilder
