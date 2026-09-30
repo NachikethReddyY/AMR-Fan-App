@@ -1,4 +1,5 @@
 import PhotosUI
+import UniformTypeIdentifiers
 import SwiftUI
 import UIKit
 
@@ -67,7 +68,7 @@ struct SustainabilityCamScreen: View {
     @ViewBuilder
     private func resultView(_ result: BackendActivityResponse) -> some View {
         switch result.kind {
-        case .verified:
+        case .accepted:
             VStack(spacing: 14) {
                 Text("\(result.creditedPoints)")
                     .font(.system(size: 64, weight: .bold, design: .rounded))
@@ -94,7 +95,7 @@ struct SustainabilityCamScreen: View {
                     .buttonStyle(ResultButtonStyle())
                     .padding(.top, 18)
             }
-        case .rejected:
+        case .uncertain, .rejected, .cancelled, .expired:
             VStack(spacing: 14) {
                 Text("0")
                     .font(.system(size: 64, weight: .bold, design: .rounded))
@@ -222,8 +223,8 @@ struct CameraPicker: UIViewControllerRepresentable {
                 picker.dismiss(animated: true)
                 return
             }
-            result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
-                guard let self, let image = object as? UIImage else { return }
+            result.itemProvider.loadFileRepresentation(forTypeIdentifier: UTType.image.identifier) { [weak self] url, _ in
+                guard let self, let url, let image = PhotoUploadEncoder.downsampledImage(url: url) else { return }
                 DispatchQueue.main.async {
                     picker.dismiss(animated: true) {
                         self.onImagePicked(image)

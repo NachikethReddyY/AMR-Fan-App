@@ -250,6 +250,13 @@ export function createRouteProvider(
                     : result.reason,
               });
           }
+          if (
+            results.some(
+              (result) =>
+                result.kind === 'unavailable' && result.reason === 'timeout',
+            )
+          )
+            break;
         }
         if (routes.length === 0)
           return {

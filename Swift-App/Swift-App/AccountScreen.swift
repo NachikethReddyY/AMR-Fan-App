@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AccountScreen: View {
-    @EnvironmentObject private var backend: BackendSession
+    @ObservedObject var backend: BackendSession
 
     var body: some View {
         ScrollView {
@@ -13,7 +13,7 @@ struct AccountScreen: View {
 
                 SectionHeader(
                     title: backend.isConnected ? "Your account." : "Connect your account.",
-                    description: backend.isConnected ? "Your backend profile and earned balance." : "Use a local test account while live sign-in is being configured."
+                    description: backend.isConnected ? "Your backend profile and earned balance." : "Sign in securely with your AMR Fan account."
                 )
 
                 if let profile = backend.realProfile {
@@ -31,9 +31,9 @@ struct AccountScreen: View {
                         .foregroundStyle(FanStyle.teal)
                 } else {
                     Button {
-                        Task { await backend.signInForLocalDemo() }
+                        Task { await backend.signIn() }
                     } label: {
-                        Text(backend.isBusy ? "Connecting…" : "Use local test account")
+                        Text(backend.isBusy ? "Connecting…" : "Sign in")
                             .font(.headline)
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)

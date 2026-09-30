@@ -259,7 +259,8 @@
 					SKILL.md,
 					openai.yaml,
 				);
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to capture a sustainability action for backend verification. Photos are transferred only when you submit for verification.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -274,7 +275,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.amr.fanapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				INFOPLIST_KEY_CFBundleDisplayName = "AMR Fan App";
 				REGISTER_APP_GROUPS = YES;
@@ -302,7 +303,8 @@
 					SKILL.md,
 					openai.yaml,
 				);
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to capture a sustainability action for backend verification. Photos are transferred only when you submit for verification.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -317,7 +319,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.amr.fanapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				INFOPLIST_KEY_CFBundleDisplayName = "AMR Fan App";
 				REGISTER_APP_GROUPS = YES;

@@ -783,6 +783,7 @@ private struct ForestLocationMarker: View {
 }
 
 struct ProfileScreen: View {
+    @ObservedObject var backend: BackendSession
     let driver: Driver
     let changeDriver: () -> Void
     let showTour: () -> Void
@@ -827,7 +828,7 @@ struct ProfileScreen: View {
                     showTour()
                 }
 
-                Text("Account sign-in, sync and personal history will be added when the backend is connected. No live account is active.")
+                Text("Sign in to sync your backend profile and earned balance.")
                     .font(.caption).foregroundStyle(FanStyle.muted)
             }
             .padding(22)
@@ -837,7 +838,7 @@ struct ProfileScreen: View {
         .background(FanStyle.background)
         .sheet(isPresented: $showAccount) {
             NavigationStack {
-                AccountScreen()
+                AccountScreen(backend: backend)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             Button("Close", systemImage: "xmark") { showAccount = false }
