@@ -1614,3 +1614,19 @@ Evidence: `.evidence/swift-photo-upload/photo-upload-checks.log`,
 `.evidence/swift-photo-upload/photo-picker.png`.
 
 Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## CI-DAST-001: admin sign-in forms triggered CSRF heuristic (unlinked)
+
+Requested on 2026-10-01: investigate and fix Black Box CI run `36750540205`,
+where `dast-tooling` failed during the application scan. ZAP reported alert
+10202 (absence of anti-CSRF tokens) on the five admin sign-in forms. The forms
+are JavaScript-only and the handler prevents native submission; their inputs
+have no successful-control names, and the API accepts bearer headers with
+`credentials: 'omit'`, so a native form request cannot authenticate or mutate
+state. Changed all five forms to `method="get"` to make the non-mutating native
+fallback explicit while preserving the existing handler and bearer flow.
+Focused admin asset, participation behavior and DAST evaluator tests pass.
+A live application DAST rerun is unavailable locally because the Docker daemon
+is not running; hosted rerun remains pending delivery.
+
+Recorded by gpt-6-astra through Codex (T3 Code).

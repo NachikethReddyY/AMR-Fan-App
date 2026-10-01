@@ -3329,3 +3329,19 @@ remain unverified. The Worker returned the exact tested revision and recorded
 failure rather than treating the remaining application finding as a pass.
 
 Edited by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-10-01: DAST admin sign-in heuristic correction
+
+Tracking: CI-DAST-001, unlinked. Investigated Black Box CI run `36750540205`.
+The scanner self-test passed, while the application scan failed on ZAP 10202,
+absence of anti-CSRF tokens, across five JavaScript-only admin sign-in forms.
+Those forms call `preventDefault()`, omit input names, and exchange credentials
+through a fixed provider with `credentials: 'omit'`; the API uses bearer headers
+and has no cookie authority. Updated the five forms from `method="post"` to
+`method="get"` so any native fallback is explicitly non-mutating and cannot
+carry credential values, while retaining the existing JavaScript sign-in flow.
+Updated the admin asset regression to assert the method. Focused admin,
+participation and DAST tooling tests pass. Local application DAST is unverified
+because Docker is unavailable; hosted rerun is pending an authorized delivery.
+
+Edited by gpt-6-astra through Codex (T3 Code).

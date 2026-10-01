@@ -30,7 +30,7 @@ test('deploy artifact contains only public admin assets and fixed API routes', a
       );
       assert.match(html, /aria-label="Administration"/);
       assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
-      assert.match(html, /id="password-signin" method="post"/);
+      assert.match(html, /id="password-signin" method="get"/);
       assert.doesNotMatch(html, /name="(?:email|password)"/);
     }
     const config = JSON.parse(await readFile(join(dir, 'vercel.json'), 'utf8'));
