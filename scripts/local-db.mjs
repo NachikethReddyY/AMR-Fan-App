@@ -14,18 +14,44 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { Pool, escapeIdentifier, escapeLiteral } from 'pg';
-import { createDatabase } from '../server/database/index.ts';
-import { migrate } from '../server/database/migrate.ts';
-import { seedLocal } from '../server/database/seed.ts';
+import { createDatabase } from '../services/api/database/index.ts';
+import { migrate } from '../services/api/database/migrate.ts';
+import { seedLocal } from '../services/api/database/seed.ts';
 
 const root = realpathSync.native(
   resolve(dirname(fileURLToPath(import.meta.url)), '..'),
 );
-const auth = join(homedir(), '.auth', 'amr-local-postgres');
+// Consumers and the runner must derive the database name from this same
+// repository root. A test file's parent directory is not a worktree namespace.
+export const repositoryRoot = root;
+class LocalSetupError extends Error {}
+const ciMode = process.env.AMR_DB_CI_MODE === 'true';
+function ciOverride(name, fallback, pattern) {
+  const value = process.env[name];
+  if (!value) return fallback;
+  if (!ciMode || value.includes('..') || !pattern.test(value))
+    throw new LocalSetupError(
+      `${name} requires a valid CI-owned value and AMR_DB_CI_MODE=true.`,
+    );
+  return value;
+}
+const auth = ciOverride(
+  'AMR_LOCAL_DB_AUTH_DIR',
+  join(homedir(), '.auth', 'amr-local-postgres'),
+  /^\/[^\n]*\/black-box-runner\/state\/transient\/[0-9]+-[0-9]+\/auth$/,
+);
 const ownerFile = join(auth, 'owner.json');
 const passwordFile = join(auth, 'postgres-password');
-const project = 'amr-local-postgres';
-class LocalSetupError extends Error {}
+const project = ciOverride(
+  'AMR_LOCAL_DB_PROJECT',
+  'amr-local-postgres',
+  /^blackbox-amr-[0-9]+-[0-9]+$/,
+);
+const composeOverride = ciOverride(
+  'AMR_LOCAL_DB_COMPOSE_FILE',
+  '',
+  /^\/[^\n]*\/\.github\/blackbox\/amr-ci-compose\.override\.yaml$/,
+);
 
 export function requireLocalMode(env = process.env) {
   if (env.NODE_ENV && !['development', 'test'].includes(env.NODE_ENV)) {
@@ -42,6 +68,9 @@ export function namespaceFor(worktree) {
       .digest('hex')
       .slice(0, 12)
   );
+}
+export function testDatabaseName(worktree = root) {
+  return namespaceFor(worktree) + '_test';
 }
 function privateWrite(path, value) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -123,6 +152,7 @@ function docker(args, config) {
       project,
       '--file',
       join(root, 'compose.yaml'),
+      ...(composeOverride ? ['--file', composeOverride] : []),
       ...args,
     ],
     {
@@ -485,7 +515,7 @@ async function main([action, ...args]) {
     if (action === 'test')
       command(
         process.execPath,
-        ['--test', 'server/database/integration.test.ts'],
+        ['--test', 'services/api/database/integration.test.ts'],
         env,
       );
     else {

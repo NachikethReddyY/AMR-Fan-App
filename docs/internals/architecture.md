@@ -6,31 +6,40 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Phone app | `index.ts` registers `src/App.tsx`; Home and four tabs with Travel/Rewards/Impact placeholders | Native iOS/Android journeys, fan submissions and other accepted rewards, plus ESG views |
-| Admin web | Separate `/admin/` points adjustment and History page with synthetic local sign-in; live browser sign-in remains pending | Authorized content, price, rule, moderation and demo administration |
-| Backend | `server/api/` account HTTP API, `server/accounts/` PostgreSQL ownership and independent real/demo profiles, and `server/points/` integer adjustments with immutable History and stored outcomes; no deployment | Feature operations and persistence on Azure |
+| Swift phone app | `Swift-App/` is an independent Xcode app with the native fan flows and backend client | Native release and device acceptance |
+| React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
+| Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
+| Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers. The activity submission slice adds canonical multi-photo evidence, durable assessment recovery, deterministic rewards, missions and the combined impact overview. | Feature operations and persistence on the selected hosted platform |
+| Shared packages | `packages/contracts/` owns wire types; `packages/travel-domain/` owns pure route, emissions and recommendation logic | Stable cross-client contracts and domain calculations |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
-| Maps and tracking | Absent | POC route comparison, real location collection and journey assessment; physical-device proof required |
-| AI media pipeline | Absent; future proposal | Bounded transient processing and validated results |
-| ESG integration | Source documents and proposals only | POC report upload, extraction, admin review and approved metrics with source evidence |
-| Operations | Local Expo commands, repository checks and isolated worktree PostgreSQL tooling | Release environment remains a maintainer decision |
+| Operations | Root scripts, Compose, Render and security configuration orchestrate the workspace; `pnpm-workspace.yaml` and Turbo own package discovery and task ordering | Release environment remains a maintainer decision |
 
 The account API has an isolated application DAST target and authenticated HTTP
 boundary tests. The points admin flow has local browser and PostgreSQL-backed
-HTTP proof; phone History acceptance remains pending the held account UI and
-native verification. No upload URL or deployed service exists. Passive DAST
+HTTP proof. The held phone History consumer has state and actual HTTP/PostgreSQL
+proof; its new UI has no native observation yet. Required small-iPhone largest
+Dynamic Type and actual VoiceOver proof remain pending. No upload URL exists.
+Azure staging has a deployed service from the older `36996ec` revision; the
+current PR head is not deployed there. Passive DAST
 covers public HTTP only; authenticated tests prove points authorization,
 atomicity, replay, concurrency and isolation. See [points operations](../operations/points.md).
 
 ## Design defaults
 
-Keep the existing root Expo package. Database-only TypeScript modules live in
-`server/database/`; its private module marker supports Node ESM without moving
+Keep Swift as an independent Xcode project outside the JavaScript package graph. The JavaScript workspace has explicit fan, admin, API, contracts and travel-domain units. Database-only TypeScript modules live in
+`services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
-service ownership, per-worktree databases, commands and cloud setup gates. Do not introduce a monorepo, service layer or event system speculatively.
-Azure is the selected backend platform. No Azure service, deployment or auth provider
-has been selected or provisioned. The configurable account adapter and local
-setup are documented in [account operations](../operations/accounts.md). Earlier Convex plans are superseded.
+service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
+Azure is the selected backend platform. The reviewable staging package is under
+[`deploy/azure`](../../deploy/azure/README.md): it targets a new resource group
+in southeastasia, private PostgreSQL Flexible Server, Key Vault managed
+identity, and a Consumption Container Apps API. An authorized deployment
+created the staging resources and runs image source
+`36996ec95b1cc62a3c1ef583e1e30714a814efe0`. The current PR head is
+`c2aba734e0d8036fb4f83a738354ee49722ba11e`, which is newer than that running
+revision and has not been deployed. The configurable account adapter and local
+setup are documented in [account operations](../operations/accounts.md). Earlier
+Convex plans are superseded.
 
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.
@@ -58,3 +67,86 @@ Update this map when adding an entry point or integration. Record hard-to-revers
 accepted tradeoffs in `docs/adr/` and link them here.
 
 Written by gpt-6-astra through Codex (T3 Code).
+
+## Sustainability activity assessment API
+
+The backend exposes the Swift integration contract locally through the API
+service. `GET /v1/profiles/:profileId/activity-submissions/availability`
+reports whether the assessment provider is enabled. `POST
+/v1/profiles/:profileId/activity-submissions` accepts a request UUID, a
+description and one to five base64 JPEG/PNG photos. `GET
+/v1/profiles/:profileId/activity-submissions/:requestId` recovers a prior
+assessment by its idempotency key. The server canonicalizes decoded pixels,
+rejects duplicates, bounds media and description size, and never persists raw
+photo bytes.
+
+The provider adapter is disabled unless `ACTIVITY_ASSESSMENT_ENABLED=true` and
+an explicitly supplied server-side provider exists. A disabled deployment
+returns `{ "kind": "unavailable", "reason": "disabled" }`; it does not read
+or process the submitted media. When a reviewed provider is enabled, accepted
+assessments settle exactly 50 points through the existing points ledger, apply
+duplicate protections, and optionally advance an enrolled mission. There is no
+daily activity cap.
+
+`GET /v1/missions?profileId=...` and `POST
+/v1/missions/:missionId/enroll` expose mission state. `GET
+/v1/impact/overview?profileId=...` returns separate fan, community and official
+impact sections. Migrations `0014` through `0019` own the assessment,
+reward-claim, duplicate-image, mission and optional journey-link tables; impact
+overview reads the existing journey and activity provenance instead of adding a
+separate impact provenance schema.
+
+The contract is implemented and locally unit-tested. The Azure migration job ran
+before the deployed `36996ec` image started. Migrations `0018` and `0019`, added
+by this PR for the no-cap policy and optional journey-linked preliminary claims,
+are newer and remain unapplied in staging.
+The provider remains disabled by default; live Swift, Entra and provider
+behavior are unverified.
+
+Implemented by gpt-6-luna through Codex (local Windows).
+
+## Photo route compatibility
+
+The current Swift client in `Swift-App/` still calls the earlier local-only
+routes `GET /v1/profiles/:profileId/activity/availability` and `POST
+/v1/profiles/:profileId/activity/photos`. Those routes remain registered for the
+existing loopback fixture flow and are intentionally unavailable in a hosted
+deployment; they accept one photo and do not represent the multi-photo contract.
+
+New Swift work should use the versioned assessment routes documented above:
+`GET /v1/profiles/:profileId/activity-submissions/availability`, `POST
+/v1/profiles/:profileId/activity-submissions`, and `GET
+/v1/profiles/:profileId/activity-submissions/:requestId`. The POST body is
+`{requestId, description, photos:[{mime,base64}], missionId, journeyId?}`.
+`journeyId` optionally links accepted active-transport evidence to an owned
+journey for preliminary settlement. A disabled server
+returns `503` with `{kind:"unavailable",reason:"disabled"}` before reading
+media. A provider-enabled server returns the validated assessment result and,
+when accepted, the reward and mission decisions.
+
+This keeps the Swift migration additive: clients can detect the new availability
+route first, then fall back to the old loopback route only for local fixture
+development. Do not send the old `profileId`, `capture` or `activity` fields to
+the new endpoint; profile ownership comes from the authenticated path/session,
+and the server decides the category and points.
+
+Implemented by gpt-6-astra through Codex (T3 Code).
+
+
+## Swift and local photo integration, 28 September 2026
+
+`Swift-App/` now has a Keychain-backed backend session, a local synthetic sign-in
+button, transient JPEG upload client, and a route-query consumer. The Swift map
+still uses MapKit for route geometry and navigation. Backend route options and
+legs appear in the expanded planner when a signed-in local backend is available.
+
+The photo POST is enabled only with explicit loopback development flags. The
+server awards exactly 50 points only for one pinned synthetic fixture image
+and activity. Arbitrary photos return zero. Production remains disabled and no
+vision provider is called. The gpt-6-astra classifier prompt is prepared under
+`docs/backend-prompts/photo-activity-astro.md`, not activated.
+
+The repo is recognized by pnpm as the root workspace plus `@amr/fan`,
+`@amr/admin`, `@amr/api`, `@amr/contracts`, and `@amr/travel-domain`. Turbo runs
+package-local checks. The admin package builds the static pages from its own
+`pages/` directory, while the API serves the same allowlisted files locally.

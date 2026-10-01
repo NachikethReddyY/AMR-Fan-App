@@ -15,7 +15,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-QUESTIONS = json.loads((ROOT / 'server/ai/questions.json').read_text())
+QUESTIONS = json.loads((ROOT / 'services/api/ai/questions.json').read_text())
 PINS = json.loads((Path(__file__).parent / 'models.json').read_text())
 CACHE = Path.home() / '.cache/amr/laya'
 MAX_BYTES = 8192

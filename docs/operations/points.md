@@ -3,9 +3,8 @@
 Issue [#5](https://github.com/NachikethReddyY/AMR-Fan-App/issues/5) adds persisted
 whole-integer balances, assigned-admin adjustments and immutable History. Product
 meaning remains in [Points and history](../features/05-points-and-history.md).
-This backend/admin candidate leaves phone History acceptance pending the held
-account UI and native proof. Live email/browser sign-in is not demonstrated by
-the local synthetic flow.
+Phone History is prepared in the held account candidate; native acceptance is
+pending. Live email/browser sign-in is not demonstrated by the local synthetic flow.
 
 ## Local admin flow
 
@@ -57,9 +56,48 @@ History records the actor UUID, target profile, signed delta, resulting balance,
 reason, operation kind and server UTC time. Pagination uses a sequence string,
 not client timestamps. Corrections append another entry.
 
+## Phone consumer
+
+Home, the account sheet and Rewards share the selected profile's current balance
+from `GET /v1/profiles/:id/points/history`. The phone asks for 25 entries per page,
+validates the response and passes `nextCursor` back as the opaque `before` string.
+It preserves server order and never sums entries to calculate a balance. Each
+row displays the signed change, reason, resulting balance and server timestamp.
+Redemption and History remain the two sections inside Rewards; purchase and
+reward-status integrations are not implemented by this slice.
+
+Account/profile changes, logout and session expiry clear the in-memory History.
+Generations ignore responses from replaced requests. Nothing from History is
+written to SecureStore. Foreground resume and opening Home, Rewards or the account
+sheet refresh the current page. A failed refresh hides old values and offers retry;
+a failed later page retains only the current profile's already loaded entries.
+Refresh starts again at the newest page, including entries added during pagination.
+Large balances and sequence strings retain their server values.
+
+Run the focused state proof and the actual API adapter proof with an operations
+port lease and the worktree's disposable test namespace:
+
+```sh
+pnpm exec jest apps/fan/src/features/account/session.test.ts apps/fan/src/features/points/history.test.ts --runInBand
+API_PORT=<leased-api-port> pnpm db:run-test -- node --test apps/fan/src/features/points/testing/http-proof.ts
+```
+
+The HTTP proof creates unique controlled identities, assigns only its synthetic
+admin through the trusted server function, and makes all balance changes through
+the existing admin HTTP endpoint. It covers two pages, real/demo and cross-account
+isolation, maximum balance, API/pool restart, outage recovery, durable logout and
+expiry. Immutable fixtures remain in that disposable test database. Its storage
+stand-in tests controller restart, not native SecureStore or a real device restart.
+
+New balance/History UI interaction, normal/largest-text rendering and device
+accessibility remain **unverified** until an explicit device ownership lease is
+resolved. Prior Android account/tab proof applies only to unchanged code lineage.
+Small-iPhone largest Dynamic Type and actual VoiceOver remain mandatory; neither
+Android nor iPad substitutes for them. Live OIDC provisioning is separately pending.
+
 ## Atomic integration contract
 
-`server/points/index.ts` exports `runPointsOperation` for trusted server callers.
+`services/api/points/index.ts` exports `runPointsOperation` for trusted server callers.
 It uses the account principal/session, foundation `transaction` and
 `lockOwnedProfile`. A caller supplies a parsed request, access mode, canonical
 intent string, outcome schema and `perform` callback. There is no generic

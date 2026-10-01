@@ -6,6 +6,210 @@ No cloud mutation has been performed by this candidate.
 
 ## Guarded database bootstrap
 
+### Google budget with unverified AI accounting
+
+The explicit `targetMigration: "0012_google_route_budget.sql"` adds the reviewed
+Google schema from merged main `b78be4fee9e5be4ede5b98a20dde8402fcb728f7`.
+Its SHA256 is `00aeddb091fe0c43ff753ef6d89e937d041a07cef4849c06240f54aa625dff45`.
+Omitting the target still selects 0011. Existing ordinary initialization and
+explicit target 0010 behavior remain unchanged.
+
+When historical AI liability is unknown, use the protected configuration fields:
+
+```json
+{
+  "targetMigration": "0012_google_route_budget.sql",
+  "aiBudgetMode": "schema-install-only"
+}
+```
+
+These fields supplement the existing private connection/password configuration.
+`aiBudgetMode` accepts only `schema-install-only` and is mutually exclusive with
+`aiBudgetInitialization`. Do not supply a zero-spend assertion. This mode requires
+exact retained 0001–0010, or an already disabled 0011/0012 installation. It rejects
+fresh setup, retained eight/nine, and target 0010 before mutation. Target 0011 is
+also available for installing or replaying only the disabled AI schema.
+
+Inside the existing advisory-locked transaction, the runner validates retained
+history, checksums, ownership and ACLs. It executes unchanged 0011 only when
+pending, immediately suspends its newly seeded fixed-scope row, and grants no
+runtime rights on any of the three AI tables. Table and column access, PUBLIC or
+other non-owner grants, grant options, and effective runtime authority are refused.
+Pending 0012 and its ledger entry commit with the suspension, or the entire
+pending chain rolls back. No session observes a committed active seed.
+
+The unchanged SQL's numeric zero is an uninitialized placeholder. It does not
+represent verified historical spend, zero outstanding liability or available
+funds. Schema-only output reports
+`aiBudget: "schema-installed-accounting-unverified-spending-disabled"`.
+A separate reviewed liability reconciliation and activation procedure is required
+before AI can become available; this runner implements neither.
+
+Schema-only replay verifies that AI is suspended and inaccessible. It preserves
+all exposure, calls, receipts and history, including nonzero or over-cap exposure.
+It refuses active, initialized or partially granted AI installations instead of
+revoking grants, suspending retained rows or resetting values. Ordinary replay,
+including a supplied verified-zero assertion, cannot promote a schema-only
+installation because its required AI privileges are absent.
+
+Google runtime receives only SELECT on `app.google_route_budget` and
+UPDATE(`used_attempts`). The runner requires the sole `singleton=true` row with
+an integer counter in 0–200 and never resets it. Other runtime table privileges,
+column rights, grant options, PUBLIC and client-role access are refused.
+[Google's application policy](routes.md) commits a full selected-mode reservation
+before dispatch, never refunds and never resets the lifetime allowance. Database
+UPDATE permission alone does not enforce monotonic increments. This is an app
+allowance, not an account-wide or leaked-key spending guarantee.
+
+Keep `AMR_GOOGLE_ROUTES_KEY` absent until the schema, grants and all current API
+instances are ready under root's separate activation authority. Keep
+`AI_COST_DATABASE_URL` absent and AI disabled while liability remains unknown.
+No new environment budget flags are introduced. Implementation and fixture proof
+do not authorize production migration, provider requests or key activation.
+
+The runner candidate was executed against isolated PG17/Node24 on main
+`3beaf76f0d92d4651b0e2a85ccdd963eabafe415`: 83 deployment tests and one additional
+schema-only HTTP/award case passed, with no failures or skips. This proves the
+fixture behavior above, including actual AI store denial and Google exhaustion;
+it does not establish historical accounting or authorize deployment.
+
+### Photo and ordinary AI upgrade targets
+
+The ordinary photo/AI path supports the explicit 0001–0011 chain from merged main
+`e2f95534814b7e6289ba24f01aa20a919ed1514a`. Retained histories must match an exact
+ordered prefix of eight, nine, ten or eleven migrations, including every checksum.
+The existing advisory transaction lock covers history inspection, validation,
+pending DDL, scoped grants and new ledger entries. Retained ACL drift is refused
+before any pending migration; old grants are not repaired. Replay changes no data,
+roles, passwords, grants or ledger rows.
+
+Photo 0010 SHA256 is
+`122ca4c3833b831febdec2eff8839e67625407cdccf4ae43e0e3a1bddbde03b1`.
+Runtime receives only SELECT/INSERT on `app.photo_activity_claims`, with no
+new sequence rights, UPDATE, DELETE, PUBLIC grant or grant option. Existing
+participation grants remain scoped to their original columns and objects.
+
+AI 0011 is merged with SHA256
+`be6baf0dd4ccb209c266a3646a9f8494bbb2c6ca74b79f3cbef3dc0956c8013b`.
+It includes the reviewed disputed-call state. The runtime grants match the
+[AI owner's contract](../ai/cost-store.md):
+
+- SELECT on `ai_cost_budget`, `ai_cost_operations` and `ai_cost_calls`.
+- INSERT only on operations `(operation_id,scope,fingerprint,reservation,rate_expires_at_ms)`
+  and calls `(operation_id,call_id,reserved_nano_usd,accounted_nano_usd)`.
+- UPDATE only on budget `(committed_nano_usd,suspended)` and calls
+  `(state,accounted_nano_usd,bound_exceeded)`.
+- No budget INSERT, operations UPDATE, DELETE, TRUNCATE, new function/sequence
+  rights, PUBLIC grants, ownership, owner membership or grant option.
+
+The migration seeds the sole fixed-$10 budget row. Committed exposure can exceed
+$10 while suspended after a late bound violation; the tool must preserve that
+exposure and the immutable admission cap, not clamp or reset accounting.
+
+On the ordinary path, before first applying 0011 the protected config must explicitly contain
+`"aiBudgetInitialization": "verified-no-prior-spend-or-inflight"`. This is an
+operator assertion, not automated proof. Supply it only after verifying the
+shared scope has no prior provider spend or in-flight calls. Without it the
+transaction refuses before pending DDL or role creation. Existing liabilities
+require a separately reviewed import procedure; this tool implements no import
+or zero-reset override. Complete eleven-migration replay needs no initialization
+assertion and never resets existing accounting. No provider is enabled by migration.
+
+The optional protected-config field `targetMigration` accepts exactly
+`"0010_photo_activity.sql"`, `"0011_ai_cost_store.sql"` or
+`"0012_google_route_budget.sql"`. Omission still selects
+0011. For explicit 0010, fresh setup or retained eight/nine histories apply only
+0001–0010; an exact ten-entry replay returns unchanged. SQL loading, grants and
+validation stop at that target. No AI table, grant or budget initialization occurs,
+and no zero-spend assertion is needed or consumed. An eleven-entry ledger with a
+ten target is refused, never downgraded. Invalid target values fail before connecting.
+
+Each chosen target remains atomic. The 0011 path keeps the initialization
+prerequisite above; missing evidence prevents all its pending migrations. Actual
+account history includes prior spend, while project-key filtering does not prove
+scope ownership or the absence of pending liabilities. Do not set the assertion
+for production without authoritative evidence. No inference during these tasks
+establishes historical zero spend. The 0010 target can unblock independent features
+while AI remains inactive. It neither establishes nor imports AI liabilities.
+
+Run `node scripts/deploy/testing/run-isolated.mjs` under the coordinated heavy
+lease. Its pinned PG17/Node24 fixture uses generated credentials, one private
+internal network, no published ports and no host mounts. Historical PR51 evidence recorded forty-seven passing tests
+on its main base: exact retained 8/9→10 and 8/9/10→11 upgrades, lock serialization,
+late-DDL rollback, runtime permissions, preserved roles/passwords/ACLs/data and
+liability replay. The actual API and journey award reader work at 0010 with all
+AI tables absent; photo inference remains unavailable. New participation
+REFERENCES/grant-option and MAINTAIN regressions fail against the preceding
+validators and pass with the correction. Final affected static/security checks
+pass. An earlier full app check passed before these runner-only corrections;
+it was not repeated under the bounded verification scope. Earlier failures and
+proof remain separate in local evidence.
+This preparation does not authorize production migration or deployment. The
+historical procedure below records the prior nine-migration release only.
+
+### Historical reviewed participation upgrade preparation
+
+The next release starts from merged `09b61e9213d4d08d986621439f9f16c453cc87d7`.
+The deployment command now supports exactly migrations 0001–0009. A retained
+installation must have the complete, checksum-matching first eight or all nine;
+any other history, ownership collision or runtime privilege drift is refused.
+An eight-migration installation applies only `0009_submission_participation.sql`
+under `amr_migration_owner`, inside the existing advisory-locked transaction.
+DDL, scoped permissions and the new ledger entry commit together or roll back.
+The migration file and existing rows, timestamps, role identities and passwords
+are not rewritten. A nine-migration replay verifies permissions without changes.
+
+The runtime receives SELECT/INSERT on the four new participation tables,
+UPDATE only on session closure and selection resolution columns, USAGE/SELECT
+on the interaction-session identity sequence, and EXECUTE on the three trigger
+functions. It receives no DELETE, TRUNCATE, schema/database CREATE, role-management
+or migration-ledger privileges. Existing table grants are left intact.
+
+After the manager supplies the reviewed final integrated commit:
+
+1. Verify that exact commit includes this upgrade, the reviewed PR28 guest
+   catalogue API and the reviewed admin-origin change. Neither a mobile branch
+   tip nor mutable main is an approved deployment target by itself.
+2. Read the exact project's ledger and restricted runtime privileges. Require
+   unchanged 0001–0008 checksums and migration 0009 SHA256
+   `dae2d00d50e1b93684082519101177984bdaa80af38951d62a1d4382379ff10e`.
+3. At the authorized deployment window, run the command below with the existing
+   protected bootstrap configuration and verified Supabase CA. Keep credentials
+   outside the checkout and off Render. The runtime password is required by the
+   input format but never altered during upgrade or replay. Do not substitute the
+   ordinary development migration command; it does not enforce these role/grant
+   boundaries. Re-read the ninth ledger row and effective runtime permissions.
+4. Keep the existing Render service Free with auto-deploy off. Preserve every
+   existing environment entry. `ADMIN_ORIGIN` remains
+   `https://amr-fan-app.onrender.com`. Only after the stable Vercel production URL
+   and reviewed API allowlist implementation are supplied, add
+   `ADMIN_ADDITIONAL_ORIGIN=https://amr-admin.vercel.app`, the stable production
+   origin reported by the admin owner. No wildcard,
+   preview-pattern or Origin-header stripping is permitted.
+5. Pin and deploy only the final reviewed commit. Retain
+   `674273de2a94d211c8404b736adc68e6a6b9f48a` and its prior release branch for
+   code rollback. An additive migration is retained on code rollback; never
+   drop its tables or restore old data as part of an API rollback.
+6. Verify exact deployed SHA, health, guest catalogue 200, protected unauthenticated
+   denial, same-origin Render admin access and the exact Vercel-origin flow.
+   Admin roles remain server-owned. Prior live proof used only a synthetic fan;
+   no assigned-admin identity is established by this receipt. Keep Supabase
+   autoconfirm and SMTP unchanged. CI remains paused and unverified.
+
+No production migration or deploy is performed by this preparation. Browser UI,
+Vercel origin and the final integrated candidate remain with their owners.
+
+The separate photo candidate proposes `0010_photo_activity.sql`. Its inspected
+table `app.photo_activity_claims` does not collide with 0009 and needs runtime
+SELECT/INSERT only, with no new sequence or UPDATE/DELETE grant. It references
+existing profiles, journeys and points operations and reuses the points-history
+trigger function. The settlement hook requires this table even while photo
+availability is unavailable. That candidate is not frozen: do not apply or copy
+0010 yet. This command remains fixed at nine migrations; a combined photo release
+needs a reviewed explicit tenth-migration extension and serialized API registration.
+
+### Original setup receipt
+
 Target only existing project `folakoxsilrfemctvlxj` (AMRF app, Free, Mumbai,
 PostgreSQL 17). Read-only inventory found no app schema or migration ledger,
 zero auth users, and zero storage buckets/objects. Recheck before provisioning.
@@ -20,7 +224,7 @@ TLS certificate verification stays enabled. Supply a trusted CA through the
 Node trust configuration if needed, never `rejectUnauthorized:false`.
 
 The bootstrap takes an advisory transaction lock, creates `amr_migration_owner`
-NOLOGIN and `amr_api` LOGIN, applies existing migrations 0001–0008 byte unchanged,
+NOLOGIN and `amr_api` LOGIN, applies existing migrations 0001–0009 byte unchanged,
 and records checksums atomically. The administrator retains membership needed
 to maintain the owner role; runtime has no memberships. Runtime cannot create
 persistent schemas/tables, alter migration history, assign staff roles, or
@@ -32,7 +236,7 @@ are untouched. No seed, reset, password rotation or staff assignment occurs.
 A complete matching installation is verified and returned unchanged. Partial
 role/schema/ledger collisions, checksum drift and elevated runtime privileges
 abort. Later migrations require an explicit reviewed follow-up, not silently
-accepting files beyond the fixed eight. Keep bootstrap credentials off Render;
+accepting files beyond the fixed nine. Keep bootstrap credentials off Render;
 only the restricted runtime connection belongs in its server secret store.
 
 Fresh setup and replay reject effective database CREATE, including rights inherited
@@ -101,7 +305,7 @@ redirect fixture without real credentials.
 
 ## Email/password administration
 
-All four existing admin screens share `server/auth/admin.js`, served only at
+All four existing admin screens share `services/api/auth/admin.js`, served only at
 `/auth/admin.js`. The public config endpoint exposes the fixed project URL and a
 new `sb_publishable_` key only when Supabase auth is selected; secret/legacy keys
 refuse startup. The helper submits passwords directly to the fixed Supabase
@@ -193,5 +397,5 @@ cleared, local/session storage stayed empty and no runtime errors appeared.
 This proves client behavior with synthetic responses. Real PostgreSQL API tests
 separately prove server-owned roles, identity replay and production auth guards.
 Live Supabase authentication/storage and full accessibility auditing remain
-unverified. All owned browser/server/database fixtures were closed and removed;
+unverified. All owned browser/services/api/database fixtures were closed and removed;
 the retained shared PostgreSQL service and Supabase local link were untouched.

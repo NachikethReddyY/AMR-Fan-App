@@ -1,0 +1,170 @@
+:root {
+  color-scheme: dark;
+  font-family: Geist, system-ui, sans-serif;
+  font-size: 17px;
+  background: #081310;
+  color: #f5f5f3;
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 880px;
+  padding: 32px 24px;
+  margin: 0 auto;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+p {
+  line-height: 1.5;
+}
+section,
+form {
+  margin-bottom: 28px;
+}
+label {
+  display: block;
+  margin-bottom: 8px;
+}
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+  border: 1px solid #8b8b85;
+  border-radius: 2px;
+  background: #191919;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+input,
+textarea {
+  display: block;
+  width: 100%;
+}
+input {
+  max-width: 260px;
+}
+textarea {
+  resize: vertical;
+  margin-bottom: 16px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.primary {
+  background: #004a4d;
+  border-color: #004a4d;
+}
+:focus-visible {
+  outline: 2px solid #cedc00;
+  outline-offset: 3px;
+}
+.muted {
+  color: #a9a9a3;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.profile-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+select {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+.balance {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+#message {
+  min-height: 26px;
+  overflow-wrap: anywhere;
+}
+#history {
+  padding: 0;
+  list-style: none;
+}
+#history li {
+  border-top: 1px solid #3d3d3d;
+  padding: 16px 0;
+  overflow-wrap: anywhere;
+}
+.entry-value {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.entry-reason {
+  margin: 8px 0;
+}
+@media (max-width: 540px) {
+  main {
+    padding: 24px 16px;
+  }
+  header {
+    align-items: flex-start;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  select {
+    flex-basis: 100%;
+  }
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #3d3d3d;
+}
+nav a {
+  color: inherit;
+  padding: 12px 0;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+nav a[aria-current='page'] {
+  border-color: #cedc00;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+button {
+  background: #004a4d;
+}
+#password-signin input {
+  margin-bottom: 16px;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@amr/travel-domain",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./routes": "./src/routes.ts",
+    "./emissions": "./src/emissions.ts",
+    "./recommendation": "./src/recommendation.ts",
+    "./google-routes": "./src/googleRoutes.ts",
+    "./comparison": "./src/comparison.ts"
+  },
+  "dependencies": {
+    "zod": "4.1.12"
+  }
+}

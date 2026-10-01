@@ -1,9 +1,10 @@
 # Server journey recording
 
-Issue #8's server module is under `server/journeys/`. It persists preparation,
+Issue #8's server module is under `services/api/journeys/`. It persists preparation,
 Start, original-timestamp evidence, finish and a deterministic assessment in the
 same PostgreSQL service as accounts through the authenticated API. Native
-collection, awards and deployment remain separate work.
+collection is implemented under `apps/fan/src/features/journeys/`; device verification,
+physical calibration and deployment are separate acceptance gates.
 
 ## Authority and retained data
 
@@ -131,8 +132,8 @@ keys, then passes bearer token, path ID and the search-parameter object to
 prepare dispatch are unchanged. Registered HTTP tests cover recovery after an API
 process restart, multiple active records, pagination, ownership, current authority
 and no read-side cleanup. Passive DAST covers reachable public/diagnostic routes;
-it does not authenticate as a fan or replace these authorization tests. Phone
-integration and physical platform proof remain pending.
+it does not authenticate as a fan or replace these authorization tests. Native
+discovery is integrated; physical platform calibration remains pending.
 
 ## Evidence and retry contract
 
@@ -158,7 +159,7 @@ Valid delayed pre-finish evidence can revise the assessment after finish;
 post-finish collection cannot. Interruption terminally closes that capture
 interval in this slice; another journey needs a new acknowledged Start. Offline
 continuation needs no new Start while the existing capture interval stays open.
-The native durable queue and collection shutdown are separate pending work.
+The native durable queue and collection shutdown are implemented below.
 
 Requests are unique per authenticated principal. The server records a bounded
 non-coordinate result and a canonical payload fingerprint in the mutation
@@ -218,7 +219,7 @@ calibration thresholds or claiming physically verified travel.
 
 ## Future settlement interface
 
-`server/journeys/settlement.ts` exports the compile-ready
+`services/api/journeys/settlement.ts` exports the compile-ready
 `lockJourneyForSettlement(client: PoolClient, principalId, profileId, journeyId)`
 and `JourneySettlementProjection`. The caller must already be inside its current
 authority/request transaction. The function reacquires the owned profile lock,
@@ -240,12 +241,58 @@ unrounded decimal savings times the retained rate, floors once and applies the
 cap. An unstarted journey has `earningPolicy: null`; no old missing version is
 silently filled. Factor/earning approval and fixture/real separation belong to #9.
 
-`selectedLegs` preserves provider distances. `assessedLegs` is available only for
-a satisfying single-mode trace, with method `gps_single_mode_lower_bound` and
-uncertainty-adjusted observed distance. It is still uncalibrated. A satisfying
-multimodal trace returns `multimodal_distances_unknown`, never GPS-total-based
-allocation among modes. Missing/insufficient assessment remains unavailable.
-All these nonprecise inputs and assessment facts survive precise-data deletion.
+`selectedLegs` preserves provider distances. A satisfying single-mode trace
+uses `gps_single_mode_lower_bound`. Complete ordered provider leg geometry can
+use `gps_leg_geometry_lower_bound` for a multimodal trace. The geometry comes
+from the same Google step response or continuous OneMap itinerary and has at
+most 2,048 total points. Each observed interval must belong uniquely to one leg,
+in order, and every leg must pass its own evidence assessment. Missing shapes,
+overlap, uncertain transitions and partial matches remain unavailable. Neither
+method allocates planned distance ratios or verifies the reported transport mode.
+Only the nonprecise assessed legs survive precise-data deletion.
+
+## Native recording
+
+Travel uses the prepared comparison directly. Starting requests location access;
+denial leaves planning available. The selected trip and Arrived/Stop replace
+search while recording. The session observer lives above the tabs. Arrival and
+Stop freeze the timestamp immediately and persist the intent on the local-write
+queue even when a network upload is pending. Upload acknowledgments remove only
+acknowledged samples. Retried operations keep their original IDs and timestamps.
+
+`runtime.ts` registers the Expo background task at module scope. Headless callbacks
+write GPS evidence without reading session credentials or calling authenticated
+APIs. `location.ts` retains acquisition time, accuracy, OS mock flag and capture
+context. Termination can interrupt OS delivery; the app shows paused recording
+and requires an explicit Resume. It does not reconstruct missing travel.
+
+`storage.ts` keeps an AES-GCM encrypted SQLite record and a device-only SecureStore
+key accessible after the first unlock. The record contains the selected trip,
+bounded sample queue and mutation intents, never authentication tokens. Collection
+and network queues are separate so slow uploads do not delay durable samples or
+Stop. Transient account loading/unavailability suspends dispatch while an
+already-bound capture retains local Stop. Authenticated matching restoration is
+required before network retry or Resume. Every network operation rechecks the
+capture generation after asynchronous waits. There are at most 4,096 samples,
+uploaded in batches of 50. Logout/profile invalidation stops collection, invalidates delayed responses and removes local
+ciphertext/key. Expired data is removed on restore, retry or callback; dormant
+and backup storage still need the retention limits below.
+
+The phone reads current server assessments and settlements. Provisional receipts
+label their planned-estimate basis and separate the new credit from cumulative
+journey credit. They are excluded from verified impact. The server controls
+policy/factor releases and top-ups; Start still accepts only request and capture
+session IDs. No native input grants award authority.
+
+The location/SQLite dependencies and config plugins were compiled in internal
+Android and iOS builds. Pixel proof covers permission denial, encrypted capture
+recovery, callbacks and Finish. iPhone proof covers SecureStore onboarding,
+background callbacks, offline Stop, cold restart/reconnect, profile/logout
+isolation and largest-text contribution reachability. Device proof uses simulated
+movement; it does not establish physical calibration or locked-phone behavior.
+Native provisional receipt and populated Impact rendering remain unverified;
+registered HTTP and component tests cover their contracts separately. Internal
+proof packages are not final release artifacts.
 
 ## Retention and cleanup
 
@@ -287,16 +334,15 @@ candidate thresholds, malformed/future evidence, unchanged-session-row expiry
 waits and 4,096-sample limits. Raw-row inspection is restricted to persistence,
 immutability and deletion claims. These are synthetic traces, not physical travel.
 
-Migration `0004_journeys.sql` owns this storage and remains unmerged during local
-integration. Only the allocated worktree test database is reset for its changes.
+Migration `0004_journeys.sql` owns this storage and is merged. Only the allocated
+worktree test database is reset for its changes.
 No shared service lifecycle action is required. The CI database job runs the same
 journey command after account, points and route tests. Source security and isolated
 combined API DAST complement authenticated business tests; unauthenticated passive
 crawling does not establish owned-path authorization.
 
-Physical iOS/Android foreground/background/locked-phone, permissions, Stop
-collection and durable local queues remain required for whole issue #8. Native
-integration, real calibration, approved factor publication, production cleanup
-scheduling and backup retention are not proved by this server candidate.
+Physical iOS/Android calibration and locked-phone proof remain required for
+whole issue #8. Simulator integration does not prove real travel, approved factor
+deployment, production cleanup scheduling or backup retention.
 
 Written by gpt-6-astra through Codex (T3 Code).

@@ -1,4 +1,4 @@
-# Local report review and approval
+# Report review, retention and hosted parser preparation
 
 The registered API and separate admin page implement the local upload, manual
 review, correction and explicit approval path for [#19](https://github.com/NachikethReddyY/AMR-Fan-App/issues/19)
@@ -11,8 +11,9 @@ rules remain in [report ingestion](../features/11-report-ingestion.md) and
 ## Source and approval rules
 
 Assigned admins can upload permitted or explicitly labelled synthetic text-layer
-PDFs, at most 10 MiB and 100 pages. The server retains original bytes, SHA-256,
-parser version and exact page text. Malformed/password-protected/image-only PDFs
+PDFs, at most 10 MiB and 100 pages. The server keeps new PDF bytes only in
+bounded request memory, then retains SHA-256, original byte count, parser version
+and exact page-labelled text after a successful database commit. Malformed/password-protected/image-only PDFs
 and exceeded bounds fail explicitly. There is no OCR, URL fetching or silent
 truncation. Empty pages in a mixed report remain visible. Text extraction cannot
 prove visual completeness or semantic correctness; review the original source.
@@ -36,7 +37,7 @@ same decision returns its stored outcome without duplicating a figure.
 
 Official reads expose approved snapshots with original unit/period, evidence,
 source hash/parser version and reviewer/time. They require an authenticated
-fan/admin; originals and unpublished review data require assigned-admin access.
+fan/admin; retained source text and unpublished review data require assigned-admin access.
 Synthetic examples stay labelled. Report operations never write points/balances
 or combine official figures with personal/community estimates.
 
@@ -113,22 +114,68 @@ OOM invocation through HTTP or evidence that every large PDF fits 256 MiB.
 
 ## Storage and retention
 
-`REPORT_STORAGE_ROOT` must be an operations-granted absolute private directory
-outside the repository/webroot. The server requires real directories and 0700
-root permissions. UUID-keyed files are 0600, exclusively created, immutable and
-hash-checked. Titles are metadata, never paths. Original delivery uses an
-attachment with octet-stream, no-store and nosniff, never inline in the admin
-origin. The local quota is 256 MiB. Exhaustion rejects new uploads without
-deleting provenance. Coordination is per process; multi-process quota control is
-not implemented.
+New uploads do not call object storage. The request accepts at most 10 MiB, binds
+its SHA-256 and byte count to the reservation, parses in memory, then commits all
+page text and parser provenance in one PostgreSQL transaction. Parsing failure
+leaves no stored PDF; retry requires the same original file. A changed source
+requires a new reservation. Failed text persistence rolls back the review/pages
+transaction and preserves all prior approvals.
 
-Incomplete `.partial-*` files are removed on normal failure. Startup removes
-abandoned partial files older than one minute, never committed PDFs. An original
-whose later authorization/DB step fails may remain unreferenced; reconcile it
-manually rather than delete by absence of a DB row. Retain local synthetic
-originals and approved provenance for the namespace lifetime. Real-report
-retention, backups, account deletion, public source access, pagination and Azure
-object storage require explicit production policy/configuration before deployment.
+Once pages commit, removal of any pre-upgrade original follows. Removal failures
+remain visible and retryable. A completed same-hash upload retry skips the parser,
+retries legacy deletion and returns saved pages. A per-document database advisory
+lock serializes uploads across API processes; a process-local slot bounds active
+uploads without exhausting the database pool. Admin role/session checks remain
+inside each authorized database operation. Approval/revision policy is unchanged.
+
+`GET .../:id/source` now returns a UTF-8 plain-text attachment, `.txt`, with title,
+document ID, source kind, original hash/byte count, parser version and exact text
+under numbered page labels. It reads PostgreSQL, never downloads the PDF. Text
+has no HTML interpretation; delivery retains no-store/nosniff and admin guards.
+Admin download copy and extension follow this contract. Reviewers can compare
+text with their own original file; image-only content remains unsupported.
+
+The existing private local/Supabase storage adapter remains for legacy cleanup.
+Its immutable object writes are no longer on the upload path. On report runtime
+initialization and each report operation, a bounded sweep deletes originals for
+committed review documents. `REPORT_FAILED_UPLOAD_TTL_SECONDS`, with the accepted configurable
+24-hour default (86400 seconds), expires remaining legacy objects from their original creation time;
+retries never extend it. This is a legacy-only policy chosen by root under the user's no-further-decisions
+instruction. Cleanup skips actively locked uploads. An idle-service cleanup schedule
+remains a deployment prerequisite, so idle expiry is still unverified. New uploads do not
+depend on that duration because they persist no PDF. Storage backups/versioning
+and provider deletion guarantees still need the release owner's confirmation.
+
+The local adapter requires a granted absolute real directory, 0700 root and 0600
+UUID files. Symlinks and unexpected entries fail closed. Supabase retains its
+private bucket validation and exact-project server credential boundary. Inventory
+and deletion responses are bounded; deletion is idempotent and confirmed absent.
+No migration or new storage bucket is part of this candidate.
+
+## Hosted parser candidate and readiness
+
+Hosted processing is required. `REPORT_PARSER_MODE=hosted` selects the fixed HTTPS
+adapter and never falls back to native/Docker/unsandboxed parsing. Missing hosted
+configuration fails on parsing, while durable review/approval reads stay usable.
+The service receives only a public job-verification key; the API holds the private
+signing key. Short-lived signed jobs bind audience, UUID, source hash and bytes.
+Both response association and page/text bounds are revalidated by the API.
+
+The [service artifact and exact trial proposal](../../services/api/reports/hosted/README.md)
+describe the credential-free Docker service, Landlock/seccomp launcher, strict
+readiness checks, default-disabled synthetic-only trial endpoint, and cleanup.
+The root must review the exact candidate before cloud creation. Zero spend must
+be established by the release owner before creating one temporary Render Free
+service. No paid resource, shared environment group or provider inference belongs
+to this trial.
+
+The accepted resource ceiling is 512 MiB service-wide, including parser parent
+and child. Actual Render AMD64 kernel isolation, service memory peaks, resource
+failure/restart behavior and representative format limits are not yet proven.
+The earlier local ARM64 probe does not satisfy this gate. Do not set either
+host-verified image approval value until the root accepts supported-host evidence
+and independent sandbox review. This candidate does not complete hosted report
+delivery or the full app.
 
 ## Extraction quality remains pending
 
@@ -155,7 +202,7 @@ remote transfer. Synthetic injected candidates prove the handoff, not model qual
 
 ## Registered API and admin
 
-`server/api/app.ts` serves the three allowlisted `/admin/reports/` assets, which
+`services/api/api/app.ts` serves the three allowlisted `/admin/reports/` assets, which
 reuse `/admin/style.css`. No shell/navigation or phone changes are required.
 It lazily composes the report runtime after existing origin/rate/bearer checks.
 An unconfigured report feature returns controlled 503 without breaking unrelated
@@ -167,7 +214,7 @@ routes. Each report operation also reauthorizes inside its own transaction.
 | `GET /v1/admin/reports?after=UUID` | List up to 50 reports |
 | `GET /v1/admin/reports/:id` | Private pages, revisions, decisions, extraction status |
 | `PUT /v1/admin/reports/:id/source` | Uploader-owned raw PDF, streamed 10 MiB/type/signature boundary |
-| `GET /v1/admin/reports/:id/source` | Assigned-admin original attachment |
+| `GET /v1/admin/reports/:id/source` | Assigned-admin page-labelled text and provenance attachment |
 | `POST /v1/admin/reports/:id/extractions` | Bounded selection and persistent result |
 | `POST /v1/admin/reports/:id/candidates` | Source-backed initial manual revision |
 | `POST /v1/admin/report-candidates/:id/revisions` | Append correction with expectedRevisionId |
@@ -199,7 +246,7 @@ export REPORT_PARSER_IMAGE="$(docker image inspect amr-report-parser:local --for
 export REPORT_PARSER_MODE=docker
 # Set REPORT_STORAGE_ROOT and REPORT_TEST_STORAGE to the allocated dev/test paths.
 # Set API_PORT to the leased loopback port; ADMIN_ORIGIN must match it exactly.
-pnpm db:run -- node server/api/start.ts
+pnpm db:run -- node services/api/api/start.ts
 ```
 
 Use `API_HOST=127.0.0.1`, `AUTH_DEV_ENABLED=true` only for authorized local synthetic
@@ -218,7 +265,7 @@ pnpm security:check
 pnpm exec expo export --platform all
 ```
 
-Current local counting is 42 distinct tests across four serial groups: 7 pure/AI-off,
+Before this retention candidate, local counting was 42 distinct tests across four serial groups: 7 pure/AI-off,
 11 native, 3 container and 21 storage/PostgreSQL/registered HTTP. Four independent
 fixture assertions verify original encrypted/image-only PDFs. Historical 29-test
 and seven-assertion Linux evidence are retained, not added again to this total.

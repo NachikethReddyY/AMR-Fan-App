@@ -60,13 +60,13 @@ Do not edit an applied SQL migration. Append a numbered migration after handoff.
 
 ## Server integration and test access
 
-`server/database/index.ts` exports `createDatabase({ NODE_ENV, DATABASE_URL })`
+`services/api/database/index.ts` exports `createDatabase({ NODE_ENV, DATABASE_URL })`
 and `transaction(pool, async client => result)`. A transaction checks out one
 connection, commits all statements together, rolls back failures, and returns
 or discards the connection. Put authorization and feature policy in the owning
 server operation. The helper does not grant authorization or retry an operation.
 
-`migrate(pool)` applies sorted SQL files under `server/database/migrations/`.
+`migrate(pool)` applies sorted SQL files under `services/api/database/migrations/`.
 An advisory transaction lock serializes migrations, and stored checksums reject
 changed migration contents. The initial migration creates only the `app` schema.
 `seedLocal` creates a separate `local_fixture` schema with a labelled synthetic
@@ -132,17 +132,18 @@ The CI `local-postgres` job uses the same pinned service and proof on its own
 isolated runner. It has no production secrets. Other repository security gates
 remain enabled. An unavailable database or scanner is unverified, not a pass.
 
-## Tomorrow's Azure setup
+## Azure staging setup
 
-The Azure backend direction remains accepted; this local choice does not select
-paid services or provision cloud resources. Before a cloud rollout:
+The reviewed Azure staging package is in [`deploy/azure`](../../deploy/azure/README.md).
+This local choice does not provision cloud resources. Before a cloud rollout:
 
-1. The maintainer selects/provisions Azure PostgreSQL or another explicitly
-   approved compatible persistence service, network access and trusted TLS.
-2. Create separate deployment database credentials and supply server-only
-   `DATABASE_URL` with `NODE_ENV=production`; never copy local superuser access.
-3. Assign a migration owner, run `migrate(pool)` with deployment access, and prove
-   connection, transaction, backup/restore and deployment rollback behavior there.
+1. Create the approved resource group and deploy the first Bicep pass with the
+   API disabled. The template provisions private PostgreSQL, network/DNS, Key
+   Vault and the Consumption environment.
+2. Create separate migration-owner and runtime database credentials. Run the
+   controlled Azure migration operation; never copy local superuser access.
+3. Store only the runtime TLS URL in Key Vault, then deploy the immutable API
+   image and prove connection, transaction, backup/restore and rollback there.
 4. The account/API owner selects verified authentication and production roles.
    Any local identity adapter must be production-disabled and still authorize
    every server operation. This infrastructure contains no test auth bypass.

@@ -5,8 +5,10 @@ account foundation. The email identity provider and deployment values remain
 unselected. The production adapter accepts RS256 OIDC access tokens for this API,
 with exact issuer, audience and required scope plus signature, subject, issued-at,
 not-before and expiry verification. Email and client role claims never identify
-or authorize an account. The prepared native code/PKCE flow is held on the separate account UI branch,
-pending required iOS accessibility proof. This server candidate changes no phone UI.
+or authorize an account. The prepared native code/PKCE flow, SecureStore resume
+and profile controls are in the held phone candidate. Its current balance and
+History integration still requires native interaction proof, including mandatory
+small-iPhone accessibility checks. See [phone History](points.md#phone-consumer).
 
 ## Local run
 
@@ -42,8 +44,12 @@ redirect URI.
 
 API replies are JSON with `no-store`; writes accept bounded JSON bodies. Native
 clients send `Authorization: Bearer <credential>`. Requests with an `Origin` header
-require an exact configured `ADMIN_ORIGIN`, using HTTPS or loopback HTTP at `127.0.0.1`.
-Other origins are rejected; omitting the setting retains browser-origin rejection.
+require an exact configured `ADMIN_ORIGIN` or optional `ADMIN_ADDITIONAL_ORIGIN`,
+using HTTPS or loopback HTTP at `127.0.0.1`. The second setting preserves the
+existing Render origin when adding the [Vercel admin](admin-web.md). Wildcards,
+paths, credentials and unrelated preview origins are rejected. Omitting both
+settings retains browser-origin rejection; native requests without Origin still
+require normal session and role authorization.
 The separate [points admin page](points.md) uses same-origin requests and keeps
 its bearer session in memory. No cookie session, cross-origin credential policy
 or public role-assignment endpoint exists.
@@ -74,9 +80,9 @@ instead of reopening that account. Network failures hide account data and offer
 retry; invalid/expired sessions return to sign-in. Switching demo/real stores a
 local preference without changing ownership.
 
-Issue #5 uses `transaction(pool, client => ...)` from `server/database/index.ts`
+Issue #5 uses `transaction(pool, client => ...)` from `services/api/database/index.ts`
 and `lockOwnedProfile(client, verifiedPrincipalId, profileId)` from
-`server/accounts/store.ts`. The latter enforces ownership and takes `FOR UPDATE`.
+`services/api/accounts/store.ts`. The latter enforces ownership and takes `FOR UPDATE`.
 The accounting module must keep balance, History, idempotency and outcomes in
 that same transaction. This slice has no award, spend, reset or ledger API.
 A role is read from PostgreSQL on every request; a client badge grants nothing.
@@ -84,11 +90,11 @@ An admin role alone does not bypass personal profile reads or writes.
 
 ## Authorized role assignment
 
-A maintainer with server/database setup access can assign an already-created
+A maintainer with services/api/database setup access can assign an already-created
 principal, with a reason, using:
 
 ```sh
-pnpm db:run -- node server/accounts/assign-role.ts <principal-uuid> admin "<authorized reason>"
+pnpm db:run -- node services/api/accounts/assign-role.ts <principal-uuid> admin "<authorized reason>"
 ```
 
 Use `fan` to revoke that role. The assignment and reason are recorded atomically.

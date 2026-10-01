@@ -1,0 +1,53 @@
+name: Azure API image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/azure-staging]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REGISTRY: amrfanstaging044956.azurecr.io
+      IMAGE: amr-api
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Sign in to Azure with GitHub OIDC
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474 # v2.3.0
+        with:
+          client-id: 61ff2aff-da20-4dc3-a30a-8cb4962a4455
+          tenant-id: ce5a20bf-4c59-489e-b01c-7157b70e916a
+          subscription-id: 0449562f-1671-4427-b968-1b3268eb1334
+      - name: Sign in to Azure Container Registry
+        run: az acr login --name amrfanstaging044956
+      - name: Build and push immutable commit image
+        run: |
+          docker build --pull \
+            --file services/api/Dockerfile.azure \
+            --tag "$REGISTRY/$IMAGE:${GITHUB_SHA}" .
+          docker push "$REGISTRY/$IMAGE:${GITHUB_SHA}"
+          digest="$(az acr manifest show-metadata --registry amrfanstaging044956 --name "$IMAGE:${GITHUB_SHA}" --query digest --output tsv)"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "IMAGE_REF=$REGISTRY/$IMAGE@$digest" >> "$GITHUB_OUTPUT"
+        id: image
+      - name: Publish image reference
+        run: |
+          printf '%s\n' "${{ steps.image.outputs.IMAGE_REF }}" > image-reference.txt
+          cat image-reference.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: azure-api-image-reference-${{ github.sha }}
+          path: image-reference.txt
+          if-no-files-found: error

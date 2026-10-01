@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Submission sessions</title>
+    <link rel="stylesheet" href="/admin/style.css" />
+    <link rel="stylesheet" href="/admin/participation/style.css" />
+    <script type="module" src="/admin/participation/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Administration">
+        <a href="/admin/">Points</a>
+        <a href="/admin/rewards/">Rewards</a>
+        <a href="/admin/submissions/">Submissions</a>
+        <a href="/admin/reports/">Reports</a>
+        <a href="/admin/participation/" aria-current="page">Sessions</a>
+      </nav>
+      <header>
+        <h1>Submission sessions</h1>
+        <button id="logout" hidden>Sign out</button>
+      </header>
+      <section id="signin" aria-labelledby="signin-title">
+        <h2 id="signin-title">Sign in</h2>
+        <p id="setup">Checking sign-in availability…</p>
+        <form id="password-signin" method="post" hidden>
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            autocomplete="username"
+            maxlength="254"
+            required
+          />
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            maxlength="1024"
+            required
+          />
+          <button type="submit">Sign in</button>
+        </form>
+        <div id="fixtures" hidden>
+          <p>
+            Local test accounts. Admin access requires a server-assigned role.
+          </p>
+          <button data-fixture="fan-a">Use test account A</button>
+          <button data-fixture="fan-b">Use test account B</button>
+        </div>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+      <section id="workspace" aria-busy="false" hidden>
+        <div class="profile-controls">
+          <button id="refresh">Refresh ranking and sessions</button>
+          <button id="create" data-mutation>Create open session</button>
+        </div>
+        <p id="pending" hidden></p>
+        <button id="retry" hidden>Retry original action</button>
+        <section
+          id="receipt"
+          aria-label="Recorded action"
+          tabindex="-1"
+          hidden
+        ></section>
+        <section aria-labelledby="ranking-title">
+          <h2 id="ranking-title">Approved submissions</h2>
+          <p>
+            Contributed points, then earlier approval. Only unfinished backlog
+            entries with positive contributions can be selected.
+          </p>
+          <p id="ranking-empty" hidden>No approved submissions.</p>
+          <ol
+            id="ranking"
+            class="participation-list"
+            aria-label="Approved submission ranking"
+          ></ol>
+          <button id="ranking-more" hidden>More ranked submissions</button>
+        </section>
+        <section aria-labelledby="sessions-title">
+          <h2 id="sessions-title">Interaction sessions</h2>
+          <p>
+            Close selects up to three submissions. Selection freezes further
+            contributions. Fulfilment is a demonstration.
+          </p>
+          <p id="sessions-empty" hidden>No interaction sessions.</p>
+          <ol
+            id="sessions"
+            class="participation-list"
+            aria-label="Interaction sessions"
+          ></ol>
+          <button id="sessions-more" hidden>Earlier sessions</button>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

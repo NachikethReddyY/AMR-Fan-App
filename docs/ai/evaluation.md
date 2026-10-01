@@ -30,7 +30,7 @@ or precise location traces. No search, retrieval, model tools or expected answer
 were sent to either model. No hints were used during inference. The coding agent
 read primary upstream code to build the runtime; that is distinct from the models'
 closed-input evaluation. No field outputs from one model were passed through the
-other. Laya questions are versioned once in `server/ai/questions.json`.
+other. Laya questions are versioned once in `services/api/ai/questions.json`.
 
 Selection used 18 authored development examples, six per Laya task. Held-out
 quality used 36 different examples, twelve per task, without prompt or checkpoint

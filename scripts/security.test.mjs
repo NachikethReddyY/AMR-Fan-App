@@ -93,7 +93,7 @@ test('malformed or contradictory DAST configuration fails closed', () => {
 
 const pathnameConfig = {
   status: 'implemented',
-  target: { dockerfile: 'server/api/Dockerfile', port: 3000 },
+  target: { dockerfile: 'services/api/api/Dockerfile', port: 3000 },
 };
 
 test('DAST pathname defaults to root', () => {

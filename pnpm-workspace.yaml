@@ -1,3 +1,7 @@
+packages:
+  - apps/*
+  - services/*
+  - packages/*
 allowBuilds:
   unrs-resolver: false
 overrides:

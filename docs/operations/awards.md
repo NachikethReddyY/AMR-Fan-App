@@ -29,8 +29,9 @@ zero/nonpositive reduction gives zero; a missing or incompatible input remains
 
 Factors must be uniquely selected for each used mode and their IDs retained in
 the journey. In the absence of a declared cross-dataset compatibility contract,
-this implementation accepts only a common geography/source/period/method across
-used factors. That conservative local check is not scientific factor validation.
+legacy calculations accept only a common geography/source/period/method across
+used factors. A released dataset instead requires its exact retained factor hash
+and an explicit compatible use-phase review. That conservative local check is not scientific factor validation.
 Different factor methods remain unavailable until the factor owner supplies
 explicit compatible coverage; walking/cycling operational factors must not be
 silently combined with a different lifecycle boundary.
@@ -119,20 +120,22 @@ lower cumulative credit or permit another automatic award.
 
 ## Readiness and test-only accounting
 
-The integrated projection currently permits only `calibration: 'unvalidated'`
-and exposes indicative applicability, not a production applicability attestation.
-Feature 03 approves no numerical factor. The public service therefore retains
-calculations and no-credit outcomes with `productionCredit.kind: 'unavailable'`.
-This preserves the accepted earning feature while its live-credit prerequisites
-remain pending. There is no new human product approval flow or runtime bypass.
+The server now has a reachable readiness decision, documented in the
+[release evidence procedure](journey-award-release.md). A trusted local release
+file binds the retained policy and compatible factor set to a factor review and
+physical iOS/Android reports. Startup checks report bytes, hashes, units and
+coverage; reviewers still establish the truth of the underlying field evidence.
+No approved factor release or physical proof is included, so defaults continue
+to withhold production credit. Literal unavailability is no longer the only
+representable state. The user-approved `planned-endpoints-v1` provisional variant uses retained planned
+estimates and recorded endpoints, with separately reviewed factor configuration.
+It does not require physical calibration and never supplies verified impact.
 
-The narrow future owner handoff is a typed trusted calibration-validation status
-bound to the retained assessment policy and a compatible, sourced, applicable
-approved factor basis bound to the retained journey. It must explain how a later
-validation is represented as a new trusted revision without rewriting receipts
-or repricing historical factors. Awards can then accept that explicit readiness
-variant; changing an environment flag or merely labelling provenance `live` is
-insufficient. Physical locked-background iOS/Android proof remains separate.
+A ready receipt reaches the same transaction and difference-only calculation as
+the existing synthetic accounting tests, including PR47 preliminary photo credit.
+Each new Start retains its release; deployments cannot promote an active journey
+or rewrite an old receipt. Legacy missing-release calculations retain the original
+unavailable reasons so immutable receipt comparisons remain stable.
 
 `testing/service.ts` is an internal server test entry. It requires actual
 `NODE_ENV=test` and the locked journey's explicit `source.kind: 'fixture'`.
@@ -163,11 +166,11 @@ future rule publication. Neither child is implemented here.
 
 ## Registered API and checks
 
-Owned runtime files are `server/awards/contracts.ts`, `decimal.ts`, `policy.ts`,
+Owned runtime files are `services/api/awards/contracts.ts`, `decimal.ts`, `policy.ts`,
 `operation.ts`, `store.ts` and `http.ts`; test-only files are `policy.test.ts`,
 `awards.test.ts`, `http.test.ts`, `testing/fixtures.ts`, `testing/service.ts`,
 `testing/api-process.ts` and `testing/registered-api.test.ts`.
-The only schema addition is `server/database/migrations/0008_journey_awards.sql`.
+The only schema addition is `services/api/database/migrations/0008_journey_awards.sql`.
 
 The shared API registers only the public handler:
 

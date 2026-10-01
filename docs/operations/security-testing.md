@@ -29,7 +29,7 @@ a clean working-tree scan says nothing about earlier commits.
 
 ## DAST target and isolation
 
-`security/dast-target.json` selects the account API in `server/api/Dockerfile`.
+`security/dast-target.json` selects the account API in `services/api/api/Dockerfile`.
 Its isolated container runs real PostgreSQL and the actual API with production
 auth guards and no enabled synthetic sign-in. The unauthenticated scan does not
 exercise provider login or owned records; real HTTP/PostgreSQL tests cover those

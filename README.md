@@ -3,9 +3,7 @@
 [Documentation](docs/README.md) · [Roadmap](ROADMAP.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Agent instructions](AGENTS.md)
 
-Minimal Expo + React Native TypeScript foundation for iOS and Android. The only
-screen is a neutral development starter. Product features and final visual design
-are not implemented. No backend account, credentials, or environment file is
+A Turbo-managed workspace containing the Expo React fan app, Swift/Xcode phone app, backend API, admin web artifact and shared TypeScript packages. No backend account, credentials, or environment file is
 required to run it.
 
 ## Prerequisites
@@ -58,12 +56,11 @@ pnpm security:dast:self-test
 pnpm format
 ```
 
-Jest uses the `jest-expo` preset and discovers `src/**/*.test.ts` and
-`src/**/*.test.tsx` (also JavaScript equivalents). **There are currently no feature
-tests.** `pnpm test` deliberately reports no tests and exits successfully using
-`--passWithNoTests`; that is tooling readiness, not product coverage. Add behavior
-tests with future features; `pnpm test:watch` supports interactive development.
-Tooling tests cover the security runner, not product behavior. Formatting excludes
+Jest uses the `jest-expo` preset and discovers `apps/fan/src/**/*.test.ts` and
+`apps/fan/src/**/*.test.tsx` (also JavaScript equivalents). Fan behavior tests live
+alongside the feature modules and under `apps/fan/tests`; `pnpm test:watch` supports
+interactive development. Tooling tests cover the security runner, not product
+behavior. Formatting excludes
 existing planning documents, unselected design work and evidence to preserve them.
 Shared instructions, skills and links are checked by `pnpm agents:check`.
 Read the [security testing procedure](docs/operations/security-testing.md) for
@@ -73,7 +70,7 @@ and device verification require explicit user agreement.
 Production JavaScript/Hermes bundle check (both platforms):
 
 ```sh
-pnpm exec expo export --platform all
+pnpm export
 ```
 
 This passed for iOS and Android. Development launch was also verified through
@@ -84,16 +81,17 @@ not tested; they are outside this foundation issue.
 
 ## Structure and configuration
 
-- `index.ts`: Expo entry point.
-- `src/App.tsx`: neutral starter screen; future app code belongs under `src/`.
-- `app.json`: local Expo app metadata and supported platforms.
-- `convex/README.md`: superseded backend placeholder; Azure is the selected platform.
+- `apps/fan/`: Expo React fan app, assets, tests and native/web configuration.
+- `services/api/`: backend API source, migrations and AI/report adapters.
+- `apps/admin/`: admin workspace package that builds the static admin artifact.
+- `packages/contracts/`: shared wire types.
+- `packages/travel-domain/`: pure route and sustainability calculations shared by the fan app and API.
+- `Swift-App/`: independent Swift/Xcode phone app.
+- `docs/`: maintained product, architecture and operating documentation.
 - `.env.example`: optional future configuration names, with placeholders only.
 - `docs/`, `CONTEXT.md`, `.scratch/`: preserved planning and screen proposals.
 
-No variables are read by the starter. Azure services and their configuration
-remain unselected. No backend service is provisioned, and no backend dependency,
-schema, authentication, or client is installed.
+The React app reads only public `EXPO_PUBLIC_*` values. Server credentials stay in the API environment. Hosted services and live authentication remain deployment gates.
 `EXPO_PUBLIC_*` values are public in app bundles; never put secrets in them. Local
 `.env` files, signing keys, dependency folders, generated native projects and
 build output are ignored. Only `.env.example` is intended for version control.

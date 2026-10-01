@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@amr/contracts": ["../../packages/contracts/index.ts"],
+      "@amr/travel-domain/*": ["../../packages/travel-domain/src/*"]
+    },
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "**/*.ts",
+    "../../scripts/local-db.mjs",
+    "../../scripts/local-service.mjs",
+    "auth/admin.js"
+  ]
+}

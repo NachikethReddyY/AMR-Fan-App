@@ -13,20 +13,22 @@ retained actual API/static registration cases now pass, alongside real-process
 restart and existing feature regressions. Shared navigation and phone controls
 remain with their owners.
 
-The implementation was refreshed once onto reviewed main
-`2ce02fdd652b5a7d24923a804cf233c120181247`; the original seven commits retained
-identical patches. Original submission receipts, moderation rows, accounting and
-authorization policy remain unchanged. Migration
-`0009_submission_participation.sql` follows reserved 0006 rewards, 0007 reports
-and 0008 awards. Accounts, points and submissions migrations must be present.
-The runner applies existing filenames in sorted order; no peer migration is
-copied or invented here.
+PR39 integrated participation into main. The hosted sign-in follow-up starts from
+`1ea07e1b2d83ae148ed3e0817cd49cb1af395b38`. Its participation domain, migration,
+original receipts, ranking and points/auth policy remain unchanged. Root dispatch
+retains journey, awards, reports and the inherited Supabase configuration. The
+owned admin page now uses the same hosted sign-in helper and conditional provider
+CSP as main's other admin pages. Migration `0009_submission_participation.sql`
+follows accounts, points, submissions, rewards, reports and awards migrations;
+no existing migration is rewritten.
 
-Actual T3 browser flows passed on these exact assets and the real API with
-synthetic accounts. The preview host disconnected during the narrow-width check.
-320px, 200% zoom, complete keyboard/assistive-technology, phone and reset
-acceptance remain unverified. This is an integrated review candidate, not final
-product acceptance or independent signoff.
+Independent review of the prior `f5d60a0` candidate found no actionable core code
+finding and observed 320px, paging and visible keyboard focus. Native browser 200%
+zoom remained a hold; audible assistive technology, phone and reset acceptance
+were unverified. Those observations are historical. The follow-up changes the
+sign-in assets and has no new browser proof or exact-head independent signoff.
+Native 200% zoom is not inferred from CSS zoom or unit tests. CI remains paused by
+the user; no Actions query, rerun or re-enable is part of this follow-up.
 
 ## Contribution and current status
 
@@ -146,7 +148,7 @@ causes denial. No client role, badge or actor field grants authority.
 
 ## Registered API and remaining caller handoff
 
-The registered imports in `server/api/app.ts` are:
+The registered imports in `services/api/api/app.ts` are:
 
 ```ts
 import { handleParticipationRequest } from '../submissions/participation-http.ts';
@@ -156,15 +158,19 @@ import { serveParticipationAdmin } from '../submissions/participation-admin.ts';
 Alongside existing static admin handlers, before bearer extraction:
 
 ```ts
-if (req.method === 'GET' && (await serveParticipationAdmin(path, res))) return;
+if (
+  req.method === 'GET' &&
+  (await serveParticipationAdmin(path, res, adminAuth.mode === 'supabase'))
+) return;
 ```
 
 The exact asset allowlist is `/admin/participation/`,
 `/admin/participation/app.js` and `/admin/participation/style.css`. The HTML also
 uses the existing `/admin/style.css`. Keep the trailing slash on the page link.
 No tests, TypeScript sources, directory traversal or arbitrary asset paths are
-served. The handler sets same-origin script/style/connect CSP, no-store and
-nosniff; the existing API retains its other headers. The separate shell owner
+served. The handler sets same-origin script/style CSP and allows connections
+only to self, plus the inherited fixed Supabase URL when configured for hosted
+sign-in. It retains no-store and nosniff; the existing API retains its other headers. The separate shell owner
 may register a link to `/admin/participation/` in the established navigation.
 This author has not changed navigation.
 
@@ -206,8 +212,8 @@ Registered root scripts:
 
 ```json
 {
-  "participation:test": "node --test --test-concurrency=1 server/submissions/participation-contracts.test.ts server/submissions/participation-http.test.ts server/submissions/participation/admin/assets.test.ts server/submissions/participation/admin/app.test.mjs",
-  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 server/submissions/participation.test.ts server/submissions/participation/admin/read.database.test.ts server/submissions/participation-http.database.test.ts server/submissions/participation/admin/registration.database.test.ts"
+  "participation:test": "node --test --test-concurrency=1 services/api/submissions/participation-contracts.test.ts services/api/submissions/participation-http.test.ts services/api/submissions/participation/admin/assets.test.ts services/api/submissions/participation/admin/app.test.mjs",
+  "participation:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/submissions/participation.test.ts services/api/submissions/participation/admin/read.database.test.ts services/api/submissions/participation-http.database.test.ts services/api/submissions/participation/admin/registration.database.test.ts"
 }
 ```
 
@@ -239,9 +245,15 @@ rendered overflow, assistive-technology behavior or visual quality.
 The existing local account selector is available only when `/admin/config`
 reports synthetic mode. Current `/v1/admin/session` gates entry and refresh;
 every mutation and session/audit read also requires current backend authority.
-Live sign-in remains the existing project's pending setup. No token entry form,
-client-assigned role or credential persistence is added. Tokens stay in memory;
-requests omit cookies and use a 10-second timeout and no-store.
+When `/admin/config` supplies the inherited Supabase mode, the page binds the
+shared `/auth/admin.js` email/password helper. It sends credentials only to the
+fixed provider, exchanges the provider token for an app session, then checks
+`/v1/admin/session` and reads `/v1/me` for the server-owned account ID. Both hosted
+and synthetic entry use that account ID for pending-intent isolation. Password
+inputs clear on submit; no token, refresh token or password is persisted. The
+page retains current-role/session denial before replay. Requests omit cookies and
+use a 10-second timeout and no-store. Local proofs use controlled provider
+responses and real local JWT/session/HTTP/DB checks, with no hosted service call.
 
 Ranking preserves the server's order, full decimal strings and microsecond
 timestamps. It pages with the opaque `after` cursor; session history pages with

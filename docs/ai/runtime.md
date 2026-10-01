@@ -7,7 +7,7 @@ cannot publish, grant access, award points, change balances or discard reports.
 
 ## Server interface
 
-Create one `createAi` instance per backend process from `server/ai/index.ts`.
+Create one `createAi` instance per backend process from `services/api/ai/index.ts`.
 Pass only explicit server configuration; never spread `process.env` or place a
 credential in `EXPO_PUBLIC_*`. Configuration errors return a fixed message.
 
@@ -63,6 +63,254 @@ and later authorized review-candidate integration. This reversible setting does
 not remove accepted report extraction. Its quality limits and review requirements
 remain in [evaluation](evaluation.md).
 
+## TokenRouter preparation, disabled
+
+The later [gateway verification](gateway-contract.md) establishes the Jev gateway
+request path, displayed tiered rates and the existing AMR key quota. Full response,
+image and billing bounds remain unresolved; this preparation stays disabled.
+
+`services/api/ai/tokenrouter.ts` exports `createTokenRouter(configuration)` separately
+from `createAi`. No product caller selects it. Its config accepts only
+`TOKENROUTER_BASE_URL` (exact `https://api.tokenrouter.com/v1`), optional
+`TOKENROUTER_API_KEY`, `TOKENROUTER_ENABLED` (default false), and `timeoutMs`
+(15,000 default, 20,000 maximum). No environment or secret file is read by it.
+Do not enable it before the live prerequisites below are resolved.
+
+`complete({ model, permission, instruction, input }, outputSchema)` accepts only
+`openai/gpt-6-luna` and `typesafe/jev-1.13`. The trusted server supplies the
+instruction and strict Zod output schema; `permission` is a caller attestation,
+not authorization. Text input is bounded to 12,000 characters and instruction to
+2,000; outgoing JSON to 60,000 bytes, incoming bytes to 65,536 and content to
+48,000 characters. It requests at most 2,500 completion tokens, no streaming,
+`store:false` and JSON output. These requested options still need verification
+on the exact hosted model. Only the fixed HTTPS `/chat/completions` destination
+can receive Luna requests. There is one active call per instance, no queue,
+redirect, automatic retry, model fallback or tool execution.
+
+A success is a schema-validated `candidate`, always `reviewRequired:true`, with
+model/version, byte counts, elapsed time and token usage when validly supplied.
+Usage is `reported`, `missing` or `invalid`; absence is never zero usage/cost.
+Malformed usage fails validation. Failures contain bounded reason codes, no raw
+provider error or credential. Usage from a parsed response survives content
+rejection. A transport failure can have unknown usage and can still be billable.
+No prices, cost estimate or budget meter are invented here. Schema validation
+alone does not prove source meaning; report grounding and admin approval remain
+required. `store:false` does not establish provider retention guarantees.
+
+The [gateway contract and owner handoff](integration.md) records current facts.
+Two separately authorized metadata reads confirmed both exact model IDs: Jev
+uses `system-one`, Luna uses `openai`/`openai-response`, and both carry `Text`
+tags. Catalog entries contain no prices, token limits or budget enforcement.
+The provisioned key and catalog presence do not prove image support or actual
+inference availability. The later console inspection establishes the gateway
+request path, but not the full response or billing contract. No live inference
+has run. Upstream-only synthetic mappings and the shared cost-store interface
+are documented there; they do not enable these adapters.
+
+Project role correction: Luna is for report extraction and camera-photo
+observations, not routine decisions.
+Jev is preferred for state-aware route recommendations and existing short
+advisory tasks. [TypeSafe's introduction](https://docs.typesafe.ai/introduction)
+and [HTTP API](https://docs.typesafe.ai/api) document text state plus typed
+Choice/Score/Noul questions through `/v1/systemone`, not generated prose.
+TokenRouter's Jev Decisions/SystemOne mapping is unverified, so selecting Jev
+returns `protocol-unverified` without traffic. This is not a substitution for
+the old local Laya classifier. Existing submission tag, moderation attention and
+report category questions are reuse candidates only after protocol and quality
+verification. No new classification policy is introduced.
+
+[Confidence](https://docs.typesafe.ai/confidence) measures distribution
+concentration, not route utility or the probability an answer is correct.
+[Jev limitations](https://docs.typesafe.ai/model-jaggedness/jev-1.13) call for
+arithmetic/date ordering in code and warn about noisy and adversarial state.
+The accepted route direction is relative Jev preference over code-calculated
+time, emissions and points, with the strongest recommendation first, inside a
+hard fastest-duration-plus-extra-minutes limit. No numerical weights are invented.
+The current lowest-emissions rule, with duration then ID ties, remains the
+deterministic fallback until the route owner integrates and verifies that change.
+
+The user confirmed **US$10 total** as a hard ceiling shared by development and
+the deployed demo, not a spending target. A per-process usage counter cannot
+enforce that ceiling across callers, keys or deployments. Before enabling calls,
+the integration owner needs a provisioned private server key, verified exact
+model/protocol/prices and a shared durable budget admission/reconciliation design
+with verified provider enforcement. Unknown billed usage must not silently free
+reserved budget. None of those live prerequisites is claimed complete.
+
+Exact peer handoff, not edits in this slice:
+
+- `services/api/reports/runtime.ts`: currently selects `createAi` using explicit local
+  Luna/Laya env names. Add a separately reviewed provider selection only after
+  budget admission and authorized transfer checks exist; retain the local path.
+- `services/api/reports/extraction.ts`: accepts model `gpt-6-luna` (or synthetic fixture),
+  exact review metadata and source spans. It must deliberately accept the hosted
+  model/version after a grounded report wrapper exists. Do not pass this generic
+  transport result directly or relabel the hosted model as the local one.
+- `services/api/ai/luna.ts`: keep its source-grounding and failure/human-review contract
+  when preparing that later wrapper. No automatic approval or data writer belongs
+  in transport. Keep usage/budget records outside the strict report result.
+- Root config owner: future server-only names are `TOKENROUTER_BASE_URL`,
+  `TOKENROUTER_API_KEY`, `TOKENROUTER_ENABLED=false`. No root patch or dependency
+  is needed for this preparation. The other AI flags remain unchanged/off.
+
+## Route and activity integration contracts
+
+These are internal normalized contracts with synthetic proof, not TokenRouter
+wire parsers or live model-quality evidence. No product caller is wired here.
+
+`validateRoutePreference(snapshot, response)` accepts a server-created snapshot
+with `snapshotId`, integer `extraMinutes` in 0..1440, and 1..12 routes containing
+only opaque `id`, `durationSeconds`, `kgCo2e` and `points`. Missing calculated
+metrics are null and force deterministic fallback, never a fabricated zero.
+The code computes the hard limit using every valid duration before filtering.
+The response must contain the same snapshot ID and a complete, unique
+`orderedRouteIds` permutation of eligible routes, plus nullable [0,1] confidence.
+Returned metrics come from the snapshot; extra geometry, amount or tool fields
+are rejected. Confidence is metadata and does not determine the order.
+The route owner creates a fresh snapshot, provides all candidates, rechecks its
+identity/time bound when consuming results, and uses `recommendRoute` on failure.
+Do not send locations, geometry, account IDs or live traces to a model.
+
+`createActivityAssessment({provider?, timeoutMs?}).assess(input, signal?)` accepts
+server-owned mutable input: `photo: Uint8Array` (1..2,000,000 bytes), JPEG/PNG
+`mime`, `capture: "camera"`, a 1..1600-character `description`, opaque
+`fingerprint`, and server-calculated `eligibility` booleans `eligible`,
+`duplicate`, `actionAlreadyRewarded`, `tripAlreadyRewarded`. These booleans are
+not client attestations. The caller must decode/validate the actual image,
+dimensions and camera origin before entry; MIME and byte checks cannot do that.
+The module rejects unsupported fields and requires all eligibility checks before
+provider work. It has no daily counter or location requirement.
+
+The injected provider interface is `observe({photo,mime,description}, signal)`
+then `decide({observations}, signal)`. There is at most one call to each, in that
+order, no retry, and one active assessment per constructed instance. A shared
+15-second deadline defaults to at most 20 seconds. An abort-ignoring provider
+keeps the concurrency slot occupied until it exits; a late result cannot become
+a candidate. Default construction has no provider and returns unavailable without
+traffic. Only a reviewed server mapper may inject a real provider, after budget
+admission. Tests inject in-process functions; they do not verify multimodal APIs.
+
+Observations contain 1..8 nonempty strings of at most 400 characters. The decision
+contains only `verdict: supported | not-supported | uncertain`,
+`activity: bus-trip | other`, and nullable confidence in [0,1]. A candidate
+requires supported and strictly greater than 0.5; exactly 0.5, null, uncertainty
+or a negative verdict cannot qualify. This encodes the accepted activity >50
+threshold, not a measured correctness probability. A future mapper must verify
+the gateway field/scale; a Noul value is not Choice/Score confidence. The result
+contains no photo, description, observation, free-text reason, point amount,
+balance or approval. Candidates require transactional eligibility recheck.
+
+The owner supplies a buffer whose ownership is transferred for this assessment.
+On success, invalid input/output, disabled/provider failure, busy, timeout and
+cancellation, the module overwrites that supplied buffer and clears its mutable
+description/observation references. JavaScript strings are immutable: reference
+release is not proof of heap-byte zeroization. No filesystem, database or logging
+I/O occurs here. Caller/provider copies, logs, transport buffers, process recovery
+and provider retention require separate end-to-end proof; no provider deletion
+claim is made. Retain only the decision, ledger and duplicate fingerprint after
+assessment, not the original photo or description.
+
+Accepted award handoff: an eligible bus photo earns preliminary 50 points now;
+only the difference may be paid later after verification of the same journey.
+An eligible no-location photo earns 50. There is no daily award cap. Duplicate
+photos/actions and trip double payment are denied. Amounts for other activities
+remain unsettled. These modules do not calculate or award points. The owner must
+atomically recheck eligibility, deduplication and existing payment before one
+ledger change and link any later journey difference to the preliminary payment.
+
+The shared US$10 development/deployment ceiling still needs enforceable admission.
+Reserve both activity stages before starting; retain uncertain billed usage after
+timeouts/failures and reconcile once. An in-memory per-instance counter is not a
+durable shared cap. The proposed synthetic conformance allocation is at most
+US$0.10 only after the manager verifies rates, cap and maximum billable request;
+it is not live activation. No billable calls were made by this preparation.
+
+Consumer seams: the route owner supplies this snapshot from `createRouteQuery`
+after deterministic metrics; an activity owner supplies authenticated decoded
+camera input and server eligibility. No activity API exists in the inspected
+base. Report integration remains the grounded wrapper handoff above. Exact
+request/response fixtures are in `route-preference.test.ts` and
+`activity-assessment.test.ts`. Actual semantic evaluation, transaction/retention
+integration and authenticated gateway conformance remain separate pending gates.
+
+## Jev submission moderation preparation
+
+`services/api/ai/jev-moderation.ts` defines an internal normalized result contract, not
+a claimed Jev gateway response format. `prepareJevModeration({text})` validates
+at most 1,600 characters and returns unavailable/protocol-unverified without
+network I/O. There is no enable switch until a reviewed provider mapping exists,
+and no Luna fallback. `validateModerationResult(source, result)` is a pure
+boundary for a future trusted server mapper. It validates the normalized shape,
+not the truth of the model's judgment.
+
+An assessment carries `harmful`, `benign` or `uncertain`, separate risk codes,
+nullable confidence and `reviewRequired:true`. Harmful requires at least one of
+targeted humiliation, harassment, threats or private-data abuse plus a unique
+literal source quote; code derives its UTF-16 offsets. Benign/uncertain have no
+asserted risks. Confidence is finite in [0,1] or absent/null and never determines
+the verdict: high-confidence benign is not harmful. No numerical enforcement
+threshold is selected. `unavailable` is distinct from all three verdicts; invalid
+responses and provider failures do not invent harm. Outputs have no fee, balance,
+approval, voting, delete or storage-operation fields.
+
+Project product correction for parent #3 and #11/#12/#13: a harmful question or
+activity pays the **same normal 500-point non-refundable submission fee**, not
+an extra penalty. Only explicit submit with `confirmedFee:500` and sufficient
+balance commits the fee. Typing, editing and provider retries do not charge.
+Successful same-key replay preserves the paid pending/rejected receipt without
+a second debit. A new paid resubmission keeps the existing confirmation and
+new-request semantics. The suggested pre-charge harmful-content block was not
+accepted and must not be implemented.
+
+The accepted harmful outcome prevents voting and retains the submission and
+reason. Uncertain or unavailable stays pending admin review; benign never grants
+approval or voting eligibility by itself. Existing assigned-admin approval is
+still required before voting. Previously paid/voted records retain their data
+and contributions for authorized review, without automatic deletion, hiding,
+extra debit or refund. This preparation performs none of those state changes.
+
+Exact transactional handoff, read at main
+`95e5be89060ff130c63019deb935c25ef1c93194`:
+
+- `services/api/submissions/contracts.ts` already validates explicit `confirmedFee:500`.
+  `services/api/submissions/http.ts` sends explicit POST submissions to
+  `createSubmission` in `services/api/submissions/index.ts`.
+- `createSubmission` uses `runPointsOperation` with the request ID and exact
+  text/tag/fee/resubmission intent, returns the normal `-SUBMISSION_FEE` delta,
+  and creates the retained pending record. Preserve this one fee path for every
+  semantic outcome. No model call belongs inside its locked transaction.
+- `services/api/points/index.ts:runPointsOperation` authenticates, serializes the request
+  key, locks the profile, checks stored replay before `perform`, and commits only
+  an affordable delta together with History and the stored outcome. Provider
+  retries or review must never call it to charge the same submission again.
+- After successful submission commit, a separately owned integration can attach
+  a bounded screening result to the retained submission outside the points
+  transaction, keyed by submission and model/policy version. Same-key submit
+  replay must remain independent of screening availability. Durable scheduling,
+  reason storage and retry ownership are not implemented by this AI contract.
+- `moderateSubmission` currently requires a current assigned admin and a pending
+  record, with its own decision replay key. The owner must preserve that authority
+  while integrating harmful/uncertain/unavailable results; the model cannot call
+  this operation or forge the admin identity. Reason storage and reviewed-state
+  integration need explicit peer-owned changes, not a cast of this result.
+- Voting/selection owners (#12/#13) must recheck current moderation/approval
+  transactionally so harmful or pending content cannot accept votes. No such
+  integration is claimed here; do not infer a points/DB regression pass from
+  these pure AI tests.
+
+`services/api/ai/evaluation/jev-moderation-prospective.json` contains 24 newly authored,
+unevaluated English cases: eight harmful (two per risk), ten benign context
+controls and six uncertain cases. It covers criticism, negation, quoted
+condemnation, harmless profanity and injection. Nine additional integration
+scenarios state the fee/replay/review requirements but are not transaction tests.
+The contract tests validate shapes, spans, confidence separation and lack of
+side effects; feeding expected fixtures through a validator is not measured
+classification accuracy. Report per-risk false positives and missed harms,
+uncertainty/failure rates, sample sizes and language limits before a quality
+decision. Use a new preregistered unseen holdout for actual evaluation; preserve
+all earlier Laya/Luna fixtures and scores unchanged. No production language
+coverage, confidence threshold or model accuracy is established.
+
 ## Reproducible native MPS service
 
 Primary [Laya source](https://github.com/NandhaKishorM/laya/tree/4066d5d5fbf08b66c6757ddeedbd797bd7655bc0)
@@ -102,7 +350,7 @@ curl --fail --silent http://127.0.0.1:55434/health
 ```
 
 The adapter uses `/v1/systemone` with `state` and the exact questions in
-`server/ai/questions.json`. This is a restricted subset of Jev, not complete Jev
+`services/api/ai/questions.json`. This is a restricted subset of Jev, not complete Jev
 compatibility: no arbitrary questions, batch routes, model switching, tools or
 browser requests. The service checks 8 KiB body bytes, 1,600 state characters,
 question equality and the selected tokenizer's actual remaining context budget.
@@ -125,7 +373,7 @@ mode 600. The service itself needs no provider credentials.
 ## Verification and later revalidation
 
 ```sh
-node --test server/ai/*.test.ts
+node --test services/api/ai/*.test.ts
 ~/.cache/amr/laya/venv/bin/python -m unittest discover \
   -s scripts/local-ai -p '*_test.py'
 ```

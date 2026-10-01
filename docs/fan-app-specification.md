@@ -1,6 +1,8 @@
 # Aston Martin fan app: product specification
 
-Status: core product choices confirmed through the technical-draft interview. Detailed requirements and acceptance cases now live in the [feature specification](features/README.md). The committed app is an Expo starter. Separate local changes add Home and navigation tabs; they are outside this documentation commit. Planned travel, rewards, impact and admin behavior is not implemented.
+Status: core product choices confirmed through the technical-draft interview. Detailed requirements and acceptance cases live in the [feature specification](features/README.md). The root phone app is an Expo starter; a separate `swift-port` branch contains a SwiftUI device-only demo. Neither app implements live route tracking, Luna photo awards, official coupon fulfilment, or admin review. Demo screen flows are not production-backed balances or shared impact.
+
+The Swift demo calls its local points **Green Points**. It starts at zero unless the fan explicitly opts into a one-time 9,000-point local seed on that device. Completing the daily quiz or a local tree redemption records a once-per-calendar-day demo streak; photo verification remains unavailable and awards no points until a reviewed backend is connected. Travel is a mode-selection preview, and coupons are demo codes that cannot be redeemed in the official store. The accepted production points and evidence rules below remain unchanged.
 
 ## Product idea
 

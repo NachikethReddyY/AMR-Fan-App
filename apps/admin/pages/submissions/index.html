@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Submission review</title>
+    <link rel="stylesheet" href="/admin/style.css" />
+    <script type="module" src="/admin/submissions/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Administration">
+        <a href="/admin/">Points</a>
+        <a href="/admin/rewards/">Rewards</a>
+        <a href="/admin/submissions/" aria-current="page">Submissions</a>
+        <a href="/admin/reports/">Reports</a>
+        <a href="/admin/participation/">Sessions</a>
+      </nav>
+      <header>
+        <h1>Submission review</h1>
+        <button id="logout" hidden>Sign out</button>
+      </header>
+      <section id="signin" aria-labelledby="signin-title">
+        <h2 id="signin-title">Sign in</h2>
+        <p id="setup">Checking sign-in availability…</p>
+        <form id="password-signin" method="post" hidden>
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            autocomplete="username"
+            maxlength="254"
+            required
+          />
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            maxlength="1024"
+            required
+          />
+          <button type="submit">Sign in</button>
+        </form>
+        <div id="fixtures" hidden>
+          <p>
+            Local test accounts. Admin access requires a server-assigned role.
+          </p>
+          <button data-fixture="fan-a">Use test account A</button>
+          <button data-fixture="fan-b">Use test account B</button>
+        </div>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+      <section id="workspace" hidden>
+        <form id="filter">
+          <label for="status">Review status</label>
+          <div class="profile-controls">
+            <select id="status">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button>Refresh submissions</button>
+          </div>
+        </form>
+        <p>
+          Questions and proposed activities follow the same review. The
+          500-point fee is non-refundable. Approval does not promise an answer
+          or activity.
+        </p>
+        <p id="empty" hidden>No submissions with this status.</p>
+        <ol id="history" aria-label="Fan submissions"></ol>
+        <button id="more" hidden>Earlier submissions</button>
+      </section>
+    </main>
+  </body>
+</html>

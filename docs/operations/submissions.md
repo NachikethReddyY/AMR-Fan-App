@@ -93,7 +93,7 @@ handling to `handleSubmissionRequest`. `serveSubmissionAdmin` serves the owned
 page and script; the existing `/admin/style.css` supplies the accepted admin
 presentation. These are same-process modules, not separate deployed services.
 
-`server/api/app.ts` imports `handleSubmissionRequest` from
+`services/api/api/app.ts` imports `handleSubmissionRequest` from
 `../submissions/http.ts` and `serveSubmissionAdmin` from
 `../submissions/admin.ts`. GET asset handling preserves the existing
 `serveAdmin`. After `bearer(req)` and existing origin/rate guards, it passes
@@ -104,8 +104,8 @@ otherwise existing routes continue. The shared body reader retains its
 4,096-byte limit, and route-provider registration remains intact.
 
 Root scripts are `submissions:test` for
-`node --test server/submissions/http.test.ts` and `submissions:test:database`
-for `pnpm db:run-test -- node --test server/submissions/submissions.test.ts`.
+`node --test services/api/submissions/http.test.ts` and `submissions:test:database`
+for `pnpm db:run-test -- node --test services/api/submissions/submissions.test.ts`.
 The first runs in the normal check command; the full database suite runs in the
 PostgreSQL CI job. No filtered handoff command is registered in CI.
 
@@ -131,8 +131,8 @@ service or touch peer databases. Tests add synthetic records in the owned
 disposable test database.
 
 ```sh
-node --test server/submissions/http.test.ts
-pnpm db:run-test -- node --test server/submissions/submissions.test.ts
+node --test services/api/submissions/http.test.ts
+pnpm db:run-test -- node --test services/api/submissions/submissions.test.ts
 ```
 
 Input and database policy tests cover the 600-to-100 case, concurrent retries and
@@ -202,7 +202,7 @@ identity issuer `urn:amr:local-synthetic`.
    trusted command while its page is open and verify protected refresh/decision
    denial. Finish fixture role cleanup and stop only the leased API process.
 
-The API-driven fan setup plus actual admin page proves the server/admin path
+The API-driven fan setup plus actual admin page proves the services/api/admin path
 only. Phone confirmation, native History and assistive-technology acceptance
 remain pending their own granted devices and source integration.
 
