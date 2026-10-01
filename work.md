@@ -1,5 +1,27 @@
 # Work record
 
+## 2026-09-29: Black Box runner smoke-test pilot
+
+- Owner: gpt-6-astra through Codex (T3 Code). Tracking: BLACKBOX-001; unlinked.
+- Added `.github/workflows/black-box-smoke.yml`, a manual owner-only workflow
+  for the online `black-box-vbook` runner. It checks a full `commit_sha`,
+  verifies the checkout, installs the pinned Node/pnpm dependency tree with a
+  frozen lockfile, and runs the existing `pnpm awards:test` suite. It requires
+  `self-hosted`, `linux`, `x64` and `black-box-linux`; it has read-only
+  contents permission, pinned actions, a ten-minute timeout and no paid
+  fallback. It does not replace the existing Checks/Security workflows or the
+  Worker's four-job `black-box-ci.yml` contract.
+- Updated verification guidance with the dispatch command and live acceptance
+  criteria. Existing workflow enable/disable state, app code and database
+  isolation remain unchanged.
+- Proof: `pnpm awards:test` passed all five cases locally. YAML semantic and
+  hosted-run checks remain unavailable until this workflow is delivered to the
+  default branch. Docker was unavailable locally, so no database or container
+  checks were attempted. No commit, push, workflow dispatch or deployment was
+  performed.
+
+Prepared by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: execute the database CLI through casing aliases
 
 - Tracking: INFRA-001, PR #23, independent review R1. The prior correction failed the actual CLI execution criterion: the entry guard canonicalized argv but compared it with an unnormalized module path, so an uppercase absolute script alias exited successfully without running the command. Namespace helper tests did not prove CLI execution.
