@@ -1,5 +1,11 @@
 # Tasks
 
+## PR #71 security audit correction, 2026-10-03
+
+- [x] Reproduce the failing `source-and-dependencies` audit gate.
+- [x] Add narrow exceptions only for the two unfixable build-tool advisories.
+- [ ] Run the focused audit and security checks, then push and monitor the rerun.
+
 ## PR #67 merge-readiness correction, 2026-09-29
 
 - [x] Fix database namespace guards and runner wiring.

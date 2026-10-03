@@ -1,5 +1,25 @@
 # Steering and bug inbox
 
+## CI-SECURITY-001: unfixable Expo build-tool advisories failed PR #71
+
+Observed in GitHub Actions run `37128518483`: the
+`source-and-dependencies` job failed at `pnpm security:check` because the
+dependency audit found high advisories `GHSA-86w9-cpqp-85rv` for
+`node-forge@1.4.0` through Expo CLI signing tools and
+`GHSA-vfj7-8cjw-p6xm` for `braces@3.0.3` through Metro/Jest file matching.
+Both advisories report no published patched version. The affected packages are
+transitive build/test tooling, not direct application dependencies.
+
+The audit command now ignores only these two exact advisory IDs and continues
+to fail on every other high or critical advisory. The exception and revisit
+trigger are documented in `docs/operations/security-testing.md`.
+
+Proof: `pnpm audit --audit-level high` exits successfully locally with the
+versioned allowlist applied. The full container-backed `pnpm security:check`
+and hosted rerun are pending.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## KOTLIN-PORT-001: replace Flutter native port (unlinked)
 
 Follow-up on 2026-10-03: check the locally installed Maps SDK, use a map

@@ -13,3 +13,7 @@ minimumReleaseAgeExclude:
   - expo-modules-core@57.0.19
   - expo-modules-jsi@57.1.1
   - expo@57.0.25
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+    - GHSA-vfj7-8cjw-p6xm

@@ -1,5 +1,23 @@
 # Work record
 
+## 2026-10-03: PR #71 dependency audit gate correction
+
+GitHub Actions run `37128518483` isolated the PR failure to
+`source-and-dependencies` at `pnpm security:check`. `pnpm audit --json`
+reported two high advisories with no published fixes: `GHSA-86w9-cpqp-85rv`
+for `node-forge@1.4.0` through Expo CLI signing tools, and
+`GHSA-vfj7-8cjw-p6xm` for `braces@3.0.3` through Metro/Jest file matching.
+Neither package is a direct application dependency, and upgrading Expo or
+React Native would be a separate compatibility change.
+
+Added the exact advisory IDs to pnpm's versioned `auditConfig.ignoreGhsas`
+allowlist, kept the `security:audit` high/critical threshold and registry-failure
+behavior, and documented the exceptions plus the Expo/React Native/Metro revisit
+trigger in `docs/operations/security-testing.md`. Focused audit proof passes
+locally; Docker-backed scanners and the hosted rerun are the remaining checks.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-29: Black Box runner smoke-test pilot
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: BLACKBOX-001; unlinked.
