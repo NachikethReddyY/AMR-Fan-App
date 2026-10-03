@@ -426,6 +426,136 @@ Prepared by gpt-6-astra through Codex (T3 Code).
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+## 2026-10-03: Visible News back navigation
+
+Added a top-left Back control before the News title, using the existing route
+callback. The previous bottom action remains for readers at the end of the feed.
+The authorized Android emulator showed the control with loaded RSS cards and
+date-only labels, and tapping it returned to Home. Debug assembly passed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-03: Android bottom navigation inset correction
+
+The Kotlin root now applies only the top system inset, while Material navigation
+owns its bottom inset and the gesture area uses the same panel color. This removes
+the black strip below the four-tab bar without changing tab destinations.
+
+Proof: the authorized Pixel 10 emulator showed a continuous bottom panel through
+the gesture handle, then opened Rewards, Impact and Travel with the selected tab
+updated each time. Gradle unit tests plus debug and release assembly passed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-03: Kotlin news date and photo navigation correction
+
+News cards now format RSS publication values as `dd MMM yyyy`, so the feed shows
+`01 Oct 2026` without the raw time or timezone. The sustainability camera screen
+also keeps the visible top-left Back control and the device photo selector.
+
+Proof: the Android emulator snapshot showed both news cards with date-only labels;
+the native camera opened and returned to the screen with Back, and the photo picker
+showed Photos, Albums and More. Gradle unit tests plus debug and release assembly
+passed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-03: Android map placeholder and walkthrough
+
+Confirmed the local Android toolchain already includes Android SDK 36,
+`com.google.maps.android:maps-compose:7.0.0`, and
+`com.google.android.gms:play-services-maps:19.2.0`. No Maps key or local
+credential path was present. Travel now shows a stable "Map preview / Coming
+soon" placeholder and keeps the Google Maps handoff and route fields below it.
+
+The authorized Pixel 10 Android 16 walkthrough reached Home, Rewards, Impact,
+Travel, RSS news, quiz completion, native camera capture/cancel and the gallery
+entry. RSS stories and images loaded, article tap returned through the external
+handoff, and the camera opened Android's native capture surface. The Impact
+metric wrapping defect found during the walkthrough was corrected and rechecked.
+Profile action buttons and merchandise redemption remain intentionally
+unfinished local placeholders; live authentication, backend photo submission,
+route estimates and embedded map rendering remain external dependencies.
+
+Proof: dependency inspection, `./gradlew :app:testDebugUnitTest
+:app:assembleDebug :app:assembleRelease --no-daemon`, `git diff --check`,
+`pnpm agents:check`, and emulator screenshots under
+`.evidence/kotlin-walkthrough/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+Follow-up: the camera cache now deletes its temporary capture when the photo is
+replaced or the sustainability screen leaves. Rebuilt debug and release APKs
+and reran the full Kotlin unit-test task successfully.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-02: Kotlin Android functionality follow-up
+
+Adjusted the Kotlin Home metric styling with a bundled Nunito Black font, moved
+the large number upward, replaced the custom dock with Material `NavigationBar`,
+and shortened Compose and onboarding transitions. News now loads the supplied
+RSS feed with fixture-tested parsing, refresh/error/empty states, HTTPS article
+links and remote image support. The news destination is separate from the
+native camera path, which now opens Android camera capture immediately and keeps
+the gallery picker and cancellation path visible.
+
+Travel now renders a native Google Map only when `GOOGLE_MAPS_API_KEY` is
+configured. Without a key, it shows an explicit fallback and opens a `geo:`
+Google Maps handoff. No Android Maps key was available in the environment, so
+native map rendering remains unverified.
+
+Proof: debug tests, debug APK, and release APK all built successfully. The
+authorized Pixel 10 Android 16 emulator showed the rounded, raised Home number
+and standard four-item navigation, loaded RSS stories, opened native camera
+capture, and displayed the map fallback with route fields and Google Maps
+handoff. Evidence is stored under `.evidence/kotlin-functionality/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-02: Android Kotlin layout and navigation correction
+
+Tracking: KOTLIN-PORT-001, unlinked. The authorized Pixel 10 emulator showed
+the Kotlin Home and merchandise headings under the Android status bar. The Home
+greeting also used the driver's surname, and the metric cards sat too far apart.
+The Android shell now applies one shared `systemBarsPadding()` before its
+`NavHost`, so tab screens and detail destinations inherit the same safe area.
+Home greets the person by first name, the two glass cards overlap slightly, and
+the large driver number uses tighter tracking and a lighter rounded treatment.
+The local state switch was replaced with Compose Navigation routes for intro,
+onboarding, driver selection, login, tabs and feature destinations. Swift was
+not changed.
+
+Proof: `./gradlew :app:testDebugUnitTest :app:assembleDebug
+:app:assembleRelease --no-daemon` passed. On the authorized `Pixel_10_API_36`
+emulator, Home showed “Good Evening, Fernando!” below the status bar with
+overlapping cards, Rewards and Impact tab navigation rendered below the status
+bar, the merchandise page rendered its heading below the status bar, and Travel
+opened as a detail route with safe top and bottom space. Live maps and account
+provider behavior remain external dependencies.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-02: Kotlin visual parity correction
+
+The first Kotlin screen shell did not carry over the Swift composition and
+looked like a generic Android form. Rebuilt the shared theme and dock, then
+ported the visible Swift screen structure and content across the complete
+local app flow. The Home screenshot now shows the Swift-style driver-number
+backdrop, rotated metrics, circular quick actions and Race IQ card. Rewards
+uses the copied driver and merchandise images. Impact, Travel, news, shop,
+account, forest, challenges, quiz and sustainability photo selection have
+substantive Compose screens with the same copy and local state intent.
+
+Proof: `./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon` passed.
+The rebuilt APK installed on `Pixel_10_API_36`; the emulator walkthrough
+reached the new Home, Rewards, Impact, Travel, News fallback, photo picker,
+Challenges and Quiz screens, and device screenshots show the Swift-style Home
+and dock. Live Entra auth, Maps rendering, RSS content and backend photo
+verification remain unverified because their external configuration is absent.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-09-25: shared question and challenge process
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-005 under SPEC-001; unlinked.
@@ -3343,5 +3473,34 @@ carry credential values, while retaining the existing JavaScript sign-in flow.
 Updated the admin asset regression to assert the method. Focused admin,
 participation and DAST tooling tests pass. Local application DAST is unverified
 because Docker is unavailable; hosted rerun is pending an authorized delivery.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+## 2026-10-02: Kotlin native port replaces Flutter
+
+Created branch `feat/kotlin-port-swift-components` from `main`, removed the
+`t3code/flutter-port-swift-components` worktree and branch, and added
+`Kotlin-App/` as a standalone Android project. The Kotlin implementation uses
+Jetpack Compose dark theme, domain models and state transitions, Ktor backend
+adapters, PKCE helpers, encrypted session storage, bounded JPEG encoding,
+bottom navigation, onboarding, driver selection, Home, Rewards, Impact, Travel,
+news, shop, profile, tree history, challenges and quiz screen entry points.
+
+Proof: `./gradlew clean :app:assembleDebug :app:test --no-daemon` completed
+successfully after fixing the JVM portability of PKCE and URL encoding. The
+debug APK installed on the authorized `Pixel_10_API_36` emulator. Accessibility
+snapshots observed Intro, Onboarding, Driver selection, local demo login, Home,
+Travel fields, Rewards and Impact. A device screenshot showed the dark Impact
+screen and bottom navigation. Live Entra callback, Google Maps rendering and
+backend route/photo submission remain unverified because the Android redirect,
+Maps key and live provider account are external dependencies.
+
+The final Kotlin tree includes the Gradle wrapper, 237 copied Swift image
+assets, catalog loading, DataStore driver preferences and XmlPullParser RSS
+support. The Travel UI stays on the plan's text fallback until a Maps key is
+supplied; feature destinations have Compose entry points and preserve the
+state rules covered by the local tests.
+
+`pnpm security:check` is unverified because Docker is unavailable on this
+machine; the command stopped before its container-backed secret scan.
 
 Edited by gpt-6-astra through Codex (T3 Code).

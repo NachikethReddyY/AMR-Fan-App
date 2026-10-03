@@ -333,3 +333,42 @@ Project delivery correction: interim APK packaging is not completion. Onboarding
 - [x] Persist only the connected-account bypass and leave auth integration note.
 - [x] Verify build, repository checks, security checks, and iPhone 18 Pro relaunch.
 - [ ] Commit, file PR, monitor CI/review, and merge to main as authorized.
+
+## Kotlin port replacement, 2026-10-02
+
+### Map placeholder and Android walkthrough, 2026-10-03
+
+- [x] Confirm the installed Android and Maps SDKs without displaying credentials.
+- [x] Replace the missing-key message with a stable map placeholder and preserve Maps handoff.
+- [x] Build debug/release APKs and run the Kotlin unit suite.
+- [x] Exercise onboarding, all four tabs, detail navigation, RSS/article opening, quiz points, camera capture/cancel and gallery entry.
+- [x] Record working flows, incomplete actions and external-service limits with screenshots under `.evidence/kotlin-walkthrough/`.
+
+### Photo screen and news label correction, 2026-10-03
+
+- [x] Remove the raw RSS timestamp from news cards.
+- [x] Add a visible top back control to the sustainability photo screen.
+- [x] Show the RSS publication date without the raw time or timezone.
+- [x] Extend the Material bottom bar through the gesture area and verify all four tabs.
+- [x] Add a visible top-left Back control to News and verify it returns to Home.
+
+### Android functionality follow-up, 2026-10-02
+
+- [x] Bundle Nunito Black for a heavier, rounded number and move it up; preserve accepted card geometry.
+- [x] Replace the custom dock with standard Material navigation and shorten page/intro transitions.
+- [x] Prove RSS parsing/loading with fixtures, then connect news, refresh, images and article links.
+- [x] Open the native camera immediately; retain gallery, cancellation, preview and private file cleanup.
+- [x] Wire the native map to configured credentials and provide a usable Maps handoff without a key.
+- [x] Review the supplied Swift Android guides without changing the selected Kotlin architecture.
+- [x] Build, run focused tests, verify each affected emulator flow and record limits/evidence.
+
+- [x] Remove the confirmed Flutter worktree, folder and branch.
+- [x] Create `feat/kotlin-port-swift-components` from `main`.
+- [x] Add the standalone Kotlin/Jetpack Compose Android project and Swift assets.
+- [x] Verify unit tests, debug APK build, and authorized Pixel 10 emulator flow.
+- [ ] Configure Android Entra redirect and Maps key before live auth/map acceptance.
+- [x] Rebuild the Kotlin screen shell and visible destinations from Swift after the UI parity correction.
+- [x] Verify the rebuilt Home, dock, Rewards, Impact, Travel, news fallback, photo picker, Challenges and Quiz on Pixel 10.
+- [x] Apply shared Android system-bar insets so Home, Rewards, Impact, Travel and detail pages start below the status bar.
+- [x] Use Compose `NavHost` routes for tabs and detail destinations, with Swift left unchanged.
+- [x] Verify Home greeting, overlapping metric cards, merchandise and Travel on Pixel 10 after the layout correction.
