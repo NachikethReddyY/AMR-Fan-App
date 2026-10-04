@@ -1,5 +1,24 @@
 # Tasks
 
+## AI-PIPELINE-001: BB-1 staging host, 2026-10-04
+
+- [x] Package the existing API and AI adapter boundary in a reproducible BB-1
+  Compose bundle.
+- [x] Build the pinned API image on BB-1's x86 host.
+- [x] Start private Postgres and apply the ordered schema migrations.
+- [x] Start the API on the BB-1 Tailscale address and verify `/health` and
+  `/ready`.
+- [x] Verify AI inference remains disabled and run a synthetic in-container
+  assessment without real media.
+- [ ] Install a reviewed loopback model gateway and enable a provider only after
+  credentials, output validation and production scope are approved.
+
+Acceptance: the existing AI pipeline is packaged and running on BB-1 with no
+provider secrets in the repository or container, health and readiness checks
+pass, and real inference remains explicitly unavailable until its provider is
+reviewed.
+
+
 ## TRAVEL-SEARCH-001: selected location search, 2026-10-04
 
 - [ ] Decide the live provider and credential placement. OneMap is the

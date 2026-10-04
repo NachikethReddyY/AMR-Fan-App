@@ -1,5 +1,25 @@
 # Work record
 
+## 2026-10-04: BB-1 AI pipeline staging host
+
+Added `deploy/bb1` to package and host the existing API and AI adapter boundary
+as an MVP staging service. The bundle builds the pinned API image on BB-1,
+runs Postgres privately on loopback, applies the ordered repository migrations
+explicitly, and binds the API to the host's Tailscale address. AI inference is
+disabled by default because no reviewed LUNA/LAYA gateway or provider key is
+installed; this deployment does not accept real photo evidence or claim live
+model inference.
+
+Proof: `pnpm ai:test`, API typecheck and `pnpm security:check` passed locally;
+the BB-1 image built successfully, 19 migrations applied, `/health` returned
+`{"status":"ok"}`, `/ready` reported the database ready, `/admin/config`
+reported non-synthetic auth, the container held no LUNA key, both AI enablement
+flags were false, and the in-container synthetic activity assessment returned a
+validated candidate. No commit or push was requested.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+
 ## 2026-10-04: location search planning and GitHub status
 
 Inspected the requested Google Maps-style location flow. The current native

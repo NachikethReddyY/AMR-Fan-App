@@ -1,5 +1,25 @@
 # Steering and bug inbox
 
+## AI-PIPELINE-001: host the existing AI adapter boundary on BB-1 (unlinked)
+
+Requested 2026-10-04 to work on the AI pipeline and host it on BB-1.
+
+Fix: added `deploy/bb1` with a pinned API image build, private Postgres,
+explicit migrations, host-networked loopback database access, and a Tailscale-
+bound API listener. The existing LUNA and LAYA adapters remain disabled because
+BB-1 has no reviewed loopback model gateway or provider credential. No real
+photos, prompts or provider keys were sent to the host.
+
+Proof: local AI tests and API typecheck passed; the security check found no
+secret or SAST findings (the existing audit reports one moderate dependency);
+the BB-1 image built, 19 migrations applied, `/health` and `/ready` returned
+healthy, the deployed container reported no LUNA key and both AI flags false,
+and a synthetic in-container activity assessment returned a candidate without
+retaining the fixture bytes.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+
 ## TRAVEL-SEARCH-001: selected place search and deployed route failure (unlinked)
 
 Requested 2026-10-04: replace free-text stop fields with location-name search
