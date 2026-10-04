@@ -23,9 +23,15 @@ Semgrep metrics/version checks. The dependency audit sends package/version
 metadata to the package registry; it does not send source or user data.
 
 There is currently one triaged moderate tooling advisory in [bug.md](../../bug.md).
-No broad advisory ignore list is configured. For release/history cleanup, scan
-the relevant Git history separately with Gitleaks and rotate any exposed secret;
-a clean working-tree scan says nothing about earlier commits.
+The high-severity audit gate has two narrow exceptions for advisories with no
+published fix: `GHSA-86w9-cpqp-85rv` (`node-forge` through Expo CLI signing
+tools) and `GHSA-vfj7-8cjw-p6xm` (`braces` through Metro/Jest file matching).
+They are build-time dependencies, and the command ignores only these exact
+advisory IDs. Any other high or critical advisory still fails the check. Revisit
+both exceptions when Expo, React Native or Metro publishes a compatible fixed
+dependency. For release/history cleanup, scan the relevant Git history
+separately with Gitleaks and rotate any exposed secret; a clean working-tree
+scan says nothing about earlier commits.
 
 ## DAST target and isolation
 

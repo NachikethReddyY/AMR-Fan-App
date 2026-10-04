@@ -87,6 +87,7 @@ not tested; they are outside this foundation issue.
 - `packages/contracts/`: shared wire types.
 - `packages/travel-domain/`: pure route and sustainability calculations shared by the fan app and API.
 - `Swift-App/`: independent Swift/Xcode phone app.
+- `Kotlin-App/`: independent Kotlin/Jetpack Compose Android phone app port.
 - `docs/`: maintained product, architecture and operating documentation.
 - `.env.example`: optional future configuration names, with placeholders only.
 - `docs/`, `CONTEXT.md`, `.scratch/`: preserved planning and screen proposals.
