@@ -47,6 +47,9 @@ import { readContributions } from '../impact/store.ts';
 import { readImpactOverview } from '../impact/overview.ts';
 import { createAwardsHandler } from '../awards/http.ts';
 import { createPhotoHandler } from '../activity/http.ts';
+import { planTransport } from '../transport/planner.ts';
+import { createOsrmRouter } from '../transport/osrm.ts';
+import { planInput } from '../transport/contracts.ts';
 import { handleActivitySubmission } from '../activity/submission-http.ts';
 import { createActivitySubmissionService } from '../activity/submission-service.ts';
 import { enrollMission, listMissions } from '../activity/missions.ts';
@@ -148,6 +151,9 @@ export function createApi({
     factorRelease: factorConfig?.release,
     calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
   });
+  const transportRoadRouter = env.OSRM_BASE_URL
+    ? createOsrmRouter(env.OSRM_BASE_URL)
+    : undefined;
   const journeys = createJourneyService({
     pool,
     env,
@@ -247,6 +253,15 @@ export function createApi({
       if (++requests > 300) throw new ApiError(429, 'Try again shortly.');
       if (req.headers.origin && !browserOrigins.has(req.headers.origin))
         throw new ApiError(403, 'Browser access is not configured.');
+      if (path === '/v1/transport/plan' && req.method === 'POST') {
+        const parsed = planInput.safeParse(await body(req));
+        if (!parsed.success) throw new ApiError(400, 'Invalid transport plan.');
+        return send(
+          res,
+          200,
+          await planTransport(parsed.data, { roadRouter: transportRoadRouter }),
+        );
+      }
       if (path === '/admin/config' && req.method === 'GET')
         return send(res, 200, {
           synthetic: config.kind === 'synthetic',

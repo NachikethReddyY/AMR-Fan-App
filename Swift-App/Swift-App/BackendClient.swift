@@ -61,6 +61,61 @@ struct BackendRouteResponse: Decodable {
     let estimates: [BackendRouteEstimate]
 }
 
+struct BackendTransportCoordinate: Decodable {
+    let latitude: Double
+    let longitude: Double
+}
+
+struct BackendTransportLeg: Decodable, Identifiable {
+    let kind: String
+    let mode: String
+    let from: String
+    let to: String
+    let startsAt: String
+    let endsAt: String
+    let durationSeconds: Double
+    let description: String
+    let instruction: String?
+    let fromCoordinate: BackendTransportCoordinate?
+    let toCoordinate: BackendTransportCoordinate?
+    var id: String { "\(kind)-\(from)-\(to)-\(startsAt)" }
+}
+
+struct BackendTransportRoute: Decodable, Identifiable {
+    let id: String
+    let mode: String
+    let legs: [BackendTransportLeg]
+    let durationSeconds: Double
+    let waitSeconds: Double
+    let transfers: Int
+    let arrivesAt: String
+    let meetsDeadline: Bool
+    let distanceMeters: Double?
+
+    var displayTitle: String {
+        let modes = Set(legs.map(\.mode))
+        return modes.contains("train") && modes.contains("bus") || mode == "transit" ? "Train + bus" : mode.capitalized
+    }
+}
+
+struct BackendTransportUnavailable: Decodable {
+    let mode: String
+    let reason: String
+}
+
+struct BackendTransportRecommendation: Decodable {
+    let kind: String
+    let routeId: String?
+    let reason: String
+}
+
+struct BackendTransportPlan: Decodable {
+    let routes: [BackendTransportRoute]
+    let unavailable: [BackendTransportUnavailable]
+    let recommendation: BackendTransportRecommendation
+    let awardEligible: Bool
+}
+
 struct BackendRouteResult: Decodable {
     let kind: String
     let routes: [BackendRouteOption]?
@@ -84,6 +139,13 @@ private struct RouteRequest: Encodable {
     let destination: String
     let extraMinutes: Int
     let modes: [String]
+}
+
+private struct TransportRequest: Encodable {
+    let origin: String
+    let destination: String
+    let departAt: String
+    let modes: [String] = ["train", "bus", "walk", "car"]
 }
 
 struct BackendActivityReward: Decodable {
@@ -179,6 +241,10 @@ final class BackendSession: ObservableObject {
     func routes(origin: String, destination: String) async throws -> BackendRouteResponse {
         guard let token else { throw BackendError.notSignedIn }
         return try await client.routes(token: token, origin: origin, destination: destination)
+    }
+
+    func transportPlan(origin: String, destination: String) async throws -> BackendTransportPlan {
+        return try await client.transportPlan(token: token, origin: origin, destination: destination)
     }
 
     func verify(image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
@@ -329,6 +395,10 @@ private final class BackendClient {
 
     func routes(token: String, origin: String, destination: String) async throws -> BackendRouteResponse {
         try await request(path: "v1/routes/query", method: "POST", token: token, body: RouteRequest(origin: origin, destination: destination, extraMinutes: 15, modes: ["DRIVE", "TRANSIT", "WALK", "BICYCLE"]))
+    }
+
+    func transportPlan(token: String?, origin: String, destination: String) async throws -> BackendTransportPlan {
+        try await request(path: "v1/transport/plan", method: "POST", token: token, body: TransportRequest(origin: origin, destination: destination, departAt: ISO8601DateFormatter().string(from: Date())))
     }
 
     func account(token: String) async throws -> BackendAccount {

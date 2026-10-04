@@ -1,5 +1,67 @@
 # Tasks
 
+## TRAVEL-SEARCH-001: selected location search, 2026-10-04
+
+- [ ] Decide the live provider and credential placement. OneMap is the
+  recommended Singapore MVP provider; Google remains an adapter option.
+- [ ] Add a bounded place-suggestion endpoint with normalized Singapore places.
+- [ ] Bind native origin/destination fields to debounced suggestions and keep
+  the selected place id and coordinates.
+- [ ] Send selected coordinates to route planning and draw exact geometry.
+- [ ] Replace the large route CTA with a compact send/arrow action and add map
+  controls/icons that preserve access to the suggestion list.
+- [ ] Resolve the deployed 401/configuration mismatch before mobile proof.
+- [ ] Launch and verify the native builds as separate Mac device apps.
+
+Acceptance: typing a location name shows a bounded list, choosing an item
+stores its exact coordinates, selecting both places produces a route between
+those coordinates, and no provider credential ships in either mobile build.
+
+## TRAVEL-UI-001: map hierarchy and copy cleanup, 2026-10-04
+
+- [x] Inspect supplied screenshots and Mobbin map references.
+- [x] Prepare three local map directions and record the recommended hierarchy.
+- [x] Contain the Android map view and remove the redundant Travel Back action.
+- [x] Remove internal demo/comparison/backend wording from native Travel UI.
+- [x] Format route arrivals for people instead of exposing raw timestamps.
+- [x] Run native builds, agent checks and diff validation.
+- [ ] Re-run the rebuilt Travel screen on both devices after the Android
+  account-gate action is repaired or a connected device state is restored.
+
+Acceptance: the map stays inside its card, route controls remain reachable
+above the persistent tab bar, no user-facing Travel copy mentions demo data or
+implementation layers, and mixed-mode navigation remains available.
+
+## AUTH-001: iOS account session fix, 2026-10-04
+
+- [x] Reproduce the failed provider callback and identify the first failing boundary.
+- [x] Add the iOS Keychain entitlement and safe session upsert.
+- [x] Keep raw Keychain status codes out of user-facing errors.
+- [x] Run focused Swift auth checks and a signed iOS simulator build.
+- [x] Verify sign-in and saved-session persistence on the authorized iPhone 18 Pro.
+- [ ] Run the container-backed security check when Docker is available.
+
+Acceptance: a real provider sign-in returns to the connected Account state and
+the same installed build remains connected after relaunch; failed storage
+does not expose raw OS status to the user.
+
+## TRANSPORT-MVP-001: separate transport API, 2026-10-04
+
+- [x] Pull main safely, inspect existing travel callers and check BB-1 access.
+- [x] Write focused acceptance tests for departures, trip timing, disruptions, coverage, HTTP limits and mixed transit.
+- [x] Implement a separately runnable Singapore demo transport API with an optional OSRM road adapter.
+- [x] Integrate both native apps without changing rewards or account behavior; keep GPS guidance in AMR.
+- [ ] Prepare BB-1 hosting; deploy and verify if SSH access is resolved.
+- [x] Run focused tests, native builds and authorized iOS/Android device checks; record limitations.
+
+Acceptance: a 10:07 request finds 10:10/10:15 departures on a five-minute
+demo service; service hours and downstream stop offsets hold; route timing
+includes walking, waits and transfers; deadline/disruption scenarios change
+results; mixed public transport can combine train and bus; unsupported journeys and failed road routing stay unavailable;
+simulation and map-data provenance are explicit; no paid provider calls or
+journey awards. BB-1 deployment remains pending local SSH key unlock.
+
+
 ## PR #71 security audit correction, 2026-10-03
 
 - [x] Reproduce the failing `source-and-dependencies` audit gate.

@@ -1,5 +1,110 @@
 # Work record
 
+## 2026-10-04: location search planning and GitHub status
+
+Inspected the requested Google Maps-style location flow. The current native
+fields hold plain strings (`orchard` and `bayfront`) and the transport client
+posts those strings directly. The server already has a OneMap address resolver,
+but it returns only route results through the authenticated route-query path;
+there is no place-suggestion endpoint or selected-place model in either native
+client. A direct request to the deployed public transport endpoint returned
+401, while `/health` returned 200. The reported HTTP 101 was not reproduced
+from this shell.
+
+Posted the current state and next implementation slice to [issue #6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6#issuecomment-5976944565): bounded OneMap-backed autocomplete, selected coordinates, exact route geometry, compact send action, backend-only credentials, and separately launched Mac-device verification. No credentials, code, commit, push or deployment were added for this request.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Travel map hierarchy and copy cleanup
+
+Reviewed the supplied Android/iOS screenshots and Mobbin map references for
+Google Maps route search, directions and route preview. The Android root cause
+was an `AndroidView` using `fillMaxWidth()` inside a fixed-height card without
+clipping, which allowed map content to overlap the origin field. The map now
+fills and clips to its rounded card. The Android top-level Travel destination
+no longer renders a redundant Back button, and arrivals use local `h:mm a`
+formatting instead of raw ISO values.
+
+Removed internal transport language from both native clients: demo timetable
+disclosures, comparison/backend labels, and implementation-specific route
+copy. Route selection, mixed train/bus results, in-app GPS guidance, and the
+existing four-tab shell remain in place. Static map directions are recorded in
+`.scratch/travel-map-alternatives.html`; Mobbin references used were [Grab
+route summary](https://mobbin.com/screens/c3a1d992-eea7-4d31-939e-ad3528fbe6e7),
+[Google Maps directions](https://mobbin.com/screens/8a992de8-cd2a-438a-b01f-f1bd8a21edfb),
+and [Google Maps route preview](https://mobbin.com/screens/6dc70283-b240-4d3d-87e9-2243be12ea06).
+
+Proof: `./gradlew :app:compileDebugKotlin`, `./gradlew :app:assembleDebug`,
+the Swift simulator `xcodebuild`, `pnpm agents:check`, and `git diff --check`
+passed. Authorized device automation reinstalled both builds, but the fresh
+Android run stopped at the existing account gate, so rebuilt Travel screenshots
+are unverified. No remote deployment, commit or push was performed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: iOS account session persistence fix
+
+The iPhone 18 Pro reproduction completed the Azure provider sign-in and
+callback, then failed while writing the opaque backend token to Keychain. The
+first failing boundary was `SecItemAdd`, which returned `-34018`, Apple's
+missing-entitlement status. The iOS target had no Keychain access entitlement.
+
+Added `Swift-App.entitlements` to the native target's Debug and Release
+settings. `KeychainSessionStore` keeps the existing account lookup identity,
+uses `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, and handles duplicate
+records with an update. The error remains generic in the UI, so the diagnostic
+OS status is not shown to users.
+
+Proof: `BackendAuthChecks` passed, including token rotation and cleanup;
+`xcodebuild ... CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build` passed;
+the final signed build was installed on the authorized iPhone 18 Pro; the real
+provider flow returned to Account showing “Your account.”; and reopening the
+same installed build preserved the connected state. `git diff --check` and
+`pnpm agents:check` passed. `pnpm security:check` is unverified because the
+Docker API is unavailable. No backend or provider configuration changed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Singapore transport MVP foundation
+
+Pulled `origin/main` with `git pull --ff-only`; it was already current at
+`9003803`. Added a separately runnable Singapore transport service and a
+public read-only `POST /v1/transport/plan` app endpoint. The service models a
+small Singapore stop graph, five-minute simulated train/bus departures, mixed
+train-to-bus trips, waits, transfers, deadlines, delayed/cancelled scenarios
+and explicit unsupported outcomes. Car routing is disabled unless a bounded
+OSRM adapter is configured. No paid provider, journey award or live arrival
+claim was added.
+
+Both native Travel screens now call the transport plan, show route options and
+keep guidance inside AMR. iOS uses Core Location and MapKit; Android uses GPS
+permissions, osmdroid/OpenStreetMap tiles and step progression. OSRM steps are
+carried as instruction text when configured.
+
+Focused proof: transport tests pass 8/8, API typecheck passes, the iOS
+simulator build succeeds, the Android debug build succeeds, and the authorized
+iPhone 18 Pro and Pixel 10 emulator reached the Travel screen. The Android
+device also loaded the local service, rendered OSM tiles, displayed train/bus/
+walk options and showed the GPS permission plus active guidance state. The
+staging Azure endpoint still lacks this route and returned 401 before the
+local verification build. BB-1 `bb-1@100.117.231.37` is reachable on port 22
+interactively, but the local non-interactive key was not unlocked, so no
+remote files changed.
+
+Final follow-up proof: the restarted local service returned the mixed
+`simulated-transit` route with train and bus ride legs. `pnpm audit
+--audit-level high`, `pnpm agents:check`, `git diff --check`, the iOS build,
+Android build, Android unit tests and all eight transport tests passed. The
+final Android emulator build used `http://10.0.2.2:8081/`; its Travel screen
+rendered OpenStreetMap tiles and visibly showed the `Train + bus` card with
+the train, transfer and bus legs. The final iOS simulator build
+passed after the public transport client change. The iOS Travel interaction
+remains unverified because the device walkthrough stopped at the account gate.
+Container-backed `pnpm security:check` remains unverified because Docker is
+unavailable.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 ## 2026-10-03: PR #71 dependency audit gate correction
 
 GitHub Actions run `37128518483` isolated the PR failure to

@@ -7,6 +7,7 @@ import com.amr.fanapp.auth.EncryptedSessionTokenStore
 import com.amr.fanapp.network.BackendAccount
 import com.amr.fanapp.network.BackendClient
 import com.amr.fanapp.network.BackendError
+import com.amr.fanapp.network.BackendTransportPlan
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,5 +23,8 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
     fun resume() { store.read()?.let { run { _account.value = client.account(it) } } }
     fun signInForLocalDemo() { if (com.amr.fanapp.BuildConfig.DEBUG) { _account.value = BackendAccount("demo-account", "fan", listOf(com.amr.fanapp.network.BackendProfile("demo-profile", "real", "AMR Demo Fan", 9000))) } }
     fun signOut() { store.read()?.let { run { client.logout(it); store.delete(); _account.value = null } } }
+    suspend fun planTransport(origin: String, destination: String): BackendTransportPlan {
+        return client.transport(origin, destination)
+    }
     private fun run(block: suspend () -> Unit) { viewModelScope.launch { _isBusy.value = true; _errorMessage.value = null; try { block() } catch (error: BackendError) { _errorMessage.value = error.message } catch (error: Exception) { _errorMessage.value = error.message ?: "Something went wrong." } finally { _isBusy.value = false } } }
 }

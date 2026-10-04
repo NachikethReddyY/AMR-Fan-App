@@ -29,6 +29,8 @@ struct BackendAuthChecks {
         defer { try? store.delete() }
         try store.write("opaque-session")
         precondition(store.read() == "opaque-session")
+        try store.write("rotated-session")
+        precondition(store.read() == "rotated-session")
         try store.delete()
         precondition(store.read() == nil)
 

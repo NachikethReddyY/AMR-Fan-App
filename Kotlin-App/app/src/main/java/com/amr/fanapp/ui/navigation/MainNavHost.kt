@@ -228,7 +228,7 @@ private fun DestinationContent(
         FanDestination.OFFERS, FanDestination.CAPS, FanDestination.TSHIRTS, FanDestination.OUTERWEAR, FanDestination.OTHER -> ShopScreen(close)
         FanDestination.PROFILE -> ProfileScreen(driver, close)
         FanDestination.ACCOUNT -> AccountScreen(account) { session.signOut(); close() }
-        FanDestination.TRAVEL -> TravelScreen(close)
+        FanDestination.TRAVEL -> TravelScreen(close, session)
         FanDestination.TREE -> TreeScreen(state, close)
         FanDestination.HISTORY -> HistoryScreen(close)
         FanDestination.CHALLENGES -> ChallengesScreen(close)

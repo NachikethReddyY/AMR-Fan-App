@@ -15,14 +15,19 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io/\"")
-        val mapsKey = project.findProperty("GOOGLE_MAPS_API_KEY")?.toString() ?: System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
-        val escapedMapsKey = mapsKey.replace("\\", "\\\\").replace("\"", "\\\"")
-        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$escapedMapsKey\"")
-        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsKey
+        val apiBaseUrl = project.findProperty("API_BASE_URL")?.toString()
+            ?: System.getenv("AMR_API_URL")
+            ?: "https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io/"
+        val escapedApiBaseUrl = apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+        buildConfigField("String", "API_BASE_URL", "\"$escapedApiBaseUrl\"")
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
     buildTypes {
-        release { isMinifyEnabled = false }
+        debug { manifestPlaceholders["usesCleartextTraffic"] = "true" }
+        release {
+            isMinifyEnabled = false
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+        }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
@@ -39,7 +44,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("androidx.navigation:navigation-compose:2.9.5")
-    implementation("com.google.maps.android:maps-compose:7.0.0")
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("androidx.datastore:datastore-preferences:1.2.0")
     implementation("androidx.browser:browser:1.9.0")
     implementation("androidx.security:security-crypto:1.1.0")

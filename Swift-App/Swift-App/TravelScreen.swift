@@ -34,6 +34,8 @@ struct TravelScreen: View {
     @EnvironmentObject private var backend: BackendSession
     @State private var backendRoutes: [BackendRouteOption] = []
     @State private var selectedBackendRouteID: String?
+    @State private var transportPlan: BackendTransportPlan?
+    @State private var guidance = NavigationGuidance()
 
     private static let defaultRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 1.2868, longitude: 103.8545),
@@ -63,7 +65,7 @@ struct TravelScreen: View {
                     Text("Plan your journey")
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .tracking(-1.4)
-                    Label("Choose a place, compare modes, then continue in Maps", systemImage: "map.fill")
+                    Label("Choose where to go", systemImage: "map.fill")
                         .font(.caption.bold())
                         .foregroundStyle(FanStyle.muted)
                     Spacer()
@@ -156,6 +158,7 @@ struct TravelScreen: View {
         }
         .onDisappear {
             cameraAdjustmentTask?.cancel()
+            guidance.stop()
         }
     }
 
@@ -337,7 +340,7 @@ struct TravelScreen: View {
                 Button {
                     transitionToPlannerState(.expanded)
                 } label: {
-                    Label(routeError == nil ? "Search places" : "Route unavailable · Change mode", systemImage: "magnifyingglass")
+                    Label(routeError == nil ? "Choose a place" : "Route unavailable · Change mode", systemImage: "magnifyingglass")
                         .frame(maxWidth: .infinity)
                         .padding(12)
                         .background(FanStyle.darkTeal, in: Capsule())
@@ -363,8 +366,8 @@ struct TravelScreen: View {
                 .font(.subheadline)
                 .lineLimit(1)
             Spacer(minLength: 0)
-            Button("Maps", systemImage: "arrow.up.right") {
-                openInMaps()
+            Button("Navigate", systemImage: "location.north.fill") {
+                startInAppNavigation()
             }
             .font(.subheadline.bold())
             .buttonStyle(FanPressStyle())
@@ -411,7 +414,7 @@ struct TravelScreen: View {
                     Button {
                         Task { await searchEnteredPlaces() }
                     } label: {
-                        Label("Search route", systemImage: "magnifyingglass")
+                        Label("Find route", systemImage: "magnifyingglass")
                             .font(.subheadline.bold())
                             .frame(maxWidth: .infinity)
                             .padding(14)
@@ -425,12 +428,12 @@ struct TravelScreen: View {
                         focusedField = nil
                         transitionToPlannerState(.collapsed)
                     } label: {
-                        Label("Show route on map", systemImage: "map")
+                        Label("Show route", systemImage: "map")
                             .font(.subheadline.bold())
                     }
                     .buttonStyle(FanPressStyle())
 
-                    Text("Travel options")
+                    Text("Ways to get there")
                         .font(.headline)
                         .padding(.top, 4)
 
@@ -441,7 +444,7 @@ struct TravelScreen: View {
 
                     if !backendRoutes.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Backend route options").font(.subheadline.bold())
+                            Text("Other routes").font(.subheadline.bold())
                             ForEach(backendRoutes) { option in
                                 Button {
                                     selectedBackendRouteID = option.id
@@ -470,6 +473,40 @@ struct TravelScreen: View {
                         }
                     }
 
+                    if let transportPlan {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Transit options").font(.subheadline.bold())
+                            ForEach(transportPlan.routes) { option in
+                                Button {
+                                    selectedBackendRouteID = option.id
+                                } label: {
+                                    HStack {
+                                        Text(option.displayTitle)
+                                        Spacer()
+                                        Text("\(Int(option.durationSeconds / 60)) min")
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(.white)
+                                    .padding(12)
+                                    .background(selectedBackendRouteID == option.id ? FanStyle.darkTeal : FanStyle.panel, in: RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                                if selectedBackendRouteID == option.id {
+                                    ForEach(option.legs) { leg in
+                                        Text("\(leg.mode.capitalized) · \(Int(leg.durationSeconds / 60)) min · \(leg.description)")
+                                            .font(.caption)
+                                            .foregroundStyle(FanStyle.muted)
+                                    }
+                                }
+                            }
+                            ForEach(transportPlan.unavailable, id: \.mode) { item in
+                                Text("\(item.mode.capitalized): \(item.reason.replacingOccurrences(of: "_", with: " "))")
+                                    .font(.caption)
+                                    .foregroundStyle(FanStyle.muted)
+                            }
+                        }
+                    }
+
                     if isCalculatingRoute {
                         HStack(spacing: 10) {
                             ProgressView().tint(FanStyle.teal)
@@ -485,8 +522,8 @@ struct TravelScreen: View {
                             distance: route.distance
                         )
 
-                        FanButton(title: "Start navigation in Maps", symbol: "arrow.up.right") {
-                            openInMaps()
+                        FanButton(title: "Start navigation", symbol: "location.north.fill") {
+                            startInAppNavigation()
                         }
                     } else if let transitTravelTime {
                         RouteSummary(
@@ -495,9 +532,13 @@ struct TravelScreen: View {
                             distance: nil
                         )
 
-                        FanButton(title: "Start navigation in Maps", symbol: "arrow.up.right") {
-                            openInMaps()
+                        FanButton(title: "Start navigation", symbol: "location.north.fill") {
+                            startInAppNavigation()
                         }
+                    }
+
+                    if guidance.state != .idle {
+                        navigationGuidanceCard
                     }
 
                     if let routeError {
@@ -626,7 +667,7 @@ struct TravelScreen: View {
                     if response.result.kind == "unavailable" {
                         backendRoutes = []
                         selectedBackendRouteID = nil
-                        routeError = "AMR route comparison is unavailable right now. Showing the Apple Maps route only."
+                        routeError = "More route choices are unavailable right now. Showing the map route instead."
                     } else {
                         backendRoutes = response.result.routes ?? []
                         selectedBackendRouteID = backendRoutes.first?.id
@@ -634,8 +675,14 @@ struct TravelScreen: View {
                 } catch {
                     backendRoutes = []
                     selectedBackendRouteID = nil
-                    routeError = "AMR route comparison is unavailable right now. Showing the Apple Maps route only."
+                    routeError = "More route choices are unavailable right now. Showing the map route instead."
                 }
+            }
+            do {
+                transportPlan = try await backend.transportPlan(origin: originText, destination: destinationText)
+                selectedBackendRouteID = transportPlan?.recommendation.routeId ?? transportPlan?.routes.first?.id
+            } catch {
+                transportPlan = nil
             }
             let directions = MKDirections(request: request)
             if mode == .transit {
@@ -663,12 +710,43 @@ struct TravelScreen: View {
         isCalculatingRoute = false
     }
 
-    private func openInMaps() {
-        guard let origin, let destination else { return }
-        MKMapItem.openMaps(
-            with: [origin, destination],
-            launchOptions: [MKLaunchOptionsDirectionsModeKey: selectedMode.launchMode]
-        )
+    private var navigationGuidanceCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("AMR navigation").font(.subheadline.bold())
+            if let route = guidance.route, let step = route.legs[safe: guidance.stepIndex] {
+                Text("Step \(guidance.stepIndex + 1) of \(route.legs.count): \(step.instruction ?? step.description)")
+                    .font(.headline)
+                Text("\(step.from) → \(step.to) · \(Int(step.durationSeconds / 60)) min")
+                    .font(.caption)
+                    .foregroundStyle(FanStyle.muted)
+            }
+            switch guidance.state {
+            case .requesting: Text("Requesting location access…")
+            case .active: Text("GPS active. The next step advances when you reach the stop.")
+            case .offRoute: Text("You appear off route. Return to the displayed step to continue.").foregroundStyle(.orange)
+            case .arrived: Text("You arrived. Journey tracking is still active.")
+            case .denied: Text("Location access is needed for automatic guidance. You can still browse routes.").foregroundStyle(.orange)
+            case .idle: EmptyView()
+            }
+            Button("Stop navigation") { guidance.stop() }
+                .buttonStyle(FanPressStyle())
+        }
+        .padding(14)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func startInAppNavigation() {
+        guard let selected = transportPlan?.routes.first(where: { $0.id == selectedBackendRouteID }) ?? transportPlan?.routes.first else {
+            routeError = "AMR navigation is unavailable until a transport route is returned."
+            return
+        }
+        guidance.start(route: selected)
+    }
+}
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 
@@ -802,7 +880,7 @@ private struct RouteSummary: View {
         if let distance {
             return "\(travelTime.formattedDuration) · \(distance.formattedDistance)"
         }
-        return "\(travelTime.formattedDuration) · ETA from Apple Maps"
+        return "\(travelTime.formattedDuration) · route preview"
     }
 }
 

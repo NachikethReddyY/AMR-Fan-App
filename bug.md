@@ -1,5 +1,87 @@
 # Steering and bug inbox
 
+## TRAVEL-SEARCH-001: selected place search and deployed route failure (unlinked)
+
+Requested 2026-10-04: replace free-text stop fields with location-name search
+and a suggestion list, preserve exact selected coordinates, draw the route
+between those places, and use a compact send action rather than a large route
+button. The user wants the map interaction to follow the Google Maps pattern
+and needs a separately launched Mac device for native verification.
+
+Diagnosis: the repository already contains a OneMap provider that resolves
+Singapore addresses and normalizes route responses, but neither native Travel
+screen exposes autocomplete or sends selected coordinates. A direct probe of
+the deployed `/v1/transport/plan` returned `401 Unauthorized` while `/health`
+returned 200. HTTP 101 was not reproduced from the current shell. The provider
+credential is not in the repository and must remain backend-only.
+
+Status: the current state and proposed next slice were posted to [issue #6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6#issuecomment-5976944565).
+No code or deployment change for autocomplete was authorized in this turn.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## TRAVEL-UI-001: map card overflow and internal transport copy (unlinked)
+
+Requested 2026-10-04 after the Travel screenshots showed the Android map
+painting over the `From stop` field, route cards exposing raw ISO timestamps,
+and internal wording such as `Demo timetable` and `Compare routes`. The
+Mobbin map references establish a map-first hierarchy with a contained map,
+compact controls and a focused route sheet.
+
+Fix: clip the Android osmdroid view to its rounded card and make the embedded
+view fill that card; remove the redundant Android Back action from the
+top-level Travel tab; format arrivals as local times; and use user-facing
+labels such as `Find routes`, `Transit options`, and `Start navigation` in
+both native Travel screens. Existing mixed-mode planning, GPS guidance and
+four-tab navigation remain unchanged.
+
+Proof: Kotlin compile and debug APK assembly passed, the Swift simulator build
+passed, `pnpm agents:check` passed, and `git diff --check` passed. The rebuilt
+Android install reached the existing account gate but its sign-in action did
+not advance, so final Travel rendering on the rebuilt Android and iOS devices
+is unverified. The supplied screenshots and Mobbin references were inspected;
+the local static alternatives are in `.scratch/travel-map-alternatives.html`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-001: iOS account session could not be saved (unlinked)
+
+Requested 2026-10-04 after the iPhone 18 Pro sign-in flow returned “The device
+could not save the account session.” Reproduction reached the real Azure
+provider callback and then failed in `KeychainSessionStore.write` with
+Keychain status `-34018` (`errSecMissingEntitlement`). The app target had no
+Keychain access entitlement, so the session could not be persisted by the
+installed iOS build.
+
+Fix: add the iOS Keychain access group entitlement and wire it into Debug and
+Release builds. The store keeps its existing account lookup identity, adds
+device-only, after-first-unlock accessibility, and uses an Add-then-Update
+upsert so token rotation is safe. User-facing errors keep the OS status out of
+the UI.
+
+Proof: the focused Swift auth checks passed, the signed simulator build passed,
+and the authorized iPhone 18 Pro completed the provider flow and returned to
+the connected Account state showing “Your account.” A relaunch of the final
+build preserved the saved session. `pnpm security:check` remains unverified
+because Docker is unavailable; `pnpm audit --audit-level high` remains the
+available dependency check.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## TRANSPORT-MVP-001: no-paid-provider transport demonstration (unlinked)
+
+Requested 2026-10-04: pull main and implement the supplied transport MVP plan
+for AMR, with BB-1 available for hosting. Start with Singapore, simulated
+frequency-based bus/train schedules and open road routing. Expose provenance,
+service hours and unavailable states; preserve existing account, journey and
+reward rules. Both native clients are in scope. In-app guidance uses device GPS
+and advances through returned route steps; car turn text is supplied when OSRM
+steps are configured. BB-1 is `bb-1@100.117.231.37` on port 22, but the local
+SSH key was not unlocked for this run, so deployment is pending.
+`git pull --ff-only origin main` reports up to date at `9003803`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 ## CI-SECURITY-001: unfixable Expo build-tool advisories failed PR #71
 
 Observed in GitHub Actions run `37128518483`: the

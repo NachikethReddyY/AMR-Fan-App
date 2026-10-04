@@ -261,7 +261,9 @@
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Info.plist";
+				CODE_SIGN_ENTITLEMENTS = "Swift-App/Swift-App.entitlements";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to capture a sustainability action for backend verification. Photos are transferred only when you submit for verification.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AMR uses your location to advance in-app navigation steps while you travel.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -306,7 +308,9 @@
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Info.plist";
+				CODE_SIGN_ENTITLEMENTS = "Swift-App/Swift-App.entitlements";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to capture a sustainability action for backend verification. Photos are transferred only when you submit for verification.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AMR uses your location to advance in-app navigation steps while you travel.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

@@ -5,6 +5,8 @@
   "scripts": {
     "start": "node api/start.ts",
     "start:onemap": "node api/start-onemap.ts",
+    "transport:start": "node transport/start.ts",
+    "transport:test": "node --test --test-concurrency=1 transport/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:activity": "node --test activity/claims.test.ts activity/media.test.ts",
     "test:ai": "node --test --test-concurrency=1 ai/*.test.ts",
