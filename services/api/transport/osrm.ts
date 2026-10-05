@@ -62,10 +62,16 @@ export function createOsrmRouter(baseUrl: string): RoadRouter {
       bugis: [103.8558, 1.3008],
     };
     const from = suppliedCoordinates
-      ? [suppliedCoordinates.origin.longitude, suppliedCoordinates.origin.latitude] as [number, number]
+      ? ([
+          suppliedCoordinates.origin.longitude,
+          suppliedCoordinates.origin.latitude,
+        ] as [number, number])
       : coordinates[origin];
     const to = suppliedCoordinates
-      ? [suppliedCoordinates.destination.longitude, suppliedCoordinates.destination.latitude] as [number, number]
+      ? ([
+          suppliedCoordinates.destination.longitude,
+          suppliedCoordinates.destination.latitude,
+        ] as [number, number])
       : coordinates[destination];
     if (!from || !to) return null;
     const url = new URL(

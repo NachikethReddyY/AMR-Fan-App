@@ -112,7 +112,8 @@ export function resolveOneMapAddress(raw: unknown) {
 
 export function searchOneMapAddresses(raw: unknown) {
   const parsed = placeSearchResponse.safeParse(raw);
-  if (!parsed.success) return { kind: 'unavailable', reason: 'missing_data' } as const;
+  if (!parsed.success)
+    return { kind: 'unavailable', reason: 'missing_data' } as const;
   const places = parsed.data.results
     .map((item) => {
       const coordinate = {

@@ -1,7 +1,5 @@
 import { createHash } from 'node:crypto';
-import type {
-  ActivitySubmissionProvider,
-} from './activity-submission.ts';
+import type { ActivitySubmissionProvider } from './activity-submission.ts';
 
 const categories = ['active_transport', 'cleanup', 'reuse_refill'] as const;
 

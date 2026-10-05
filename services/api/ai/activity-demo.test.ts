@@ -6,7 +6,10 @@ import { activityAssessmentOutputSchema } from '../activity/submission-result-co
 test('synthetic activity provider returns bounded review data without retaining media', async () => {
   const source = new Uint8Array([255, 216, 255, 224, 1, 2, 3]);
   const result = await createSyntheticActivityProvider().assess(
-    { description: 'MVP photo review', photos: [{ bytes: source, mime: 'image/jpeg' }] },
+    {
+      description: 'MVP photo review',
+      photos: [{ bytes: source, mime: 'image/jpeg' }],
+    },
     new AbortController().signal,
   );
   assert.equal(source[0], 255);

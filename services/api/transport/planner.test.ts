@@ -156,7 +156,9 @@ test('coordinate places produce a shared map-ready plan for native clients', asy
   assert.ok(result.routes.some((route) => route.mode === 'transit'));
   assert.ok(result.routes.some((route) => route.mode === 'walk'));
   for (const route of result.routes) {
-    assert.ok(route.legs.every((item) => item.fromCoordinate && item.toCoordinate));
+    assert.ok(
+      route.legs.every((item) => item.fromCoordinate && item.toCoordinate),
+    );
     assert.ok(route.distanceMeters && route.distanceMeters > 0);
   }
 });
