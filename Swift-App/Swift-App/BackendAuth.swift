@@ -75,6 +75,13 @@ enum FormURLEncoder {
     }
 }
 
+enum HTTPRequestBodyPolicy {
+    static func shouldEncodeBody(for method: String) -> Bool {
+        let method = method.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return method != "GET" && method != "HEAD"
+    }
+}
+
 enum SecureRandom {
     static func token(byteCount: Int) throws -> String {
         var bytes = [UInt8](repeating: 0, count: byteCount)

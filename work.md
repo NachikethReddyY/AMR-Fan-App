@@ -1,4 +1,241 @@
+## 2026-10-05: match the reference navigation on iPhone 18
+
+Updated `BottomBar.swift` to use a light rounded capsule for Home, Rewards, and
+Impact, with a separate circular Travel control. `ContentView.swift` keeps the
+SwiftUI `TabView(selection:)` navigation state and uses page style to remove the
+duplicate system bar while preserving destination switching and swipes.
+
+Proof: simulator and iPhone-target builds returned `BUILD SUCCEEDED`; the
+final simulator app is installed on iPhone 18 Pro; taps switched through Home,
+Rewards, Impact, Travel, and Home; and the final screenshot is recorded in
+`.evidence/ios-reference-nav-20261005/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
 # Work record
+
+## 2026-10-05: finish live activity and OneMap transport wiring
+
+The Android camera now sends captured image bytes through the multimodal
+TokenRouter adapter, holds a locked processing state, and shows a separate
+result state. The assessment prompt requires visible real-world evidence and
+the selector rejects screen, screenshot, indoor, potted-plant, and unclear
+evidence before the existing server points policy. Retake actions cannot start
+another submission while processing.
+
+The travel screen now uses OneMap tiles and live place search, offers current
+location, shows a GPS marker, and sends route requests to the OneMap-backed
+provider. BB-1 is configured with `AMR_ROUTES_PROVIDER=onemap` and
+`ACTIVITY_ASSESSMENT_PROVIDER=tokenrouter`; its health and readiness checks
+pass, and live search plus Orchard MRT to Bayfront MRT routing return OneMap
+source metadata with train, walk, and car options.
+
+Proof: the focused AI tests cover multimodal image dispatch and invalid
+evidence rejection; route, transport, and typecheck checks pass; the Android
+unit tests and debug APK build pass; and `com.amr.fanapp` was installed on the
+Pixel_10_API_36 emulator. The emulator is currently showing the Entra sign-in
+confirmation, so an authenticated camera upload and result screen remain
+unverified. BB-1 has no `/home/bb-1/.auth/amr-ai.env` yet, so live Luna calls
+remain disabled until that mode-600 file is added. JEV remains uncalled because
+its provider protocol is not verified.
+
+Edited by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-10-05: fix the iOS account resume request
+
+The simulator reproduced `resource exceeds maximum size` while opening the
+Account screen. The device log showed `GET method must not have a body` for
+`/v1/me`. `BackendClient.request` now omits bodies for `GET` and `HEAD`
+requests through `HTTPRequestBodyPolicy`; body-bearing requests keep their
+JSON payloads.
+
+Proof: `BackendAuthChecks passed` with GET, HEAD, and POST policy assertions;
+clean simulator and iPhone-target builds returned `BUILD SUCCEEDED`; the final
+simulator app was installed on iPhone 17; and the Account screen resumed the
+cached account without the error. The screenshot and build record are under
+`.evidence/ios-full-rebuild-20261005/`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: full Swift iOS rebuild
+
+Ran clean Debug builds for `iphonesimulator` and `iphoneos` into
+`.evidence/ios-full-rebuild-20261005`. Both targets returned `BUILD SUCCEEDED`.
+The simulator app is signed with the local simulator identity and embeds the
+Keychain entitlement. The iPhone-target app is unsigned because no Apple team
+or provisioning profile is configured. The focused `BackendAuthChecks` binary
+passed, and the full evidence is recorded in
+`.evidence/ios-full-rebuild-20261005/verification.md`.
+
+Native installation and interactive sign-in were not run, so rendered UI
+behavior remains unverified.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: build the iOS auth fix with Keychain entitlements
+
+The current Swift source already contains the Keychain access group entitlement
+and Add-then-Update session write. The reported Account error persisted because
+the installed simulator app was an unsigned build with no `__entitlements`
+section. A signed simulator build now carries `FAKETEAMID.com.amr.fanapp` as
+the application identifier and Keychain access group.
+
+Proof: `swiftc Swift-App/Swift-App/BackendAuth.swift Swift-App/Tests/BackendAuthChecks.swift`
+passed, and `xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App
+-sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=YES
+CODE_SIGN_IDENTITY=- build` passed. The artifact is under
+`.evidence/auth-session-save/derived/Build/Products/Debug-iphonesimulator/Swift-App.app`.
+The user-visible sign-in flow remains unverified because installing or driving
+the device was not authorized in this turn. A physical iOS build needs Apple
+development signing.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: persist Android account context and show the fan's name
+
+Stored the authenticated account response beside the encrypted session token,
+refreshed it through `/v1/me`, persisted the selected driver in DataStore, and
+restored navigation after an APK update. Home now greets the authenticated
+profile name instead of the selected driver's first name. The OIDC verifier
+passes a validated display name into a new/default backend profile and leaves
+custom names unchanged.
+
+Proof: Android unit tests and debug APK assembly passed, API typecheck and auth
+tests passed, BB-1 rebuilt/restarted successfully, and the APK was installed on
+Pixel_10_API_36. PostgreSQL account tests were unavailable because the local
+worktree database credentials are not provisioned. A real account Home greeting
+still needs a user sign-in.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: renew Android sessions from encrypted credentials
+
+Stored the OIDC refresh token beside the encrypted backend session token.
+Android now renews the provider token and creates a fresh BB-1 session when
+the account request returns 401, while retaining the cached account during
+transient network errors. Sign-out clears the backend token, refresh token,
+and account cache even if the revoke request fails.
+
+Proof: Kotlin unit tests, debug APK assembly, and install-over-existing-data
+passed. The emulator retained its saved driver and opened the login gate after
+installation. A real provider refresh and Home greeting need one user sign-in.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: repair Android Entra callback state and scope validation
+
+Persisted the Android PKCE state and verifier in the encrypted session store so
+the callback can complete after activity recreation. Corrected BB-1's
+`AUTH_REQUIRED_SCOPE` from the full request URI to the Entra `scp` claim value
+`account.access`, then restarted the API.
+
+Proof: `pnpm account:test` passed, Android unit tests and debug APK assembly
+passed, BB-1 `/health` returned HTTP 200 over Tailscale, and the updated APK was
+installed on Pixel_10_API_36. Fresh sign-in with a real account remains the
+user-visible check.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: restore the BB-1 Tailscale test path
+
+Changed the live BB-1 API bind from the LAN-only address to `0.0.0.0:18080`.
+The Tailscale health check now returns HTTP 200. Rebuilt and installed the
+Android debug APK with `http://100.117.231.37:18080/`; LAN access remains
+unverified because the Mac cannot route to `192.168.0.31`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: bind BB-1 API to the LAN interface
+
+After BB-1 returned, changed its live API listener to `192.168.0.31` and
+restarted Compose. The container reports `host=192.168.0.31`, and local health
+and readiness checks pass. The development Mac still cannot reach the host's
+LAN ports, including SSH. UFW is disabled, so an nftables or Wi-Fi
+client-isolation rule remains.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: diagnose the unreachable BB-1 LAN endpoint
+
+The new APK targets `192.168.0.31:18080`, but the host is offline. Tailscale
+reports `bb-1` offline, and local ping, SSH, and HTTP checks to the LAN address
+all fail with no route or connection refused. No application-level listener
+change can be verified while the host is absent.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: switch the phone API target to BB-1 LAN
+
+The phone was using BB-1's Tailscale address, which made sign-in time out when
+the phone was not joined to Tailscale. Deployment docs now use a LAN address,
+and the rebuilt APK targets `192.168.0.31:18080`.
+
+Proof: Android unit tests and APK assembly passed; the APK's generated
+`BuildConfig.API_BASE_URL` is `http://192.168.0.31:18080/` and it is installed
+on Pixel_10_API_36. BB-1 is currently offline in Tailscale, so the remote
+listener restart and LAN health checks remain pending.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: make the Android sign-in action observable
+
+Removed the silent pending-auth and busy guards from the Android sign-in action.
+The flow now resets a dismissed challenge, opens Custom Tabs when available,
+falls back to a browser intent, and reports launch failures.
+
+Proof: Android unit tests and APK assembly passed. The updated APK was installed
+on Pixel_10_API_36 and the button opened the Entra sign-in Web View.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: align BB-1 auth with Android and recover expired sessions
+
+The Android native flow uses Entra External ID authorization-code + PKCE. BB-1
+had been left on the Supabase verifier, so `POST /v1/session` returned 401 for
+the valid provider flow. BB-1 now uses the documented Entra issuer, audience,
+JWKS URL and required scope. Android removes stale encrypted sessions after a
+401, presents a recoverable sign-in message, and ignores a duplicate callback.
+
+Proof: BB-1 reports `auth=oidc`, health and readiness pass, its JWKS endpoint is
+reachable, the API source typechecks, and the updated BB-1-targeted APK builds
+and is installed on Pixel_10_API_36. A real account sign-in remains unverified
+because the available device does not contain test credentials.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: camera preview and MVP activity provider
+
+The Android confirmation state now displays the selected photo URI behind the
+review actions and clears stale result state on retake. The API start entry
+point supplies an explicit `synthetic` activity provider when selected by
+environment. It fingerprints only transient canonical bytes, returns bounded
+activity evidence, and leaves acceptance and points to the existing server
+policy and transaction.
+
+Proof: API typecheck, AI tests (198 passing), Kotlin compile and debug APK
+assembly passed. BB-1 rebuilt and restarted with `provider=synthetic` and
+`enabled=true`; `/health` and `/ready` passed. The BB-1-targeted APK was
+installed on Pixel_10_API_36. Authenticated phone proof remains blocked by the
+account gate.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: OneMap credential aliases and provider selection
+
+Clarified the OneMap credential meaning and normalized the supplied names. The
+account `password` is the real OneMap account password used to obtain a
+three-day access token. `ONEMAP_APIKKEY` is accepted as an existing access token
+alongside `ONEMAP_API_KEY`; `ONEMAP_EMAIL_PASSWORD`, `ONEMAP_API_EMAIL`, and
+`ONEMAP_API_PASSWORD` remain accepted compatibility names. BB-1 now optionally
+loads `/home/bb-1/.auth/amr-onemap.env`, while `AMR_ROUTES_PROVIDER` remains the
+provider switch. The TokenRouter adapter also accepts `AI_API_KEY` and the
+exact `AI_BASE_URL` alias without weakening its endpoint allowlist.
+
+Proof: API typecheck, route tests (98 passing), AI tests (197 passing), and
+Compose configuration parsing passed. No secret was written, authenticated,
+or deployed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
 
 ## 2026-10-04: BB-1 AI pipeline staging host
 
@@ -19,6 +256,150 @@ validated candidate. No commit or push was requested.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+## 2026-10-05: AI evidence policy and BB-1 secret paths
+
+Extracted the existing activity evidence threshold and category/confidence
+selection into `services/api/ai/activity-submission.ts` as
+`selectActivityAssessment`. The selector returns only accepted, uncertain or
+rejected evidence; the points ledger remains the only award authority. Added
+boundary tests for the 60-point evidence threshold, confidence gate and absence
+of provider-supplied points.
+
+Documented BB-1 secret locations outside the checkout. Compose now optionally
+loads `/home/bb-1/.auth/amr-ai.env` and mounts `/home/bb-1/.auth` read-only at
+`/run/secrets/amr-private`; the OneMap example points at the mounted JSON file.
+Live Luna/JEV inference remains disabled until a reviewed provider adapter and
+gateway contract are configured.
+
+Proof: API typecheck, activity tests, AI tests (196 passing), Android compile and
+assembly, Swift simulator build, Compose config parsing, and device screenshots
+of Android location search and camera confirmation passed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Compact camera confirmation state
+
+Replaced the verbose post-capture card in both native ports with the approved
+combined direction: a black preview, circular Back control, camera icon,
+"Ready to send?" prompt, filled "Use this photo" action and outlined
+"Retake photo" recovery action. Swift now waits for the explicit primary
+action before calling the existing verification client, and Retake reopens the
+camera surface. Android keeps the already selected photo locally and confirms
+that state without presenting a disabled or misleading server upload path;
+photo verification is still unavailable in the current Kotlin client.
+
+The project now carries a concise-copy rule for core task screens: keep visible
+interface copy below ten words when the content is not a feed or long-form
+page, and use icons for obvious controls.
+
+Proof: `./gradlew :app:compileDebugKotlin :app:test :app:assembleDebug
+--no-daemon` passed. The Swift simulator build passed. The rebuilt Android APK
+was installed on Pixel_10_API_36; the confirmation screen exposed accessible
+Back, Use this photo and Retake photo actions, and Retake returned to the
+camera. The iOS build was installed, but the connected device remained at its
+account gate, so the confirmation state is unverified there. `pnpm agents:check`
+and `git diff --check` passed.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: direct native camera surface
+
+Replaced the Android system camera activity and the Swift system image picker
+with native in-app camera previews. The camera action now opens the live preview
+directly. Both ports expose a circular Back control at the top left, a gallery
+button at the lower left, and a centered shutter. Gallery selection remains an
+overlay action, and captured photos still reach the existing verification state.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; `pnpm agents:check` and `git diff --check` passed. The
+rebuilt APK was installed and exercised on Pixel_10_API_36. Evidence is stored
+in `.evidence/camera-ui/android-camera.png` and
+`.evidence/camera-ui/android-gallery.png`.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Simplified driver-selection copy
+
+Changed the repeated "I’m on this team." heading to the smaller "On this
+team." so the existing "I / AM" eyebrow carries the first-person voice.
+Removed the note about switching drivers in the profile from both native
+driver-selection screens.
+
+Proof: source checks confirm the old strings are gone. Kotlin compile, unit
+tests and debug APK assembly passed; the Swift simulator build passed; and
+`git diff --check` passed. A fresh driver-screen device capture is pending the
+account gate.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Fixed detail navigation and rewards copy
+
+Added a shared Android detail frame with a circular icon-only Back control
+fixed above every detail destination. Profile, merchandise, travel, account,
+news, history, forest, challenges, quiz, camera and empty states now inherit
+the same reachable action instead of placing Back at the bottom of a scroll.
+Removed the duplicate bottom actions. Removed repeated demo catalogue and local
+coupon wording from the Android and Swift store screens, and removed the
+visible demo label from the Swift points balance action.
+
+Proof: `./gradlew :app:compileDebugKotlin :app:test --no-daemon` and
+`./gradlew :app:assembleDebug --no-daemon` passed. The Swift simulator build,
+`git diff --check`, and device installation passed. The Pixel flow reached the
+account gate; detail-screen interaction remains unverified without a provider
+test account.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Compact News header
+
+Adjusted the Android News screen to match the requested hierarchy. The text
+Back label is gone; its arrow now sits inside a 44dp circular control with an
+accessible Back description. Reduced the header's vertical spacing and removed
+the extra top inset on Latest so the heading sits closer to the control. The
+rounded outer corners in the Pixel screenshot come from the emulator/device
+display mask and gesture area, not the News content.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; and `git diff --check` passed. A new Android News
+screen capture is unverified because the rebuilt app is currently at its
+account gate.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Flatten native bottom navigation
+
+Removed the Swift capsule group and circular travel button from the bottom
+navigation. The bar is now a single full-width rectangle with four equal
+destinations. Android keeps its Material navigation behavior and safe-area
+insets, with explicit rectangular clipping to prevent curved outer chrome.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; `pnpm agents:check` and `git diff --check` passed; and
+the rebuilt APK was installed on Pixel_10_API_36. The connected Android home
+screen was not available for a fresh screenshot because the rebuilt app is at
+its account gate.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Android account URL handoff
+
+The Android login gate was calling the debug-only local demo session, which
+changed account state immediately and navigated to the home shell. Replaced
+that callback with the existing OIDC authority and PKCE flow. The app now
+opens the provider in a Custom Tab, validates the `msauth.com.amr.fanapp://auth`
+callback and state, exchanges the authorization code for an access token, and
+creates the normal backend session. The account gate no longer includes the
+placeholder connection copy and now surfaces authentication errors.
+
+Proof: `./gradlew :app:compileDebugKotlin :app:test --no-daemon` and
+`./gradlew :app:assembleDebug --no-daemon` passed. The rebuilt APK was
+installed on Pixel_10_API_36. The authorized device flow opened
+`amrfancustomers.ciamlogin.com` after selecting Alonso, with the screenshot
+saved under `.evidence/login-auth/android-auth-url.png`. Provider account
+completion and backend session creation remain unverified without a registered
+test account.
+
+Edited by gpt-6-astra through Codex (T3 Code).
 
 ## 2026-10-04: location search planning and GitHub status
 
@@ -32,6 +413,30 @@ client. A direct request to the deployed public transport endpoint returned
 from this shell.
 
 Posted the current state and next implementation slice to [issue #6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6#issuecomment-5976944565): bounded OneMap-backed autocomplete, selected coordinates, exact route geometry, compact send action, backend-only credentials, and separately launched Mac-device verification. No credentials, code, commit, push or deployment were added for this request.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-04: Native onboarding hierarchy correction
+
+Tracking: ONBOARDING-UI-001, unlinked. Replaced the uneven onboarding progress
+segments with equal-width Aston Martin green segments and an accessible step
+value in Swift and Kotlin. The first-run and feature-tour primary actions now
+use the primary Aston Martin green with centered white labels and no trailing
+arrow. Driver selection now says “I’m on this team.”, removes the card arrows
+and removes the duplicate sign-in action; selecting a driver still advances
+into the existing login gate.
+
+Proof: `xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App
+-configuration Debug -destination 'id=6C1257B6-EC84-487A-B14F-CB1A930DB6EB'
+build CODE_SIGNING_ALLOWED=NO` passed against the iOS 27.0 simulator.
+`./gradlew :app:compileDebugKotlin :app:test --no-daemon` and
+`./gradlew :app:assembleDebug --no-daemon` passed. The rebuilt APK was
+installed on Pixel_10_API_36; screenshots showed the corrected onboarding and
+driver selection screens, and selecting Alonso reached the login gate.
+`git diff --check` passed. Fresh Swift onboarding screenshots remain
+unverified because the open iPhone 18 Pro simulator retained its existing
+login state; the separate iPhone 17 simulator could not be opened due a device
+support communication failure.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
@@ -3645,5 +4050,23 @@ state rules covered by the local tests.
 
 `pnpm security:check` is unverified because Docker is unavailable on this
 machine; the command stopped before its container-backed secret scan.
+
+Edited by gpt-6-astra through Codex (T3 Code).
+## 2026-10-05: native travel and sustainability pipeline
+
+Added coordinate-aware transport planning for arbitrary Singapore places, a
+bounded `/v1/locations/search` OneMap adapter, and normalized place results.
+Swift now sends selected MapKit coordinates to the shared planner and draws
+returned transport legs. Kotlin adds place suggestions from the shared API,
+device geocoding fallback, coordinate requests, a visible Travel back control,
+GPS step tracking, and photo submission through the existing activity score and
+points policy. Kotlin result state shows evidence score and credited points.
+
+Proof: API typecheck, transport tests (9 passing), route tests (96 passing),
+Android Kotlin compile and debug APK assembly, and Swift simulator build all
+passed. Pixel 10 opened the rebuilt Travel screen and exposed the new From/To
+fields and back control. iPhone 18 Pro opened the rebuilt Swift app. Live
+OneMap, Luna and JEV inference remain unverified because no assigned provider
+credentials or reviewed JEV gateway contract are configured.
 
 Edited by gpt-6-astra through Codex (T3 Code).

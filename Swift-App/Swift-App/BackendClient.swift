@@ -61,7 +61,7 @@ struct BackendRouteResponse: Decodable {
     let estimates: [BackendRouteEstimate]
 }
 
-struct BackendTransportCoordinate: Decodable {
+struct BackendTransportCoordinate: Codable {
     let latitude: Double
     let longitude: Double
 }
@@ -141,9 +141,28 @@ private struct RouteRequest: Encodable {
     let modes: [String]
 }
 
+private enum BackendTransportPlace: Encodable {
+    case name(String)
+    case coordinate(BackendTransportCoordinate)
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .name(let value):
+            var container = encoder.singleValueContainer()
+            try container.encode(value)
+        case .coordinate(let value):
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(value.latitude, forKey: .latitude)
+            try container.encode(value.longitude, forKey: .longitude)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey { case latitude, longitude }
+}
+
 private struct TransportRequest: Encodable {
-    let origin: String
-    let destination: String
+    let origin: BackendTransportPlace
+    let destination: BackendTransportPlace
     let departAt: String
     let modes: [String] = ["train", "bus", "walk", "car"]
 }
@@ -244,6 +263,10 @@ final class BackendSession: ObservableObject {
     }
 
     func transportPlan(origin: String, destination: String) async throws -> BackendTransportPlan {
+        return try await client.transportPlan(token: token, origin: origin, destination: destination)
+    }
+
+    func transportPlan(origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
         return try await client.transportPlan(token: token, origin: origin, destination: destination)
     }
 
@@ -398,6 +421,14 @@ private final class BackendClient {
     }
 
     func transportPlan(token: String?, origin: String, destination: String) async throws -> BackendTransportPlan {
+        try await transportPlan(token: token, origin: .name(origin), destination: .name(destination))
+    }
+
+    func transportPlan(token: String?, origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
+        try await transportPlan(token: token, origin: .coordinate(origin), destination: .coordinate(destination))
+    }
+
+    private func transportPlan(token: String?, origin: BackendTransportPlace, destination: BackendTransportPlace) async throws -> BackendTransportPlan {
         try await request(path: "v1/transport/plan", method: "POST", token: token, body: TransportRequest(origin: origin, destination: destination, departAt: ISO8601DateFormatter().string(from: Date())))
     }
 
@@ -435,7 +466,9 @@ private final class BackendClient {
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if let body { request.httpBody = try JSONEncoder().encode(body) }
+        if let body, HTTPRequestBodyPolicy.shouldEncodeBody(for: method) {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
         let (data, response) = try await urlSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw BackendError.invalidResponse }
         if !(200..<300).contains(http.statusCode) {

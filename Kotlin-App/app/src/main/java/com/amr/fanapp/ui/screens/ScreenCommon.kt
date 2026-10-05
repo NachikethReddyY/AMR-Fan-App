@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +52,32 @@ fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         content = content,
     )
+}
+
+@Composable
+fun BackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(
+        onClick = onBack,
+        modifier = modifier
+            .size(44.dp)
+            .background(FanColors.panel, CircleShape)
+            .border(1.dp, Color.White.copy(alpha = .12f), CircleShape),
+    ) {
+        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+    }
+}
+
+@Composable
+fun DetailScreen(onBack: () -> Unit, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxSize().background(FanColors.background)) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BackButton(onBack)
+        }
+        Box(Modifier.fillMaxWidth().weight(1f)) { content() }
+    }
 }
 
 @Composable

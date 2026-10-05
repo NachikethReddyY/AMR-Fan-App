@@ -12,7 +12,9 @@ export type RouteConfig =
       credentials:
         | { kind: 'fixture' }
         | { kind: 'file'; path: string }
-        | { kind: 'token-file'; path: string; expires: number };
+        | { kind: 'token-file'; path: string; expires: number }
+        | { kind: 'env-account'; email: string; password: string }
+        | { kind: 'env-token'; value: string; expires: number };
     }
   | {
       kind: 'google' | 'fixture';
@@ -25,7 +27,16 @@ export function routeConfig(
   env: Record<string, string | undefined>,
 ): RouteConfig {
   const invalid = () => new Error('Invalid route provider configuration.');
-  const selected = env.AMR_ROUTES_PROVIDER ?? 'google';
+  const alias = (names: string[]) => {
+    const values = names
+      .map((name) => env[name])
+      .filter((value): value is string => value !== undefined);
+    if (new Set(values).size > 1) throw invalid();
+    return values[0];
+  };
+  const selected =
+    alias(['AMR_ROUTES_PROVIDER', 'ROUTES_PROVIDER', 'MAP_PROVIDER']) ??
+    'google';
   if (!['disabled', 'google', 'onemap'].includes(selected)) throw invalid();
   if (selected === 'disabled') return { kind: 'disabled' };
   if (selected === 'onemap') {
@@ -42,7 +53,9 @@ export function routeConfig(
     )
       throw invalid();
     const fixture = env.AMR_ROUTES_SYNTHETIC === 'true';
-    const baseUrl = env.AMR_ONEMAP_BASE_URL ?? 'https://www.onemap.gov.sg';
+    const baseUrl =
+      alias(['AMR_ONEMAP_BASE_URL', 'ONEMAP_BASE_URL']) ??
+      'https://www.onemap.gov.sg';
     let url: URL;
     try {
       url = new URL(baseUrl);
@@ -63,6 +76,20 @@ export function routeConfig(
         env.AMR_ONEMAP_CREDENTIALS_FILE ||
         env.AMR_ONEMAP_ACCESS_TOKEN_FILE ||
         env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT ||
+        env.ONEMAP_CREDENTIALS_FILE ||
+        env.ONEMAP_ACCESS_TOKEN_FILE ||
+        env.ONEMAP_ACCESS_TOKEN_EXPIRES_AT ||
+        env.AMR_ONEMAP_EMAIL ||
+        env.ONEMAP_EMAIL ||
+        env.ONEMAP_API_EMAIL ||
+        env.AMR_ONEMAP_PASSWORD ||
+        env.ONEMAP_PASSWORD ||
+        env.ONEMAP_EMAIL_PASSWORD ||
+        env.ONEMAP_API_PASSWORD ||
+        env.AMR_ONEMAP_ACCESS_TOKEN ||
+        env.ONEMAP_ACCESS_TOKEN ||
+        env.ONEMAP_API_KEY ||
+        env.ONEMAP_APIKKEY ||
         env.AMR_GOOGLE_ROUTES_KEY
       )
         throw invalid();
@@ -74,9 +101,82 @@ export function routeConfig(
       };
     }
     if (baseUrl !== 'https://www.onemap.gov.sg') throw invalid();
-    const path = env.AMR_ONEMAP_CREDENTIALS_FILE;
-    const tokenPath = env.AMR_ONEMAP_ACCESS_TOKEN_FILE;
-    const cutoff = env.AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT;
+    const path = alias([
+      'AMR_ONEMAP_CREDENTIALS_FILE',
+      'ONEMAP_CREDENTIALS_FILE',
+    ]);
+    const tokenPath = alias([
+      'AMR_ONEMAP_ACCESS_TOKEN_FILE',
+      'ONEMAP_ACCESS_TOKEN_FILE',
+    ]);
+    const cutoff = alias([
+      'AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT',
+      'ONEMAP_ACCESS_TOKEN_EXPIRES_AT',
+    ]);
+    const email = alias([
+      'AMR_ONEMAP_EMAIL',
+      'ONEMAP_EMAIL',
+      'ONEMAP_API_EMAIL',
+    ]);
+    const password = alias([
+      'AMR_ONEMAP_PASSWORD',
+      'ONEMAP_PASSWORD',
+      'ONEMAP_EMAIL_PASSWORD',
+      'ONEMAP_API_PASSWORD',
+    ]);
+    const accessToken = alias([
+      'AMR_ONEMAP_ACCESS_TOKEN',
+      'ONEMAP_ACCESS_TOKEN',
+      'ONEMAP_API_KEY',
+      // Keep the supplied spelling as a compatibility alias.
+      'ONEMAP_APIKKEY',
+    ]);
+    if (accessToken !== undefined) {
+      if (
+        path ||
+        tokenPath ||
+        password !== undefined ||
+        (email !== undefined && !z.email().max(254).safeParse(email).success) ||
+        !/^[A-Za-z0-9._~-]{1,8192}$/.test(accessToken)
+      )
+        throw invalid();
+      const expires = cutoff ? Date.parse(cutoff) : Date.now() + 3 * 86400000;
+      if (
+        cutoff &&
+        (cutoff.length > 40 ||
+          !z.iso.datetime({ offset: true }).safeParse(cutoff).success)
+      )
+        throw invalid();
+      if (!Number.isFinite(expires) || expires <= Date.now() + 60000)
+        throw invalid();
+      return {
+        kind: 'onemap',
+        baseUrl,
+        timeoutMs: Number(timeout),
+        credentials: { kind: 'env-token', value: accessToken, expires },
+      };
+    }
+    if (email !== undefined || password !== undefined) {
+      if (
+        path ||
+        tokenPath ||
+        cutoff ||
+        (email === undefined) !== (password === undefined)
+      )
+        throw invalid();
+      if (!email || !password || cutoff) throw invalid();
+      if (
+        !z.email().max(254).safeParse(email).success ||
+        password.length > 1024
+      )
+        throw invalid();
+      return {
+        kind: 'onemap',
+        baseUrl,
+        timeoutMs: Number(timeout),
+        credentials: { kind: 'env-account', email, password },
+      };
+    }
     if (tokenPath || cutoff) {
       if (
         path ||

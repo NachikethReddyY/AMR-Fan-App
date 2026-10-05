@@ -4,7 +4,9 @@ import Combine
 enum FanStyle {
     static let background = Color(red: 10 / 255, green: 10 / 255, blue: 10 / 255)
     static let panel = Color(red: 30 / 255, green: 32 / 255, blue: 32 / 255)
+    static let astonGreen = Color(red: 4 / 255, green: 82 / 255, blue: 75 / 255)
     static let teal = Color(red: 69 / 255, green: 152 / 255, blue: 143 / 255)
+    static let navigationTeal = Color(red: 35 / 255, green: 117 / 255, blue: 108 / 255)
     static let introGreen = Color(red: 48 / 255, green: 151 / 255, blue: 78 / 255)
     static let darkTeal = Color(red: 34 / 255, green: 39 / 255, blue: 39 / 255)
     static let muted = Color(red: 0.63, green: 0.69, blue: 0.67)
@@ -399,6 +401,7 @@ enum FanTab: String, CaseIterable, Identifiable {
     case home = "Home"
     case rewards = "Rewards"
     case impact = "Impact"
+    case travel = "Travel"
 
     var id: String { rawValue }
     var symbol: String {
@@ -406,6 +409,7 @@ enum FanTab: String, CaseIterable, Identifiable {
         case .home: "house.fill"
         case .rewards: "gift.fill"
         case .impact: "tree.fill"
+        case .travel: "paperplane.fill"
         }
     }
 }

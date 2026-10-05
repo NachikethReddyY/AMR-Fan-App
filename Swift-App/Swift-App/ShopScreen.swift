@@ -42,7 +42,7 @@ struct ShopScreen: View {
                             Text("Available now")
                                 .font(.title3.bold())
                         }
-                        Label("\(demoState.greenPoints.formatted()) Green Points · Demo", systemImage: "bolt.fill")
+                        Label("\(demoState.greenPoints.formatted()) Green Points", systemImage: "bolt.fill")
                             .font(.subheadline.bold())
                             .foregroundStyle(FanStyle.teal)
                     }
@@ -57,11 +57,7 @@ struct ShopScreen: View {
                     }
                     .padding(.horizontal, 22)
 
-                    Text("Demo catalogue and local coupon codes. Discounts are not connected to the official store.")
-                        .font(.caption)
-                        .foregroundStyle(FanStyle.muted)
-                        .padding(.horizontal, 22)
-                        .padding(.bottom, 24)
+                    Spacer().frame(height: 24)
                 }
                 .frame(maxWidth: .infinity)
             }

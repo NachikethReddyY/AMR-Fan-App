@@ -2,6 +2,18 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { ApiError, type Identity } from '../accounts/types.ts';
 import type { AuthConfig } from './config.ts';
 
+function displayNameClaim(payload: Record<string, unknown>) {
+  const direct = typeof payload.name === 'string' ? payload.name : '';
+  const parts = [payload.given_name, payload.family_name].filter(
+    (value): value is string =>
+      typeof value === 'string' && value.trim().length > 0,
+  );
+  const value = direct.trim() || parts.join(' ').trim();
+  if (!value || value.length > 80 || /[\u0000-\u001f\u007f]/u.test(value))
+    return undefined;
+  return value;
+}
+
 export function createIdentityVerifier(
   config: Extract<AuthConfig, { kind: 'oidc' }>,
   keys: JWTVerifyGetKey = createRemoteJWKSet(new URL(config.jwksUrl), {
@@ -31,7 +43,9 @@ export function createIdentityVerifier(
       ) {
         throw new Error('Required subject or API scope missing.');
       }
-      return { issuer: config.issuer, subject: payload.sub };
+      const identity = { issuer: config.issuer, subject: payload.sub };
+      const displayName = displayNameClaim(payload);
+      return displayName ? { ...identity, displayName } : identity;
     } catch {
       // Never leak tokens, provider claims, JWKS URLs or library diagnostics.
       throw new ApiError(401, 'Identity could not be verified.');

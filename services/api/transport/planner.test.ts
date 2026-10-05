@@ -145,3 +145,18 @@ test('unknown places, same endpoints, invalid times and unsupported coverage sta
       false,
     );
 });
+
+test('coordinate places produce a shared map-ready plan for native clients', async () => {
+  const result = await planTransport({
+    origin: { latitude: 1.3048, longitude: 103.8329 },
+    destination: { latitude: 1.2816, longitude: 103.8602 },
+    departAt: at,
+    modes: ['transit', 'walk'],
+  });
+  assert.ok(result.routes.some((route) => route.mode === 'transit'));
+  assert.ok(result.routes.some((route) => route.mode === 'walk'));
+  for (const route of result.routes) {
+    assert.ok(route.legs.every((item) => item.fromCoordinate && item.toCoordinate));
+    assert.ok(route.distanceMeters && route.distanceMeters > 0);
+  }
+});

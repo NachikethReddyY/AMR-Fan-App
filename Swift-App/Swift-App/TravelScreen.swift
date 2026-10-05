@@ -48,6 +48,7 @@ struct TravelScreen: View {
                 origin: origin,
                 destination: destination,
                 route: route,
+                transportRoute: transportPlan?.routes.first(where: { $0.id == selectedBackendRouteID }) ?? transportPlan?.routes.first,
                 mapPosition: $mapPosition,
                 onCameraChangeEnded: handleMapCameraChangeEnded
             )
@@ -679,7 +680,10 @@ struct TravelScreen: View {
                 }
             }
             do {
-                transportPlan = try await backend.transportPlan(origin: originText, destination: destinationText)
+                transportPlan = try await backend.transportPlan(
+                    origin: BackendTransportCoordinate(latitude: origin.coordinate.latitude, longitude: origin.coordinate.longitude),
+                    destination: BackendTransportCoordinate(latitude: destination.coordinate.latitude, longitude: destination.coordinate.longitude)
+                )
                 selectedBackendRouteID = transportPlan?.recommendation.routeId ?? transportPlan?.routes.first?.id
             } catch {
                 transportPlan = nil
@@ -888,6 +892,7 @@ private struct TravelMapView: View {
     let origin: MKMapItem?
     let destination: MKMapItem?
     let route: MKRoute?
+    let transportRoute: BackendTransportRoute?
     @Binding var mapPosition: MapCameraPosition
     let onCameraChangeEnded: () -> Void
 
@@ -904,6 +909,17 @@ private struct TravelMapView: View {
             if let route {
                 MapPolyline(route.polyline)
                     .stroke(FanStyle.teal, lineWidth: 6)
+            }
+            if route == nil, let transportRoute {
+                let coordinates = transportRoute.legs.flatMap { leg in
+                    [leg.fromCoordinate, leg.toCoordinate].compactMap { coordinate in
+                        coordinate.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+                    }
+                }
+                if coordinates.count > 1 {
+                    MapPolyline(coordinates: coordinates)
+                        .stroke(FanStyle.teal, lineWidth: 6)
+                }
             }
         }
         .mapStyle(.standard(emphasis: .muted))

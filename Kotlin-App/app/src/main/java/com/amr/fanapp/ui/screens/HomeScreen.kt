@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.amr.fanapp.domain.DemoFanState
 import com.amr.fanapp.domain.Driver
 import com.amr.fanapp.domain.FanDestination
+import com.amr.fanapp.network.BackendAccount
 import com.amr.fanapp.ui.theme.FanColors
 import com.amr.fanapp.ui.theme.panelCard
 import java.time.LocalTime
@@ -63,9 +64,13 @@ private val RoundedNumbers = FontFamily(Font(
     variationSettings = FontVariation.Settings(FontVariation.weight(900)),
 ))
 
+internal fun homeDisplayName(account: BackendAccount?): String =
+    account?.realProfile?.displayName?.trim()?.takeIf { it.isNotEmpty() } ?: "Fan"
+
 @Composable
-fun HomeScreen(driver: Driver, state: DemoFanState, open: (FanDestination) -> Unit) {
+fun HomeScreen(driver: Driver, account: BackendAccount?, state: DemoFanState, open: (FanDestination) -> Unit) {
     val greeting = remember { when (LocalTime.now().hour) { in 0..11 -> "Good Morning,"; in 12..16 -> "Good Afternoon,"; else -> "Good Evening," } }
+    val accountName = homeDisplayName(account)
     Column(
         Modifier.fillMaxSize().background(FanColors.background).verticalScroll(rememberScrollState()).padding(bottom = 106.dp),
     ) {
@@ -84,7 +89,7 @@ fun HomeScreen(driver: Driver, state: DemoFanState, open: (FanDestination) -> Un
                 Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 22.dp), verticalAlignment = Alignment.Top) {
                     Column(Modifier.weight(1f)) {
                         Text(greeting, fontSize = 29.sp, lineHeight = 31.sp, fontWeight = FontWeight.SemiBold)
-                        Text(driver.firstName + "!", Modifier.padding(start = 15.dp), color = FanColors.teal, fontSize = 29.sp, lineHeight = 31.sp, fontWeight = FontWeight.SemiBold)
+                        Text(accountName + "!", Modifier.padding(start = 15.dp), color = FanColors.teal, fontSize = 29.sp, lineHeight = 31.sp, fontWeight = FontWeight.SemiBold)
                     }
                     IconButton(onClick = { open(FanDestination.PROFILE) }, modifier = Modifier.size(48.dp).semantics { contentDescription = "Profile" }) {
                         CircleIcon({ Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(25.dp)) }, 48.dp)

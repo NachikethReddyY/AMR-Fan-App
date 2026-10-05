@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.location.Geocoder
 import android.graphics.Color as AndroidColor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,29 +39,40 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.imePadding
 import androidx.core.content.ContextCompat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.amr.fanapp.network.BackendTransportLeg
 import com.amr.fanapp.network.BackendTransportPlan
+import com.amr.fanapp.network.BackendTransportCoordinate
+import com.amr.fanapp.network.BackendPlaceSuggestion
 import com.amr.fanapp.session.SessionViewModel
 import com.amr.fanapp.ui.theme.FanButton
 import com.amr.fanapp.ui.theme.FanColors
 import com.amr.fanapp.ui.theme.panelCard
 import androidx.compose.ui.viewinterop.AndroidView
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
+import org.osmdroid.util.MapTileIndex
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
@@ -68,25 +80,31 @@ import org.osmdroid.views.overlay.Polyline
 
 @Composable
 fun TravelScreen(onBack: () -> Unit, session: SessionViewModel) {
-    var origin by remember { mutableStateOf("orchard") }
-    var destination by remember { mutableStateOf("bayfront") }
+    var origin by remember { mutableStateOf("") }
+    var destination by remember { mutableStateOf("") }
+    var originCoordinate by remember { mutableStateOf<BackendTransportCoordinate?>(null) }
+    var destinationCoordinate by remember { mutableStateOf<BackendTransportCoordinate?>(null) }
+    var activeField by remember { mutableStateOf<String?>(null) }
+    var suggestions by remember { mutableStateOf<List<BackendPlaceSuggestion>>(emptyList()) }
     var searched by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var plan by remember { mutableStateOf<BackendTransportPlan?>(null) }
     var selectedRoute by remember { mutableStateOf<String?>(null) }
     var navigating by remember { mutableStateOf(false) }
+    var trackingLocation by remember { mutableStateOf(false) }
     var stepIndex by remember { mutableIntStateOf(0) }
     var currentLocation by remember { mutableStateOf<Location?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val locationManager = remember { context.getSystemService(Context.LOCATION_SERVICE) as LocationManager }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
-        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true || grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) navigating = true
+        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true || grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) trackingLocation = true
         else error = "Location access is required for automatic next-step guidance."
     }
 
-    DisposableEffect(navigating) {
-        if (!navigating) return@DisposableEffect onDispose {}
+    DisposableEffect(trackingLocation) {
+        if (!trackingLocation) return@DisposableEffect onDispose {}
         val listener = object : LocationListener { override fun onLocationChanged(location: Location) { currentLocation = location } }
         val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -110,18 +128,52 @@ fun TravelScreen(onBack: () -> Unit, session: SessionViewModel) {
         if (!searched) return@LaunchedEffect
         loading = true; error = null
         try {
-            plan = session.planTransport(origin, destination)
+            plan = if (originCoordinate != null && destinationCoordinate != null) {
+                session.planTransport(originCoordinate!!, destinationCoordinate!!)
+            } else session.planTransport(origin, destination)
             selectedRoute = plan?.recommendation?.routeId ?: plan?.routes?.firstOrNull()?.id
         } catch (cause: Exception) { error = cause.message ?: "Transport is unavailable." }
         finally { loading = false }
     }
 
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).background(FanColors.background).padding(horizontal = 22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("Travel.", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold); Icon(Icons.Filled.Map, contentDescription = null, tint = FanColors.teal) }
-        OSMRouteMap(selected, Modifier.fillMaxWidth().height(220.dp).panelCard(22))
-        OutlinedTextField(origin, { origin = it }, Modifier.fillMaxWidth(), label = { Text("From stop") }, singleLine = true)
-        OutlinedTextField(destination, { destination = it }, Modifier.fillMaxWidth(), label = { Text("To stop") }, singleLine = true)
-        FanButton("Find routes", { searched = origin.isNotBlank() && destination.isNotBlank() }, Modifier.fillMaxWidth())
+    LaunchedEffect(activeField, origin, destination) {
+        val query = when (activeField) {
+            "origin" -> origin
+            "destination" -> destination
+            else -> ""
+        }
+        if (query.trim().length < 2) {
+            suggestions = emptyList()
+            return@LaunchedEffect
+        }
+        delay(250)
+        suggestions = runCatching { session.searchPlaces(query) }.getOrDefault(emptyList())
+    }
+
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().background(FanColors.background).padding(horizontal = 22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) { Text("Travel.", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold); Icon(Icons.Filled.Map, contentDescription = null, tint = FanColors.teal) }
+        OSMRouteMap(selected, currentLocation, Modifier.fillMaxWidth().height(220.dp).panelCard(22))
+        OutlinedTextField(origin, { origin = it; originCoordinate = null; activeField = "origin" }, Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) activeField = "origin" }, label = { Text("From") }, singleLine = true)
+        if (activeField == "origin") PlaceSuggestions(suggestions, onUseCurrent = {
+            val location = currentLocation
+            if (location != null) {
+                origin = "Current location"
+                originCoordinate = BackendTransportCoordinate(location.latitude, location.longitude)
+                activeField = null
+                suggestions = emptyList()
+            } else {
+                permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+        }) { value -> origin = value.label; originCoordinate = value.coordinate; activeField = null; suggestions = emptyList() }
+        OutlinedTextField(destination, { destination = it; destinationCoordinate = null; activeField = "destination" }, Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) activeField = "destination" }, label = { Text("To") }, singleLine = true)
+        if (activeField == "destination") PlaceSuggestions(suggestions) { value -> destination = value.label; destinationCoordinate = value.coordinate; activeField = null; suggestions = emptyList() }
+        FanButton("Find routes", {
+            scope.launch {
+                searched = false
+                searched = origin.isNotBlank() && destination.isNotBlank()
+                activeField = null
+            }
+        }, Modifier.fillMaxWidth())
         if (loading) CircularProgressIndicator(color = FanColors.teal)
         error?.let { Text(it, color = FanColors.orange) }
         plan?.let { value ->
@@ -163,24 +215,63 @@ private fun formatArrival(value: String): String = runCatching {
 }.getOrDefault("Arrival time unavailable")
 
 @Composable
+private fun PlaceSuggestions(
+    places: List<BackendPlaceSuggestion>,
+    onUseCurrent: (() -> Unit)? = null,
+    onSelect: (BackendPlaceSuggestion) -> Unit,
+) {
+    if (places.isEmpty() && onUseCurrent == null) return
+    Column(Modifier.fillMaxWidth().panelCard(14).padding(vertical = 4.dp)) {
+        onUseCurrent?.let {
+            Row(Modifier.fillMaxWidth().clickable { it() }.padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Filled.Map, contentDescription = null, tint = FanColors.teal)
+                Text("Use my current location", fontWeight = FontWeight.Bold)
+            }
+        }
+        places.take(5).forEach { place ->
+            Row(
+                Modifier.fillMaxWidth().clickable { onSelect(place) }.padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(Icons.Filled.Map, contentDescription = null, tint = FanColors.teal)
+                Column(Modifier.weight(1f)) {
+                    Text(place.label, fontWeight = FontWeight.Bold)
+                    Text(place.address, color = FanColors.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun OSMRouteMap(
     route: com.amr.fanapp.network.BackendTransportRoute?,
+    currentLocation: Location?,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
     val mapView = remember {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
+            setTileSource(object : OnlineTileSourceBase("OneMap", 1, 19, 256, ".png", arrayOf("https://www.onemap.gov.sg/maps/tiles/Default/")) {
+                override fun getTileURLString(pMapTileIndex: Long): String = baseUrl + MapTileIndex.getZoom(pMapTileIndex) + "/" + MapTileIndex.getX(pMapTileIndex) + "/" + MapTileIndex.getY(pMapTileIndex) + mImageFilenameEnding
+            })
             setMultiTouchControls(true)
-            controller.setZoom(12.0)
-            controller.setCenter(GeoPoint(1.2931, 103.8520))
+            controller.setZoom(11.0)
+            controller.setCenter(GeoPoint(1.3521, 103.8198))
         }
     }
     DisposableEffect(mapView) { onDispose { mapView.onDetach() } }
     Box(modifier.clip(RoundedCornerShape(22.dp))) {
         AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize(), update = { view ->
             view.overlays.clear()
+            currentLocation?.let { location ->
+                view.overlays += Marker(view).apply {
+                    position = GeoPoint(location.latitude, location.longitude)
+                    title = "Your location"
+                }
+                if (route == null) view.controller.setCenter(GeoPoint(location.latitude, location.longitude))
+            }
             val points = route?.legs.orEmpty().flatMap { leg ->
                 listOfNotNull(leg.fromCoordinate, leg.toCoordinate).map { GeoPoint(it.latitude, it.longitude) }
             }.distinctBy { "${it.latitude},${it.longitude}" }
@@ -197,7 +288,7 @@ private fun OSMRouteMap(
             view.invalidate()
         })
         Text(
-            "© OpenStreetMap contributors",
+            "© OneMap / Singapore Land Authority",
             color = Color.DarkGray,
             style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
             modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),

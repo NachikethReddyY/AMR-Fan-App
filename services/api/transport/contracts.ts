@@ -59,7 +59,8 @@ export type TransportMode = z.infer<typeof transportMode>;
 export type TransportScenario = z.infer<typeof transportScenario>;
 export type Source =
   | { kind: 'simulated'; label: string; dataFreshness: string }
-  | { kind: 'osrm'; provider: 'OSRM'; dataFreshness: string };
+  | { kind: 'osrm'; provider: 'OSRM'; dataFreshness: string }
+  | { kind: 'live'; provider: string; dataFreshness: string };
 export type TransportCoordinate = { latitude: number; longitude: number };
 export type TransportLeg = {
   kind: 'walk' | 'ride' | 'wait' | 'transfer' | 'drive';

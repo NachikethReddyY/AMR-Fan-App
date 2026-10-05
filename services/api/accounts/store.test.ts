@@ -76,6 +76,25 @@ test('sign-in never resets persisted profile data or balance; ownership locks fa
   });
 });
 
+test('first sign-in uses the verified display name and later sign-ins preserve edits', async () => {
+  const namedIdentity = {
+    ...identity,
+    subject: `named-${crypto.randomUUID()}`,
+    displayName: 'Nachiketh Reddy',
+  };
+  const account = await ensureAccount(pool, namedIdentity);
+  principalId = account.id;
+  assert.equal(account.profiles[0].displayName, 'Nachiketh Reddy');
+  await pool.query('UPDATE app.profiles SET display_name = $1 WHERE id = $2', [
+    'Preferred name',
+    account.profiles[0].id,
+  ]);
+  assert.equal(
+    (await ensureAccount(pool, namedIdentity)).profiles[0].displayName,
+    'Preferred name',
+  );
+});
+
 test('owner lock serializes another transaction at the actual PostgreSQL row', async () => {
   const account = await ensureAccount(pool, identity);
   principalId = account.id;

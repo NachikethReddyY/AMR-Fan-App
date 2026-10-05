@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import PhotosUI
 
 private struct PendingPhoto: Identifiable {
     let id = UUID()
@@ -21,13 +20,11 @@ struct ContentView: View {
     @State private var showCameraCapture = false
     @State private var capturedPhoto: PendingPhoto?
     @State private var verificationPhoto: PendingPhoto?
-    @State private var showGalleryPicker = false
-    @State private var selectedGalleryItem: PhotosPickerItem?
+    @State private var retakeCameraAfterVerification = false
     @State private var showFeatureTour = false
     @State private var replayTourAfterDismiss = false
     @State private var demoState: DemoFanState
     @StateObject private var backend = BackendSession()
-    @State private var tabDirection: PageDirection = .forward
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var driver: Driver? { Driver(rawValue: supportedDriver) }
@@ -61,23 +58,35 @@ struct ContentView: View {
                 }
                 .transition(.opacity)
             } else if let driver, backend.isConnected {
-                ZStack {
-                    Group {
-                        switch selectedTab {
-                        case .home:
-                            HomeScreen(driver: driver, demoState: demoState, open: openPage, openCamera: openCamera)
-                        case .rewards:
-                            RewardsScreen(driver: driver, demoState: $demoState, open: openPage)
-                        case .impact:
-                            ImpactScreen(demoState: demoState, open: openPage)
-                        }
-                    }
-                    .id(selectedTab)
-                    .transition(FanMotion.pageTransition(direction: tabDirection, reduceMotion: reduceMotion))
+                TabView(selection: $selectedTab) {
+                    HomeScreen(driver: driver, demoState: demoState, open: openPage, openCamera: openCamera)
+                        .tabItem { Label(FanTab.home.rawValue, systemImage: FanTab.home.symbol) }
+                        .tag(FanTab.home)
+
+                    RewardsScreen(driver: driver, demoState: $demoState, open: openPage)
+                        .tabItem { Label(FanTab.rewards.rawValue, systemImage: FanTab.rewards.symbol) }
+                        .tag(FanTab.rewards)
+
+                    ImpactScreen(demoState: demoState, open: openPage)
+                        .tabItem { Label(FanTab.impact.rawValue, systemImage: FanTab.impact.symbol) }
+                        .tag(FanTab.impact)
+
+                    TravelScreen()
+                        .tabItem { Label(FanTab.travel.rawValue, systemImage: FanTab.travel.symbol) }
+                        .tag(FanTab.travel)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .tint(FanStyle.navigationTeal)
+                .tabViewStyle(.page(indexDisplayMode: .never))
                 .overlay(alignment: .bottom) {
-                    BottomBar(selectedTab: $selectedTab, openTravel: { pushedDestination = .travel }, selectTab: selectTab)
+                    BottomBar(
+                        selectedTab: $selectedTab,
+                        openTravel: {
+                            withAnimation(reduceMotion ? nil : FanMotion.page) {
+                                selectedTab = .travel
+                            }
+                        },
+                        selectTab: selectTab
+                    )
                 }
                 .transition(.opacity)
             } else if driver != nil {
@@ -88,11 +97,12 @@ struct ContentView: View {
                     withAnimation(reduceMotion ? nil : FanMotion.page) {
                         supportedDriver = choice.rawValue
                     }
-                }, openAccount: openAuthentication)
+                })
                 .transition(.opacity)
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
         .navigationDestination(isPresented: $showShop) {
             ShopScreen(driver: driver, demoState: $demoState, category: .all)
         }
@@ -152,58 +162,54 @@ struct ContentView: View {
                 self.capturedPhoto = nil
             }
         }) {
-            CameraPicker { image in
-                capturedPhoto = PendingPhoto(image: image, capture: .camera)
+            CameraPicker { image, capture in
+                capturedPhoto = PendingPhoto(image: image, capture: capture)
+                showCameraCapture = false
+            } onCancel: {
                 showCameraCapture = false
             }
             .ignoresSafeArea()
         }
-        .photosPicker(isPresented: $showGalleryPicker, selection: $selectedGalleryItem, matching: .images)
-        .task(id: selectedGalleryItem) {
-            guard let selectedGalleryItem else { return }
-            guard let data = try? await selectedGalleryItem.loadTransferable(type: Data.self),
-                  let image = PhotoUploadEncoder.downsampledImage(data: data), !Task.isCancelled else { return }
-            verificationPhoto = PendingPhoto(image: image, capture: .gallery)
-        }
-        .fullScreenCover(item: $verificationPhoto) { photo in
+        .fullScreenCover(item: $verificationPhoto, onDismiss: {
+            guard retakeCameraAfterVerification else { return }
+            retakeCameraAfterVerification = false
+            showCameraCapture = true
+        }) { photo in
             SustainabilityCamScreen(
                 initialImage: photo.image,
                 initialCapture: photo.capture,
-                backend: backend
+                backend: backend,
+                onRetake: {
+                    retakeCameraAfterVerification = true
+                    verificationPhoto = nil
+                }
             )
         }
-    }
-
-    private func selectTab(_ tab: FanTab) {
-        guard tab != selectedTab else { return }
-        tabDirection = tabIndex(tab) >= tabIndex(selectedTab) ? .forward : .backward
-        withAnimation(reduceMotion ? nil : FanMotion.page) {
-            selectedTab = tab
-        }
-    }
-
-    private func tabIndex(_ tab: FanTab) -> Int {
-        FanTab.allCases.firstIndex(of: tab) ?? 0
     }
 
     private func openPage(_ page: FanDestination) {
         if page == .offers {
             showShop = true
-        } else if page == .travel || page == .tree {
+        } else if page == .travel {
+            withAnimation(reduceMotion ? nil : FanMotion.page) {
+                selectedTab = .travel
+            }
+        } else if page == .tree {
             pushedDestination = page
         } else {
             destination = page
         }
     }
 
+    private func selectTab(_ tab: FanTab) {
+        withAnimation(reduceMotion ? nil : FanMotion.page) {
+            selectedTab = tab
+        }
+    }
+
     private func openCamera() {
         capturedPhoto = nil
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            showCameraCapture = true
-        } else {
-            selectedGalleryItem = nil
-            showGalleryPicker = true
-        }
+        showCameraCapture = true
     }
 
     private func openAuthentication() {

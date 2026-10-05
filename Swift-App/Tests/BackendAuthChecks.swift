@@ -20,6 +20,9 @@ struct BackendAuthChecks {
 
         let form = FormURLEncoder.encode(["scope": "openid profile email api://example/access", "code": "a+b&c=d"])
         precondition(form == "code=a%2Bb%26c%3Dd&scope=openid%20profile%20email%20api%3A%2F%2Fexample%2Faccess")
+        precondition(!HTTPRequestBodyPolicy.shouldEncodeBody(for: "GET"))
+        precondition(!HTTPRequestBodyPolicy.shouldEncodeBody(for: " head "))
+        precondition(HTTPRequestBodyPolicy.shouldEncodeBody(for: "POST"))
 
         let token = try JSONDecoder().decode(OIDCTokenResponse.self, from: Data(#"{"access_token":"provider-token"}"#.utf8))
         precondition(token.accessToken == "provider-token")

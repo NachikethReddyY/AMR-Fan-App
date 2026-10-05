@@ -1,5 +1,168 @@
 # Tasks
 
+## AI-ONEMAP-002: live activity assessment and OneMap transport, 2026-10-05
+
+- [x] Send captured image bytes to the multimodal Luna adapter.
+- [x] Reject screen, screenshot, indoor, potted-plant, and ambiguous evidence
+  before the server points policy can award points.
+- [x] Lock the Android camera during processing and move accepted output to a
+  separate results state so retakes cannot create concurrent submissions.
+- [x] Use OneMap for live place search, map tiles, GPS marker support, and
+  route-provider output for train, bus, walk, and car options.
+- [x] Deploy the OneMap route configuration and API image to BB-1.
+- [x] Run focused AI, route, transport, typecheck, and Android build checks.
+- [ ] Add the provider key file at `/home/bb-1/.auth/amr-ai.env` before live
+  Luna inference can run on BB-1.
+
+Acceptance: the live path never uses synthetic scoring when the TokenRouter
+provider is selected, invalid visual evidence earns zero points, OneMap search
+and route responses carry live-source metadata, and the Android APK builds and
+installs. Authenticated camera submission remains device-account dependent.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).
+
+## IOS-REBUILD-001: full Swift iOS rebuild, 2026-10-05
+
+- [x] Run a clean signed simulator build.
+- [x] Run a clean iPhone-target compile build.
+- [x] Rerun the focused Keychain session check.
+- [x] Inspect the simulator app signature and embedded entitlement sections.
+- [x] Install and interact with the app on the iPhone 17 simulator.
+- [x] Remove the empty GET body that caused `NSURLErrorDataLengthExceedsMaximum`.
+- [x] Match the reference dock with a capsule for Home, Rewards, and Impact plus a circular Travel control.
+- [x] Install on iPhone 18 Pro and tap through all four destinations.
+
+Acceptance: fresh simulator and iPhone-target artifacts build successfully,
+the simulator artifact carries the Keychain entitlement, and focused session
+checks pass. Native install and interactive sign-in remain unverified without
+physical-device signing; simulator Account resume is verified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## ACCOUNT-ANDROID-001: persist session and greet the account holder, 2026-10-05
+
+- [x] Cache the authenticated account beside the encrypted AMR session token.
+- [x] Persist the OIDC refresh token in the encrypted store and renew expired
+  backend sessions without returning the user to sign-in.
+- [x] Persist the selected driver with the existing DataStore preferences.
+- [x] Restore the driver and skip onboarding/login navigation when the session
+  is still valid.
+- [x] Use the real profile display name for the Home greeting.
+- [x] Propagate verified Entra display names into a new profile while preserving
+  an existing custom name.
+- [x] Rebuild/install the Android debug APK and restart BB-1 with the change.
+- [ ] Verify a real account's Home greeting after the user signs in once.
+
+Acceptance: updating the APK keeps a valid session and driver choice, and Home
+shows the account holder's profile name rather than the selected driver's name.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-ANDROID-003: expired sign-in after Entra callback, 2026-10-05
+
+- [x] Persist the PKCE state and verifier in the encrypted session store so
+  activity recreation does not discard the callback transaction.
+- [x] Correct BB-1's OIDC scope check to the Entra `scp` claim value
+  `account.access`.
+- [x] Run Android auth tests, rebuild, and install the debug APK.
+- [ ] Complete a fresh account sign-in on the user's Tailscale-connected phone.
+
+Acceptance: a fresh callback survives activity recreation and the API accepts
+the resulting access token without showing the expired-session error.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-NET-004: Tailscale test path, 2026-10-05
+
+- [x] Bind BB-1 API to `0.0.0.0:18080` so both LAN and Tailscale can reach it.
+- [x] Verify `/health` through `100.117.231.37:18080`.
+- [x] Rebuild and install the Android debug APK with the Tailscale base URL.
+- [ ] Complete sign-in and camera upload on a phone that has Tailscale access.
+
+Acceptance: the test phone can reach BB-1 over Tailscale and the existing
+authenticated flows remain unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-NET-003: retry BB-1 LAN after host recovery, 2026-10-05
+
+- [x] Confirm BB-1 is reachable and identify its active LAN address.
+- [x] Ensure the API binds that address on port 18080.
+- [ ] Verify `/health` and `/ready` from an external LAN client and reinstall
+  the matching APK.
+
+Acceptance: the LAN endpoint responds and the phone can use the same address
+without Tailscale. BB-1 self-checks pass; external LAN access is blocked by
+host or Wi-Fi network policy.
+
+## AUTH-NET-002: LAN endpoint still unreachable, 2026-10-05
+
+- [x] Check BB-1 presence and current LAN address: the host is offline on both
+  Tailscale and the local `192.168.0.0/24` network.
+- [ ] Check the API listener and host firewall for port 18080 after BB-1 is
+  online.
+- [ ] Fix the smallest reachable endpoint or update the APK to the confirmed
+  address.
+- [ ] Verify the endpoint from a LAN-capable client and install the matching
+  APK.
+
+Acceptance: a phone on the same LAN can reach `http://<bb1-lan-ip>:18080`
+without Tailscale, and the sign-in exchange no longer times out. Blocked until
+BB-1 is powered and reachable.
+
+## AUTH-NET-001: use BB-1 LAN address for phone access, 2026-10-05
+
+- [x] Reproduce the timeout and confirm the APK targeted the Tailscale address.
+- [ ] Bind BB-1 to its reachable LAN address after the host comes back online.
+- [x] Rebuild/install the phone APK with the LAN address.
+- [ ] Verify health, readiness, and the sign-in return path over the LAN.
+
+Acceptance: the phone APK uses `192.168.0.31:18080` and no longer requires a
+Tailscale connection to reach BB-1. Remote listener proof is pending because
+BB-1 is currently offline.
+
+## AUTH-UI-002: sign-in button does not open browser, 2026-10-05
+
+- [x] Reproduce the no-op tap and identify the silent pending-auth/in-flight
+  guard as the responsible boundary.
+- [x] Fix the smallest responsible boundary without changing the OIDC/PKCE
+  contract.
+- [x] Rebuild/install the Android APK and verify the button opens the browser.
+
+Acceptance: tapping "Sign in or create account" launches the configured Entra
+sign-in URL or shows a visible actionable error when browser launch is
+unavailable. Verified on Pixel_10_API_36.
+
+## AUTH-401-001: expired session during sign-in, 2026-10-05
+
+- [x] Reproduce the expired-session 401 on Android and identify server
+  validation as the primary mismatch: BB-1 expected Supabase while Android
+  sends Entra External ID tokens.
+- [x] Fix the smallest responsible boundary and preserve encrypted token
+  storage and server-side authorization.
+- [x] Rebuild/install the Android APK and verify the updated auth boundary is
+  present on Pixel_10_API_36.
+- [ ] Complete a fresh sign-in with a real account on a reachable phone.
+
+Acceptance: a fresh sign-in does not reuse an expired token, the API accepts
+the new session, and an expired session produces a recoverable sign-in path.
+BB-1 is aligned to Entra; final account proof remains device-dependent.
+
+## CAMERA-UI-003: camera preview and backend assessment, 2026-10-05
+
+- [x] Render the captured URI behind the confirmation actions.
+- [x] Supply the explicit MVP activity provider from the API start entry point.
+- [x] Keep assessment output inside the existing evidence-to-points policy.
+- [x] Rebuild the Android debug APK.
+- [x] Deploy the API provider configuration to BB-1 and verify its health,
+  readiness, and explicit provider settings.
+- [ ] Exercise the full authenticated upload on a phone.
+
+Acceptance: capture shows the selected photo, Use this photo reaches an enabled
+server activity capability, and the returned score/category/points appear in
+the confirmation state without retaining raw media. BB-1 deployment is
+verified; authenticated phone proof remains open behind the account gate.
+
 ## AI-PIPELINE-001: BB-1 staging host, 2026-10-04
 
 - [x] Package the existing API and AI adapter boundary in a reproducible BB-1
@@ -10,6 +173,10 @@
   `/ready`.
 - [x] Verify AI inference remains disabled and run a synthetic in-container
   assessment without real media.
+- [x] Normalize OneMap account-password and access-token environment aliases;
+  keep `AMR_ROUTES_PROVIDER` as the provider switch.
+- [x] Load the optional BB-1 OneMap auth env file without placing secrets in the
+  checkout.
 - [ ] Install a reviewed loopback model gateway and enable a provider only after
   credentials, output validation and production scope are approved.
 
@@ -18,6 +185,120 @@ provider secrets in the repository or container, health and readiness checks
 pass, and real inference remains explicitly unavailable until its provider is
 reviewed.
 
+## CAMERA-UI-002: compact post-capture confirmation, 2026-10-04
+
+- [x] Prepare and approve a static direction combining A's hierarchy with B's
+  compact action layout.
+- [x] Replace the Android confirmation copy with "Ready to send?", "Use this
+  photo" and "Retake photo".
+- [x] Make Android Retake return to the live camera while keeping the selected
+  photo local until the existing verification capability is available.
+- [x] Make Swift wait for Use this photo before starting its existing
+  verification request, and make Retake reopen the camera surface.
+- [x] Build both native targets, install the Android APK, and inspect the
+  confirmation state and Retake action on Pixel_10_API_36.
+- [ ] Inspect the Swift confirmation state on a connected device after the
+  account gate is cleared.
+
+Acceptance: the post-capture state contains no repeated capture or device
+retention explanation; its visible task copy stays below ten words, the Back
+control remains reachable, Use this photo starts Swift's existing verification
+path or confirms Android's local retention until that capability is available,
+and Retake returns to capture without leaking the retained photo.
+
+## CAMERA-UI-001: direct camera surface, 2026-10-04
+
+- [x] Replace the Android external camera activity with an in-app CameraX
+  preview.
+- [x] Replace the Swift system image picker camera with an AVFoundation
+  preview.
+- [x] Keep Back at the top left and move gallery selection onto the camera
+  surface.
+- [x] Use a centered circular shutter and preserve the existing verification
+  handoff.
+- [x] Build both native targets, run repository checks, install the Android APK,
+  and exercise camera, gallery, Back, and shutter flows on Pixel_10_API_36.
+
+Acceptance: tapping the camera action opens the live preview directly; the
+camera surface has a reachable Back control, an overlay gallery action, and a
+centered shutter; the old intermediate chooser is absent; selected or captured
+photos still reach verification.
+
+## ONBOARDING-UI-002: concise driver-selection heading, 2026-10-04
+
+- [x] Remove the repeated first-person wording from the large heading.
+- [x] Reduce the heading size in Swift and Kotlin.
+- [x] Remove the profile driver-switching note.
+- [x] Rebuild both native targets.
+- [ ] Inspect the driver screen on device after account access is available.
+
+Acceptance: the screen keeps the existing "I / AM" eyebrow, shows a smaller
+"On this team." heading, and no longer mentions switching drivers in a profile.
+
+## NAV-UI-002: fixed detail back action and rewards copy, 2026-10-04
+
+- [x] Add one fixed circular Back control to Android detail destinations.
+- [x] Remove bottom Back actions that can fall below the gesture area.
+- [x] Remove repeated demo catalogue and local coupon wording from store views.
+- [x] Keep the single sample-data explanation in Account.
+- [x] Build both native targets and install the Android APK.
+- [ ] Open profile and merchandise screens on Pixel after account access is
+  available.
+
+Acceptance: every Android detail destination has a reachable back control above
+the scroll content; store and rewards screens do not repeat demo wording; tab,
+reward, profile and account behavior remain intact. Final detail-screen device
+proof is pending a registered provider account.
+
+## NEWS-UI-001: compact News header, 2026-10-04
+
+- [x] Replace the text Back control with a circular icon-only button.
+- [x] Reduce header spacing so Latest sits closer to the back control.
+- [x] Confirm the bottom curve is emulator/device display chrome.
+- [ ] Inspect the rebuilt News screen on the connected Pixel after an account
+  state is available.
+
+Acceptance: the News screen shows a circular accessible back control without a
+Back label, Latest sits higher, and the list and system gesture area keep their
+existing behavior. Native builds pass; the final device screenshot is pending
+the account gate.
+
+## NAV-UI-001: flat bottom navigation, 2026-10-04
+
+- [x] Remove capsule and circle containers from the Swift bottom bar.
+- [x] Clip the Android navigation container to a rectangle.
+- [x] Rebuild both native targets and install the Android debug APK on Pixel_10_API_36.
+
+Acceptance: bottom navigation has straight outer edges, four destinations
+remain reachable, and safe-area handling is unchanged. The Android and Swift
+builds pass; a connected Android home screenshot is unavailable in this run
+because the rebuilt app is at its account gate.
+
+## AUTH-002: Android account URL handoff, 2026-10-04
+
+- [x] Reproduce the account gate jumping directly to the home shell.
+- [x] Route the account action through the configured OIDC authorization URL.
+- [x] Add Android redirect handling, state validation and PKCE token exchange.
+- [x] Preserve encrypted backend session storage and show auth errors in the gate.
+- [x] Build, install and verify the provider URL on Pixel_10_API_36.
+- [ ] Complete a real provider sign-in and backend session exchange with a
+  registered test account.
+
+Acceptance: tapping the Android account action opens the existing sign-in or
+sign-up URL, and a valid callback can create the normal backend session without
+using the local demo session.
+
+## ONBOARDING-UI-001: native onboarding hierarchy, 2026-10-04
+
+- [x] Inspect the Swift and Kotlin onboarding and driver-selection callers.
+- [x] Replace uneven progress segments with equal-width Aston Martin green segments.
+- [x] Center the green Next action label and remove the trailing action arrow.
+- [x] Remove driver-card arrows and the duplicate driver-selection sign-in action.
+- [x] Build both native targets and verify the corrected Kotlin flow on Pixel.
+
+Acceptance: both native onboarding flows show readable progress, a centered
+green primary action, and driver selection advances to the existing login gate
+without duplicate sign-in or decorative card arrows.
 
 ## TRAVEL-SEARCH-001: selected location search, 2026-10-04
 
@@ -459,3 +740,21 @@ Project delivery correction: interim APK packaging is not completion. Onboarding
 - [x] Apply shared Android system-bar insets so Home, Rewards, Impact, Travel and detail pages start below the status bar.
 - [x] Use Compose `NavHost` routes for tabs and detail destinations, with Swift left unchanged.
 - [x] Verify Home greeting, overlapping metric cards, merchandise and Travel on Pixel 10 after the layout correction.
+## Native travel and sustainability pipeline, 2026-10-05
+
+- [x] Send selected iOS and Android place coordinates to the shared transport planner.
+- [x] Add OneMap-backed place search with bounded Singapore normalization.
+- [x] Add Android search suggestions, GPS step tracking and a Travel back control.
+- [x] Submit Android camera photos through the existing evidence score and points policy.
+- [x] Build API, Android and Swift targets; exercise both authorized devices.
+- [ ] Supply reviewed OneMap credentials and a permitted Luna/JEV provider configuration for live inference.
+
+## PROFILE-SETUP-001: username, email and birthday in onboarding, 2026-10-05
+
+- [ ] Add `email` and `birthday` to `app.profiles` (migration 0020) and extend `PATCH /v1/profiles/{id}`.
+- [ ] Parse/validate the new fields in types, store and HTTP tests.
+- [ ] Kotlin: editable profile (name/email/birthday), profile-setup step after sign-in, Home greeting uses the chosen name.
+- [ ] Swift: same profile fields on AccountScreen, setup step, Home greeting uses the chosen name.
+- [ ] Run focused backend tests, `pnpm check`, and native builds where available.
+
+Acceptance: a signed-in account without a real username or birthday gets a setup page; after saving, Home greets by the chosen name and the account screen edits name, email and birthday.

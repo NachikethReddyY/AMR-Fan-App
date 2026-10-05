@@ -103,6 +103,38 @@ test('token config requires an absolute file and valid offset-bearing cutoff, re
   });
 });
 
+test('OneMap accepts the documented and supplied environment names', () => {
+  const tokenConfig = routeConfig({
+    ROUTES_PROVIDER: 'onemap',
+    ONEMAP_EMAIL: 'synthetic@example.invalid',
+    ONEMAP_APIKKEY: 'synthetic-access-token',
+  });
+  assert.equal(tokenConfig.kind, 'onemap');
+  if (tokenConfig.kind === 'onemap') {
+    assert.equal(tokenConfig.credentials.kind, 'env-token');
+    assert.equal(tokenConfig.credentials.value, 'synthetic-access-token');
+    assert.ok(tokenConfig.credentials.expires > Date.now());
+  }
+
+  assert.deepEqual(
+    routeConfig({
+      ONEMAP_EMAIL: 'synthetic@example.invalid',
+      ONEMAP_EMAIL_PASSWORD: 'synthetic-password',
+      AMR_ROUTES_PROVIDER: 'onemap',
+    }),
+    {
+      kind: 'onemap',
+      baseUrl: 'https://www.onemap.gov.sg',
+      timeoutMs: 3000,
+      credentials: {
+        kind: 'env-account',
+        email: 'synthetic@example.invalid',
+        password: 'synthetic-password',
+      },
+    },
+  );
+});
+
 test('token file is cached until restart, sent only in Authorization, and never exchanged or charged to Google', async (context) => {
   context.mock.method(Date, 'now', () => now);
   const seen: string[] = [];

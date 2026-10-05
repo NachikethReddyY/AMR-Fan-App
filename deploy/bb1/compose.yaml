@@ -29,6 +29,10 @@ services:
       dockerfile: services/api/Dockerfile.azure
     env_file:
       - .env
+      - path: /home/bb-1/.auth/amr-onemap.env
+        required: false
+      - path: /home/bb-1/.auth/amr-ai.env
+        required: false
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +41,11 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
+    volumes:
+      - type: bind
+        source: /home/bb-1/.auth
+        target: /run/secrets/amr-private
+        read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -46,6 +55,10 @@ services:
     image: amr-fan-api:bb1
     env_file:
       - .env
+      - path: /home/bb-1/.auth/amr-onemap.env
+        required: false
+      - path: /home/bb-1/.auth/amr-ai.env
+        required: false
     depends_on:
       db:
         condition: service_healthy

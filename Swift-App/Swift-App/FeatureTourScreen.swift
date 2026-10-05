@@ -15,13 +15,7 @@ struct FeatureTourScreen: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                HStack(spacing: 6) {
-                    ForEach(pages.indices, id: \.self) { index in
-                        Capsule()
-                            .fill(index == step ? FanStyle.teal : .white.opacity(0.2))
-                            .frame(width: index == step ? 25 : 7, height: 7)
-                    }
-                }
+                OnboardingProgressBar(currentStep: step, totalSteps: pages.count)
                 Spacer()
                 Button("Skip", action: complete)
                     .font(.subheadline)
@@ -55,15 +49,12 @@ struct FeatureTourScreen: View {
                     withAnimation(reduceMotion ? nil : FanMotion.content) { step += 1 }
                 }
             } label: {
-                HStack {
-                    Text(step == pages.count - 1 ? "Let's go" : "Next")
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                }
+                Text(step == pages.count - 1 ? "Let's go" : "Next")
+                    .frame(maxWidth: .infinity)
                 .font(.headline)
-                .foregroundStyle(.black)
-                .padding(16)
-                .background(FanStyle.teal, in: RoundedRectangle(cornerRadius: 15))
+                .foregroundStyle(.white)
+                .padding(.vertical, 16)
+                .background(FanStyle.astonGreen, in: RoundedRectangle(cornerRadius: 2))
             }
             .buttonStyle(FanPressStyle())
         }

@@ -7,13 +7,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,10 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amr.fanapp.ui.theme.FanColors
-import com.amr.fanapp.ui.theme.FanButton
 
 private data class OnboardingPage(val title: String, val detail: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
@@ -41,9 +47,16 @@ fun OnboardingScreen(onContinue: () -> Unit) {
     )
     var step by remember { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().background(FanColors.background).padding(25.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) { pages.indices.forEach { index -> Text(if (index == step) "━━━━" else "━", color = if (index == step) FanColors.teal else Color.White.copy(.2f), fontSize = 16.sp) } }
-            FanButton("Skip", onContinue)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.width(112.dp).height(5.dp)) {
+                pages.indices.forEach { index ->
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
+                            .background(if (index <= step) FanColors.astonGreen else Color.White.copy(.2f))
+                    )
+                }
+            }
+            androidx.compose.material3.TextButton(onClick = onContinue) { Text("Skip", color = FanColors.muted) }
         }
         AnimatedContent(targetState = step, label = "onboarding") { page ->
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -53,6 +66,18 @@ fun OnboardingScreen(onContinue: () -> Unit) {
             }
         }
         Spacer(Modifier.weight(1f))
-        FanButton(if (step == pages.lastIndex) "Choose your driver" else "Next", { if (step == pages.lastIndex) onContinue() else step += 1 }, Modifier.fillMaxWidth())
+        Button(
+            onClick = { if (step == pages.lastIndex) onContinue() else step += 1 },
+            colors = ButtonDefaults.buttonColors(containerColor = FanColors.astonGreen),
+            shape = androidx.compose.ui.graphics.RectangleShape,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                if (step == pages.lastIndex) "Choose your driver" else "Next",
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }

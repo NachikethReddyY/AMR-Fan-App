@@ -51,6 +51,7 @@ export function createOsrmRouter(baseUrl: string): RoadRouter {
     origin,
     destination,
     departAt,
+    suppliedCoordinates,
   ): Promise<TransportRoute | null> => {
     const coordinates: Record<string, [number, number]> = {
       orchard: [103.8329, 1.3048],
@@ -60,8 +61,12 @@ export function createOsrmRouter(baseUrl: string): RoadRouter {
       'marina-bay': [103.8545, 1.2764],
       bugis: [103.8558, 1.3008],
     };
-    const from = coordinates[origin],
-      to = coordinates[destination];
+    const from = suppliedCoordinates
+      ? [suppliedCoordinates.origin.longitude, suppliedCoordinates.origin.latitude] as [number, number]
+      : coordinates[origin];
+    const to = suppliedCoordinates
+      ? [suppliedCoordinates.destination.longitude, suppliedCoordinates.destination.latitude] as [number, number]
+      : coordinates[destination];
     if (!from || !to) return null;
     const url = new URL(
       `route/v1/driving/${from[0]},${from[1]};${to[0]},${to[1]}`,

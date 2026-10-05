@@ -9,7 +9,7 @@ import {
   ensureAccount,
   readAccount,
   readOwnedProfile,
-  renameProfile,
+  updateProfile,
 } from '../accounts/store.ts';
 import { ApiError, type Identity } from '../accounts/types.ts';
 import { authConfig } from '../auth/config.ts';
@@ -31,6 +31,8 @@ import {
 } from '../points/index.ts';
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
 import { createRouteQuery } from '../routes/query.ts';
+import { createPlaceSearch } from '../routes/places.ts';
+import { createRouteProvider } from '../routes/provider.ts';
 import { createGoogleRouteBudget } from '../routes/google-budget.ts';
 import { routeConfig } from '../routes/config.ts';
 import { createJourneyService } from '../journeys/store.ts';
@@ -151,6 +153,8 @@ export function createApi({
     factorRelease: factorConfig?.release,
     calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
   });
+  const searchPlaces = createPlaceSearch(env);
+  const liveRouteProvider = routeConfig(env).kind === 'onemap' ? createRouteProvider(env) : undefined;
   const transportRoadRouter = env.OSRM_BASE_URL
     ? createOsrmRouter(env.OSRM_BASE_URL)
     : undefined;
@@ -259,7 +263,18 @@ export function createApi({
         return send(
           res,
           200,
-          await planTransport(parsed.data, { roadRouter: transportRoadRouter }),
+          await planTransport(parsed.data, {
+            roadRouter: transportRoadRouter,
+            liveRouteProvider,
+          }),
+        );
+      }
+      if (path === '/v1/locations/search' && req.method === 'POST') {
+        const result = await searchPlaces(await body(req));
+        return send(
+          res,
+          result.kind === 'places' ? 200 : result.reason === 'invalid_input' ? 400 : 503,
+          result,
         );
       }
       if (path === '/admin/config' && req.method === 'GET')
@@ -546,13 +561,82 @@ export function createApi({
             await readOwnedProfile(pool, actor.principalId, id),
           );
         if (req.method === 'PATCH') {
-          const name = onlyField(await body(req), 'displayName').trim();
-          if (!name || name.length > 80 || /[\u0000-\u001f\u007f]/.test(name))
-            throw new ApiError(400, 'Use a name between 1 and 80 characters.');
+          const fields = await body(req);
+          const allowed = ['displayName', 'email', 'birthday'];
+          const keys = Object.keys(fields);
+          if (
+            keys.length === 0 ||
+            keys.length > allowed.length ||
+            keys.some((key) => !allowed.includes(key))
+          )
+            throw new ApiError(
+              400,
+              'Only displayName, email and birthday are accepted.',
+            );
+          const patch: { displayName?: string; email?: string | null; birthday?: string | null } = {};
+          if ('displayName' in fields) {
+            const name = fields.displayName;
+            if (typeof name !== 'string')
+              throw new ApiError(400, 'displayName must be a string.');
+            const trimmed = name.trim();
+            if (
+              !trimmed ||
+              trimmed.length > 80 ||
+              /[\u0000-\u001f\u007f]/.test(trimmed)
+            )
+              throw new ApiError(
+                400,
+                'Use a name between 1 and 80 characters.',
+              );
+            patch.displayName = trimmed;
+          }
+          if ('email' in fields) {
+            const email = fields.email;
+            if (email !== null && typeof email !== 'string')
+              throw new ApiError(400, 'email must be a string or null.');
+            if (email === null || email.trim() === '') patch.email = null;
+            else {
+              const trimmed = email.trim();
+              if (
+                trimmed.length > 254 ||
+                !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)
+              )
+                throw new ApiError(400, 'Use a valid email address.');
+              patch.email = trimmed;
+            }
+          }
+          if ('birthday' in fields) {
+            const birthday = fields.birthday;
+            if (birthday !== null && typeof birthday !== 'string')
+              throw new ApiError(400, 'birthday must be a string or null.');
+            if (birthday === null || birthday.trim() === '')
+              patch.birthday = null;
+            else {
+              const trimmed = birthday.trim();
+              const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+              const date = match
+                ? new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]))
+                : null;
+              if (
+                !match ||
+                !date ||
+                date.getUTCFullYear() !== +match[1] ||
+                date.getUTCMonth() !== +match[2] - 1 ||
+                date.getUTCDate() !== +match[3] ||
+                +match[1] < 1900 ||
+                date.getTime() > Date.now()
+              )
+                throw new ApiError(
+                  400,
+                  'Use a real birthday as YYYY-MM-DD, not in the future.',
+                );
+              patch.birthday = trimmed;
+            }
+          }
           return send(
             res,
             200,
-            await renameProfile(pool, actor.principalId, id, name),
+            await updateProfile(pool, actor.principalId, id, patch),
           );
         }
       }

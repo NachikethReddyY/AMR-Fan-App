@@ -74,6 +74,26 @@ test('disabled defaults and missing key make zero calls', async (t) => {
   assert.equal(f.calls(), 0);
 });
 
+test('accepts the supplied AI environment aliases without changing the provider contract', async (t) => {
+  const f = await fixture(t, (_req, res) =>
+    res.setHeader('Content-Type', 'application/json').end(
+      JSON.stringify(
+        completion({
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        }),
+      ),
+    ),
+  );
+  const ai = createTokenRouter({
+    AI_API_KEY: 'synthetic-only',
+    AI_BASE_URL: 'https://api.tokenrouter.com/v1',
+    TOKENROUTER_ENABLED: true,
+  });
+  const result = await ai.complete(input, output);
+  assert.equal(result.kind, 'candidate');
+  assert.equal(f.calls(), 1);
+});
+
 test('only the exact HTTPS base and narrow server configuration are accepted; errors redact values', () => {
   for (const base of [
     'http://api.tokenrouter.com/v1',
@@ -162,6 +182,33 @@ test('one bounded request returns schema-validated review data and supplied usag
   assert.ok(result.responseBytes > 0);
   assert.ok(result.elapsedMs >= 0);
   assert.equal('cost' in result, false);
+  assert.equal(f.calls(), 1);
+});
+
+test('multimodal activity requests carry image bytes as an image part', async (t) => {
+  let body: any;
+  const f = await fixture(t, async (req, res) => {
+    let text = '';
+    for await (const chunk of req) text += chunk;
+    body = JSON.parse(text);
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify(completion()));
+  });
+  const result = await createTokenRouter(config).complete(
+    {
+      ...input,
+      images: [{ mime: 'image/jpeg', base64: 'a'.repeat(100) }],
+    },
+    output,
+  );
+  assert.equal(result.kind, 'candidate');
+  assert.deepEqual(body.messages[1].content, [
+    { type: 'text', text: input.input },
+    {
+      type: 'image_url',
+      image_url: { url: `data:image/jpeg;base64,${'a'.repeat(100)}` },
+    },
+  ]);
   assert.equal(f.calls(), 1);
 });
 

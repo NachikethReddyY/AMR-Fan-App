@@ -11,4 +11,10 @@ class BackendAuthTest {
     }
     @Test fun formEncodingUsesRfc3986Spaces() { assertEquals("a%20b=x%2By", FormUrlEncoder.encode(mapOf("a b" to "x+y"))) }
     @Test fun authorizationURLIncludesStateAndChallenge() { val url = OidcConfig().authorizationUrl("state", "challenge").toString(); assertTrue(url.contains("state=state")); assertTrue(url.contains("code_challenge=challenge")) }
+    @Test fun pendingAuthMatchesOnlyItsCallbackState() {
+        val pending = PendingAuthTransaction("state", "verifier")
+        assertTrue(pending.matches("state"))
+        assertTrue(!pending.matches("other"))
+        assertTrue(!pending.matches(null))
+    }
 }

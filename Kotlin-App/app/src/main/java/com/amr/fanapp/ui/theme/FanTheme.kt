@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 object FanColors {
     val background = Color(0xFF0A0A0A)
     val panel = Color(0xFF1E2020)
+    val astonGreen = Color(0xFF04524B)
     val darkTeal = Color(0xFF222727)
     val teal = Color(0xFF45988F)
     val introGreen = Color(0xFF30974E)

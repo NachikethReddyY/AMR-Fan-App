@@ -17,22 +17,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 import com.amr.fanapp.domain.DemoFanState
 import com.amr.fanapp.domain.Driver
 import com.amr.fanapp.domain.FanDestination
 import com.amr.fanapp.domain.FanTab
+import com.amr.fanapp.domain.PreferencesStore
 import com.amr.fanapp.network.BackendAccount
 import com.amr.fanapp.session.SessionViewModel
 import com.amr.fanapp.ui.screens.AccountScreen
 import com.amr.fanapp.ui.screens.ChallengesScreen
 import com.amr.fanapp.ui.screens.DriverSelectionScreen
+import com.amr.fanapp.ui.screens.DetailScreen
 import com.amr.fanapp.ui.screens.EmptyFeature
 import com.amr.fanapp.ui.screens.F1IntroScreen
 import com.amr.fanapp.ui.screens.HistoryScreen
@@ -67,10 +72,33 @@ private object Routes {
 
 @Composable
 fun MainNavHost(session: SessionViewModel = viewModel()) {
+    val context = LocalContext.current
+    val preferences = remember(context) { PreferencesStore(context) }
+    val savedDriverName by preferences.driver.collectAsState(initial = null)
+    val isRestoring by session.isRestoring.collectAsState()
+    val preferenceScope = rememberCoroutineScope()
     var driver by rememberSaveable { mutableStateOf<Driver?>(null) }
     var state by remember { mutableStateOf(DemoFanState(greenPoints = 9_000)) }
     val account by session.account.collectAsState()
     val navController = rememberNavController()
+
+    LaunchedEffect(savedDriverName) {
+        if (driver == null) {
+            driver = savedDriverName?.let { name -> runCatching { Driver.valueOf(name) }.getOrNull() }
+        }
+    }
+    LaunchedEffect(account, driver, isRestoring) {
+        if (isRestoring || driver == null) return@LaunchedEffect
+        val destination = if (account == null) Routes.LOGIN else Routes.MAIN
+        val current = navController.currentDestination?.route
+        if (current == destination) return@LaunchedEffect
+        val removable = setOf(Routes.INTRO, Routes.ONBOARDING, Routes.DRIVER, Routes.LOGIN)
+        if (current !in removable) return@LaunchedEffect
+        navController.navigate(destination) {
+            popUpTo(current!!) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     Box(
         Modifier
@@ -102,14 +130,16 @@ fun MainNavHost(session: SessionViewModel = viewModel()) {
                 DriverSelectionScreen(
                     onSelect = { selected ->
                         driver = selected
+                        preferenceScope.launch { preferences.saveDriver(selected) }
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.DRIVER) { inclusive = true }
                         }
                     },
-                    onAccount = { navController.navigate(Routes.LOGIN) },
                 )
             }
             composable(Routes.LOGIN) {
+                val context = LocalContext.current
+                val authError by session.errorMessage.collectAsState()
                 LaunchedEffect(account, driver) {
                     if (account != null && driver != null) {
                         navController.navigate(Routes.MAIN) {
@@ -117,7 +147,7 @@ fun MainNavHost(session: SessionViewModel = viewModel()) {
                         }
                     }
                 }
-                LoginGateScreen { session.signInForLocalDemo() }
+                LoginGateScreen({ session.beginSignIn(context) }, authError)
             }
             composable(Routes.MAIN) {
                 val selectedDriver = driver
@@ -179,7 +209,7 @@ private fun MainShell(
             popExitTransition = { fadeOut(tween(120)) },
         ) {
             composable(Routes.HOME) {
-                HomeScreen(driver, state) { destination -> navController.navigate(Routes.detail(destination)) }
+                HomeScreen(driver, account, state) { destination -> navController.navigate(Routes.detail(destination)) }
             }
             composable(Routes.REWARDS) {
                 RewardsScreen(state, { destination -> navController.navigate(Routes.detail(destination)) }, Modifier.fillMaxSize(), driver)
@@ -192,7 +222,9 @@ private fun MainShell(
                     runCatching { FanDestination.valueOf(name) }.getOrNull()
                 }
                 if (destination == null) {
-                    EmptyFeature("Missing page", "This destination is not available.", navController::popBackStack)
+                    DetailScreen(navController::popBackStack) {
+                        EmptyFeature("Missing page", "This destination is not available.")
+                    }
                 } else {
                     DestinationContent(destination, driver, state, onState, account, session, navController::popBackStack)
                 }
@@ -223,18 +255,23 @@ private fun DestinationContent(
     session: SessionViewModel,
     close: () -> Unit,
 ) {
-    when (page) {
-        FanDestination.NEWS -> NewsFeedScreen(close)
-        FanDestination.OFFERS, FanDestination.CAPS, FanDestination.TSHIRTS, FanDestination.OUTERWEAR, FanDestination.OTHER -> ShopScreen(close)
-        FanDestination.PROFILE -> ProfileScreen(driver, close)
-        FanDestination.ACCOUNT -> AccountScreen(account) { session.signOut(); close() }
-        FanDestination.TRAVEL -> TravelScreen(close, session)
-        FanDestination.TREE -> TreeScreen(state, close)
-        FanDestination.HISTORY -> HistoryScreen(close)
-        FanDestination.CHALLENGES -> ChallengesScreen(close)
-        FanDestination.QUIZ -> QuizScreen(state, onState, close)
-        FanDestination.CAMERA -> SustainabilityCamScreen(close)
-        FanDestination.CONTENT -> EmptyFeature("Stories.", "Team access and editorial stories will appear here when connected.", close)
-        else -> EmptyFeature(page.name.lowercase().replace('_', ' '), "This feature is ready for the Kotlin port.", close)
+    if (page == FanDestination.CAMERA) {
+        SustainabilityCamScreen(close, session)
+    } else {
+        DetailScreen(close) {
+            when (page) {
+                FanDestination.NEWS -> NewsFeedScreen(close)
+                FanDestination.OFFERS, FanDestination.CAPS, FanDestination.TSHIRTS, FanDestination.OUTERWEAR, FanDestination.OTHER -> ShopScreen(close)
+                FanDestination.PROFILE -> ProfileScreen(driver, close)
+                FanDestination.ACCOUNT -> AccountScreen(account) { session.signOut(); close() }
+                FanDestination.TRAVEL -> TravelScreen(close, session)
+                FanDestination.TREE -> TreeScreen(state, close)
+                FanDestination.HISTORY -> HistoryScreen(close)
+                FanDestination.CHALLENGES -> ChallengesScreen(close)
+                FanDestination.QUIZ -> QuizScreen(state, onState, close)
+                FanDestination.CONTENT -> EmptyFeature("Stories.", "Team access and editorial stories will appear here when connected.")
+                else -> EmptyFeature(page.name.lowercase().replace('_', ' '), "This feature is ready for the Kotlin port.")
+            }
+        }
     }
 }

@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createActivitySubmissionAssessor } from '../ai/activity-submission.ts';
-import { validateActivityAssessmentOutput } from '../ai/activity-assessment.ts';
+import {
+  createActivitySubmissionAssessor,
+  selectActivityAssessment,
+} from '../ai/activity-submission.ts';
+import {
+  validateActivityAssessmentOutput,
+  type ActivityAssessmentOutput,
+} from '../ai/activity-assessment.ts';
 
 function submission() {
   return {
@@ -12,7 +18,7 @@ function submission() {
     photos: [{ bytes: Buffer.from([1, 2, 3]), fingerprint: 'b'.repeat(64) }],
   };
 }
-const out = (score = 60) => ({
+const out = (score = 60): ActivityAssessmentOutput => ({
   category: 'active_transport',
   evidenceScore: score,
   confidence: 0.9,
@@ -49,6 +55,54 @@ test('strict output rejects authority fields and invalid score', () => {
   );
   assert.throws(() =>
     validateActivityAssessmentOutput({ ...out(), evidenceScore: 101 }),
+  );
+});
+
+test('AI selector applies the existing evidence policy without awarding points', () => {
+  const base = out(80);
+  assert.deepEqual(
+    selectActivityAssessment(base, '00000000-0000-4000-8000-000000000001'),
+    {
+      kind: 'accepted',
+      assessmentId: '00000000-0000-4000-8000-000000000001',
+      ...base,
+      policyVersion: 'activity-evidence-v1',
+    },
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      { ...base, evidenceScore: 59 },
+      '00000000-0000-4000-8000-000000000001',
+    ),
+    { kind: 'rejected', reason: 'unsupported_activity' },
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      { ...base, confidence: 0.5 },
+      '00000000-0000-4000-8000-000000000001',
+    ),
+    { kind: 'uncertain', reason: 'low_confidence' },
+  );
+  assert.ok(
+    !(
+      'points' in
+      selectActivityAssessment(base, '00000000-0000-4000-8000-000000000001')
+    ),
+  );
+});
+
+test('screen and indoor evidence is rejected before points policy', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.deepEqual(
+    selectActivityAssessment(
+      {
+        ...out(100),
+        rationale: 'A computer screen shows a planting photo indoors.',
+        evidenceItems: ['laptop display', 'potted plant'],
+      },
+      id,
+    ),
+    { kind: 'rejected', reason: 'invalid_evidence' },
   );
 });
 

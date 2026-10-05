@@ -13,14 +13,20 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import com.amr.fanapp.domain.FanTab
 import com.amr.fanapp.ui.theme.FanColors
 
 @Composable
 fun BottomBar(selected: FanTab?, onSelect: (FanTab) -> Unit, onTravel: () -> Unit) {
     // The app shell consumes system insets once for every destination.
-    NavigationBar(containerColor = FanColors.panel, windowInsets = NavigationBarDefaults.windowInsets) {
+    NavigationBar(
+        modifier = androidx.compose.ui.Modifier.clip(RectangleShape),
+        containerColor = FanColors.panel,
+        windowInsets = NavigationBarDefaults.windowInsets,
+    ) {
         val colors = NavigationBarItemDefaults.colors(
             selectedIconColor = Color.White,
             selectedTextColor = Color.White,
