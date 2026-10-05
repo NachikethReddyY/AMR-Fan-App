@@ -34,18 +34,18 @@ struct BottomBar: View {
                     .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
                 }
             }
-            .background(Capsule().fill(Color.white.opacity(0.15)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
+            .background(Capsule().fill(.regularMaterial))
+            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 1))
 
             Button(action: openTravel) {
                 Image(systemName: FanTab.travel.symbol)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(selectedTab == .travel ? FanStyle.navigationTeal : Color.white.opacity(0.92))
                     .frame(width: 58, height: 58)
-                    .background(Circle().fill(Color.white.opacity(0.15)))
+                    .background(Circle().fill(.regularMaterial))
                     .overlay {
                         Circle().stroke(
-                            selectedTab == .travel ? FanStyle.navigationTeal.opacity(0.9) : Color.white.opacity(0.18),
+                            selectedTab == .travel ? FanStyle.navigationTeal.opacity(0.9) : Color.white.opacity(0.24),
                             lineWidth: selectedTab == .travel ? 2 : 1
                         )
                     }
