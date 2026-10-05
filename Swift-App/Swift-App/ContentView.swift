@@ -10,6 +10,7 @@ private struct PendingPhoto: Identifiable {
 struct ContentView: View {
     @AppStorage("supportedDriver") private var supportedDriver = ""
     @AppStorage("hasCompletedAccountSetup") private var hasCompletedAccountSetup = false
+    @AppStorage("profileSetupSkipped") private var profileSetupSkipped = ""
     @AppStorage("hasSeenFeatureTour") private var hasSeenFeatureTour = false
     @State private var introCompletedThisLaunch = false
     @State private var onboardingCompletedThisLaunch = false
@@ -57,9 +58,19 @@ struct ContentView: View {
                     }
                 }
                 .transition(.opacity)
+            } else if let driver, backend.isConnected, let profile = backend.realProfile, profile.needsProfileSetup, profileSetupSkipped != profile.id {
+                ProfileSetupScreen(
+                    profile: profile,
+                    save: { name, email, birthday in
+                        await backend.updateProfile(displayName: name.isEmpty ? nil : name, email: email.isEmpty ? nil : email, birthday: birthday.isEmpty ? nil : birthday)
+                        return backend.errorMessage
+                    },
+                    skip: { profileSetupSkipped = profile.id }
+                )
+                .transition(.opacity)
             } else if let driver, backend.isConnected {
                 TabView(selection: $selectedTab) {
-                    HomeScreen(driver: driver, demoState: demoState, open: openPage, openCamera: openCamera)
+                    HomeScreen(driver: driver, demoState: demoState, profile: backend.realProfile, open: openPage, openCamera: openCamera)
                         .tabItem { Label(FanTab.home.rawValue, systemImage: FanTab.home.symbol) }
                         .tag(FanTab.home)
 

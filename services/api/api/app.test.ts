@@ -263,6 +263,40 @@ test('two-account reads/writes deny foreign paths, reject untrusted body ownersh
     'Fan',
   );
 });
+test('profile patch updates and clears email and birthday, validates input', async () => {
+  const path = `/v1/profiles/${a.account.profiles[0].id}`;
+  const res = await request(path, a.token, 'PATCH', {
+    email: 'fan@example.com',
+    birthday: '2000-05-10',
+  });
+  assert.equal(res.status, 200);
+  const updated = await res.json();
+  assert.equal(updated.email, 'fan@example.com');
+  assert.equal(updated.birthday, '2000-05-10');
+  assert.equal(
+    (await request(path, a.token, 'PATCH', { email: 'not-an-email' })).status,
+    400,
+  );
+  assert.equal(
+    (await request(path, a.token, 'PATCH', { birthday: '2024-13-40' })).status,
+    400,
+  );
+  assert.equal(
+    (await request(path, a.token, 'PATCH', { birthday: 'next Friday' })).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(path, a.token, 'PATCH', {
+        email: 'fan@example.com',
+        isAdmin: true,
+      })
+    ).status,
+    400,
+  );
+  const cleared = await request(path, a.token, 'PATCH', { email: null });
+  assert.equal((await cleared.json()).email, null);
+});
 test('assigned-admin checks re-read stored role on every request', async () => {
   assert.equal((await request('/v1/admin/session', a.token)).status, 403);
   await assignRole(pool, a.account.id, 'admin', 'Synthetic authorization test');

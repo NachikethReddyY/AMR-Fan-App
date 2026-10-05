@@ -12,4 +12,7 @@ class PreferencesStore(private val context: Context) {
     private val driverKey = stringPreferencesKey("supported_driver")
     val driver: Flow<String?> = context.fanPreferences.data.map { it[driverKey] }
     suspend fun saveDriver(driver: Driver) { context.fanPreferences.edit { it[driverKey] = driver.name } }
+    private val skippedSetupKey = stringPreferencesKey("profile_setup_skipped")
+    val profileSetupSkipped: Flow<String?> = context.fanPreferences.data.map { it[skippedSetupKey] }
+    suspend fun skipProfileSetup(accountId: String) { context.fanPreferences.edit { it[skippedSetupKey] = accountId } }
 }

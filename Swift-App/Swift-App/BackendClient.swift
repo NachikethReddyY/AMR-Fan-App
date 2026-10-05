@@ -9,6 +9,13 @@ struct BackendProfile: Codable, Equatable {
     let kind: String
     let displayName: String
     let balance: Int
+    let email: String?
+    let birthday: String?
+
+    var needsProfileSetup: Bool {
+        let name = displayName.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty || name == "Fan" || name == "Unknown" || (birthday?.isEmpty ?? true)
+    }
 }
 
 struct BackendAccount: Codable, Equatable {
@@ -257,6 +264,14 @@ final class BackendSession: ObservableObject {
         }
     }
 
+    func updateProfile(displayName: String?, email: String?, birthday: String?) async {
+        guard let token, let profile = realProfile else { errorMessage = BackendError.notSignedIn.errorDescription; return }
+        await run {
+            _ = try await self.client.updateProfile(token: token, profileId: profile.id, displayName: displayName, email: email, birthday: birthday)
+            self.account = try await self.client.account(token: token)
+        }
+    }
+
     func routes(origin: String, destination: String) async throws -> BackendRouteResponse {
         guard let token else { throw BackendError.notSignedIn }
         return try await client.routes(token: token, origin: origin, destination: destination)
@@ -440,6 +455,16 @@ private final class BackendClient {
         _ = try await request(path: "v1/session", method: "DELETE", token: token, body: EmptyBody()) as EmptyResponse
     }
 
+
+    private struct ProfileUpdatePayload: Encodable {
+        var displayName: String?
+        var email: String?
+        var birthday: String?
+    }
+
+    func updateProfile(token: String, profileId: String, displayName: String?, email: String?, birthday: String?) async throws -> BackendProfile {
+        try await request(path: "v1/profiles/\(profileId)", method: "PATCH", token: token, body: ProfileUpdatePayload(displayName: displayName, email: email, birthday: birthday))
+    }
 
     func activityAvailable(token: String, profileId: String) async throws -> Bool {
         let response: BackendActivityAvailability = try await request(

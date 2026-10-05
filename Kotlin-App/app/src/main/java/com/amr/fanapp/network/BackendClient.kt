@@ -10,6 +10,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.forms.submitForm
@@ -26,7 +27,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 
-@Serializable data class BackendProfile(val id: String, val kind: String, val displayName: String, val balance: Int)
+@Serializable data class BackendProfile(val id: String, val kind: String, val displayName: String, val balance: Int, val email: String? = null, val birthday: String? = null)
+@Serializable data class ProfileUpdate(val displayName: String? = null, val email: String? = null, val birthday: String? = null)
 @Serializable data class BackendAccount(val id: String, val role: String, val profiles: List<BackendProfile>) { val realProfile get() = profiles.firstOrNull { it.kind == "real" } }
 @Serializable data class BackendSessionResponse(val token: String, val expiresAt: String, val account: BackendAccount)
 @Serializable private data class OidcTokenResponse(
@@ -87,6 +89,7 @@ class BackendClient(private val baseUrl: String = BuildConfig.API_BASE_URL, priv
         append("scope", "openid profile email offline_access ${OidcConfig().apiScope}")
     }).checked<OidcTokenResponse>().let { ProviderTokens(it.accessToken, it.refreshToken) }
     suspend fun syntheticSignIn(fixture: String): BackendSessionResponse = http.post(url("v1/dev/session")) { auth(null); setBody(FixtureRequest(fixture)) }.checked()
+    suspend fun updateProfile(token: String, profileId: String, patch: ProfileUpdate): BackendProfile = http.patch(url("v1/profiles/$profileId")) { auth(token); setBody(patch) }.checked()
     suspend fun logout(token: String) { http.delete(url("v1/session")) { auth(token) }.checked<EmptyBody>() }
     private suspend inline fun <reified T> HttpResponse.checked(): T { if (status.value !in 200..299) throw BackendError.Server(status.value, "Request failed with HTTP ${status.value}."); return try { body() } catch (_: Exception) { throw BackendError.InvalidResponse } }
 }

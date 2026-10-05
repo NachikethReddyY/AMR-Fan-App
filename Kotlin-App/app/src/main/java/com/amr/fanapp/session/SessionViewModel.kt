@@ -144,6 +144,13 @@ class SessionViewModel(app: Application) : AndroidViewModel(app) {
             _account.value = session.account
         }
     }
+    suspend fun updateProfile(patch: com.amr.fanapp.network.ProfileUpdate) {
+        val token = store.read() ?: throw BackendError.NotSignedIn
+        val profile = account.value?.realProfile ?: throw BackendError.NotSignedIn
+        client.updateProfile(token, profile.id, patch)
+        _account.value = client.account(token)
+    }
+
     fun signOut() {
         val token = store.read()
         viewModelScope.launch {

@@ -154,7 +154,8 @@ export function createApi({
     calculationStatus: factorConfig ? 'approved' : 'indicative_demo',
   });
   const searchPlaces = createPlaceSearch(env);
-  const liveRouteProvider = routeConfig(env).kind === 'onemap' ? createRouteProvider(env) : undefined;
+  const liveRouteProvider =
+    routeConfig(env).kind === 'onemap' ? createRouteProvider(env) : undefined;
   const transportRoadRouter = env.OSRM_BASE_URL
     ? createOsrmRouter(env.OSRM_BASE_URL)
     : undefined;
@@ -273,7 +274,11 @@ export function createApi({
         const result = await searchPlaces(await body(req));
         return send(
           res,
-          result.kind === 'places' ? 200 : result.reason === 'invalid_input' ? 400 : 503,
+          result.kind === 'places'
+            ? 200
+            : result.reason === 'invalid_input'
+              ? 400
+              : 503,
           result,
         );
       }
@@ -573,7 +578,11 @@ export function createApi({
               400,
               'Only displayName, email and birthday are accepted.',
             );
-          const patch: { displayName?: string; email?: string | null; birthday?: string | null } = {};
+          const patch: {
+            displayName?: string;
+            email?: string | null;
+            birthday?: string | null;
+          } = {};
           if ('displayName' in fields) {
             const name = fields.displayName;
             if (typeof name !== 'string')

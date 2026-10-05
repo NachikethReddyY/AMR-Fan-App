@@ -4070,3 +4070,24 @@ OneMap, Luna and JEV inference remain unverified because no assigned provider
 credentials or reviewed JEV gateway contract are configured.
 
 Edited by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: profile name, email, birthday in onboarding
+
+Signed-in accounts now carry `email` and `birthday` on `app.profiles`
+(migration 0020). `PATCH /v1/profiles/{id}` accepts displayName, email, and
+birthday with strict validation and unknown-field rejection. Home on Swift and
+Kotlin greets the real profile name instead of the driver name. When the
+account has no real name, no birthday, or the placeholder `Fan`/`Unknown`
+name, both apps show a ProfileSetupScreen after sign-in; dismissing it is
+remembered per account. AccountScreen on both platforms now edits name, email,
+and birthday and saves through the shared updateProfile call.
+
+Proof: app.test.ts profile PATCH cases pass against a disposable PostgreSQL
+16 container (9/9, including email/birthday validation and clearing),
+accounts store tests pass (4/4), monorepo typecheck passes, Android Kotlin
+debug compile succeeds, and the Swift-App simulator build succeeds. The
+device-local DB wrapper (`pnpm db:run-test`) is unverified because this
+worktree is not provisioned for it. Rendered onboarding behavior is unverified
+without explicit device observation.
+
+Edited by opencode/fledge-alpha-free through T3 Code.

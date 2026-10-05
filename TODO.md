@@ -751,10 +751,10 @@ Project delivery correction: interim APK packaging is not completion. Onboarding
 
 ## PROFILE-SETUP-001: username, email and birthday in onboarding, 2026-10-05
 
-- [ ] Add `email` and `birthday` to `app.profiles` (migration 0020) and extend `PATCH /v1/profiles/{id}`.
-- [ ] Parse/validate the new fields in types, store and HTTP tests.
-- [ ] Kotlin: editable profile (name/email/birthday), profile-setup step after sign-in, Home greeting uses the chosen name.
-- [ ] Swift: same profile fields on AccountScreen, setup step, Home greeting uses the chosen name.
-- [ ] Run focused backend tests, `pnpm check`, and native builds where available.
+- [x] Add `email` and `birthday` to `app.profiles` (migration 0020) and extend `PATCH /v1/profiles/{id}`.
+- [x] Parse/validate the new fields in types, store and HTTP tests.
+- [x] Kotlin: editable profile (name/email/birthday), profile-setup step after sign-in, Home greeting uses the chosen name.
+- [x] Swift: same profile fields on AccountScreen, setup step, Home greeting uses the chosen name.
+- [x] Run focused backend tests and native builds where available.
 
 Acceptance: a signed-in account without a real username or birthday gets a setup page; after saving, Home greets by the chosen name and the account screen edits name, email and birthday.

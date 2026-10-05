@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +46,9 @@ import com.amr.fanapp.ui.screens.HistoryScreen
 import com.amr.fanapp.ui.screens.HomeScreen
 import com.amr.fanapp.ui.screens.ImpactScreen
 import com.amr.fanapp.ui.screens.LoginGateScreen
+import com.amr.fanapp.ui.screens.ProfileSetupScreen
+import com.amr.fanapp.ui.screens.profileNeedsSetup
+import com.amr.fanapp.network.ProfileUpdate
 import com.amr.fanapp.ui.screens.NewsFeedScreen
 import com.amr.fanapp.ui.screens.OnboardingScreen
 import com.amr.fanapp.ui.screens.ProfileScreen
@@ -60,6 +65,7 @@ private object Routes {
     const val ONBOARDING = "onboarding"
     const val DRIVER = "driver"
     const val LOGIN = "login"
+    const val PROFILE_SETUP = "profile_setup"
     const val MAIN = "main"
     const val HOME = "home"
     const val REWARDS = "rewards"
@@ -80,6 +86,7 @@ fun MainNavHost(session: SessionViewModel = viewModel()) {
     var driver by rememberSaveable { mutableStateOf<Driver?>(null) }
     var state by remember { mutableStateOf(DemoFanState(greenPoints = 9_000)) }
     val account by session.account.collectAsState()
+    val skippedSetup by preferences.profileSetupSkipped.collectAsState(initial = null)
     val navController = rememberNavController()
 
     LaunchedEffect(savedDriverName) {
@@ -87,12 +94,16 @@ fun MainNavHost(session: SessionViewModel = viewModel()) {
             driver = savedDriverName?.let { name -> runCatching { Driver.valueOf(name) }.getOrNull() }
         }
     }
-    LaunchedEffect(account, driver, isRestoring) {
+    LaunchedEffect(account, driver, isRestoring, skippedSetup) {
         if (isRestoring || driver == null) return@LaunchedEffect
-        val destination = if (account == null) Routes.LOGIN else Routes.MAIN
+        val destination = when {
+            account == null -> Routes.LOGIN
+            profileNeedsSetup(account) && skippedSetup != account?.id -> Routes.PROFILE_SETUP
+            else -> Routes.MAIN
+        }
         val current = navController.currentDestination?.route
         if (current == destination) return@LaunchedEffect
-        val removable = setOf(Routes.INTRO, Routes.ONBOARDING, Routes.DRIVER, Routes.LOGIN)
+        val removable = setOf(Routes.INTRO, Routes.ONBOARDING, Routes.DRIVER, Routes.LOGIN, Routes.PROFILE_SETUP)
         if (current !in removable) return@LaunchedEffect
         navController.navigate(destination) {
             popUpTo(current!!) { inclusive = true }
@@ -140,14 +151,41 @@ fun MainNavHost(session: SessionViewModel = viewModel()) {
             composable(Routes.LOGIN) {
                 val context = LocalContext.current
                 val authError by session.errorMessage.collectAsState()
-                LaunchedEffect(account, driver) {
+                LaunchedEffect(account, driver, skippedSetup) {
                     if (account != null && driver != null) {
-                        navController.navigate(Routes.MAIN) {
+                        val destination = if (profileNeedsSetup(account) && skippedSetup != account?.id) Routes.PROFILE_SETUP else Routes.MAIN
+                        navController.navigate(destination) {
                             popUpTo(Routes.LOGIN) { inclusive = true }
                         }
                     }
                 }
                 LoginGateScreen({ session.beginSignIn(context) }, authError)
+            }
+            composable(Routes.PROFILE_SETUP) {
+                var saving by remember { mutableStateOf(false) }
+                var error by remember { mutableStateOf<String?>(null) }
+                val scope = rememberCoroutineScope()
+                ProfileSetupScreen(
+                    account = account,
+                    saving = saving,
+                    error = error,
+                    onSkip = { scope.launch { preferences.skipProfileSetup(account?.id.orEmpty()) } },
+                    onSave = { name, email, birthday ->
+                        scope.launch {
+                            saving = true; error = null
+                            runCatching {
+                                session.updateProfile(
+                                    ProfileUpdate(
+                                        displayName = name.takeIf { it.isNotBlank() },
+                                        email = email.takeIf { it.isNotBlank() },
+                                        birthday = birthday.takeIf { it.isNotBlank() },
+                                    ),
+                                )
+                            }.onFailure { error = it.message ?: "Could not save your profile." }
+                            saving = false
+                        }
+                    },
+                )
             }
             composable(Routes.MAIN) {
                 val selectedDriver = driver
@@ -263,7 +301,31 @@ private fun DestinationContent(
                 FanDestination.NEWS -> NewsFeedScreen(close)
                 FanDestination.OFFERS, FanDestination.CAPS, FanDestination.TSHIRTS, FanDestination.OUTERWEAR, FanDestination.OTHER -> ShopScreen(close)
                 FanDestination.PROFILE -> ProfileScreen(driver, close)
-                FanDestination.ACCOUNT -> AccountScreen(account) { session.signOut(); close() }
+                FanDestination.ACCOUNT -> {
+                    val scope = rememberCoroutineScope()
+                    var saved by remember { mutableStateOf<String?>(null) }
+                    var failure by remember { mutableStateOf<String?>(null) }
+                    Column {
+                        AccountScreen(
+                            account = account,
+                            onSave = { name, email, birthday ->
+                                scope.launch {
+                                    runCatching {
+                                        session.updateProfile(
+                                            ProfileUpdate(
+                                                displayName = name.takeIf { it.isNotBlank() },
+                                                email = email.takeIf { it.isNotBlank() },
+                                                birthday = birthday.takeIf { it.isNotBlank() },
+                                            ),
+                                        )
+                                    }.onSuccess { saved = "Saved." }.onFailure { failure = it.message ?: "Could not save your profile." }
+                                }
+                            },
+                        ) { session.signOut(); close() }
+                        saved?.let { Text(it, color = FanColors.teal) }
+                        failure?.let { Text(it, color = androidx.compose.ui.graphics.Color(0xFFFFA726)) }
+                    }
+                }
                 FanDestination.TRAVEL -> TravelScreen(close, session)
                 FanDestination.TREE -> TreeScreen(state, close)
                 FanDestination.HISTORY -> HistoryScreen(close)
