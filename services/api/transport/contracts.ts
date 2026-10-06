@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { RouteEstimate } from '@amr/travel-domain/emissions';
+import type { JevRank } from '../ai/jev-rank.ts';
 
 const place = z.union([
   z
@@ -42,6 +44,7 @@ export const planInput = z
       .max(4)
       .refine((v) => new Set(v).size === v.length)
       .default(['train', 'bus', 'walk', 'car']),
+    extraMinutes: z.int().min(0).max(1440).default(15),
   })
   .superRefine((value, ctx) => {
     if (
@@ -74,6 +77,8 @@ export type TransportLeg = {
   instruction: string | null;
   fromCoordinate: TransportCoordinate | null;
   toCoordinate: TransportCoordinate | null;
+  /** Decoded provider shape for this leg, if any. Draw as-is; never join shapes. */
+  path: TransportCoordinate[] | null;
 };
 export type TransportRoute = {
   id: string;
@@ -94,6 +99,17 @@ export type TransportDeparture = {
   arrivesAt: string;
   status: 'scheduled' | 'delayed' | 'cancelled';
 };
+export type TransportEstimate = {
+  routeId: string;
+  estimate: RouteEstimate;
+  /**
+   * straight_line: every motorized leg measured endpoint to endpoint.
+   * apportioned: provider route total shared across motorized legs by
+   * duration; assumes uniform speed, so faster legs read high and slower
+   * legs read low. Road distance would read higher than either.
+   */
+  distanceMethod: 'straight_line' | 'apportioned';
+};
 export type DepartureResult = {
   stopId: string;
   mode: 'train' | 'bus';
@@ -110,9 +126,11 @@ export type PlanResult = {
   query: PlanInput;
   routes: TransportRoute[];
   unavailable: { mode: TransportMode; reason: string }[];
+  estimates: TransportEstimate[];
   recommendation:
     | { kind: 'recommended'; routeId: string; reason: string }
     | { kind: 'unavailable'; reason: string };
+  jev: JevRank;
   awardEligible: false;
   source: Source;
 };

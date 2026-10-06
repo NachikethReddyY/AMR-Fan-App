@@ -130,6 +130,7 @@ export function createOsrmRouter(baseUrl: string): RoadRouter {
           instruction: step.maneuver.instruction ?? null,
           fromCoordinate,
           toCoordinate,
+          path: null,
         });
         stepStart = endsAtStep;
       }
@@ -146,6 +147,7 @@ export function createOsrmRouter(baseUrl: string): RoadRouter {
           instruction: null,
           fromCoordinate: { latitude: from[1], longitude: from[0] },
           toCoordinate: { latitude: to[1], longitude: to[0] },
+          path: null,
         });
       }
       return {

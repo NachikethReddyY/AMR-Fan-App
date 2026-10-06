@@ -283,6 +283,7 @@ export async function normalizeOneMap(
             legs: c.shapes.map((points, legIndex) => ({ legIndex, points })),
           }
         : { kind: 'unavailable', reason: 'missing_geometry' },
+      legShapes: c.shapes.map((points, legIndex) => ({ legIndex, points })),
       geometry: c.continuous
         ? {
             kind: 'provider',

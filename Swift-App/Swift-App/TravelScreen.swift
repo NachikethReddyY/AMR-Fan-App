@@ -34,6 +34,8 @@ struct TravelScreen: View {
     @EnvironmentObject private var backend: BackendSession
     @State private var backendRoutes: [BackendRouteOption] = []
     @State private var backendEstimates: [BackendRouteEstimate] = []
+    @State private var routeRecommendation: BackendRouteRecommendation?
+    @State private var jevRank: BackendJevRank?
     @State private var selectedRouteOptionID: String?
     @State private var selectedBackendRouteID: String?
     @State private var transportPlan: BackendTransportPlan?
@@ -405,6 +407,13 @@ struct TravelScreen: View {
         }
     }
 
+    private func co2UnavailableReason(for routeId: String) -> String? {
+        guard let item = backendEstimates.first(where: { $0.routeId == routeId }),
+            item.estimate.kind == "unavailable",
+            let reason = item.estimate.reason else { return nil }
+        return reason.replacingOccurrences(of: "_", with: " ")
+    }
+
     private func formatKg(_ value: Double, gas: String) -> String {
         value < 1
             ? String(format: "%.2f kg %@", value, gas)
@@ -424,6 +433,167 @@ struct TravelScreen: View {
     private var selectedRouteCo2Text: String? {
         guard let id = selectedRouteOptionID else { return nil }
         return co2Estimate(for: id)?.text
+    }
+
+    private func transitCo2Text(for routeId: String) -> String? {
+        transitCo2Value(for: routeId)?.text
+    }
+
+    private func transitCo2Value(for routeId: String) -> (text: String, value: Double)? {
+        guard let item = transportPlan?.estimates?.first(where: { $0.routeId == routeId }) else { return nil }
+        switch item.estimate.kind {
+        case "estimated_co2":
+            guard let kg = item.estimate.kg else { return nil }
+            return (formatKg(kg, gas: "CO₂"), kg)
+        case "estimated":
+            guard let kg = item.estimate.kgCo2e else { return nil }
+            return (formatKg(kg, gas: "CO₂e"), kg)
+        default:
+            return nil
+        }
+    }
+
+    private func transitCo2UnavailableReason(for routeId: String) -> String? {        guard let item = transportPlan?.estimates?.first(where: { $0.routeId == routeId }),
+            item.estimate.kind == "unavailable",
+            let reason = item.estimate.reason else { return nil }
+        return reason.replacingOccurrences(of: "_", with: " ")
+    }
+
+    private enum TransitSort: String, CaseIterable {
+        case suggested, fastest, greenest, simplest
+    }
+
+    @State private var transitSort: TransitSort = .suggested
+
+    /// List filter driven by the mode tiles; nil shows everything. Tapping
+    /// the active tile again clears back to all. The tile highlight keeps
+    /// meaning map mode, which is unchanged by clearing.
+    @State private var modeFilter: TravelMode? = nil
+
+    private func queryModes(for filter: TravelMode) -> [String] {
+        switch filter {
+        case .transit: return ["bus", "train"]
+        case .walking: return ["walk"]
+        case .cycling: return ["cycle"]
+        case .car: return ["car"]
+        }
+    }
+
+    private func transportModes(for filter: TravelMode) -> [String] {
+        switch filter {
+        case .transit: return ["train", "bus", "transit"]
+        case .walking: return ["walk"]
+        case .cycling: return []
+        case .car: return ["car"]
+        }
+    }
+
+    private var filteredBackendRoutes: [BackendRouteOption] {
+        guard let filter = modeFilter else { return backendRoutes }
+        let modes = queryModes(for: filter)
+        return backendRoutes.filter { modes.contains($0.mode) }
+    }
+
+    private var sortedTransportRoutes: [BackendTransportRoute] {        guard let routes = transportPlan?.routes else { return [] }
+        let base: [BackendTransportRoute]
+        if let filter = modeFilter {
+            let modes = transportModes(for: filter)
+            base = routes.filter { modes.contains($0.mode) }
+        } else {
+            base = routes
+        }
+        switch transitSort {
+        case .suggested:
+            return base
+        case .fastest:
+            return base.sorted { $0.durationSeconds < $1.durationSeconds }
+        case .greenest:
+            // Options without an estimate sink instead of hiding.
+            return base.sorted {
+                (transitCo2Value(for: $0.id)?.value ?? .infinity) <
+                (transitCo2Value(for: $1.id)?.value ?? .infinity)
+            }
+        case .simplest:
+            return base.sorted {
+                if $0.transfers != $1.transfers { return $0.transfers < $1.transfers }
+                return $0.durationSeconds < $1.durationSeconds
+            }
+        }
+    }
+
+    /// One-line walking and transfer summary so fans see the full door-to-door
+    /// shape without expanding. Transfers count rides, not walk segments.
+    private func transitSummary(for option: BackendTransportRoute) -> String {
+        let walkMinutes = Int(option.legs.filter { $0.kind == "walk" }.reduce(0.0) { $0 + $1.durationSeconds } / 60)
+        let rides = option.legs.filter { $0.kind == "ride" || $0.kind == "drive" }.count
+        let transfers = max(0, rides - 1)
+        var parts: [String] = []
+        if walkMinutes > 0 { parts.append("\(walkMinutes) min walk") }
+        if transfers > 0 { parts.append("\(transfers) transfer\(transfers == 1 ? "" : "s")") }
+        if parts.isEmpty { parts.append("Direct ride") }
+        return parts.joined(separator: " · ")
+    }
+
+    private var recommendedTransitRouteID: String? {
+        // A live Jev rank carries the badge. Otherwise the deterministic pick
+        // shows only when it carries an estimate, never a fastest fallback.
+        if let jev = transportPlan?.jev, jev.kind == "ranked",
+            let top = jev.orderedRouteIds?.first,
+            transportPlan?.routes.contains(where: { $0.id == top }) == true,
+            transitCo2Text(for: top) != nil {
+            return top
+        }
+        guard transportPlan?.recommendation.kind == "recommended",
+            let id = transportPlan?.recommendation.routeId,
+            transportPlan?.routes.contains(where: { $0.id == id }) == true,
+            // Only badge an emissions-informed pick, never a fastest fallback.
+            transitCo2Text(for: id) != nil else { return nil }
+        return id
+    }
+
+    private var hasTransitEstimates: Bool {
+        guard let routes = transportPlan?.routes else { return false }
+        return routes.contains { transitCo2Text(for: $0.id) != nil }
+    }
+
+    private var recommendedRouteID: String? {
+        // A live Jev rank balances time, emissions and points itself, so its
+        // top pick carries the badge. Otherwise the deterministic pick shows
+        // only when it actually saves over driving.
+        if let jev = jevRank, jev.kind == "ranked",
+            let top = jev.orderedRouteIds?.first,
+            backendRoutes.contains(where: { $0.id == top }) {
+            return isDirtierThanTransit(top) ? nil : top
+        }
+        guard let recommendation = routeRecommendation else { return nil }
+        guard recommendation.kind == "recommended" || recommendation.kind == "recommended_co2" else { return nil }
+        // A pick that saves nothing over driving is not worth a badge.
+        let avoided = recommendation.avoidedKgCo2e ?? recommendation.avoidedKg ?? 0
+        guard avoided > 0 else { return nil }
+        guard let id = recommendation.route?.id, backendRoutes.contains(where: { $0.id == id }) else { return nil }
+        return isDirtierThanTransit(id) ? nil : id
+    }
+
+    /// True when a transit option on screen is strictly greener than the
+    /// given query pick: the badge must not endorse the dirtier option.
+    private func isDirtierThanTransit(_ routeId: String) -> Bool {
+        guard let pickKg = co2Estimate(for: routeId)?.value,
+            let routes = transportPlan?.routes else { return false }
+        return routes.contains {
+            guard let kg = transitCo2Value(for: $0.id)?.value else { return false }
+            return kg < pickKg
+        }
+    }
+
+    private var recommendationAvoidedText: String? {
+        guard recommendedRouteID != nil else { return nil }
+        if let avoided = routeRecommendation?.avoidedKgCo2e {
+            return "Saves \(formatKg(avoided, gas: "CO₂e")) vs driving"
+        }
+        if let avoided = routeRecommendation?.avoidedKg {
+            return "Saves \(formatKg(avoided, gas: "CO₂")) vs driving"
+        }
+        return nil
     }
 
     private var expandedPlanner: some View {
@@ -544,14 +714,96 @@ struct TravelScreen: View {
                         .padding(.top, 4)
 
                     TravelModePicker(selectedMode: $selectedMode) {
+                        modeFilter = (modeFilter == selectedMode) ? nil : selectedMode
                         transitionToPlannerState(.expanded)
                         Task { await calculateRoute(for: selectedMode) }
+                    }
+
+                    if let transportPlan {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Transit options").font(.subheadline.bold())
+                            Picker("Sort transit options", selection: $transitSort) {
+                                Text("Suggested").tag(TransitSort.suggested)
+                                Text("Fastest").tag(TransitSort.fastest)
+                                Text("Greenest").tag(TransitSort.greenest)
+                                Text("Simplest").tag(TransitSort.simplest)
+                            }
+                            .pickerStyle(.segmented)
+                            .accessibilityLabel("Sort transit options")
+                            if sortedTransportRoutes.isEmpty, let filter = modeFilter,
+                                !transportPlan.routes.isEmpty {
+                                Text("No \(filter.shortTitle.lowercased()) options right now.")
+                                    .font(.caption)
+                                    .foregroundStyle(FanStyle.muted)
+                            }
+                            ForEach(sortedTransportRoutes) { option in
+                                Button {
+                                    selectedBackendRouteID = option.id
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack(spacing: 8) {
+                                                Text(option.displayTitle)
+                                                if option.id == recommendedTransitRouteID {
+                                                    Text("RECOMMENDED")
+                                                        .font(.caption2.bold())
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 3)
+                                                        .foregroundStyle(FanStyle.teal)
+                                                        .overlay(Capsule().stroke(FanStyle.teal, lineWidth: 1))
+                                                }
+                                            }
+                                            Text(transitSummary(for: option))
+                                                .font(.caption)
+                                                .foregroundStyle(FanStyle.muted)
+                                        }
+                                        Spacer()
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text("\(Int(option.durationSeconds / 60)) min")
+                                            if let co2 = transitCo2Text(for: option.id) {
+                                                Text(co2)
+                                                    .font(.subheadline.weight(.semibold))
+                                            } else {
+                                                Text(transitCo2UnavailableReason(for: option.id).map { "CO₂ unavailable · \($0)" } ?? "CO₂ unavailable")
+                                                    .font(.caption)
+                                                    .foregroundStyle(FanStyle.muted)
+                                            }
+                                        }
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(.white)
+                                    .padding(12)
+                                    .background(selectedBackendRouteID == option.id ? FanStyle.darkTeal : FanStyle.panel, in: RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                                if selectedBackendRouteID == option.id, option.legs.count > 1 {
+                                    ForEach(option.legs) { leg in
+                                        Text("\(leg.mode.capitalized) · \(Int(leg.durationSeconds / 60)) min · \(leg.description)")
+                                            .font(.caption)
+                                            .foregroundStyle(FanStyle.muted)
+                                    }
+                                }
+                            }
+                            ForEach(transportPlan.unavailable, id: \.mode) { item in
+                                Text("\(item.mode.capitalized): \(item.reason.replacingOccurrences(of: "_", with: " "))")
+                                    .font(.caption)
+                                    .foregroundStyle(FanStyle.muted)
+                            }
+                            Text(hasTransitEstimates ? "Transit CO₂ is estimated from provider distances by the route service." : "CO₂ estimates are unavailable for transit options.")
+                                .font(.caption)
+                                .foregroundStyle(FanStyle.muted)
+                        }
                     }
 
                     if !backendRoutes.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Other routes").font(.subheadline.bold())
-                            ForEach(backendRoutes) { option in
+                            if filteredBackendRoutes.isEmpty, let filter = modeFilter {
+                                Text("No \(filter.shortTitle.lowercased()) options right now.")
+                                    .font(.caption)
+                                    .foregroundStyle(FanStyle.muted)
+                            }
+                            ForEach(filteredBackendRoutes) { option in
                                 Button {
                                     selectedBackendRouteID = option.id
                                     selectedRouteOptionID = option.id
@@ -568,21 +820,35 @@ struct TravelScreen: View {
                                                         .background(FanStyle.teal, in: Capsule())
                                                         .foregroundStyle(FanStyle.background)
                                                 }
+                                                if option.id == recommendedRouteID {
+                                                    Text("RECOMMENDED")
+                                                        .font(.caption2.bold())
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 3)
+                                                        .foregroundStyle(FanStyle.teal)
+                                                        .overlay(Capsule().stroke(FanStyle.teal, lineWidth: 1))
+                                                }
+                                            }
+                                            if option.id == recommendedRouteID, let avoided = recommendationAvoidedText {
+                                                Text(avoided)
+                                                    .font(.caption)
+                                                    .foregroundStyle(FanStyle.teal)
+                                            }
+                                        }
+                                        Spacer()
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            if let seconds = option.durationSeconds {
+                                                Text("\(Int(seconds / 60)) min")
                                             }
                                             if let co2 = co2Estimate(for: option.id) {
                                                 Text(co2.text)
-                                                    .font(.caption)
-                                                    .foregroundStyle(FanStyle.muted)
+                                                    .font(.subheadline.weight(.semibold))
                                             } else {
-                                                Text("CO₂ unavailable")
+                                                Text(co2UnavailableReason(for: option.id).map { "CO₂ unavailable · \($0)" } ?? "CO₂ unavailable")
                                                     .font(.caption)
                                                     .foregroundStyle(FanStyle.muted)
                                             }
                                         }
-                                        Spacer()
-                                        if let seconds = option.durationSeconds {
-                                            Text("\(Int(seconds / 60)) min")
-                                        }
                                     }
                                     .font(.subheadline)
                                     .foregroundStyle(.white)
@@ -590,7 +856,7 @@ struct TravelScreen: View {
                                     .background(selectedBackendRouteID == option.id ? FanStyle.darkTeal : FanStyle.panel, in: RoundedRectangle(cornerRadius: 10))
                                 }
                                 .buttonStyle(.plain)
-                                if selectedBackendRouteID == option.id {
+                                if selectedBackendRouteID == option.id, option.legs.count > 1 {
                                     ForEach(option.legs) { leg in
                                         Text("\(leg.mode.capitalized) · \(Int(leg.durationSeconds / 60)) min · \(leg.description)")
                                             .font(.caption)
@@ -598,46 +864,6 @@ struct TravelScreen: View {
                                     }
                                 }
                             }
-                            Text("CO₂ estimates are calculated by the route service.")
-                                .font(.caption)
-                                .foregroundStyle(FanStyle.muted)
-                        }
-                    }
-
-                    if let transportPlan {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Transit options").font(.subheadline.bold())
-                            ForEach(transportPlan.routes) { option in
-                                Button {
-                                    selectedBackendRouteID = option.id
-                                } label: {
-                                    HStack {
-                                        Text(option.displayTitle)
-                                        Spacer()
-                                        Text("\(Int(option.durationSeconds / 60)) min")
-                                    }
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white)
-                                    .padding(12)
-                                    .background(selectedBackendRouteID == option.id ? FanStyle.darkTeal : FanStyle.panel, in: RoundedRectangle(cornerRadius: 10))
-                                }
-                                .buttonStyle(.plain)
-                                if selectedBackendRouteID == option.id {
-                                    ForEach(option.legs) { leg in
-                                        Text("\(leg.mode.capitalized) · \(Int(leg.durationSeconds / 60)) min · \(leg.description)")
-                                            .font(.caption)
-                                            .foregroundStyle(FanStyle.muted)
-                                    }
-                                }
-                            }
-                            ForEach(transportPlan.unavailable, id: \.mode) { item in
-                                Text("\(item.mode.capitalized): \(item.reason.replacingOccurrences(of: "_", with: " "))")
-                                    .font(.caption)
-                                    .foregroundStyle(FanStyle.muted)
-                            }
-                            Text("CO₂ estimates are unavailable for transit options.")
-                                .font(.caption)
-                                .foregroundStyle(FanStyle.muted)
                         }
                     }
 
@@ -824,18 +1050,24 @@ struct TravelScreen: View {
                     if response.result.kind == "unavailable" {
                         backendRoutes = []
                         backendEstimates = []
+                        routeRecommendation = nil
+                        jevRank = nil
                         selectedBackendRouteID = nil
                         selectedRouteOptionID = nil
                         routeError = "More route choices are unavailable right now. Showing the map route instead."
                     } else {
                         backendRoutes = response.result.routes ?? []
                         backendEstimates = response.estimates
+                        routeRecommendation = response.recommendation
+                        jevRank = response.jev
                         selectedBackendRouteID = backendRoutes.first?.id
                         selectedRouteOptionID = backendRoutes.first?.id
                     }
                 } catch {
                     backendRoutes = []
                     backendEstimates = []
+                    routeRecommendation = nil
+                    jevRank = nil
                     selectedBackendRouteID = nil
                     selectedRouteOptionID = nil
                     routeError = "More route choices are unavailable right now. Showing the map route instead."
@@ -852,9 +1084,23 @@ struct TravelScreen: View {
             }
             let directions = MKDirections(request: request)
             if mode == .transit {
-                let response = try await directions.calculateETA()
-                guard requestID == routeRequestID else { return }
-                transitTravelTime = response.expectedTravelTime
+                // Prefer a real Apple transit path for the map line. When Apple
+                // has no transit path, keep the ETA time label and markers only.
+                do {
+                    let response = try await directions.calculate()
+                    guard requestID == routeRequestID else { return }
+                    guard let route = response.routes.first else {
+                        throw RouteError.noRoute
+                    }
+                    self.route = route
+                    transitTravelTime = route.expectedTravelTime
+                    lastViewportState = nil
+                } catch {
+                    guard requestID == routeRequestID else { return }
+                    let eta = try await directions.calculateETA()
+                    guard requestID == routeRequestID else { return }
+                    transitTravelTime = eta.expectedTravelTime
+                }
             } else {
                 let response = try await directions.calculate()
                 guard requestID == routeRequestID else { return }
@@ -1052,14 +1298,27 @@ private struct TravelMapView: View {
                     .stroke(FanStyle.teal, lineWidth: 6)
             }
             if route == nil, let transportRoute {
-                let coordinates = transportRoute.legs.flatMap { leg in
-                    [leg.fromCoordinate, leg.toCoordinate].compactMap { coordinate in
-                        coordinate.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-                    }
+                // Provider leg shapes draw first: each shape is real geometry
+                // and gaps between shapes stay gaps. The endpoint fallback
+                // below only runs for simulated timetables without shapes.
+                let shapes = transportRoute.legs.compactMap { leg -> [CLLocationCoordinate2D]? in
+                    guard let path = leg.path, path.count > 1 else { return nil }
+                    return path.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
                 }
-                if coordinates.count > 1 {
-                    MapPolyline(coordinates: coordinates)
-                        .stroke(FanStyle.teal, lineWidth: 6)
+                if !shapes.isEmpty {
+                    ForEach(shapes.indices, id: \.self) { index in
+                        MapPolyline(coordinates: shapes[index])
+                            .stroke(FanStyle.teal, lineWidth: 6)
+                    }
+                } else {
+                    // Backend legs rarely carry full path geometry. Only draw the
+                    // fallback when the endpoints form a real multi-point path; a
+                    // bare start-to-end pair is a straight lie, not a route.
+                    let coordinates = Self.lineCoordinates(for: transportRoute.legs)
+                    if coordinates.count > 2 {
+                        MapPolyline(coordinates: coordinates)
+                            .stroke(FanStyle.teal, lineWidth: 6)
+                    }
                 }
             }
         }
@@ -1068,6 +1327,24 @@ private struct TravelMapView: View {
         .onMapCameraChange(frequency: .onEnd) { _ in
             onCameraChangeEnded()
         }
+    }
+
+    static func lineCoordinates(for legs: [BackendTransportLeg]) -> [CLLocationCoordinate2D] {
+        var points: [CLLocationCoordinate2D] = []
+        for raw in legs.flatMap({ [$0.fromCoordinate, $0.toCoordinate] }).compactMap({ $0 }) {
+            let point = CLLocationCoordinate2D(latitude: raw.latitude, longitude: raw.longitude)
+            if let last = points.last,
+                abs(last.latitude - point.latitude) < 1e-9,
+                abs(last.longitude - point.longitude) < 1e-9 {
+                continue
+            }
+            points.append(point)
+        }
+        guard points.count > 2,
+            let first = points.first, let last = points.last,
+            abs(first.latitude - last.latitude) >= 1e-9 ||
+            abs(first.longitude - last.longitude) >= 1e-9 else { return [] }
+        return points
     }
 }
 

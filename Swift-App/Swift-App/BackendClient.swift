@@ -66,6 +66,14 @@ struct BackendRouteAvailability: Decodable {
 struct BackendRouteResponse: Decodable {
     let result: BackendRouteResult
     let estimates: [BackendRouteEstimate]
+    let recommendation: BackendRouteRecommendation?
+    let jev: BackendJevRank?
+}
+
+struct BackendJevRank: Decodable {
+    let kind: String
+    let orderedRouteIds: [String]?
+    let reason: String?
 }
 
 struct BackendTransportCoordinate: Codable {
@@ -85,6 +93,7 @@ struct BackendTransportLeg: Decodable, Identifiable {
     let instruction: String?
     let fromCoordinate: BackendTransportCoordinate?
     let toCoordinate: BackendTransportCoordinate?
+    let path: [BackendTransportCoordinate]?
     var id: String { "\(kind)-\(from)-\(to)-\(startsAt)" }
 }
 
@@ -119,8 +128,16 @@ struct BackendTransportRecommendation: Decodable {
 struct BackendTransportPlan: Decodable {
     let routes: [BackendTransportRoute]
     let unavailable: [BackendTransportUnavailable]
+    let estimates: [BackendTransportEstimate]?
     let recommendation: BackendTransportRecommendation
+    let jev: BackendJevRank?
     let awardEligible: Bool
+}
+
+struct BackendTransportEstimate: Decodable {
+    let routeId: String
+    let estimate: BackendEstimate
+    let distanceMethod: String?
 }
 
 struct BackendRouteResult: Decodable {
@@ -138,6 +155,14 @@ struct BackendEstimate: Decodable {
     let kind: String
     let kgCo2e: Double?
     let kg: Double?
+    let reason: String?
+}
+
+struct BackendRouteRecommendation: Decodable {
+    let kind: String
+    let route: BackendRouteOption?
+    let avoidedKgCo2e: Double?
+    let avoidedKg: Double?
     let reason: String?
 }
 
@@ -172,6 +197,7 @@ private struct TransportRequest: Encodable {
     let destination: BackendTransportPlace
     let departAt: String
     let modes: [String] = ["train", "bus", "walk", "car"]
+    let extraMinutes: Int = 15
 }
 
 struct BackendActivityReward: Decodable {

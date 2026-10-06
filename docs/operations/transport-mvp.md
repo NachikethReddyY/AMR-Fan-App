@@ -24,6 +24,21 @@ API request limit. This lets both phone apps demonstrate the idea before live
 authentication and provider setup; the standalone service remains useful for a
 BB-1 or isolated demo host.
 
+Every plan also carries per-route CO2 estimates from the same indicative
+Singapore factors as route queries, plus an emissions-aware recommendation:
+the lowest estimated option within 15 minutes (configurable per request via
+`extraMinutes`) of the fastest deadline-meeting route, falling back to the
+fastest arrival when nothing carries an estimate. Walks over 30 minutes stay
+listed but can never win; motorized modes have no cap. Leg distances are
+straight-line where endpoints are known; otherwise the provider route total is
+shared across motorized legs by duration (`distanceMethod: apportioned`),
+which reads high for faster legs and low for slower ones. Waiting,
+transferring and zero-factor active travel contribute zero. Unmeasurable
+motorized legs and modes without a factor stay unavailable, never guessed.
+Each plan also carries an optional Jev rank over the same estimated choice
+set (`rankTransportChoice`, off unless the operator enables it), so the model
+can choose among the transit options that actually have numbers.
+
 Every response identifies simulated timetable data, returns `awardEligible:
 false`, and reports an unavailable state when a place or provider is outside
 coverage. The transport API never awards points and never accepts a client role,

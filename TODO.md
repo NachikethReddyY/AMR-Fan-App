@@ -1,5 +1,54 @@
 # Tasks
 
+## TRAVEL-REC-003: transit sort control, 2026-10-06
+
+- [x] Suggested/Fastest/Greenest/Simplest picker on Transit options.
+- [x] Prove all three reorderings plus unchanged default on device.
+- [x] Back out the unfinished map-overhaul app edits; tree builds.
+
+Acceptance: sorts reorder correctly, badges and footnotes untouched, default
+view pixel-identical. Proof is the device screenshots above. No server
+change, no re-deploy.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## TRAVEL-REC-002: viability cap for active travel, 2026-10-06
+
+- [x] Cap walk/cycle wins at 30 minutes in query recommendations.
+- [x] Cap walk wins at 30 minutes in transport recommendations and Jev snapshots.
+- [x] Prove dominance (car 5x faster), cleaner-car and near-tie scenarios.
+- [ ] Re-deploy the server to BB-1 and re-verify live. No commit or deploy done
+  from here.
+
+Acceptance: over-cap active travel stays listed but never wins on either
+surface or in Jev ranks; a dominant or cleaner car is recommended with an
+honest reason. Server proof local only; live proof needs the re-deploy.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## TRAVEL-REC-001: transit CO2 and recommended pick, 2026-10-06
+
+- [x] Narrow `v1/routes/query` recommendations to verified candidates.
+- [x] Estimate transport-plan legs and recommend lowest CO2 within deadline.
+- [x] Add Jev rank path with deterministic fallback (needs provider key).
+- [x] Prove with backend tests, simulator build, and device screenshots.
+- [ ] Deploy the server changes to the backend the app uses, then re-verify
+  badges and transit CO2 live. No commit, push or deploy done from here.
+
+Acceptance: transit options show service-calculated CO2, a recommended option
+is badged from verified candidates with a Jev rank where available, and
+unavailable states stay honest.
+
+Server proof is local plus real BB-1 response shapes replayed through the new
+estimators; live gateway and deployed-backend proof still need the provider key
+and a deploy. iOS proof is backward compatibility against the old backend.
+
+Acceptance: transit options show service-calculated CO2, a recommended option
+is badged from verified candidates with a Jev rank where available, and
+unavailable states stay honest.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## AI-ONEMAP-002: live activity assessment and OneMap transport, 2026-10-05
 
 - [x] Send captured image bytes to the multimodal Luna adapter.

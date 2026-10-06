@@ -72,16 +72,28 @@ function validDuration(
   );
 }
 
+/** Trips longer than this are still listed, but active travel that long is not a real option for most fans. */
+export const ACTIVE_CAP_MINUTES = 30;
+
+export type RecommendOptions = {
+  eligibleIds?: ReadonlySet<string>;
+  activeCapMinutes?: number;
+};
+
 export function recommendRoute(
   routes: readonly RouteOption[],
   extraMinutes: number,
   factors: readonly EmissionFactor[],
+  options: RecommendOptions = {},
 ): Recommendation {
   if (!Number.isSafeInteger(extraMinutes) || extraMinutes < 0)
     return { kind: 'unavailable', reason: 'invalid_tolerance' };
+  const { eligibleIds, activeCapMinutes = ACTIVE_CAP_MINUTES } = options;
   const available = routes.filter(validDuration);
   if (available.length === 0)
     return { kind: 'unavailable', reason: 'no_routes' };
+  // The time reference always comes from every valid route, verified or not:
+  // excluding a faster route must never relax the fan's time limit.
   const fastestSeconds = Math.min(
     ...available.map((route) => route.durationSeconds),
   );
@@ -89,8 +101,18 @@ export function recommendRoute(
   if (!Number.isFinite(limitSeconds))
     return { kind: 'unavailable', reason: 'invalid_tolerance' };
 
+  const eligible = (route: RouteOption) =>
+    (eligibleIds === undefined || eligibleIds.has(route.id)) && !overCap(route);
+  // A 50-minute walk stays visible with its honest zero, but nobody should be
+  // told to walk it. Motorized modes have no cap: a long bus ride is a real option.
+  function overCap(route: RouteOption) {
+    return (
+      (route.mode === 'walk' || route.mode === 'cycle') &&
+      (route.durationSeconds ?? Infinity) > activeCapMinutes * 60
+    );
+  }
   const driving = available
-    .filter((route) => route.mode === 'car')
+    .filter((route) => route.mode === 'car' && eligible(route))
     .sort(
       (a, b) =>
         a.durationSeconds - b.durationSeconds || a.id.localeCompare(b.id),
@@ -113,7 +135,7 @@ export function recommendRoute(
     };
 
   const candidates = available.flatMap((route) => {
-    if (route.durationSeconds > limitSeconds) return [];
+    if (route.durationSeconds > limitSeconds || !eligible(route)) return [];
     const estimate = estimateRoute(route, factors);
     return estimate.kind !== 'unavailable' && estimate.kind === baseline.kind
       ? [{ route, estimate }]

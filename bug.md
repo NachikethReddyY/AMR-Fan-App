@@ -1,3 +1,63 @@
+## 2026-10-06: transfer station names and stop counts unavailable (unlinked)
+
+Transit legs show generic labels ("Transfer", "MRT/LRT") instead of station
+names because neither provider returns stop names: OneMap transit legs carry
+coordinates only, and Google steps are not retained per leg. Naming stations
+("Board at Orchard, alight at City Hall, 3 stops") needs a bundled MRT/LRT
+station directory with nearest-stop matching plus line topology for stop
+counts: a data feature, not a display tweak. Tracked as the next job, not
+built tonight.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: map draws a straight start-to-end line for transit (unlinked)
+
+Transit mode only requests an Apple ETA, never an Apple route, so the map
+falls back to joining backend leg endpoints. Live legs carry almost no
+coordinates (often just the shared start point plus the destination), which
+renders as a straight line that ignores the real path and cannot track row
+selection, since query options carry no geometry at all.
+
+Fix: transit mode now requests a real Apple transit path with ETA fallback,
+and the backend fallback only draws with three or more distinct points, so a
+bare start-to-end pair draws nothing instead of a straight lie. Device proof:
+transit shows markers only where Apple has no transit path here, and the car
+tab shows a road-following line. Mode tabs change the line; individual
+backend rows cannot move it because neither endpoint returns per-option
+geometry. No iOS test target exists, so screenshots are the proof.
+
+Fixed by opencode/muse-spark-1.3-contributor-free through opencode.
+
+Update 2026-10-06: per-option transit path lines. The server dropped
+discontinuous OneMap leg shapes, so live options had nothing to draw. The
+normalizers now keep per-leg verified shapes (`legShapes`), the transport
+plan exposes them as `TransportLeg.path`, and the app draws each shape of the
+selected transit option separately with gaps left as gaps. Query rows keep
+Apple per-mode lines. Server proof: 34 tests pass including gappy-fixture
+shapes and leg passthrough; API typecheck clean. App launches clean against
+the old backend. Live shape proof needs the re-deploy below.
+
+## 2026-10-06: server withholds route recommendation on bus-mixed results (unlinked)
+
+Orchard Station to Marina Bay Sands returns three Bus options whose evidence
+is not Singapore-indicative, so `v1/routes/query` withholds the whole
+recommendation (`factor_applicability_unverified`) and the separate
+`v1/transport/plan` options carry no estimates at all. The app now renders the
+RECOMMENDED badge whenever the server sends one, but no badge can appear here
+until the server either estimates transit-plan legs or narrows the
+recommendation to verified candidates. Changing the withhold rule or inventing
+leg distances would break the accepted emissions spec; needs a product
+decision, not a client patch.
+
+Update 2026-10-06: the user chose narrowing plus full Jev ranking. The server
+now narrows query comparisons to verified candidates, estimates transport
+legs with disclosed straight-line/apportioned methods, recommends lowest
+emissions within tolerance, and attempts a Jev rank with deterministic
+fallback. All local; needs a backend deploy plus a Jev key and budget
+admission before live proof. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-05: travel showed no carbon figures (unlinked)
 
 Fans compared routes by duration only; the backend's per-option CO2 estimates

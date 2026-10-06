@@ -47,6 +47,7 @@ function comparison(): RouteQueryResult {
           primaryMode: 'TRANSIT',
           geometry: { kind: 'unavailable', reason: 'missing_geometry' },
           factorApplicability: 'geography_unverified',
+          legShapes: [],
         },
       ],
     },
@@ -70,6 +71,12 @@ function comparison(): RouteQueryResult {
     geographySource: boundarySource,
     unsupportedModes: ['cab', 'electric_car'],
     calculationStatus: 'indicative_demo',
+    paths: [],
+    jev: {
+      kind: 'unavailable',
+      reason: 'disabled',
+      fallback: 'deterministic',
+    },
   };
 }
 
@@ -202,6 +209,7 @@ test('prepared route retains reviewed factor provenance from the single comparis
       ],
     },
     factorApplicability: 'singapore_indicative',
+    legShapes: [],
   }));
   response.calculationStatus = 'approved';
   response.factorRelease = {

@@ -51,7 +51,11 @@ export function createTransportServer({
         const parsed = planInput.safeParse(await readBody(req));
         if (!parsed.success)
           return send(res, 400, { error: 'Invalid transport plan.' });
-        return send(res, 200, await planTransport(parsed.data, { roadRouter }));
+        return send(
+          res,
+          200,
+          await planTransport(parsed.data, { roadRouter, env: process.env }),
+        );
       }
       if (req.method === 'GET' && url.pathname === '/v1/transport/departures') {
         const parsed = departureInput.safeParse(

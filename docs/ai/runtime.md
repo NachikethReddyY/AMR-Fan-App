@@ -171,6 +171,30 @@ The route owner creates a fresh snapshot, provides all candidates, rechecks its
 identity/time bound when consuming results, and uses `recommendRoute` on failure.
 Do not send locations, geometry, account IDs or live traces to a model.
 
+Route Jev ranking is integrated in `services/api/ai/jev-rank.ts` and wired into
+`v1/routes/query` as an optional `jev` field: the server builds the snapshot
+from verified same-gas estimates with provisional points from the award rule
+(50 per avoided kg, 2000 journey cap), posts one bounded decisions call, and
+reads the order through the validated mapper. The live gateway echoes its dated
+build (`typesafe/jev-1.13-20260917` observed 2026-10-06, with informational
+`id`, `provider` and `usage.cost`); the parser pins that dated family and the
+bare request alias is rejected as an echo. Unknown fields fail closed. Walks and cycles over 30 minutes
+never enter the choice set, matching the deterministic viability rule. The same
+machinery ranks transport-plan options (`rankTransportChoice` over plan routes
+with their own estimates, wired into `v1/transport/plan` as an optional `jev`
+field), because query-side transit rarely verifies while the plan side carries
+apportioned numbers for the same rides. The app badge shows the Jev top pick
+when ranked on either surface, otherwise the deterministic pick. Any failure returns an explicit
+unavailable reason with deterministic fallback, and the deterministic
+recommendation in the same response is unaffected. Ranking is off unless the
+operator sets `JEV_RANK_ENABLED=true` with a key in `JEV_API_KEY`, falling
+back to the established `AI_API_KEY` TokenRouter alias: one provider, one key.
+Enabling it in
+production additionally needs the provisioned server key, verified model prices
+and shared budget admission from the gateway contract, none of which this slice
+claims. The iOS badge shows the Jev top pick when ranked, otherwise the
+deterministic pick when it saves over driving.
+
 `createActivityAssessment({provider?, timeoutMs?}).assess(input, signal?)` accepts
 server-owned mutable input: `photo: Uint8Array` (1..2,000,000 bytes), JPEG/PNG
 `mime`, `capture: "camera"`, a 1..1600-character `description`, opaque

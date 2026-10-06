@@ -472,9 +472,11 @@ The retained CAG factors cover conventional car, public bus and MRT. Returned
 rail other than SUBWAY/METRO_RAIL, or other bus vehicle categories, stays
 `unsupported_transit_factor`; the general parser can still show those routes.
 Walking/cycling zeroes describe sourced operational travel only. Unknown
-geography never receives those zeroes. If any candidate's factor applicability
-is unverified, the query withholds the recommendation while retaining all route
-availability and individually supported estimates. It never discards a faster
+geography never receives those zeroes. Candidates whose factor applicability
+is unverified are excluded from the comparison while retaining all route
+availability and individually supported estimates; the time reference still
+comes from every valid route. Only when no verified candidate or baseline
+remains does the query withhold the recommendation. It never discards a faster
 route to relax the fan's time limit.
 
 ## Source lineage and verification

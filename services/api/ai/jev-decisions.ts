@@ -12,13 +12,20 @@ const answerSchema = z.strictObject({
   confidence: probability,
 });
 const wireSchema = z.strictObject({
-  // Documented upstream version only. The gateway's echo/mapping is still unverified.
-  model: z.literal('jev-1.13.0'),
+  // The gateway echoes its dated model build, not our request alias:
+  // observed `typesafe/jev-1.13-20260917` with informational `id`,
+  // `provider` and `usage.cost` on 2026-10-06. The bare alias is rejected as
+  // an echo because it proves nothing about the upstream model. Unknown
+  // fields still fail closed to deterministic fallback.
+  model: z.string().regex(/^typesafe\/jev-1\.13-[0-9]{8}$/),
   answers: z.record(z.string(), answerSchema),
   usage: z.strictObject({
     input_tokens: z.int().nonnegative(),
     output_tokens: z.int().nonnegative(),
+    cost: z.number().nonnegative().optional(),
   }),
+  id: z.string().max(200).optional(),
+  provider: z.string().max(200).optional(),
 });
 
 /** Upstream HTTP reference: https://docs.typesafe.ai/api. No endpoint or network I/O. */

@@ -267,6 +267,7 @@ export function createApi({
           await planTransport(parsed.data, {
             roadRouter: transportRoadRouter,
             liveRouteProvider,
+            env: process.env,
           }),
         );
       }

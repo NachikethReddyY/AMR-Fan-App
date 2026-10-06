@@ -1,3 +1,217 @@
+## 2026-10-06: unavailable reasons surfaced in CO2 rows (local)
+
+Rows now read "CO₂ unavailable · geography unverified" style reasons instead
+of a bare unavailable, on both surfaces. Device proof on Orchard to Marina
+Bay Sands shows the bus rows carry geography unverified. Awaiting the user's
+Compass One to Dover screenshot to learn the trains' reason there.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: Jev reads AI_API_KEY alias, no second key (local)
+
+The user correctly refused a duplicate credential: TokenRouter already maps
+`AI_API_KEY`, so the Jev config now falls back to it when `JEV_API_KEY` is
+absent. One provider, one key. Proof local: alias dispatch test asserting the
+Bearer header, full suite, typecheck. BB-1 still needs the placeholder
+`JEV_API_KEY` line removed and the latest image deployed.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: gateway echo pinned, parser fixed (local)
+
+The user's live probe returned a real decision and exposed our parser as
+wrong: the gateway echoes `typesafe/jev-1.13-20260917` with extra `id`,
+`provider` and `usage.cost`, while we demanded the undated alias and strict
+shape, so every real answer would have failed closed as invalid output. The
+parser now pins the dated family, allows the observed informational fields,
+and still rejects the bare alias and unknown fields. Fixtures mirror the live
+echo. Proof local: 29 AI tests, typecheck. Needs the re-deploy before any
+live call can succeed.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: walk and transfer summary on every transit row (local, final)
+
+Every transit row now states its door-to-door shape up front ("9 min walk ·
+1 transfer", "Direct ride"), counting rides for transfers rather than walk
+segments. Device proof on Orchard to Marina Bay Sands. App-only, no server
+change, no re-deploy. Handing UI back to the user from here.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: tiles filter, section reorder, noise removal (local, this view only)
+
+- Mode tiles now filter both lists (transit tile shows bus/train/transit
+  rows); tapping the active tile clears back to all. Empty lists say so
+  instead of vanishing. Device proof: Car tap leaves only car rows, second
+  tap restores all, Cycle tap shows the transit empty note with the query
+  cycle row intact.
+- Transit options now sits above Other routes, so the recommended pick leads.
+- Single-leg echoes ("Car · 5 min · Drive") no longer expand; multi-leg
+  breakdowns still do. The empty query footnote is gone; the transit method
+  footnote stays because it explains something.
+- No server change, no re-deploy. Tree builds.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: CO2 under time, no dirtier badge (local, this view only)
+
+CO2 moved under the duration, right-aligned semibold, on both option lists.
+The query RECOMMENDED badge is now withheld whenever a transit option on
+screen is strictly greener, so the car can no longer be endorsed over a
+0.03 kg train while showing 0.46 kg. Device proof on Orchard to Marina Bay
+Sands: car row badge- and savings-line-free, train RECOMMENDED intact, layout
+consistent across lists. No server change, no re-deploy.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: transit sort control (local, this view only)
+
+Transit options gained a Suggested/Fastest/Greenest/Simplest segmented
+control. Suggested keeps server order; Greenest sinks estimate-less options
+instead of hiding them; Simplest orders by fewest transfers then duration.
+Badges, CO2 text, reasons, selection and footnotes are untouched. Device
+proof on Orchard to Marina Bay Sands: Greenest runs Walk 0.00, Train 0.03,
+Train+bus 0.15, Bus 0.29, Car 0.64; Fastest runs Car 9 through Walk 55;
+Simplest runs Car, Train, Bus, Train+bus, Walk. The map-overhaul app edits
+were fully backed out of the tree; the dormant server `paths` field is the
+only remainder. No server change, no re-deploy needed.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: Jev ranks transport options (local)
+
+Query-side trains rarely verify, so the choice set collapsed to the car and
+Jev never fired. The rank machinery now also covers transport-plan options,
+which carry apportioned numbers for the same rides, wired as an optional
+`jev` field on the plan with the same off-by-default config. The transit
+badge shows the Jev top pick when ranked. Proof local: snapshot units, a full
+plan-to-decisions wiring test, typecheck, Prettier, clean build. Needs the
+usual BB-1 rebuild; Tampines to Dover should then call (train plus car
+verify), Compass One to Dover still will not (only the car verifies there).
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: Jev snapshot narrows to verified routes (local)
+
+The missing Usage Logs were correct behavior, not a broken wire: the snapshot
+demanded complete metrics, so any route with an unverified estimate (the
+Compass One trains) vetoed the whole call. It now mirrors the deterministic
+narrowing, verified routes only, and skips single-option non-choices without
+spending. Proof local: 5 Jev tests including narrowed and lone-route cases,
+typecheck, Prettier. Needs the usual BB-1 rebuild; note Compass One to Dover
+still will not call (only the car verifies there), while Orchard to Marina
+Bay will (car plus cycle verify).
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: transit path lines from provider leg shapes (local)
+
+Transit options had nothing to draw because the server discarded
+discontinuous OneMap leg shapes. `legShapes` are now kept per leg,
+`TransportLeg.path` carries them, and the app draws each shape of the
+selected transit option with gaps left as gaps, so tapping Train vs Bus
+redraws different real segments. Apple per-mode lines and the no-fake-line
+guard are unchanged. Proof local: 34 backend tests, typecheck, Prettier,
+clean build, app launches against the old backend. Live shape proof needs
+the server re-deploy plus the Jev decision below.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: transit map line follows real paths (local)
+
+The collapsed map drew a straight start-to-end line in transit mode because it
+only fetched an Apple ETA and joined sparse backend leg endpoints. Transit
+mode now fetches a real Apple transit path with ETA fallback, and the backend
+fallback requires three distinct points or draws nothing. Device proof on
+Orchard to Marina Bay Sands: transit shows honest markers only where Apple
+has no transit path in this environment, and the car tab shows a
+road-following line. No iOS test target exists; screenshots are the proof.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: 30-minute viability cap for walk and cycle (local)
+
+Walk and cycle trips over 30 minutes stay listed with honest estimates but can
+never win: not in query recommendations, transport recommendations, or Jev
+choice sets. Motorized modes are uncapped. Scenario tests prove a dominant car
+(5x faster), a cleaner car, near-tie fastest breaks, and a capped 33-minute
+walk losing to the car. No app change was needed: zero-saving and
+estimate-less picks are already badge-suppressed client-side. Docs updated.
+Full proof local: focused suites, awards, journeys, fan routes, API typecheck,
+Prettier. Needs a BB-1 image rebuild and live re-verify like last time.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: deploy and Jev-enable runbooks handed over (local)
+
+The user asked for the deploy pack and then item 2 (Jev key and budget).
+SSH from here is denied and deploys need explicit authority, so both are
+runbooks for the user, not executed work. The pasted factor set is not applied:
+several values conflict with the pinned CAG release (car 0.17 vs 0.271, walk
+and cycle 0 vs food-based 21g+/56g+, no LRT/motorbike/e-bike modes exist) and
+carry no sources, so a factor release change needs source URLs, period, gas
+basis and the award-release procedure first.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: transit CO2, narrowed recommendation and Jev rank (local)
+
+Did options 1 and 3 from the saved plan, all local, nothing pushed or deployed.
+
+Server (`services/api`, `packages/travel-domain`):
+
+- `v1/routes/query` now compares verified (`singapore_indicative`) candidates
+  instead of withholding everything when one mode is unverified. The time
+  reference still comes from every valid route, so a faster unverified route
+  never relaxes the fan's time limit. New `recommendRoute` eligibility
+  parameter is backward compatible; docs updated (`03-emissions-estimates.md`,
+  `operations/routes.md`).
+- `v1/transport/plan` returns per-route `estimates` with a disclosed
+  `distanceMethod`: straight-line leg distances where endpoints are known,
+  otherwise the provider route total shared across motorized legs by duration
+  (`apportioned`). Waiting, transferring and zero-factor active travel count
+  zero; unmeasurable motorized legs and unfactored modes stay unavailable. The
+  plan recommendation is now lowest estimated emissions within fastest plus
+  `extraMinutes` (new optional plan input, default 15), falling back to
+  fastest arrival only when nothing carries an estimate.
+- New Jev rank path (`services/api/ai/jev-rank.ts`): snapshot from verified
+  same-gas estimates with provisional points from the award rule, one bounded
+  decisions call, validated read, explicit unavailable reasons with
+  deterministic fallback. Off by default; needs `JEV_RANK_ENABLED=true` plus
+  a key, and production enablement still needs the provisioned server key,
+  verified prices and budget admission per `docs/ai/runtime.md`.
+- Proof: 19 focused tests pass (query narrowing, transport estimates and
+  apportionment, Jev disabled/ranked/invalid-output), plus awards, journeys,
+  fan-route suites and API typecheck. Replayed a real BB-1 live plan response
+  through the new code: Train 21 min estimates 0.03 kg and is recommended
+  about 10 min slower than the car; the 58 min walk is outside tolerance.
+
+App (`Swift-App`, local only):
+
+- Decodes `recommendation`, optional `jev` rank and optional transport
+  `estimates`. One RECOMMENDED badge: the Jev top pick when ranked, otherwise
+  the deterministic pick only when it saves over driving, and in Transit
+  options only when the pick carries an estimate, so a fastest fallback is
+  never badged. Transit rows show per-option CO2 with an honest footnote.
+- The request keeps working against the old backend: `extraMinutes` is not
+  sent on transport plans yet because the deployed strict input rejects
+  unknown keys; it goes back in with the deploy.
+- Proof: clean `xcodebuild`, device run on iPhone 18 Pro Max against the
+  current backend shows the new transit row layout, honest unavailable states,
+  no spurious badges, and unchanged query rows.
+
+Still needed: a Jev key plus budget admission before enabling live ranking.
+
+Live proof 2026-10-06: the user deployed the server to BB-1 (rebuilt image,
+healthy) and the device run against it shows Train RECOMMENDED 0.03 kg CO2e
+21 min with leg breakdown, Bus 0.26, Train+bus 0.24, Walk 0.00 55 min correctly
+not recommended (outside tolerance), Car 0.64 9 min correctly not badged, and
+the honest provider-distances footnote. No unavailable gaps remain in Transit
+options. The iOS `extraMinutes` transport field is back in.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-06 (planned): recommended route badge and transit CO2
 
 Saved plan, not yet implemented. The user wants no "unavailable" CO2 gaps and a
@@ -34,6 +248,16 @@ Plan for tomorrow:
 Acceptance: badge appears on the train option for Orchard-to-Marina-Bay with
 the avoided figure; unavailable states stay honest; clean build plus device
 screenshots. Factor release/version disclosure stays a separate follow-up.
+
+Outcome 2026-10-06: client decodes `recommendation` and renders RECOMMENDED
+plus the avoided-vs-driving line when the server sends one; verified on device
+(iPhone 18 Pro Max, local build) that no badge appears when the server
+withholds it and nothing else changed. But on Orchard Station to Marina Bay
+Sands the server withholds the recommendation: the three Bus options carry
+non-indicative evidence, so per the accepted rule the whole comparison is
+withheld, and the separate transit-plan options (Train 21 min) carry no
+estimates at all. Client work is done and local-only; the remaining gap is
+server-side and needs a product decision before any emission logic changes.
 
 Planned by opencode/muse-spark-1.3-contributor-free through opencode.
 

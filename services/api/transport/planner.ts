@@ -11,6 +11,9 @@ import {
   type TransportRoute,
 } from './contracts.ts';
 import { isSingaporeCoordinate } from '../routes/geography.ts';
+import { distanceBetween } from './geo.ts';
+import { estimatePlanRoutes, recommendTransport } from './estimates.ts';
+import { rankTransportChoice, skipJev } from '../ai/jev-rank.ts';
 import type { ProviderResult } from '../routes/provider.ts';
 
 const zone = '+08:00';
@@ -104,24 +107,6 @@ function placeCoordinate(value: PlanInput['origin']) {
   return id ? coordinates[id] : null;
 }
 
-function distanceBetween(a: TransportCoordinate, b: TransportCoordinate) {
-  const latitude = ((a.latitude + b.latitude) / 2) * (Math.PI / 180);
-  const dLat = (b.latitude - a.latitude) * (Math.PI / 180);
-  const dLon = (b.longitude - a.longitude) * (Math.PI / 180);
-  const radius = 6_371_000;
-  const sine =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(a.latitude * (Math.PI / 180)) *
-      Math.cos(b.latitude * (Math.PI / 180)) *
-      Math.sin(dLon / 2) ** 2;
-  return (
-    2 *
-    radius *
-    Math.atan2(Math.sqrt(sine), Math.sqrt(1 - sine)) *
-    (1 + Math.abs(Math.cos(latitude)) * 0.002)
-  );
-}
-
 function coordinateLeg(
   kind: TransportLeg['kind'],
   mode: TransportMode,
@@ -146,6 +131,7 @@ function coordinateLeg(
     instruction: null,
     fromCoordinate,
     toCoordinate,
+    path: null,
   };
 }
 
@@ -272,7 +258,11 @@ function buildCoordinateRoute(
 
 async function planCoordinateTransport(
   input: PlanInput,
-  options: { roadRouter?: RoadRouter; liveRouteProvider?: LiveRouteProvider },
+  options: {
+    roadRouter?: RoadRouter;
+    liveRouteProvider?: LiveRouteProvider;
+    env?: unknown;
+  },
   origin: TransportCoordinate,
   destination: TransportCoordinate,
 ): Promise<PlanResult> {
@@ -348,25 +338,24 @@ async function planCoordinateTransport(
     } else
       unavailable.push({ mode: 'car', reason: 'road_router_not_configured' });
   }
-  const eligible = routes.filter((route) => route.meetsDeadline);
-  const best = eligible.toSorted(
-    (a, b) => a.durationSeconds - b.durationSeconds,
-  )[0];
+  const estimates = estimatePlanRoutes(routes);
   const common = source(new Date().toISOString());
   return {
     query: input,
     routes,
     unavailable,
-    recommendation: best
-      ? {
-          kind: 'recommended',
-          routeId: best.id,
-          reason: 'Earliest arrival within the requested conditions.',
-        }
-      : {
-          kind: 'unavailable',
-          reason: input.arriveBy ? 'deadline_missed' : 'no_route',
-        },
+    estimates,
+    recommendation: recommendTransport(
+      routes,
+      estimates,
+      input.extraMinutes,
+      input.arriveBy,
+    ),
+    jev: await rankTransportChoice(options.env, {
+      routes,
+      estimates,
+      extraMinutes: input.extraMinutes,
+    }),
     awardEligible: false,
     source: common,
   };
@@ -389,10 +378,11 @@ function primaryRouteMode(
   return route.mode;
 }
 
-function fromProviderResult(
+async function fromProviderResult(
   input: PlanInput,
   result: ProviderResult,
-): PlanResult {
+  env: unknown,
+): Promise<PlanResult> {
   const source: Source = {
     kind: 'live',
     provider:
@@ -409,7 +399,9 @@ function fromProviderResult(
       query: input,
       routes: [],
       unavailable: input.modes.map((mode) => ({ mode, reason: result.reason })),
+      estimates: [],
       recommendation: { kind: 'unavailable', reason: result.reason },
+      jev: skipJev(),
       awardEligible: false,
       source,
     };
@@ -425,6 +417,9 @@ function fromProviderResult(
       const shape = legGeometry.find(
         (candidate) => candidate.legIndex === legIndex,
       )?.points;
+      const path =
+        evidence?.legShapes.find((candidate) => candidate.legIndex === legIndex)
+          ?.points ?? null;
       const fromCoordinate =
         shape?.[0] ??
         (legIndex === 0 && evidence?.geometry.kind === 'provider'
@@ -436,7 +431,7 @@ function fromProviderResult(
         evidence?.geometry.kind === 'provider'
           ? evidence.geometry.end
           : null);
-      return { item, fromCoordinate, toCoordinate };
+      return { item, fromCoordinate, toCoordinate, path };
     });
     const sum = mapped.reduce(
       (total, value) => total + value.item.durationSeconds,
@@ -474,9 +469,10 @@ function fromProviderResult(
           evidence?.geometry.kind === 'provider'
             ? evidence.geometry.start
             : null,
+        path: null,
       });
     }
-    mapped.forEach(({ item, fromCoordinate, toCoordinate }, legIndex) => {
+    mapped.forEach(({ item, fromCoordinate, toCoordinate, path }, legIndex) => {
       const end = new Date(cursor.getTime() + item.durationSeconds * 1000);
       legs.push({
         kind:
@@ -510,6 +506,7 @@ function fromProviderResult(
         instruction: null,
         fromCoordinate,
         toCoordinate,
+        path,
       });
       cursor = end;
     });
@@ -543,23 +540,23 @@ function fromProviderResult(
             : 'walk',
       reason: outcome.reason,
     }));
-  const best = routes
-    .filter((route) => route.meetsDeadline)
-    .toSorted((a, b) => a.durationSeconds - b.durationSeconds)[0];
+  const estimates = estimatePlanRoutes(routes);
   return {
     query: input,
     routes,
     unavailable,
-    recommendation: best
-      ? {
-          kind: 'recommended',
-          routeId: best.id,
-          reason: 'Fastest live route within the requested conditions.',
-        }
-      : {
-          kind: 'unavailable',
-          reason: input.arriveBy ? 'deadline_missed' : 'no_route',
-        },
+    estimates,
+    recommendation: recommendTransport(
+      routes,
+      estimates,
+      input.extraMinutes,
+      input.arriveBy,
+    ),
+    jev: await rankTransportChoice(env, {
+      routes,
+      estimates,
+      extraMinutes: input.extraMinutes,
+    }),
     awardEligible: false,
     source,
   };
@@ -568,6 +565,7 @@ function fromProviderResult(
 async function planLiveTransport(
   input: PlanInput,
   provider: LiveRouteProvider,
+  env: unknown,
 ): Promise<PlanResult> {
   const modes = [
     ...new Set(
@@ -582,7 +580,7 @@ async function planLiveTransport(
     modes,
     extraMinutes: 0,
   });
-  return fromProviderResult(input, result);
+  return fromProviderResult(input, result, env);
 }
 function coordinate(value: string) {
   return coordinates[value.replace(/ (station|stop|interchange)$/, '')] ?? null;
@@ -682,6 +680,7 @@ function leg(
     instruction: null,
     fromCoordinate: coordinate(from),
     toCoordinate: coordinate(to),
+    path: null,
   };
 }
 function buildTransit(
@@ -938,11 +937,12 @@ export async function planTransport(
   options: {
     roadRouter?: RoadRouter;
     liveRouteProvider?: LiveRouteProvider;
+    env?: unknown;
   } = {},
 ): Promise<PlanResult> {
   const input = planInput.parse(raw);
   if (options.liveRouteProvider)
-    return planLiveTransport(input, options.liveRouteProvider);
+    return planLiveTransport(input, options.liveRouteProvider, options.env);
   const origin = stopId(input.origin);
   const destination = stopId(input.destination);
   const originCoordinate = placeCoordinate(input.origin);
@@ -984,7 +984,9 @@ export async function planTransport(
         { mode: 'walk', reason: 'outside_demo_coverage' },
         { mode: 'car', reason: 'road_router_not_configured' },
       ],
+      estimates: [],
       recommendation: { kind: 'unavailable', reason: 'outside_demo_coverage' },
+      jev: skipJev(),
       awardEligible: false,
       source: common,
     };
@@ -1047,24 +1049,23 @@ export async function planTransport(
       else unavailable.push({ mode, reason: 'road_router_error' });
     } else unavailable.push({ mode, reason: 'road_router_not_configured' });
   }
-  const eligible = routes.filter((r) => r.meetsDeadline);
-  const best = eligible.toSorted(
-    (a, b) => a.durationSeconds - b.durationSeconds,
-  )[0];
+  const estimates = estimatePlanRoutes(routes);
   return {
     query: input,
     routes,
     unavailable,
-    recommendation: best
-      ? {
-          kind: 'recommended',
-          routeId: best.id,
-          reason: 'Earliest arrival within the requested conditions.',
-        }
-      : {
-          kind: 'unavailable',
-          reason: input.arriveBy ? 'deadline_missed' : 'no_route',
-        },
+    estimates,
+    recommendation: recommendTransport(
+      routes,
+      estimates,
+      input.extraMinutes,
+      input.arriveBy,
+    ),
+    jev: await rankTransportChoice(options.env, {
+      routes,
+      estimates,
+      extraMinutes: input.extraMinutes,
+    }),
     awardEligible: false,
     source: common,
   };

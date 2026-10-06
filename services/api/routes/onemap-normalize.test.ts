@@ -141,6 +141,11 @@ test('documented transit stop/shape offsets preserve metrics but cannot invent a
       result.evidence[0].factorApplicability,
       'geography_unverified',
     );
+    // Each leg's own verified shape is kept for map drawing even though the
+    // joints do not line up; gaps stay gaps.
+    assert.equal(result.evidence[0].legShapes.length, 2);
+    for (const shape of result.evidence[0].legShapes)
+      assert.ok(shape.points.length >= 2);
   }
 });
 
