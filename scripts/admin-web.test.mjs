@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { buildAdmin } from './build-admin.mjs';
@@ -30,7 +31,7 @@ test('deploy artifact contains only public admin assets and fixed API routes', a
       );
       assert.match(html, /aria-label="Administration"/);
       assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
-      assert.match(html, /id="password-signin" method="post"/);
+      assert.match(html, /id="password-signin" method="get"/);
       assert.doesNotMatch(html, /name="(?:email|password)"/);
     }
     const config = JSON.parse(await readFile(join(dir, 'vercel.json'), 'utf8'));
@@ -58,6 +59,19 @@ test('deploy artifact contains only public admin assets and fixed API routes', a
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('repository Vercel config routes the deployed dashboard to the API', async () => {
+  const config = JSON.parse(
+    await readFile(
+      fileURLToPath(new URL('../vercel.json', import.meta.url)),
+      'utf8',
+    ),
+  );
+  assert.equal(config.outputDirectory, 'dist/admin-vercel');
+  assert.equal(config.redirects[0].destination, '/admin/');
+  assert.ok(config.rewrites.some((route) => route.source === '/admin/config'));
+  assert.ok(config.rewrites.some((route) => route.source === '/v1/session'));
 });
 
 test('build refuses output containing a secret or stale file', async () => {

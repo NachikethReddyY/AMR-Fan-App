@@ -84,6 +84,20 @@ const searchResponse = z.object({
     )
     .length(1),
 });
+const placeSearchResponse = z.object({
+  error: z.never().optional(),
+  results: z
+    .array(
+      z.object({
+        SEARCHVAL: z.string().min(1).max(240),
+        ADDRESS: z.string().max(240).optional(),
+        POSTAL: z.string().max(20).optional(),
+        LATITUDE: decimal.pipe(coordinate.shape.latitude),
+        LONGITUDE: decimal.pipe(coordinate.shape.longitude),
+      }),
+    )
+    .max(20),
+});
 export function resolveOneMapAddress(raw: unknown) {
   const parsed = searchResponse.safeParse(raw);
   if (!parsed.success) return missing;
@@ -94,6 +108,31 @@ export function resolveOneMapAddress(raw: unknown) {
   return isSingaporeCoordinate(result)
     ? ({ kind: 'coordinate', coordinate: result } as const)
     : missing;
+}
+
+export function searchOneMapAddresses(raw: unknown) {
+  const parsed = placeSearchResponse.safeParse(raw);
+  if (!parsed.success)
+    return { kind: 'unavailable', reason: 'missing_data' } as const;
+  const places = parsed.data.results
+    .map((item) => {
+      const coordinate = {
+        latitude: item.LATITUDE,
+        longitude: item.LONGITUDE,
+      };
+      if (!isSingaporeCoordinate(coordinate)) return null;
+      return {
+        id: `${item.POSTAL ?? 'place'}-${coordinate.latitude}-${coordinate.longitude}`,
+        label: item.SEARCHVAL,
+        address: item.ADDRESS ?? item.SEARCHVAL,
+        coordinate,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .slice(0, 5);
+  return places.length > 0
+    ? ({ kind: 'places', places } as const)
+    : ({ kind: 'unavailable', reason: 'no_route' } as const);
 }
 
 export async function normalizeOneMap(
@@ -244,6 +283,7 @@ export async function normalizeOneMap(
             legs: c.shapes.map((points, legIndex) => ({ legIndex, points })),
           }
         : { kind: 'unavailable', reason: 'missing_geometry' },
+      legShapes: c.shapes.map((points, legIndex) => ({ legIndex, points })),
       geometry: c.continuous
         ? {
             kind: 'provider',

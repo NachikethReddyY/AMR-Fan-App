@@ -7,6 +7,7 @@ import {
   type EmissionFactor,
 } from '@amr/travel-domain/emissions';
 import { recommendRoute } from '@amr/travel-domain/recommendation';
+import { rankRouteChoice } from '../ai/jev-rank.ts';
 import type { RouteSnapshot } from '../journeys/contracts.ts';
 import { boundarySource } from './geography.ts';
 import type { GoogleRouteBudget } from './google-budget.ts';
@@ -62,19 +63,32 @@ export function createRouteQuery({
           })
         : [];
     // Never exclude a faster route to make another fit the time limit. Where
-    // geography/method is unknown, preserve candidates and withhold comparison.
+    // geography/method is unknown, compare only verified candidates and keep
+    // every route available with its own estimate state.
+    const verifiedIds =
+      result.kind === 'routes'
+        ? new Set(
+            result.evidence
+              .filter(
+                (item) => item.factorApplicability === 'singapore_indicative',
+              )
+              .map((item) => item.routeId),
+          )
+        : new Set<string>();
     const recommendation =
       result.kind !== 'routes'
         ? ({ kind: 'unavailable', reason: 'no_routes' } as const)
-        : result.evidence.some(
-              (item) => item.factorApplicability !== 'singapore_indicative',
-            )
+        : verifiedIds.size === 0
           ? ({
               kind: 'unavailable',
               reason: 'factor_applicability_unverified',
             } as const)
-          : recommendRoute(result.routes, parsed.data.extraMinutes, factors);
-    return {
+          : recommendRoute(result.routes, parsed.data.extraMinutes, factors, {
+              eligibleIds: verifiedIds,
+            });
+    // Jev ranks relative preference only; amounts stay code-calculated and
+    // the deterministic recommendation above always stands as fallback.
+    const queryResult = {
       query: parsed.data,
       result,
       estimates,
@@ -94,6 +108,23 @@ export function createRouteQuery({
           }
         : {}),
     };
+    const jev = await rankRouteChoice(env, queryResult);
+    // Drawable paths for options with continuous provider geometry. Routes
+    // without it stay listed but draw nothing; never connect the gaps.
+    const paths =
+      result.kind !== 'routes'
+        ? []
+        : result.evidence.flatMap((item) =>
+            item.geometry.kind === 'provider'
+              ? [
+                  {
+                    routeId: item.routeId,
+                    points: item.geometry.points,
+                  },
+                ]
+              : [],
+          );
+    return { ...queryResult, paths, jev };
   };
 }
 export type RouteQueryResult = Awaited<

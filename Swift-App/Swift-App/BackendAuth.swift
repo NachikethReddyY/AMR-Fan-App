@@ -75,6 +75,13 @@ enum FormURLEncoder {
     }
 }
 
+enum HTTPRequestBodyPolicy {
+    static func shouldEncodeBody(for method: String) -> Bool {
+        let method = method.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return method != "GET" && method != "HEAD"
+    }
+}
+
 enum SecureRandom {
     static func token(byteCount: Int) throws -> String {
         var bytes = [UInt8](repeating: 0, count: byteCount)
@@ -109,13 +116,19 @@ final class KeychainSessionStore: SessionTokenStore {
         self.account = account
     }
 
-    func read() -> String? {
-        let query: [String: Any] = [
+    private var query: [String: Any] {
+        [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: account,
+            kSecAttrAccount as String: account
+        ]
+    }
+
+    func read() -> String? {
+        var query = query
+        query.merge([
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+        ]) { _, new in new }
         var result: AnyObject?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data else { return nil }
@@ -123,26 +136,31 @@ final class KeychainSessionStore: SessionTokenStore {
     }
 
     func write(_ value: String) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: account
-        ]
-        let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: Data(value.utf8)] as CFDictionary)
-        if status == errSecItemNotFound {
-            let addStatus = SecItemAdd(query.merging([
-                kSecValueData as String: Data(value.utf8)
-            ]) { _, new in new } as CFDictionary, nil)
-            guard addStatus == errSecSuccess else { throw SessionStoreError.keychain(addStatus) }
-        } else if status != errSecSuccess {
-            throw SessionStoreError.keychain(status)
+        let data = Data(value.utf8)
+        var item = query
+        item[kSecValueData as String] = data
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+        let addStatus = SecItemAdd(item as CFDictionary, nil)
+        if addStatus == errSecSuccess { return }
+        guard addStatus == errSecDuplicateItem else {
+            throw SessionStoreError.keychain(addStatus)
+        }
+
+        let updateStatus = SecItemUpdate(
+            query as CFDictionary,
+            [
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            ] as CFDictionary
+        )
+        guard updateStatus == errSecSuccess else {
+            throw SessionStoreError.keychain(updateStatus)
         }
     }
 
     func delete() throws {
-        let status = SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: account
-        ] as CFDictionary)
+        let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw SessionStoreError.keychain(status)
         }

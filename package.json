@@ -47,6 +47,7 @@
     "account:test": "node --test services/api/auth/*.test.ts",
     "account:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/accounts/*.test.ts services/api/api/app.test.ts",
     "route:test": "node --test --test-concurrency=1 services/api/routes/*.test.ts services/api/api/onemap-start.test.ts",
+    "transport:test": "pnpm --filter @amr/api transport:test",
     "route:test:database": "pnpm db:run-test -- node --test --test-concurrency=1 services/api/api/routes.test.ts services/api/routes/testing/google-budget.database.test.ts",
     "api:start": "pnpm --filter @amr/api start",
     "api:start:onemap": "pnpm --filter @amr/api start:onemap",

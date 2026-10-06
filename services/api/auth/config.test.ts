@@ -11,7 +11,13 @@ const production = {
   API_HOST: '0.0.0.0',
 };
 test('production requires complete verification configuration and refuses dev bypass', () => {
-  assert.equal(authConfig(production).kind, 'oidc');
+  assert.deepEqual(authConfig(production), {
+    kind: 'oidc',
+    issuer: production.AUTH_ISSUER,
+    audience: production.AUTH_AUDIENCE,
+    jwksUrl: production.AUTH_JWKS_URL,
+    scope: production.AUTH_REQUIRED_SCOPE,
+  });
   for (const key of [
     'AUTH_ISSUER',
     'AUTH_AUDIENCE',

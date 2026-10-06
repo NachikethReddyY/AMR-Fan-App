@@ -163,3 +163,12 @@ The single ordering of eligible fan submissions by contributions from demo and r
 
 **Demo reset**:
 A restart of simulated journeys and dashboard examples for a persistent demo profile, preserving purchased rewards, content access, fan submissions, point History and shared contributions. It clears remaining demo points to 0, records the reset in History, cancels unfinished simulated journeys and requires fresh confirmation for unfinished purchases.
+
+**Sustainable activity**:
+A fan's action, such as reuse, recycling, planting or public transport, submitted for assessment under an agreed activity rule. A transport activity may refer to a tracked journey. An accepted activity does not by itself establish a measured emissions reduction.
+
+**Activity evidence**:
+A photo captured in the app with a short description, used to assess a claimed sustainable activity. It is separate from an official report source and from the phone's recorded journey evidence.
+
+**Photo activity award**:
+A preliminary or standalone point award for an accepted photo activity. A preliminary transport award belongs to the same journey as its eventual award, so later credit covers only the remaining difference.

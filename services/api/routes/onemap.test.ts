@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createServer, type RequestListener } from 'node:http';
 import { once } from 'node:events';
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createRouteProvider } from './provider.ts';
+import { readOneMapCredentials } from './onemap.ts';
 import { createRouteQuery } from './query.ts';
 import {
   road,
@@ -70,6 +74,30 @@ test('OneMap stays disabled without assigned credentials and rejects unsafe conf
     assert.throws(() => createRouteProvider(env), {
       message: 'Invalid route provider configuration.',
     });
+});
+
+test('credential files accept the supplied APIKKEY spelling as an access token', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'amr-onemap-alias-'));
+  const path = join(directory, 'credentials.json');
+  try {
+    await writeFile(
+      path,
+      JSON.stringify({
+        ONEMAP_EMAIL: 'synthetic@example.invalid',
+        ONEMAP_APIKKEY: 'synthetic-access-token',
+      }),
+      { mode: 0o600 },
+    );
+    await chmod(path, 0o600);
+    const credentials = await readOneMapCredentials(path);
+    assert.ok('kind' in credentials);
+    if ('kind' in credentials) {
+      assert.equal(credentials.value, 'synthetic-access-token');
+      assert.ok(credentials.expires > Date.now());
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 test('real HTTP OneMap query resolves addresses once, caches token, preserves calculations and caps concurrency', async () => {
   const paths: string[] = [];
@@ -468,10 +496,15 @@ test('query keeps genuine modes and disconnected transit honest through journey 
       const second = await query(actor, request);
       assert.equal(second.result.kind, 'routes');
       if (second.result.kind !== 'routes') return;
-      assert.deepEqual(second.recommendation, {
-        kind: 'unavailable',
-        reason: 'factor_applicability_unverified',
-      });
+      // The disconnected transit candidate leaves the comparison instead of
+      // withholding it; verified car and walk still compare.
+      assert.equal(second.recommendation.kind, 'recommended');
+      if (second.recommendation.kind === 'recommended') {
+        assert.equal(second.recommendation.route.mode, 'walk');
+        assert.equal(second.recommendation.fastestSeconds, 600);
+        assert.equal(second.recommendation.limitSeconds, 720);
+        assert.ok(Math.abs(second.recommendation.avoidedKgCo2e - 0.17) < 1e-9);
+      }
       assert.deepEqual(
         routeSnapshots(second).find((r) => r.routeId === 'onemap-transit-0'),
         {

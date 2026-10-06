@@ -17,7 +17,7 @@ struct RewardsScreen: View {
                 greenPointsHeader
 
                 if !demoSeedApplied {
-                    Button("Enable 9,000 demo Green Points on this device") {
+                    Button("Add 9,000 Green Points on this device") {
                         demoSeedApplied = true
                         demoState.greenPoints += DemoMode.optionalGreenPoints
                     }

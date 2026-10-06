@@ -122,6 +122,14 @@ test('authenticated query calculates only supported returned geography through r
       assert.ok(Math.abs(result.recommendation.avoidedKgCo2e - 1.6) < 1e-9);
       assert.equal(result.recommendation.baselineDistanceMeters, 10000);
     }
+    // Every verified option carries its drawable provider path.
+    if (result.result.kind === 'routes') {
+      assert.deepEqual(
+        result.paths.map((item) => item.routeId).sort(),
+        result.result.routes.map((route) => route.id).sort(),
+      );
+      for (const item of result.paths) assert.ok(item.points.length > 1);
+    }
     if (result.result.kind === 'routes') {
       assert.equal(result.result.source.kind, 'fixture');
       assert.ok(Number.isFinite(Date.parse(result.result.fetchedAt)));
@@ -163,6 +171,184 @@ test('authenticated query calculates only supported returned geography through r
       kind: 'unavailable',
       reason: 'no_routes',
     });
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+    assert.equal(server.listening, false);
+  }
+});
+
+test('recommendation narrows to verified candidates when a mode is unverified', async () => {
+  const server = createServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(Buffer.from(chunk));
+    const { travelMode } = JSON.parse(Buffer.concat(chunks).toString());
+    const minutes = travelMode === 'DRIVE' ? 30 : 40;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        routes: [
+          {
+            distanceMeters: 10000,
+            duration: `${minutes * 60}s`,
+            ...(travelMode === 'TRANSIT'
+              ? {}
+              : {
+                  polyline: {
+                    encodedPolyline: 'o}zFoezxRo}@?',
+                  },
+                }),
+            legs: [
+              {
+                startLocation: {
+                  latLng: { latitude: 1.29, longitude: 103.85 },
+                },
+                endLocation: {
+                  latLng: { latitude: 1.3, longitude: 103.85 },
+                },
+                steps: [
+                  {
+                    travelMode,
+                    distanceMeters: 10000,
+                    staticDuration: `${minutes * 60}s`,
+                    ...(travelMode === 'TRANSIT'
+                      ? {
+                          transitDetails: {
+                            transitLine: { vehicle: { type: 'SUBWAY' } },
+                          },
+                        }
+                      : {}),
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+  server.listen(0, '127.0.0.1');
+  try {
+    await once(server, 'listening');
+    const address = server.address();
+    assert.ok(address && typeof address === 'object');
+    const query = createRouteQuery({
+      env: {
+        NODE_ENV: 'test',
+        AMR_ROUTES_SYNTHETIC: 'true',
+        AMR_GOOGLE_ROUTES_ENDPOINT: `http://127.0.0.1:${address.port}/directions/v2:computeRoutes`,
+      },
+    });
+    const result = await query(
+      { principalId: 'account-a', role: 'fan' },
+      { ...input, modes: ['DRIVE', 'TRANSIT'] },
+    );
+    assert.equal(result.result.kind, 'routes');
+    const transit = result.estimates.find((item) =>
+      item.routeId.startsWith('google-train'),
+    );
+    assert.deepEqual(transit?.estimate, {
+      kind: 'unavailable',
+      reason: 'geography_unverified',
+    });
+    // The unverified transit option has no drawable path either.
+    assert.ok(
+      result.paths.every((item) => !item.routeId.startsWith('google-train')),
+    );
+    assert.equal(result.recommendation.kind, 'recommended');
+    if (result.recommendation.kind === 'recommended') {
+      assert.equal(result.recommendation.route.mode, 'car');
+      assert.equal(result.recommendation.fastestSeconds, 1800);
+      assert.equal(result.recommendation.limitSeconds, 2400);
+      assert.equal(result.recommendation.avoidedKgCo2e, 0);
+    }
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+    assert.equal(server.listening, false);
+  }
+});
+
+test('active travel over the viability cap cannot win the recommendation', async () => {
+  const seconds: Record<string, number> = {
+    DRIVE: 1200,
+    WALK: 2000,
+    BICYCLE: 2000,
+  };
+  const server = createServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(Buffer.from(chunk));
+    const { travelMode } = JSON.parse(Buffer.concat(chunks).toString());
+    const duration = seconds[travelMode] ?? 2400;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        routes: [
+          {
+            distanceMeters: 10000,
+            duration: `${duration}s`,
+            polyline: { encodedPolyline: 'o}zFoezxRo}@?' },
+            legs: [
+              {
+                startLocation: {
+                  latLng: { latitude: 1.29, longitude: 103.85 },
+                },
+                endLocation: { latLng: { latitude: 1.3, longitude: 103.85 } },
+                steps: [
+                  {
+                    travelMode,
+                    distanceMeters: 10000,
+                    staticDuration: `${duration}s`,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+  server.listen(0, '127.0.0.1');
+  try {
+    await once(server, 'listening');
+    const address = server.address();
+    assert.ok(address && typeof address === 'object');
+    const query = createRouteQuery({
+      env: {
+        NODE_ENV: 'test',
+        AMR_ROUTES_SYNTHETIC: 'true',
+        AMR_GOOGLE_ROUTES_ENDPOINT: `http://127.0.0.1:${address.port}/directions/v2:computeRoutes`,
+      },
+    });
+    const result = await query(
+      { principalId: 'account-d', role: 'fan' },
+      { ...input, modes: ['DRIVE', 'WALK', 'BICYCLE'], extraMinutes: 15 },
+    );
+    assert.equal(result.result.kind, 'routes');
+    // Both stay listed with honest zeroes, inside the time window.
+    for (const id of ['google-walk-0', 'google-cycle-0']) {
+      const item = result.estimates.find((entry) => entry.routeId === id);
+      assert.deepEqual(item?.estimate, {
+        kind: 'estimated',
+        kgCo2e: 0,
+        factorIds: [
+          id === 'google-walk-0'
+            ? 'sg-walk-operational-v1'
+            : 'sg-cycle-operational-v1',
+        ],
+      });
+    }
+    // But the 33-minute active legs cannot win; the car does.
+    assert.equal(result.recommendation.kind, 'recommended');
+    if (result.recommendation.kind === 'recommended') {
+      assert.equal(result.recommendation.route.mode, 'car');
+      assert.equal(result.recommendation.fastestSeconds, 1200);
+      assert.equal(result.recommendation.limitSeconds, 2100);
+    }
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) =>

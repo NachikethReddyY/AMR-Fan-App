@@ -2,7 +2,6 @@ import SwiftUI
 
 struct DriverSelectionScreen: View {
     let select: (Driver) -> Void
-    let openAccount: () -> Void
     @State private var appeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -16,13 +15,13 @@ struct DriverSelectionScreen: View {
                         .foregroundStyle(FanStyle.teal)
                         .padding(.top, 18)
 
-                    Text("Choose your\nTeam.")
-                        .font(.system(size: 43, weight: .bold, design: .rounded))
+                    Text("On this team.")
+                        .font(.system(size: 38, weight: .bold, design: .rounded))
                         .tracking(-2)
                         .lineSpacing(-2)
                         .padding(.top, 28)
 
-                    Text("Every fan has a side. Who's yours?")
+                    Text("Choose the driver you support.")
                         .font(.subheadline)
                         .foregroundStyle(FanStyle.muted)
                         .padding(.top, 9)
@@ -46,9 +45,6 @@ struct DriverSelectionScreen: View {
                                     Text("TEAM \(driver.rawValue.uppercased())")
                                         .font(.system(size: 11, weight: .heavy))
                                         .tracking(2)
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .foregroundStyle(FanStyle.teal)
                                 }
                                 .padding(22)
                             }
@@ -61,20 +57,6 @@ struct DriverSelectionScreen: View {
                         .padding(.bottom, 20)
                     }
 
-                    Text("You can switch drivers anytime in your profile.")
-                        .font(.caption)
-                        .foregroundStyle(FanStyle.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, 15)
-
-                    Button(action: openAccount) {
-                        Text("Already a fan? Sign in")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(FanStyle.teal)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                    }
-                    .padding(.bottom, 20)
                 }
                 .padding(.horizontal, 22)
                 .frame(maxWidth: 520)

@@ -46,6 +46,16 @@ test('verified access token returns only issuer and subject, never client roles 
     { issuer: config.issuer, subject: 'provider-subject' },
   );
 });
+test('verified display name is retained as display data without becoming authority', async () => {
+  assert.deepEqual(
+    await verify(await token({ name: 'Nachiketh Reddy', roles: ['admin'] })),
+    {
+      issuer: config.issuer,
+      subject: 'provider-subject',
+      displayName: 'Nachiketh Reddy',
+    },
+  );
+});
 test('invalid issuer/audience/time/signature/subject/scope fail closed', async () => {
   for (const claim of [
     { iss: 'https://attacker.example.test' },

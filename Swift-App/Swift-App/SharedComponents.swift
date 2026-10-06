@@ -1,5 +1,24 @@
 import SwiftUI
 
+struct OnboardingProgressBar: View {
+    let currentStep: Int
+    let totalSteps: Int
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Capsule()
+                    .fill(index <= currentStep ? FanStyle.astonGreen : .white.opacity(0.2))
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(width: 112, height: 5)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Onboarding progress")
+        .accessibilityValue("Step \(currentStep + 1) of \(totalSteps)")
+    }
+}
+
 struct SectionHeader: View {
     let title: String
     let description: String

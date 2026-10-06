@@ -3,10 +3,16 @@ import SwiftUI
 struct HomeScreen: View {
     let driver: Driver
     let demoState: DemoFanState
+    let profile: BackendProfile?
     let open: (FanDestination) -> Void
     let openCamera: () -> Void
     @State private var appeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var accountName: String {
+        let name = profile?.displayName.trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty || name == "Fan" || name == "Unknown" ? "Fan" : name
+    }
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: .now)
@@ -31,7 +37,7 @@ struct HomeScreen: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(greeting)
                                     .foregroundStyle(.white)
-                                Text("\(driver.rawValue)!")
+                                Text("\(accountName)!")
                                     .foregroundStyle(FanStyle.teal)
                                     .padding(.leading, 15)
                             }

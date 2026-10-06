@@ -6,44 +6,56 @@ struct BottomBar: View {
     let selectTab: (FanTab) -> Void
 
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 10) {
             HStack(spacing: 0) {
-                ForEach(FanTab.allCases) { tab in
+                ForEach([FanTab.home, .rewards, .impact]) { tab in
                     Button {
                         selectTab(tab)
                     } label: {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 3) {
                             Image(systemName: tab.symbol)
-                                .font(.system(size: 23, weight: .bold))
-                                .foregroundStyle(selectedTab == tab ? FanStyle.teal : .white.opacity(0.8))
+                                .font(.system(size: 19, weight: .semibold))
                             Text(tab.rawValue)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(selectedTab == tab ? FanStyle.teal : .white.opacity(0.75))
+                                .font(.caption2.weight(.semibold))
                         }
+                        .foregroundStyle(selectedTab == tab ? FanStyle.navigationTeal : Color.white.opacity(0.92))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(selectedTab == tab ? .white.opacity(0.13) : .clear, in: Capsule())
+                        .frame(minHeight: 56)
+                        .background {
+                            if selectedTab == tab {
+                                Capsule()
+                                    .fill(Color.black.opacity(0.30))
+                                    .padding(4)
+                            }
+                        }
                     }
                     .buttonStyle(FanPressStyle())
+                    .accessibilityLabel(tab.rawValue)
+                    .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
                 }
             }
-            .padding(4)
-            .background(Color(red: 0.14, green: 0.15, blue: 0.15).opacity(0.97), in: Capsule())
-            .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
+            .background(Capsule().fill(.regularMaterial))
+            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 1))
 
             Button(action: openTravel) {
-                Image(systemName: "paperplane.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(.white)
-                    .frame(width: 62, height: 62)
-                    .background(Color(red: 0.14, green: 0.15, blue: 0.15).opacity(0.97), in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.2), lineWidth: 1))
+                Image(systemName: FanTab.travel.symbol)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(selectedTab == .travel ? FanStyle.navigationTeal : Color.white.opacity(0.92))
+                    .frame(width: 58, height: 58)
+                    .background(Circle().fill(.regularMaterial))
+                    .overlay {
+                        Circle().stroke(
+                            selectedTab == .travel ? FanStyle.navigationTeal.opacity(0.9) : Color.white.opacity(0.24),
+                            lineWidth: selectedTab == .travel ? 2 : 1
+                        )
+                    }
             }
-            .accessibilityLabel("Plan a journey")
+            .buttonStyle(FanPressStyle())
+            .accessibilityLabel("Travel")
+            .accessibilityAddTraits(selectedTab == .travel ? .isSelected : [])
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
-        .shadow(color: .black.opacity(0.55), radius: 18, y: 5)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 8)
+        .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
     }
 }

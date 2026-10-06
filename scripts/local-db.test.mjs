@@ -66,3 +66,36 @@ test('local operations reject production and ambiguous environment modes', () =>
   assert.doesNotThrow(() => requireLocalMode({}));
   assert.doesNotThrow(() => requireLocalMode({ NODE_ENV: 'test' }));
 });
+
+test('CI database overrides require opt-in and reject paths outside the run', () => {
+  const run = (env) =>
+    spawnSync(process.execPath, ['--input-type=module', '-'], {
+      input: "await import('./scripts/local-db.mjs');\n",
+      encoding: 'utf8',
+      env: { ...process.env, ...env },
+    });
+  const valid = {
+    AMR_DB_CI_MODE: 'true',
+    AMR_LOCAL_DB_AUTH_DIR:
+      '/home/runner/.local/share/black-box-runner/state/transient/123-1/auth',
+    AMR_LOCAL_DB_PROJECT: 'blackbox-amr-123-1',
+    AMR_LOCAL_DB_COMPOSE_FILE:
+      '/home/runner/work/amr/.github/blackbox/amr-ci-compose.override.yaml',
+  };
+  assert.equal(run(valid).status, 0);
+  for (const env of [
+    { ...valid, AMR_DB_CI_MODE: 'false' },
+    { ...valid, AMR_LOCAL_DB_AUTH_DIR: '/tmp/auth' },
+    { ...valid, AMR_LOCAL_DB_PROJECT: 'amr-local-postgres' },
+    { ...valid, AMR_LOCAL_DB_COMPOSE_FILE: '/tmp/compose.yaml' },
+    {
+      ...valid,
+      AMR_LOCAL_DB_AUTH_DIR:
+        '/home/runner/../black-box-runner/state/transient/123-1/auth',
+    },
+  ]) {
+    const result = run(env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /requires a valid CI-owned value/);
+  }
+});

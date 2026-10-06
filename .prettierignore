@@ -25,3 +25,8 @@ security/fixtures/
 bug.md
 work.md
 Swift-App/
+Kotlin-App/.gradle/
+Kotlin-App/.kotlin/
+Kotlin-App/build/
+Kotlin-App/app/build/
+Kotlin-App/app/src/main/assets/

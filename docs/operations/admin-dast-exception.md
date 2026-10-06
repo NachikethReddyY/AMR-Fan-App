@@ -1,9 +1,12 @@
 # PR46: accepted exception for ZAP 10202
 
-Status: user accepted this narrow delivery exception on 26 September 2026.
+Status: historical exception recorded on 26 September 2026. It was superseded by the 1 October 2026 correction below.
+
 The failed DAST result remains failed. No scanner rule, threshold or global
 security policy is changed, and no CSRF-specific code fix is justified by this
 independently reviewed heuristic finding.
+
+Correction on 1 October 2026: the five JavaScript-only sign-in forms now use `method="get"` instead of `method="post"`. Their submit handler still prevents native navigation, the inputs still omit successful-control names, and the API still uses bearer headers with `credentials: 'omit'`. This makes the native fallback explicitly non-mutating without changing the authentication flow. A hosted DAST rerun is required to confirm alert 10202 is gone.
 
 ## Exact scope
 

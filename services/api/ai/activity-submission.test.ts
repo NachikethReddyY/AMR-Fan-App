@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createActivitySubmissionAssessor } from '../ai/activity-submission.ts';
-import { validateActivityAssessmentOutput } from '../ai/activity-assessment.ts';
+import {
+  createActivitySubmissionAssessor,
+  selectActivityAssessment,
+} from '../ai/activity-submission.ts';
+import {
+  validateActivityAssessmentOutput,
+  type ActivityAssessmentOutput,
+} from '../ai/activity-assessment.ts';
 
 function submission() {
   return {
@@ -12,7 +18,7 @@ function submission() {
     photos: [{ bytes: Buffer.from([1, 2, 3]), fingerprint: 'b'.repeat(64) }],
   };
 }
-const out = (score = 60) => ({
+const out = (score = 60): ActivityAssessmentOutput => ({
   category: 'active_transport',
   evidenceScore: score,
   confidence: 0.9,
@@ -49,6 +55,126 @@ test('strict output rejects authority fields and invalid score', () => {
   );
   assert.throws(() =>
     validateActivityAssessmentOutput({ ...out(), evidenceScore: 101 }),
+  );
+});
+
+test('AI selector applies the existing evidence policy without awarding points', () => {
+  const base = out(80);
+  assert.deepEqual(
+    selectActivityAssessment(base, '00000000-0000-4000-8000-000000000001'),
+    {
+      kind: 'accepted',
+      assessmentId: '00000000-0000-4000-8000-000000000001',
+      ...base,
+      policyVersion: 'activity-evidence-v1',
+    },
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      { ...base, evidenceScore: 59 },
+      '00000000-0000-4000-8000-000000000001',
+    ),
+    {
+      kind: 'rejected',
+      reason: 'unsupported_activity',
+      rationale: 'clear evidence',
+    },
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      { ...base, confidence: 0.5 },
+      '00000000-0000-4000-8000-000000000001',
+    ),
+    {
+      kind: 'uncertain',
+      reason: 'low_confidence',
+      rationale: 'clear evidence',
+    },
+  );
+  assert.ok(
+    !(
+      'points' in
+      selectActivityAssessment(base, '00000000-0000-4000-8000-000000000001')
+    ),
+  );
+});
+
+test('planting is an accepted category with hands-on evidence', () => {
+  const result = selectActivityAssessment(
+    {
+      ...out(80),
+      category: 'planting',
+      rationale: 'Hands covering a seedling with a soil shovel outdoors.',
+      evidenceItems: ['hands', 'shovel with soil', 'seedling'],
+    },
+    '00000000-0000-4000-8000-000000000001',
+  );
+  assert.equal(result.kind, 'accepted');
+});
+
+test('watch metrics verb never trips the screen rule; depicted screens still fail', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.equal(
+    selectActivityAssessment(
+      {
+        ...out(80),
+        category: 'active_transport',
+        rationale: 'A wrist-worn watch displays live workout metrics outdoors.',
+        evidenceItems: ['watch', 'elapsed time', 'heart rate'],
+      },
+      id,
+    ).kind,
+    'accepted',
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      {
+        ...out(90),
+        rationale: 'A smartphone showing a photo of a run.',
+        evidenceItems: ['smartphone display'],
+      },
+      id,
+    ),
+    {
+      kind: 'rejected',
+      reason: 'invalid_evidence',
+      rationale: 'A smartphone showing a photo of a run.',
+    },
+  );
+});
+
+test('potted balcony gardening is awardable with visible hands-on care', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.equal(
+    selectActivityAssessment(
+      {
+        ...out(85),
+        category: 'planting',
+        rationale:
+          'A hand is using a trowel in the soil of a potted plant on a balcony.',
+        evidenceItems: ['hand', 'trowel', 'soil', 'potted plant'],
+      },
+      id,
+    ).kind,
+    'accepted',
+  );
+});
+test('screen depictions are rejected even beside real plants', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.deepEqual(
+    selectActivityAssessment(
+      {
+        ...out(100),
+        rationale: 'A computer screen shows a planting photo indoors.',
+        evidenceItems: ['laptop display', 'potted plant'],
+      },
+      id,
+    ),
+    {
+      kind: 'rejected',
+      reason: 'invalid_evidence',
+      rationale: 'A computer screen shows a planting photo indoors.',
+    },
   );
 });
 

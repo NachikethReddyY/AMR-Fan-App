@@ -8,12 +8,34 @@ export const activityCategories = [
   'repair',
   'active_transport',
   'volunteering',
+  'planting',
   'other',
   'unclear',
 ] as const;
 const boundedEvidenceText = z.string().min(1).max(500).regex(/\S/u);
+const modelCategory = z
+  .string()
+  .min(1)
+  .max(64)
+  .transform((value, ctx) => {
+    const normalized = value.trim().toLowerCase().replace(/[\s-]+/gu, '_');
+    const alias = normalized.replace(/_/gu, '');
+    for (const category of activityCategories) {
+      if (category === normalized || category.replace(/_/gu, '') === alias)
+        return category;
+    }
+    if (alias === 'recycling' || alias === 'cleanup' || alias === 'cleaning')
+      return 'cleanup';
+    if (alias === 'reuse' || alias === 'reuse_refill' || alias === 'refill')
+      return 'reuse_refill';
+    if (alias === 'transport' || alias === 'activetransport' || alias === 'walking' || alias === 'cycling' || alias === 'bus' || alias === 'train')
+      return 'active_transport';
+    if (alias === 'gardening' || alias === 'treeplanting') return 'planting';
+    if (alias === 'unclear' || alias === 'unknown') return 'unclear';
+    return 'other';
+  });
 export const activityAssessmentOutputSchema = z.strictObject({
-  category: z.enum(activityCategories),
+  category: modelCategory,
   evidenceScore: z.number().finite().int().min(0).max(100),
   confidence: z.number().finite().min(0).max(1),
   rationale: boundedEvidenceText,
@@ -43,10 +65,12 @@ export const activitySubmissionAssessmentResultSchema = z.discriminatedUnion(
     z.strictObject({
       kind: z.literal('uncertain'),
       reason: z.enum(['low_confidence', 'unclear', 'invalid_evidence']),
+      rationale: boundedEvidenceText,
     }),
     z.strictObject({
       kind: z.literal('rejected'),
       reason: z.enum(['unsupported_activity', 'invalid_evidence']),
+      rationale: boundedEvidenceText,
     }),
     z.strictObject({
       kind: z.literal('cancelled'),

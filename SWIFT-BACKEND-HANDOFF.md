@@ -33,7 +33,10 @@ Authentication:
 8. Send the provider access token to `POST /v1/session` as `Authorization: Bearer <provider-token>`.
 9. Persist the returned opaque AMR session token in Keychain and use it for protected API requests.
 
-The deployed server’s exact `AUTH_AUDIENCE` and `AUTH_REQUIRED_SCOPE` must still be confirmed from deployment configuration. Do not invent either value. The supplied JWKS host and the OIDC discovery JWKS host differ; verify the deployed `AUTH_JWKS_URL` intentionally before live auth acceptance.
+BB-1 currently validates `AUTH_AUDIENCE=f278be1f-21a5-455b-bb14-b2fc60373939`
+and `AUTH_REQUIRED_SCOPE=account.access`. The client requests the full scope URI,
+but Entra emits the scope name in the `scp` claim. The deployed JWKS URL is
+`https://amrfancustomers.ciamlogin.com/9dcdff78-04a7-49fc-90bd-e9c7b76e4774/discovery/v2.0/keys`.
 
 Important fan endpoints:
 

@@ -9,6 +9,13 @@ struct BackendProfile: Codable, Equatable {
     let kind: String
     let displayName: String
     let balance: Int
+    let email: String?
+    let birthday: String?
+
+    var needsProfileSetup: Bool {
+        let name = displayName.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty || name == "Fan" || name == "Unknown" || (birthday?.isEmpty ?? true)
+    }
 }
 
 struct BackendAccount: Codable, Equatable {
@@ -44,17 +51,14 @@ struct BackendImpactTotal: Decodable {
     let journeyCount: Int?
     let excludedJourneys: Int?
     let reasons: [String]?
+}
 
-    init(from decoder: Decoder) throws {
-        let values = try decoder.container(keyedBy: CodingKeys.self)
-        kind = try values.decode(String.self, forKey: .kind)
-        savingsKg = try values.decodeIfPresent(String.self, forKey: .savingsKg)
-        journeyCount = try values.decodeIfPresent(Int.self, forKey: .journeyCount)
-        excludedJourneys = try values.decodeIfPresent(Int.self, forKey: .excludedJourneys)
-        reasons = try values.decodeIfPresent([String].self, forKey: .reasons)
-    }
-
-    private enum CodingKeys: String, CodingKey { case kind, savingsKg, journeyCount, excludedJourneys, reasons }
+struct BackendParticipation: Decodable {
+    let kind: String
+    let activityCount: Int?
+    let missionsCompleted: Int?
+    let pointsEarned: Int?
+    let reason: String?
 }
 
 struct BackendImpactOverview: Decodable {
@@ -81,25 +85,6 @@ struct BackendImpactOverview: Decodable {
     private enum FanKeys: String, CodingKey { case personal, community }
     private enum ImpactKeys: String, CodingKey { case travel, participation }
     private enum OfficialKeys: String, CodingKey { case status }
-}
-
-struct BackendParticipation: Decodable {
-    let kind: String
-    let activityCount: Int?
-    let missionsCompleted: Int?
-    let pointsEarned: Int?
-    let reason: String?
-
-    init(from decoder: Decoder) throws {
-        let values = try decoder.container(keyedBy: CodingKeys.self)
-        kind = try values.decode(String.self, forKey: .kind)
-        activityCount = try values.decodeIfPresent(Int.self, forKey: .activityCount)
-        missionsCompleted = try values.decodeIfPresent(Int.self, forKey: .missionsCompleted)
-        pointsEarned = try values.decodeIfPresent(Int.self, forKey: .pointsEarned)
-        reason = try values.decodeIfPresent(String.self, forKey: .reason)
-    }
-
-    private enum CodingKeys: String, CodingKey { case kind, activityCount, missionsCompleted, pointsEarned, reason }
 }
 
 struct BackendSessionResponse: Codable {
@@ -142,6 +127,78 @@ struct BackendRouteAvailability: Decodable {
 struct BackendRouteResponse: Decodable {
     let result: BackendRouteResult
     let estimates: [BackendRouteEstimate]
+    let recommendation: BackendRouteRecommendation?
+    let jev: BackendJevRank?
+}
+
+struct BackendJevRank: Decodable {
+    let kind: String
+    let orderedRouteIds: [String]?
+    let reason: String?
+}
+
+struct BackendTransportCoordinate: Codable {
+    let latitude: Double
+    let longitude: Double
+}
+
+struct BackendTransportLeg: Decodable, Identifiable {
+    let kind: String
+    let mode: String
+    let from: String
+    let to: String
+    let startsAt: String
+    let endsAt: String
+    let durationSeconds: Double
+    let description: String
+    let instruction: String?
+    let fromCoordinate: BackendTransportCoordinate?
+    let toCoordinate: BackendTransportCoordinate?
+    let path: [BackendTransportCoordinate]?
+    var id: String { "\(kind)-\(from)-\(to)-\(startsAt)" }
+}
+
+struct BackendTransportRoute: Decodable, Identifiable {
+    let id: String
+    let mode: String
+    let legs: [BackendTransportLeg]
+    let durationSeconds: Double
+    let waitSeconds: Double
+    let transfers: Int
+    let arrivesAt: String
+    let meetsDeadline: Bool
+    let distanceMeters: Double?
+
+    var displayTitle: String {
+        let modes = Set(legs.map(\.mode))
+        return modes.contains("train") && modes.contains("bus") || mode == "transit" ? "Train + bus" : mode.capitalized
+    }
+}
+
+struct BackendTransportUnavailable: Decodable {
+    let mode: String
+    let reason: String
+}
+
+struct BackendTransportRecommendation: Decodable {
+    let kind: String
+    let routeId: String?
+    let reason: String
+}
+
+struct BackendTransportPlan: Decodable {
+    let routes: [BackendTransportRoute]
+    let unavailable: [BackendTransportUnavailable]
+    let estimates: [BackendTransportEstimate]?
+    let recommendation: BackendTransportRecommendation
+    let jev: BackendJevRank?
+    let awardEligible: Bool
+}
+
+struct BackendTransportEstimate: Decodable {
+    let routeId: String
+    let estimate: BackendEstimate
+    let distanceMethod: String?
 }
 
 struct BackendRouteResult: Decodable {
@@ -162,11 +219,46 @@ struct BackendEstimate: Decodable {
     let reason: String?
 }
 
+struct BackendRouteRecommendation: Decodable {
+    let kind: String
+    let route: BackendRouteOption?
+    let avoidedKgCo2e: Double?
+    let avoidedKg: Double?
+    let reason: String?
+}
+
 private struct RouteRequest: Encodable {
     let origin: String
     let destination: String
     let extraMinutes: Int
     let modes: [String]
+}
+
+private enum BackendTransportPlace: Encodable {
+    case name(String)
+    case coordinate(BackendTransportCoordinate)
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .name(let value):
+            var container = encoder.singleValueContainer()
+            try container.encode(value)
+        case .coordinate(let value):
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(value.latitude, forKey: .latitude)
+            try container.encode(value.longitude, forKey: .longitude)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey { case latitude, longitude }
+}
+
+private struct TransportRequest: Encodable {
+    let origin: BackendTransportPlace
+    let destination: BackendTransportPlace
+    let departAt: String
+    let modes: [String] = ["train", "bus", "walk", "car"]
+    let extraMinutes: Int = 15
 }
 
 struct BackendActivityReward: Decodable {
@@ -263,6 +355,14 @@ final class BackendSession: ObservableObject {
         }
     }
 
+    func updateProfile(displayName: String?, email: String?, birthday: String?) async {
+        guard let token, let profile = realProfile else { errorMessage = BackendError.notSignedIn.errorDescription; return }
+        await run {
+            _ = try await self.client.updateProfile(token: token, profileId: profile.id, displayName: displayName, email: email, birthday: birthday)
+            self.account = try await self.client.account(token: token)
+        }
+    }
+
     func routes(origin: String, destination: String) async throws -> BackendRouteResponse {
         guard let token else { throw BackendError.notSignedIn }
         return try await client.routes(token: token, origin: origin, destination: destination)
@@ -278,6 +378,14 @@ final class BackendSession: ObservableObject {
         guard let token, let profile = realProfile else { return }
         do { impact = try await client.impact(token: token, profileId: profile.id) }
         catch { errorMessage = error.localizedDescription }
+    }
+
+    func transportPlan(origin: String, destination: String) async throws -> BackendTransportPlan {
+        return try await client.transportPlan(token: token, origin: origin, destination: destination)
+    }
+
+    func transportPlan(origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
+        return try await client.transportPlan(token: token, origin: origin, destination: destination)
     }
 
     func verify(image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
@@ -438,6 +546,18 @@ private final class BackendClient {
         try await request(path: "v1/impact/overview?profileId=\(profileId)", method: "GET", token: token, body: EmptyBody())
     }
 
+    func transportPlan(token: String?, origin: String, destination: String) async throws -> BackendTransportPlan {
+        try await transportPlan(token: token, origin: .name(origin), destination: .name(destination))
+    }
+
+    func transportPlan(token: String?, origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
+        try await transportPlan(token: token, origin: .coordinate(origin), destination: .coordinate(destination))
+    }
+
+    private func transportPlan(token: String?, origin: BackendTransportPlace, destination: BackendTransportPlace) async throws -> BackendTransportPlan {
+        try await request(path: "v1/transport/plan", method: "POST", token: token, body: TransportRequest(origin: origin, destination: destination, departAt: ISO8601DateFormatter().string(from: Date())))
+    }
+
     func account(token: String) async throws -> BackendAccount {
         try await request(path: "v1/me", method: "GET", token: token, body: EmptyBody())
     }
@@ -446,6 +566,16 @@ private final class BackendClient {
         _ = try await request(path: "v1/session", method: "DELETE", token: token, body: EmptyBody()) as EmptyResponse
     }
 
+
+    private struct ProfileUpdatePayload: Encodable {
+        var displayName: String?
+        var email: String?
+        var birthday: String?
+    }
+
+    func updateProfile(token: String, profileId: String, displayName: String?, email: String?, birthday: String?) async throws -> BackendProfile {
+        try await request(path: "v1/profiles/\(profileId)", method: "PATCH", token: token, body: ProfileUpdatePayload(displayName: displayName, email: email, birthday: birthday))
+    }
 
     func activityAvailable(token: String, profileId: String) async throws -> Bool {
         let response: BackendActivityAvailability = try await request(
@@ -467,13 +597,14 @@ private final class BackendClient {
     }
 
     private func request<T: Decodable, Body: Encodable>(path: String, method: String, token: String?, body: Body?) async throws -> T {
-        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw BackendError.invalidResponse }
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if let body, method != "GET" { request.httpBody = try JSONEncoder().encode(body) }
+        if let body, HTTPRequestBodyPolicy.shouldEncodeBody(for: method) {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
         let (data, response) = try await urlSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw BackendError.invalidResponse }
         if !(200..<300).contains(http.statusCode) {

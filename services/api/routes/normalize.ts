@@ -88,6 +88,12 @@ export type RouteEvidence = {
   legGeometry?:
     | { kind: 'unavailable'; reason: 'missing_geometry' }
     | { kind: 'provider'; legs: { legIndex: number; points: Coordinate[] }[] };
+  /**
+   * Decoded per-leg provider shapes in leg order, kept even when the joints
+   * between legs do not line up. Draw each shape separately; never connect
+   * them with invented segments.
+   */
+  legShapes: { legIndex: number; points: Coordinate[] }[];
   factorApplicability:
     | 'singapore_indicative'
     | 'geography_unverified'
@@ -226,6 +232,9 @@ export async function normalizeResponse(
       primaryMode: mode,
       geometry,
       legGeometry,
+      legShapes: legPoints.flatMap((points, legIndex) =>
+        points ? [{ legIndex, points }] : [],
+      ),
       factorApplicability:
         geography !== 'Singapore'
           ? 'geography_unverified'

@@ -22,7 +22,8 @@ function wire(
   confidence = 0.9,
 ) {
   return {
-    model: 'jev-1.13.0',
+    // Observed live gateway echo, 2026-10-06.
+    model: 'typesafe/jev-1.13-20260917',
     answers: {
       [question]: { type: 'choice', choice, probabilities, confidence },
     },

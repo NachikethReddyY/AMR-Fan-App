@@ -11,7 +11,7 @@ import {
   type Failure,
 } from './provider.ts';
 import { isSingaporeCoordinate, type Coordinate } from './geography.ts';
-import { normalizeOneMap, resolveOneMapAddress } from './onemap-normalize.ts';
+import { normalizeOneMap, searchOneMapAddresses } from './onemap-normalize.ts';
 import type { PrimaryMode } from './normalize.ts';
 
 type Config = Extract<RouteConfig, { kind: 'onemap' }>;
@@ -19,6 +19,41 @@ const credentialsSchema = z.strictObject({
   email: z.email().max(254),
   password: z.string().min(1).max(1024),
 });
+const accountAliasSchemas = [
+  z.strictObject({
+    ONEMAP_EMAIL: z.email().max(254),
+    ONEMAP_EMAIL_PASSWORD: z.string().min(1).max(1024),
+  }),
+  z.strictObject({
+    ONEMAP_EMAIL: z.email().max(254),
+    ONEMAP_PASSWORD: z.string().min(1).max(1024),
+  }),
+  z.strictObject({
+    ONEMAP_API_EMAIL: z.email().max(254),
+    ONEMAP_API_PASSWORD: z.string().min(1).max(1024),
+  }),
+];
+const tokenAliasSchemas = [
+  z.strictObject({
+    ONEMAP_EMAIL: z.email().max(254),
+    ONEMAP_API_KEY: z
+      .string()
+      .min(1)
+      .max(8192)
+      .regex(/^[A-Za-z0-9._~-]+$/),
+  }),
+  z.strictObject({
+    ONEMAP_EMAIL: z.email().max(254),
+    ONEMAP_APIKKEY: z
+      .string()
+      .min(1)
+      .max(8192)
+      .regex(/^[A-Za-z0-9._~-]+$/),
+  }),
+];
+type OneMapFileCredentials =
+  | { email: string; password: string }
+  | { kind: 'token'; value: string; expires: number };
 const tokenSchema = z.object({
   access_token: z
     .string()
@@ -78,11 +113,38 @@ async function readPrivateFile(path: string, maxBytes: number) {
   }
 }
 
-export async function readOneMapCredentials(path: string) {
+export async function readOneMapCredentials(
+  path: string,
+): Promise<OneMapFileCredentials> {
   const raw: unknown = JSON.parse(await readPrivateFile(path, 16384));
   const parsed = credentialsSchema.safeParse(raw);
-  if (!parsed.success) throw new ProviderFailure('live_not_configured');
-  return parsed.data;
+  if (parsed.success)
+    return { email: parsed.data.email, password: parsed.data.password };
+  for (const schema of accountAliasSchemas) {
+    const alias = schema.safeParse(raw);
+    if (alias.success) {
+      const value = alias.data as Record<string, string>;
+      return {
+        email: value.ONEMAP_EMAIL ?? value.ONEMAP_API_EMAIL,
+        password:
+          value.ONEMAP_EMAIL_PASSWORD ??
+          value.ONEMAP_PASSWORD ??
+          value.ONEMAP_API_PASSWORD,
+      };
+    }
+  }
+  for (const schema of tokenAliasSchemas) {
+    const alias = schema.safeParse(raw);
+    if (alias.success) {
+      const value = alias.data as Record<string, string>;
+      return {
+        kind: 'token',
+        value: value.ONEMAP_API_KEY ?? value.ONEMAP_APIKKEY,
+        expires: Date.now() + 3 * 86400000,
+      };
+    }
+  }
+  throw new ProviderFailure('live_not_configured');
 }
 
 export function createOneMapProvider(config: Config) {
@@ -90,7 +152,10 @@ export function createOneMapProvider(config: Config) {
     total = 0,
     windowCalls = 0,
     windowStart = Date.now();
-  let token: { value: string; expires: number } | null = null;
+  let token: { value: string; expires: number } | null =
+    config.credentials.kind === 'env-token'
+      ? { value: config.credentials.value, expires: config.credentials.expires }
+      : null;
   let tokenFileFailure: Failure | null = null;
   let refreshAfter = 0;
   function checkTokenFile() {
@@ -179,16 +244,49 @@ export function createOneMapProvider(config: Config) {
     }
   }
   async function getToken() {
-    if (config.credentials.kind === 'token-file') {
+    const credentials = config.credentials;
+    if (credentials.kind === 'env-account') {
+      if (token && Date.now() < token.expires - 60000) return token.value;
+      if (Date.now() < refreshAfter)
+        throw new ProviderFailure('provider_error');
+      refreshAfter = Date.now() + 60000;
+      const raw = await bounded((signal) =>
+        json('/api/auth/post/getToken', signal, undefined, {
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      );
+      const parsed = tokenSchema.safeParse(raw);
+      if (
+        !parsed.success ||
+        parsed.data.expiry_timestamp * 1000 <= Date.now() + 60000
+      )
+        throw new ProviderFailure('missing_data');
+      token = {
+        value: parsed.data.access_token,
+        expires: Math.min(
+          parsed.data.expiry_timestamp * 1000,
+          Date.now() + 3 * 86400000,
+        ),
+      };
+      return token.value;
+    }
+    if (credentials.kind === 'env-token') {
+      checkTokenFile();
+      if (!token || Date.now() >= token.expires - 60000)
+        throw new ProviderFailure('live_not_configured');
+      return token.value;
+    }
+    if (credentials.kind === 'token-file') {
       checkTokenFile();
       if (!token) {
         try {
-          const raw = await readPrivateFile(config.credentials.path, 8194);
+          const raw = await readPrivateFile(credentials.path, 8194);
           const parsed = tokenSchema.shape.access_token.safeParse(
             raw.replace(/\r?\n$/, ''),
           );
           if (!parsed.success) throw new ProviderFailure('live_not_configured');
-          token = { value: parsed.data, expires: config.credentials.expires };
+          token = { value: parsed.data, expires: credentials.expires };
         } catch {
           tokenFileFailure = 'live_not_configured';
           throw new ProviderFailure(tokenFileFailure);
@@ -201,20 +299,25 @@ export function createOneMapProvider(config: Config) {
     if (Date.now() < refreshAfter) throw new ProviderFailure('provider_error');
     // No immediate retry. Even malformed/short-lived tokens cannot create a refresh storm.
     refreshAfter = Date.now() + 60000;
-    let credentials: z.infer<typeof credentialsSchema>;
+    let accountCredentials: z.infer<typeof credentialsSchema>;
     try {
-      credentials =
-        config.credentials.kind === 'fixture'
+      const fileCredentials =
+        credentials.kind === 'fixture'
           ? {
               email: 'synthetic@example.invalid',
               password: 'amr-synthetic-onemap',
             }
-          : await readOneMapCredentials(config.credentials.path);
+          : await readOneMapCredentials(credentials.path);
+      if ('kind' in fileCredentials) {
+        token = fileCredentials;
+        return fileCredentials.value;
+      }
+      accountCredentials = fileCredentials;
     } catch {
       throw new ProviderFailure('live_not_configured');
     }
     const raw = await bounded((signal) =>
-      json('/api/auth/post/getToken', signal, undefined, credentials),
+      json('/api/auth/post/getToken', signal, undefined, accountCredentials),
     );
     const parsed = tokenSchema.safeParse(raw);
     if (
@@ -246,14 +349,68 @@ export function createOneMapProvider(config: Config) {
     const raw = await bounded((signal) =>
       json(`/api/common/elastic/search?${params}`, signal, auth),
     );
-    const parsed = resolveOneMapAddress(raw);
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      Array.isArray((raw as { results?: unknown }).results) &&
+      (raw as { results: unknown[] }).results.length === 1 &&
+      (raw as { found?: unknown }).found !== 1
+    )
+      throw new ProviderFailure('missing_data');
+    const parsed = searchOneMapAddresses(raw);
     if (parsed.kind === 'unavailable') throw new ProviderFailure(parsed.reason);
-    return parsed.coordinate;
+    return parsed.places[0]!.coordinate;
   }
   function reason(error: unknown): Failure {
     return error instanceof ProviderFailure ? error.reason : 'provider_error';
   }
   return {
+    async searchPlaces(query: string) {
+      if (!/\S/.test(query) || query.trim().length > 120)
+        return unavailable('invalid_input');
+      if (active) return unavailable('busy');
+      if (Date.now() - windowStart >= 60000) {
+        windowStart = Date.now();
+        windowCalls = 0;
+      }
+      const calls = 2;
+      if (windowCalls + calls > 60 || total + calls > 1000)
+        return unavailable('budget_exhausted');
+      windowCalls += calls;
+      total += calls;
+      active = true;
+      try {
+        const auth = await getToken();
+        const params = new URLSearchParams({
+          searchVal: query.trim(),
+          returnGeom: 'Y',
+          getAddrDetails: 'Y',
+          pageNum: '1',
+        });
+        const raw = await bounded((signal) =>
+          json(`/api/common/elastic/search?${params}`, signal, auth),
+        );
+        const result = searchOneMapAddresses(raw);
+        if (result.kind === 'unavailable') return result;
+        return {
+          ...result,
+          source:
+            config.credentials.kind === 'fixture'
+              ? {
+                  kind: 'fixture' as const,
+                  label: 'Synthetic OneMap HTTP fixture. Not live place data.',
+                }
+              : {
+                  kind: 'live' as const,
+                  provider: 'OneMap / Singapore Land Authority',
+                },
+        };
+      } catch (error) {
+        return unavailable(reason(error));
+      } finally {
+        active = false;
+      }
+    },
     async search(raw: unknown): Promise<ProviderResult> {
       const parsed = routeInput.safeParse(raw);
       if (!parsed.success) return unavailable('invalid_input');

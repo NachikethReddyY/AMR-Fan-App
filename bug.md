@@ -1,4 +1,793 @@
+## 2026-10-06: photo activity Luna call chain (unlinked)
+
+Android photo submission ended in "No points yet" with reason `provider`,
+verbatim server output for an attempted-but-failed TokenRouter Luna call.
+Traced layer by layer with the user's live probes: missing env flag and key
+variable, a parser rejecting the gateway's dated model echo, a validator
+rejecting newlines in the two-paragraph instruction, each fixed with unit
+proof. Rejected and uncertain results now also carry the model's bounded
+rationale through to both apps, which already display it, so verdicts
+explain themselves. Same trust boundary as accepted-path rationale. Database
+suites fail identically with and without these changes (no local PostgreSQL
+here). Needs the BB-1 re-deploy; then a verdict should state its own why.
+
+Update 2026-10-06 (shape tracing): intermittent `invalid-output` on a gallery
+photo means Luna answered but the answer broke strict validation somewhere
+between the wire envelope and the activity schema. Both rejection points now
+log issue paths and codes only, never values or content, so the next failure
+names the exact field. Permanent observability, no posture change.
+
+Fixed by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: transfer station names and stop counts unavailable (unlinked)
+
+Transit legs show generic labels ("Transfer", "MRT/LRT") instead of station
+names because neither provider returns stop names: OneMap transit legs carry
+coordinates only, and Google steps are not retained per leg. Naming stations
+("Board at Orchard, alight at City Hall, 3 stops") needs a bundled MRT/LRT
+station directory with nearest-stop matching plus line topology for stop
+counts: a data feature, not a display tweak. Tracked as the next job, not
+built tonight.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: map draws a straight start-to-end line for transit (unlinked)
+
+Transit mode only requests an Apple ETA, never an Apple route, so the map
+falls back to joining backend leg endpoints. Live legs carry almost no
+coordinates (often just the shared start point plus the destination), which
+renders as a straight line that ignores the real path and cannot track row
+selection, since query options carry no geometry at all.
+
+Fix: transit mode now requests a real Apple transit path with ETA fallback,
+and the backend fallback only draws with three or more distinct points, so a
+bare start-to-end pair draws nothing instead of a straight lie. Device proof:
+transit shows markers only where Apple has no transit path here, and the car
+tab shows a road-following line. Mode tabs change the line; individual
+backend rows cannot move it because neither endpoint returns per-option
+geometry. No iOS test target exists, so screenshots are the proof.
+
+Fixed by opencode/muse-spark-1.3-contributor-free through opencode.
+
+Update 2026-10-06: per-option transit path lines. The server dropped
+discontinuous OneMap leg shapes, so live options had nothing to draw. The
+normalizers now keep per-leg verified shapes (`legShapes`), the transport
+plan exposes them as `TransportLeg.path`, and the app draws each shape of the
+selected transit option separately with gaps left as gaps. Query rows keep
+Apple per-mode lines. Server proof: 34 tests pass including gappy-fixture
+shapes and leg passthrough; API typecheck clean. App launches clean against
+the old backend. Live shape proof needs the re-deploy below.
+
+## 2026-10-06: server withholds route recommendation on bus-mixed results (unlinked)
+
+Orchard Station to Marina Bay Sands returns three Bus options whose evidence
+is not Singapore-indicative, so `v1/routes/query` withholds the whole
+recommendation (`factor_applicability_unverified`) and the separate
+`v1/transport/plan` options carry no estimates at all. The app now renders the
+RECOMMENDED badge whenever the server sends one, but no badge can appear here
+until the server either estimates transit-plan legs or narrows the
+recommendation to verified candidates. Changing the withhold rule or inventing
+leg distances would break the accepted emissions spec; needs a product
+decision, not a client patch.
+
+Update 2026-10-06: the user chose narrowing plus full Jev ranking. The server
+now narrows query comparisons to verified candidates, estimates transport
+legs with disclosed straight-line/apportioned methods, recommends lowest
+emissions within tolerance, and attempts a Jev rank with deterministic
+fallback. All local; needs a backend deploy plus a Jev key and budget
+admission before live proof. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: travel showed no carbon figures (unlinked)
+
+Fans compared routes by duration only; the backend's per-option CO2 estimates
+never reached the screen, and transit options have no estimate source at all.
+
+Fix: "Other routes" rows show the service estimate with a lowest-CO2 badge and
+an unavailable state instead of zero; transit options disclose that estimates
+are unavailable. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: travel dock blocked the planner action (unlinked)
+
+The global navigation dock rendered inside the Travel planner sheet and covered
+its call to action, so places could not be seen or searched. The expanded sheet
+also stayed at compact height because its height preferences never delivered.
+
+Fix: the dock hides on the Travel tab with a "‹ Home" exit pill, the expanded
+planner is a full-height Google-Maps-style search page, and sheet heights flow
+through onAppear/onChange instead of the dead preference keys.
+
+Proof: device screenshots show the visible action, full search page, working
+swap, a calculated route, and dock restoration on Home. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: live model evidence and OneMap route completion (unlinked)
+
+The activity screen was awarding points from synthetic output and allowed a
+retake path that could be pressed while a submission was still processing. The
+travel screen also used fallback map/search behavior and reported routes as
+outside demo coverage.
+
+Fix: the selected TokenRouter provider now receives the captured image as a
+multimodal input. The activity selector rejects screen, screenshot, indoor,
+potted-plant, and ambiguous evidence before the existing server points policy.
+Android processing locks the camera state and presents results separately. The
+travel screen uses OneMap tiles, live search results, current-location support,
+and the live route provider for public transport, walking, and driving.
+
+Proof: multimodal dispatch and invalid-evidence tests pass; OneMap search and
+route calls on BB-1 return live-source metadata; API typecheck, route and
+transport suites, and the Android unit/build checks pass. BB-1 still needs the
+private AI env file before Luna inference can execute:
+`/home/bb-1/.auth/amr-ai.env` with mode 600. Authenticated phone submission is
+unverified because the emulator is currently at the Entra sign-in confirmation.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-10-05: custom navigation dock overlapped the native tab bar (unlinked)
+
+The first native `TabView` pass kept Apple's default tab bar under the custom
+reference dock, so two navigation bars appeared at the bottom of the iPhone 18
+simulator.
+
+Fix: keep `TabView(selection:)` as the native destination and selection model,
+use its page style with the page indicator hidden, and render the requested
+three-item capsule plus separate circular Travel control as the visible dock.
+
+Proof: the final signed simulator build is installed on iPhone 18 Pro; taps on
+Home, Rewards, Impact, Travel, and Home changed the visible destination; and the
+saved screenshot shows a single dock matching the supplied reference.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
 # Steering and bug inbox
+
+## 2026-10-05: iOS account resume sent a body with GET (unlinked)
+
+The rebuilt app reproduced `resource exceeds maximum size` on the Account
+screen. The simulator log identified the cause: `BackendClient.request` always
+encoded `EmptyBody()` into `httpBody`, including for `GET /v1/me`. iOS rejected
+the request with `NSURLErrorDataLengthExceedsMaximum` (`-1103`) and the UI
+surfaced that transport error.
+
+Fix: centralize the request-body rule in `HTTPRequestBodyPolicy` and omit
+bodies for `GET` and `HEAD` while preserving JSON bodies for `POST`, `PUT`,
+and other body-bearing methods.
+
+Proof: the focused auth check covers GET, HEAD, and POST policy cases; clean
+simulator and iPhone-target builds pass; the rebuilt app resumed the cached
+account on the iPhone 17 simulator and the Account screen showed `Your
+account`, `Fan`, `0 earned points`, and `Sign out` without an error.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: rebuilt the Swift iOS app with signed simulator output (unlinked)
+
+The requested full iOS rebuild completed from the current Swift source. Clean
+simulator and iPhone-target builds both returned `BUILD SUCCEEDED`. The
+simulator artifact carries the Keychain entitlement; the iPhone-target app is
+an unsigned compile artifact because this checkout has no Apple development
+team or provisioning profile.
+
+Proof: `BackendAuthChecks passed`; the simulator executable contains
+`__entitlements` and `__ents_der`; the generated entitlement plist contains
+`FAKETEAMID.com.amr.fanapp`; and the verification record is at
+`.evidence/ios-full-rebuild-20261005/verification.md`. No install or
+interactive sign-in was performed, so native UI behavior remains unverified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: iOS account session error came from an unsigned installed build (unlinked)
+
+The reported Account error is raised by `KeychainSessionStore` when the
+installed iOS binary cannot use its Keychain access group. The latest installed
+simulator copies had no `__entitlements` section, even though the source target
+already wires `Swift-App.entitlements` in Debug and Release. The signed
+simulator build generated from the current source embeds
+`FAKETEAMID.com.amr.fanapp` as both its application identifier and Keychain
+access group.
+
+Fix: produce the simulator app with `CODE_SIGNING_ALLOWED=YES` so the existing
+Keychain entitlement reaches the installed binary. The source OIDC flow and
+Keychain-only session persistence remain unchanged. A physical iOS build still
+needs an Apple development team and provisioning profile.
+
+Proof: `BackendAuthChecks` passed, the signed Swift simulator build passed, the
+new binary contains `__entitlements` and `__ents_der`, and its generated
+simulator entitlements contain the application identifier and Keychain access
+group. The already installed copies remain unverified and still lack those
+sections because device installation was not authorized in this turn.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: Android update lost account context and Home used driver name (unlinked)
+
+The encrypted AMR session token already survived an in-place APK update, but
+the app did not cache the account response or selected driver. The root
+navigation therefore restarted at onboarding, and Home used `driver.firstName`
+for its greeting.
+
+Fix: cache the serialized account in the encrypted store, refresh it from
+`/v1/me` when available, persist the driver with DataStore, restore navigation,
+and use the real profile display name on Home. BB-1 now carries a verified Entra
+display name into a new/default profile while preserving custom profile names.
+
+Proof: Android unit tests, API typecheck, BB-1 build/restart and APK install
+passed. The emulator returned to the sign-in gate after selecting a driver,
+confirming driver state was persisted across the app flow. A real account Home
+greeting remains unverified without the user's sign-in.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: session cache needed renewal after backend expiry (unlinked)
+
+The Android app persisted its backend session token, but that token expires
+after seven days. An update after expiry could still show the cached identity
+only until the first authenticated request returned 401, then force a new
+sign-in.
+
+Fix: request and persist the Entra refresh token in encrypted preferences,
+exchange a renewed provider token for a new BB-1 session on 401, and clear both
+tokens and the cached account on sign-out or failed renewal.
+
+Proof: Android unit tests and debug APK assembly passed; the APK was installed
+over the existing Pixel_10_API_36 app without clearing its data. A real
+expired-session renewal remains unverified without a test account and an
+expired token.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: Android sign-in expired after callback (unlinked)
+
+The Android flow kept its PKCE state and verifier only in the in-memory
+`SessionViewModel`, so activity recreation while Chrome was open produced an
+expired callback. BB-1 also compared the full requested scope URI with Entra's
+`scp` claim, which contains the scope name `account.access`.
+
+Fix: persist the short-lived PKCE transaction in the existing encrypted store,
+clear it on every callback outcome, and configure BB-1 with
+`AUTH_REQUIRED_SCOPE=account.access`. The API keeps issuer, audience, JWKS,
+signature, expiry and scope validation.
+
+Proof: Android unit tests and debug APK build pass; BB-1 health returns 200;
+the updated APK is installed on Pixel_10_API_36. A real fresh account callback
+on the user's phone remains unverified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: LAN path remains unreachable; Tailscale test path restored (unlinked)
+
+BB-1 now listens on `0.0.0.0:18080`. The Tailscale endpoint
+`100.117.231.37:18080/health` returns HTTP 200 from the Mac. The LAN endpoint
+still cannot be reached from `192.168.0.34`, so the router or Wi-Fi isolation
+issue remains separate from the API listener.
+
+The Android debug APK was rebuilt and installed with
+`http://100.117.231.37:18080/`. The phone must have Tailscale connected to use
+this build.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: BB-1 API is bound to LAN but blocked from LAN clients (unlinked)
+
+BB-1 is online again. The API listens on `192.168.0.31:18080`, and both
+`/health` and `/ready` pass when requested from BB-1 itself. The Mac at
+`192.168.0.34` still receives `No route to host` for ports 22 and 18080 on the
+LAN address, while the Tailscale path works. This points to a host firewall or
+Wi-Fi client-isolation rule, not the API listener or APK. UFW is disabled, so
+the remaining checks are nftables policy or the router's guest/client-isolation
+setting.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: BB-1 LAN address is unreachable (unlinked)
+
+The APK correctly targets `192.168.0.31:18080`, but BB-1 is currently offline.
+Tailscale reports `bb-1` offline, and the Mac at `192.168.0.34` receives
+`No route to host` for both ping and SSH to `192.168.0.31`. There is no host
+available to serve port 18080.
+
+The APK and deployment configuration remain pointed at the requested LAN
+address. The API listener and phone sign-in path cannot be verified until BB-1
+is powered and connected to the same LAN.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: phone APK used a Tailscale-only BB-1 address (unlinked)
+
+The delivered debug APK pointed at `100.117.231.37:18080`, so a phone without
+Tailscale timed out before the sign-in exchange returned to the app.
+
+Fix in progress: deployment documentation now uses a BB-1 LAN address and the
+new APK targets `192.168.0.31:18080`. BB-1 must be online and restarted with
+`API_HOST=192.168.0.31` before the LAN endpoint can be verified.
+
+Proof: the rebuilt APK contains `http://192.168.0.31:18080/` and is installed on
+Pixel_10_API_36. Tailscale reports BB-1 offline, so remote health and LAN
+listener checks are pending.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: sign-in button silently ignored taps (unlinked)
+
+The Android gate used early returns when a resume request was busy or an older
+PKCE challenge was still pending. A dismissed browser could therefore leave the
+button with no visible action. Browser launch also had no explicit fallback.
+
+Fix: every tap restarts the pending challenge, uses Custom Tabs when available,
+falls back to the device browser, and reports a launch error instead of doing
+nothing.
+
+Proof: the rebuilt APK was installed on Pixel_10_API_36; tapping the button
+opened the Entra sign-in Web View.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: Android sign-in returned 401 after the account callback (unlinked)
+
+The Android app requests an Entra External ID access token, while the BB-1
+staging API was still configured with `AUTH_PROVIDER=supabase`. The exchange at
+`POST /v1/session` therefore rejected the provider token. A stale saved AMR
+session could also remain in encrypted storage and keep retrying `/v1/me`.
+
+Fix: BB-1 now uses the documented Entra issuer, audience, JWKS URL and scope.
+Android clears a saved session after a 401, maps 401s to a recoverable sign-in
+message, and ignores a duplicate callback URI instead of reporting a second
+expired flow.
+
+Proof: BB-1 restarted with `auth=oidc`, `/health` and `/ready` pass, the JWKS
+endpoint is reachable from BB-1, and the rebuilt APK is installed on
+Pixel_10_API_36. A real account callback still needs to be exercised on a
+device with valid credentials.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: camera confirmation hid the image and backend capability was disabled (unlinked)
+
+The Android confirmation card showed a black surface after capture and reported
+that photo analysis was unavailable. The client upload method existed, but the
+production API start entry point never supplied an activity provider, so the
+availability endpoint correctly returned disabled.
+
+Fix: the confirmation state now renders the selected URI, clears stale result
+state when retaking, and the API can use an explicit `synthetic` MVP provider.
+That provider hashes only transient canonical bytes and emits a bounded review
+candidate; the existing evidence policy and points settlement remain the only
+authority. BB-1's example enables this provider for testing.
+
+Proof: API typecheck, AI tests (198 passing), Kotlin compile and debug APK build
+passed. BB-1 rebuilt and restarted with the synthetic provider enabled;
+`/health` and `/ready` passed. Authenticated phone proof remains pending behind
+the account gate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: credential names were ambiguous (unlinked)
+
+The supplied OneMap `ONEMAP_APIKKEY` name did not match the server's account
+credential schema, and the configuration did not explain whether it was an
+account password or an access token. The owner asked for compatibility aliases
+and environment-based provider switching without renaming the existing secret.
+
+Fix: route configuration now accepts the supplied `ONEMAP_APIKKEY` spelling as
+an access token, the official `ONEMAP_EMAIL_PASSWORD` account-password name,
+and the existing canonical `AMR_*` names. BB-1 loads the optional private
+`amr-onemap.env` file, and `AMR_ROUTES_PROVIDER` selects OneMap, Google or
+disabled. TokenRouter accepts the supplied `AI_API_KEY` and exact
+`AI_BASE_URL` aliases while keeping its HTTPS endpoint allowlist.
+
+Proof: API typecheck, route tests (98 passing), AI tests (197 passing), and
+Compose configuration parsing passed. No secret was written or sent to a
+provider. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AI-PIPELINE-001: host the existing AI adapter boundary on BB-1 (unlinked)
+
+Requested 2026-10-04 to work on the AI pipeline and host it on BB-1.
+
+Fix: added `deploy/bb1` with a pinned API image build, private Postgres,
+explicit migrations, host-networked loopback database access, and a Tailscale-
+bound API listener. The existing LUNA and LAYA adapters remain disabled because
+BB-1 has no reviewed loopback model gateway or provider credential. No real
+photos, prompts or provider keys were sent to the host.
+
+Proof: local AI tests and API typecheck passed; the security check found no
+secret or SAST findings (the existing audit reports one moderate dependency);
+the BB-1 image built, 19 migrations applied, `/health` and `/ready` returned
+healthy, the deployed container reported no LUNA key and both AI flags false,
+and a synthetic in-container activity assessment returned a candidate without
+retaining the fixture bytes.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-05: credential placement and AI policy clarification
+
+The owner confirmed that the existing server evidence-to-points policy should
+remain unchanged and that AI output should select the evidence result inside
+the AI module. `selectActivityAssessment` now owns that validated classification
+while reward settlement stays in the points transaction. BB-1 operators should
+use `/home/bb-1/.auth/amr-onemap.json` and `/home/bb-1/.auth/amr-ai.env`, both
+outside the repository and mode 600. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## CAMERA-UI-002: post-capture confirmation was too verbose (unlinked)
+
+Requested 2026-10-04 after the camera confirmation card repeated the capture,
+verification and device-retention state in multiple sentences. The approved
+direction keeps A's review hierarchy with B's compact action layout.
+
+Fix: both native ports now show a circular Back control, a camera icon, the
+single prompt "Ready to send?", and two clear actions: "Use this photo" and
+"Retake photo". Swift starts the existing verification request only after the
+primary action and returns to the camera for a retake. The Kotlin port keeps
+the selected image local because its current client has no connected photo
+verification request; the primary action confirms that local state without
+claiming an upload.
+
+Project guidance: core task screens should stay under ten words of interface
+copy unless the content itself is a feed or long-form page. Icons carry meaning
+where a label is not required.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; the rebuilt APK was installed on Pixel_10_API_36; the
+Pixel flow reached the new confirmation state, and Retake returned to the live
+camera surface. iOS device proof remains unavailable because the installed
+build is at its account gate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## CAMERA-UI-001: camera opened an intermediate picker and hid navigation (unlinked)
+
+Requested 2026-10-04 after the camera action opened a secondary chooser and the
+camera surface had no reachable Back control or gallery action. The Android
+implementation delegated to the system camera activity, so its shutter controls
+could not match the app layout. The Swift implementation used the system image
+picker for the same reason.
+
+Fix: both native ports now open a custom in-app camera surface directly. Android
+uses CameraX and Swift uses AVFoundation. Each surface keeps a circular Back
+control at the top left, a gallery action at the lower left, and a centered
+shutter. Captured photos and selected gallery images continue into the existing
+verification flow; the old intermediate camera chooser is gone.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; `pnpm agents:check` and `git diff --check` passed. The
+rebuilt APK was installed on Pixel_10_API_36. Device evidence confirms direct
+camera entry, the Back control returning to Home, the gallery picker opening, and
+the shutter reaching the existing photo verification state in
+`.evidence/camera-ui/android-camera.png` and
+`.evidence/camera-ui/android-gallery.png`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## ONBOARDING-UI-002: repeated first-person driver heading (unlinked)
+
+Requested 2026-10-04 after the driver-selection screen repeated the first
+person in both the "I / AM" eyebrow and the large heading, then added a note
+about changing drivers from the profile.
+
+Fix: the large heading now reads "On this team." at a smaller size in both
+native ports, and the profile-switching note is removed. Driver cards,
+selection behavior and the login transition remain unchanged.
+
+Proof: source checks confirm the old heading and note are absent. Kotlin
+compile, unit tests and debug APK assembly passed; the Swift simulator build
+passed; and `git diff --check` passed. A fresh driver-screen device capture is
+still pending because the Pixel is at the account gate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## NAV-UI-002: detail back actions hidden below scroll content (unlinked)
+
+Requested 2026-10-04 after the Android merchandise screen placed its only Back
+action at the bottom of a long scroll, below the gesture area on some devices.
+The same pattern was present on profile, travel, account, news, history,
+forest, challenges, quiz, camera and other detail destinations.
+
+Fix: Android detail destinations now share a fixed circular icon-only Back
+control above the scroll content. The duplicate bottom Back actions were
+removed, so the action stays reachable on short and tall screens. The Android
+store copy no longer repeats the demo catalogue and local coupon disclaimer.
+Swift store copy also removes the repeated demo labels; its pushed destinations
+continue to use the native navigation back control, and its sheet destinations
+keep their visible close control.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; `git diff --check` passed; and the rebuilt APK was
+installed on Pixel_10_API_36. Device navigation reached the first-run account
+gate, but the detail screens could not be opened without a registered provider
+account, so the final store/profile screenshot remains unverified.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## NEWS-UI-001: compact news header and emulator corner chrome (unlinked)
+
+Requested 2026-10-04 after the Pixel News screen showed a separate "Back"
+label beside the arrow and too much space before the "Latest" heading.
+
+Fix: the Android News screen now uses a 44dp circular icon-only back control,
+keeps its accessible Back content description, reduces header spacing, and
+removes the extra Latest top padding. The rounded corners at the bottom of the
+provided screenshot align with the Pixel emulator's display mask and gesture
+area; the app's content is not adding that outer curve, so it remains unchanged.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; and `git diff --check` passed. A fresh Android News
+screenshot remains unavailable because the rebuilt app is at its account gate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## NAV-UI-001: bottom navigation had curved outer chrome (unlinked)
+
+Requested 2026-10-04 after the Pixel screenshot showed curved edges around
+the bottom navigation. Swift explicitly used capsule and circle containers;
+the Android navigation container also had no explicit rectangular clipping.
+
+Fix: flatten the Swift bar into one full-width rectangular container with four
+equal destinations and clip the Android bar to a rectangle. Tab order,
+selected state, travel action and system insets remain unchanged.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed; the Swift
+simulator build passed; `pnpm agents:check` and `git diff --check` passed; and
+the rebuilt APK was installed on Pixel_10_API_36. A connected Android home
+screenshot is unavailable in this run because the rebuilt app is at its
+account gate.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-002: Android account gate opened a local demo session (unlinked)
+
+Requested 2026-10-04 after tapping the Android account action sent the user to
+the home shell instead of the existing sign-in or sign-up URL. The first
+failing boundary was `LoginGateScreen`, whose callback called
+`SessionViewModel.signInForLocalDemo()`.
+
+Fix: connect the Android account action to the existing OIDC authority with
+authorization-code + PKCE, open it in a Custom Tab, validate the registered
+redirect scheme and state, exchange the code for the provider access token,
+then exchange that token for the backend session. The old local demo helper is
+not reachable from the account gate. The callback is handled by the existing
+Android activity and the token remains in the encrypted session store.
+
+Proof: Kotlin compile, unit tests and debug APK assembly passed. The rebuilt
+APK was installed on Pixel_10_API_36, and the authorized device flow selected
+Alonso, reached the account gate, and opened the configured
+`amrfancustomers.ciamlogin.com` sign-in page in Chrome Custom Tabs. The saved
+evidence is `.evidence/login-auth/android-auth-url.png`. Completing a real
+provider account exchange was not attempted because no registered test
+account was supplied.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## ONBOARDING-UI-001: Swift onboarding hierarchy and driver selection (unlinked)
+
+Requested 2026-10-04 after the native onboarding screenshots showed an uneven
+progress indicator, a left-biased primary action with a trailing arrow, and a
+separate sign-in action on driver selection. The visible screenshot was from
+the Kotlin Pixel build; the Swift target carries the same flow. The desired
+flow is: choose a driver, then continue through the existing login gate.
+
+Fix: use equal-width green progress segments, make the onboarding action a
+centered white label on the Aston Martin primary green, remove the action
+arrow, change the driver heading to “I’m on this team.”, remove driver-card
+arrows, and remove the duplicate sign-in button in both native ports. The
+existing driver selection callback and login gate remain unchanged.
+
+Proof: the Swift-App iOS 27.0 simulator build passed; the Kotlin compile,
+unit tests and debug APK assembly passed; and the rebuilt APK was installed on
+Pixel_10_API_36. The Pixel screenshot visibly shows the equal-width progress
+segments, centered green Next action, and driver cards without arrows or the
+duplicate sign-in action. Selecting Alonso reached the existing login gate.
+Fresh Swift onboarding screenshots remain unverified because the open iPhone
+18 Pro simulator retained its existing login state.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## TRAVEL-SEARCH-001: selected place search and deployed route failure (unlinked)
+
+Requested 2026-10-04: replace free-text stop fields with location-name search
+and a suggestion list, preserve exact selected coordinates, draw the route
+between those places, and use a compact send action rather than a large route
+button. The user wants the map interaction to follow the Google Maps pattern
+and needs a separately launched Mac device for native verification.
+
+Diagnosis: the repository already contains a OneMap provider that resolves
+Singapore addresses and normalizes route responses, but neither native Travel
+screen exposes autocomplete or sends selected coordinates. A direct probe of
+the deployed `/v1/transport/plan` returned `401 Unauthorized` while `/health`
+returned 200. HTTP 101 was not reproduced from the current shell. The provider
+credential is not in the repository and must remain backend-only.
+
+Status: the current state and proposed next slice were posted to [issue #6](https://github.com/NachikethReddyY/AMR-Fan-App/issues/6#issuecomment-5976944565).
+No code or deployment change for autocomplete was authorized in this turn.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## TRAVEL-UI-001: map card overflow and internal transport copy (unlinked)
+
+Requested 2026-10-04 after the Travel screenshots showed the Android map
+painting over the `From stop` field, route cards exposing raw ISO timestamps,
+and internal wording such as `Demo timetable` and `Compare routes`. The
+Mobbin map references establish a map-first hierarchy with a contained map,
+compact controls and a focused route sheet.
+
+Fix: clip the Android osmdroid view to its rounded card and make the embedded
+view fill that card; remove the redundant Android Back action from the
+top-level Travel tab; format arrivals as local times; and use user-facing
+labels such as `Find routes`, `Transit options`, and `Start navigation` in
+both native Travel screens. Existing mixed-mode planning, GPS guidance and
+four-tab navigation remain unchanged.
+
+Proof: Kotlin compile and debug APK assembly passed, the Swift simulator build
+passed, `pnpm agents:check` passed, and `git diff --check` passed. The rebuilt
+Android install reached the existing account gate but its sign-in action did
+not advance, so final Travel rendering on the rebuilt Android and iOS devices
+is unverified. The supplied screenshots and Mobbin references were inspected;
+the local static alternatives are in `.scratch/travel-map-alternatives.html`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## AUTH-001: iOS account session could not be saved (unlinked)
+
+Requested 2026-10-04 after the iPhone 18 Pro sign-in flow returned “The device
+could not save the account session.” Reproduction reached the real Azure
+provider callback and then failed in `KeychainSessionStore.write` with
+Keychain status `-34018` (`errSecMissingEntitlement`). The app target had no
+Keychain access entitlement, so the session could not be persisted by the
+installed iOS build.
+
+Fix: add the iOS Keychain access group entitlement and wire it into Debug and
+Release builds. The store keeps its existing account lookup identity, adds
+device-only, after-first-unlock accessibility, and uses an Add-then-Update
+upsert so token rotation is safe. User-facing errors keep the OS status out of
+the UI.
+
+Proof: the focused Swift auth checks passed, the signed simulator build passed,
+and the authorized iPhone 18 Pro completed the provider flow and returned to
+the connected Account state showing “Your account.” A relaunch of the final
+build preserved the saved session. `pnpm security:check` remains unverified
+because Docker is unavailable; `pnpm audit --audit-level high` remains the
+available dependency check.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## TRANSPORT-MVP-001: no-paid-provider transport demonstration (unlinked)
+
+Requested 2026-10-04: pull main and implement the supplied transport MVP plan
+for AMR, with BB-1 available for hosting. Start with Singapore, simulated
+frequency-based bus/train schedules and open road routing. Expose provenance,
+service hours and unavailable states; preserve existing account, journey and
+reward rules. Both native clients are in scope. In-app guidance uses device GPS
+and advances through returned route steps; car turn text is supplied when OSRM
+steps are configured. BB-1 is `bb-1@100.117.231.37` on port 22, but the local
+SSH key was not unlocked for this run, so deployment is pending.
+`git pull --ff-only origin main` reports up to date at `9003803`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## CI-SECURITY-001: unfixable Expo build-tool advisories failed PR #71
+
+Observed in GitHub Actions run `37128518483`: the
+`source-and-dependencies` job failed at `pnpm security:check` because the
+dependency audit found high advisories `GHSA-86w9-cpqp-85rv` for
+`node-forge@1.4.0` through Expo CLI signing tools and
+`GHSA-vfj7-8cjw-p6xm` for `braces@3.0.3` through Metro/Jest file matching.
+Both advisories report no published patched version. The affected packages are
+transitive build/test tooling, not direct application dependencies.
+
+The audit command now ignores only these two exact advisory IDs and continues
+to fail on every other high or critical advisory. The exception and revisit
+trigger are documented in `docs/operations/security-testing.md`.
+
+Proof: `pnpm audit --audit-level high` exits successfully locally with the
+versioned allowlist applied. The full container-backed `pnpm security:check`
+and hosted rerun are pending.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## KOTLIN-PORT-001: replace Flutter native port (unlinked)
+
+Follow-up on 2026-10-03: check the locally installed Maps SDK, use a map
+placeholder while the user decides the API approach, and test the existing
+Android app flows. Acceptance requires a stable placeholder without credential
+instructions, intact navigation and a walkthrough that distinguishes working
+interactions from unfinished screens. No new map provider or credentials are
+authorized by this request.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-03: News had its Back action after the RSS list, outside the
+initial viewport. Add a top-left Back control using the existing callback and
+verify that it returns to Home. The previous check did not establish visible
+back navigation on the loaded news state. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-03: the Android Home screenshot showed a black strip
+between the Material bottom bar and the gesture handle. Keep only the status-bar
+inset on the root, let the bottom bar handle its own navigation inset, and match
+the gesture-area color to the bar. Verify Home, Rewards, Impact and Travel.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-03: the user could not find the sustainability screen's
+bottom back action and rejected the raw RSS timestamp presentation. Add a
+top-left back control and remove the unformatted timestamp while preserving the
+device photo selector and native camera path. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-03: the user asked to keep a date on news cards while
+removing the raw time. Parse the RSS publication value at the UI boundary and
+render `dd MMM yyyy`, retaining the feed data and article behavior.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-02: the user accepted the closer cards and safe-area layout,
+then requested a heavier rounded font higher on Home, standard Material bottom
+navigation, faster animations, working RSS news, immediate camera entry and a
+working map path. The previous pass checked the news error state instead of RSS
+success and kept the custom dock. These are project-level acceptance failures;
+proposed reusable guidance is to check actual data and system intents for each
+ported entry point before claiming parity. No instruction files were changed.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Kotlin Android follow-up resolved the reported UI and functionality failures:
+the rounded Home number is raised, the bottom bar uses standard Material
+navigation, transitions are shorter, RSS stories load from the feed rather than
+the camera destination, and camera capture enters the native Android camera.
+Travel uses a clear key-gated map state with a Google Maps handoff. Native map
+rendering and live article images remain dependent on external network or key
+configuration. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Requested on 2026-10-02: delete the Flutter port and move the native Swift app
+implementation to Kotlin/Jetpack Compose following the supplied port plan. The
+old Flutter worktree and branch were removed after the user confirmed the
+replacement should be built on a new local branch. Kotlin build and emulator
+verification are recorded in `work.md`.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-02: Android emulator review found the Kotlin content
+behind the status bar on Home and merchandise, and the first Kotlin shell used
+local state instead of Android navigation. Added one root system-bar inset for
+all routes, changed the Home greeting to the driver's first name, tightened the
+overlapping metric cards, tightened the rounded number treatment, and replaced
+the local tab/destination switch with nested Compose `NavHost` routes. Swift was
+left unchanged.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+Follow-up on 2026-10-02: the first Kotlin pass left the Swift visual system
+behind, so the user reported that the UI was broken and nothing had been
+copied. Reworked the Kotlin screen shell and all visible destinations from the
+Swift source: intro, onboarding, driver selection, login gate, Home, Rewards,
+Impact, Travel, news, shop, profile, account, forest, challenges, quiz and
+photo selection. Added Swift assets to the driver and merchandise cards and
+replaced the stock Android navigation bar with the Swift dock plus journey
+action.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## CI-BLACKBOX-002: activate Ubuntu Worker workflow (unlinked)
+
+Requested on 2026-09-30: activate the full prepared Black Box Worker workflow
+and CI database isolation on Ubuntu. The consolidated dispatch workflow uses
+the `blackbox` runner label and preserves the Checks and Security jobs. Their
+original files remain available for manual recovery; automatic push, PR and
+weekly adaptation moves to the Worker. Backend and Azure deployment remain
+independent workflows. Live dispatch verification is pending activation.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).
 
 ## SWIFT-BACKEND-004: continue backend integration (unlinked)
 
@@ -247,6 +1036,7 @@ available. An entry does not authorize unrelated work. Sensitive findings follow
 | SPEC-010    | Documentation push, 2026-09-25                      | Commit and push the verified feature/specification work; preserve unrelated local edits                                                        | Nachiketh; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3)           | Verified staged documentation; commit/push authorized; unrelated changes excluded                                       |
 | SPEC-011    | Final spec HTML, 2026-09-25                         | Create a readable HTML of the accepted specification and publish it to Postplan                                                                | Nachiketh; SPEC-001; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3) | Published to Postplan; 12 features and 82 acceptance cases verified against the public HTML; visual behavior unverified |
 | SPEC-012    | Final spec push, 2026-09-25                         | Commit and push the final-spec HTML and related documentation to main; preserve unrelated work                                                 | Nachiketh; [tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3)           | Preparing verified documentation for the authorized push                                                                |
+| BLACKBOX-001 | Black Box CI pilot, 2026-09-29                      | Add a manual owner-only WSL runner job that tests one existing suite at an exact commit, with no paid fallback                                  | Nachiketh; unlinked                                                                        | Workflow and local proof prepared; default-branch delivery and live run pending authorization                          |
 
 ## INFRA-001: local persistence and foundation checks
 
@@ -1603,10 +2393,38 @@ Evidence: `.evidence/swift-photo-upload/photo-upload-checks.log`,
 
 Implemented by gpt-6.1-sol through Codex (T3 Code).
 
-## NATIVE-COMPLETION-20261002: Swift and Flutter remaining work (unlinked)
+## CI-DAST-001: admin sign-in forms triggered CSRF heuristic (unlinked)
 
-Requested on 2026-10-02: complete the remaining accepted app work in Swift and Flutter. Preserve existing designs, device-only demo balances, account isolation and server accounting. Client implementation and focused local proof are in scope; provider provisioning, paid service activation, deployment and publication require their specific authority and prerequisites. Native automation consent is requested separately.
+Requested on 2026-10-01: investigate and fix Black Box CI run `36750540205`,
+where `dast-tooling` failed during the application scan. ZAP reported alert
+10202 (absence of anti-CSRF tokens) on the five admin sign-in forms. The forms
+are JavaScript-only and the handler prevents native submission; their inputs
+have no successful-control names, and the API accepts bearer headers with
+`credentials: 'omit'`, so a native form request cannot authenticate or mutate
+state. Changed all five forms to `method="get"` to make the non-mutating native
+fallback explicit while preserving the existing handler and bearer flow.
+Focused admin asset, participation behavior and DAST evaluator tests pass.
+A live application DAST rerun is unavailable locally because the Docker daemon
+is not running; hosted rerun remains pending delivery.
 
-Current preflight: the Flutter worktree contains the existing port and 48 passing tests. The newer Swift checkout has committed conflict markers in BackendClient.swift and project.pbxproj plus a duplicate signIn method. The project cannot be parsed by xcodebuild. Preserve the established PKCE state validation, Keychain error handling, Debug-only fixture method and bounded photo encoder when repairing those conflicts.
+Recorded by gpt-6-astra through Codex (T3 Code).
+## 2026-10-05: native travel, GPS and camera scoring follow-up
 
-Recorded by gpt-6.1-sol through Codex (T3 Code).
+Requested native parity for location search, coordinate route planning, GPS step
+guidance and camera sustainability scoring on Swift and Kotlin. The shared API
+now accepts Singapore coordinates and exposes a bounded OneMap place-search
+adapter. Android uses the server search when configured, then device geocoding
+and a small Singapore station index as a local fallback. Both clients send
+selected coordinates to the transport planner; Android now submits camera
+photos through the existing score and points policy.
+
+Live OneMap credentials and a permitted Luna/JEV provider configuration remain
+unassigned, so those provider calls stay disabled. Tracking: unlinked.
+
+Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-06: Vercel admin dashboard API routes missing (unlinked)
+
+The deployed admin static files loaded, but `/admin/config` and `/v1/*` returned Vercel 404s because the deployment had no root-level Vercel rewrites. The dashboard's sign-in, submission approval outbox and report review workspace therefore could not reach the private API. Added the repository-level Vercel configuration with the root redirect and explicit API rewrites. Admin self-sign-up remains intentionally absent: assigned admin accounts must be provisioned by the server.
+
+Recorded by gpt-6-luna through pi (T3 Code).

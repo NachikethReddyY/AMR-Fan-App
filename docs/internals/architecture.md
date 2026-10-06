@@ -6,10 +6,11 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Swift phone app | `Swift-App/` is an independent Xcode app with the native fan flows and backend client | Native release and device acceptance |
+| Native phone apps | `Swift-App/` remains the iOS source implementation; `Kotlin-App/` is the standalone Android Jetpack Compose port with matching domain, auth, network, media and fan-flow entry points | Platform-native release and device acceptance |
 | React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
 | Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
 | Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers. The activity submission slice adds canonical multi-photo evidence, durable assessment recovery, deterministic rewards, missions and the combined impact overview. | Feature operations and persistence on the selected hosted platform |
+| Transport MVP | `services/api/transport/` owns a separately runnable Singapore demo timetable/planner, an authenticated app endpoint and an optional OSRM adapter. | GTFS/GTFS-Realtime ingestion, live traffic, GPS navigation and hosted deployment |
 | Shared packages | `packages/contracts/` owns wire types; `packages/travel-domain/` owns pure route, emissions and recommendation logic | Stable cross-client contracts and domain calculations |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |
 | Operations | Root scripts, Compose, Render and security configuration orchestrate the workspace; `pnpm-workspace.yaml` and Turbo own package discovery and task ordering | Release environment remains a maintainer decision |
@@ -26,7 +27,7 @@ atomicity, replay, concurrency and isolation. See [points operations](../operati
 
 ## Design defaults
 
-Keep Swift as an independent Xcode project outside the JavaScript package graph. The JavaScript workspace has explicit fan, admin, API, contracts and travel-domain units. Database-only TypeScript modules live in
+Keep `Swift-App/` and `Kotlin-App/` as independent native projects outside the JavaScript package graph. The JavaScript workspace has explicit fan, admin, API, contracts and travel-domain units. Database-only TypeScript modules live in
 `services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.

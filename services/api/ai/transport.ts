@@ -43,15 +43,23 @@ export type WireResult =
   | { ok: false; reason: Failure };
 
 // One instance belongs to one server process. No queue and no automatic retries.
-export function boundedTransport(url: string, timeoutMs: number, key?: string) {
+export function boundedTransport(
+  url: string,
+  timeoutMs: number,
+  key?: string,
+  maxRequestBytes = 60000,
+) {
   let active = false;
-  return async (body: unknown): Promise<WireResult> => {
+  return async (body: unknown, signal?: AbortSignal): Promise<WireResult> => {
     if (active) return { ok: false, reason: 'busy' };
     const encoded = JSON.stringify(body);
-    if (Buffer.byteLength(encoded) > 60000)
+    if (Buffer.byteLength(encoded) > maxRequestBytes)
       return { ok: false, reason: 'invalid-input' };
     active = true;
     const abort = new AbortController();
+    const forwardAbort = () => abort.abort(signal?.reason);
+    if (signal?.aborted) forwardAbort();
+    else signal?.addEventListener('abort', forwardAbort, { once: true });
     const timer = setTimeout(() => abort.abort(), timeoutMs);
     const start = performance.now();
     try {
@@ -107,6 +115,7 @@ export function boundedTransport(url: string, timeoutMs: number, key?: string) {
       };
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', forwardAbort);
       active = false;
     }
   };

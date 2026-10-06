@@ -50,7 +50,10 @@ which is disabled without its existing key. There is no cross-provider fallback.
 
 | Variable | Behavior |
 | --- | --- |
-| `AMR_ONEMAP_CREDENTIALS_FILE` | Assigned absolute path outside this worktree to JSON containing only `email` and `password`. The regular file must belong to the server user, have mode 600, one link, and at most 16 KiB. Symlinks and repository files are rejected. No file path is supplied or discovered automatically. |
+| `AMR_ROUTES_PROVIDER` | Provider switch: `onemap`, `google`, or `disabled`. `ROUTES_PROVIDER` and `MAP_PROVIDER` are accepted aliases. There is no cross-provider fallback. |
+| `AMR_ONEMAP_EMAIL` and `AMR_ONEMAP_PASSWORD` | Environment-backed account login. The password is the actual OneMap account password, not an access token. `ONEMAP_EMAIL`, `ONEMAP_EMAIL_PASSWORD`, `ONEMAP_API_EMAIL`, and `ONEMAP_API_PASSWORD` are accepted compatibility names. Keep these in the mode-600 BB-1 auth env file, never the repository `.env`. |
+| `AMR_ONEMAP_ACCESS_TOKEN` | Environment-backed existing OneMap access token. `ONEMAP_ACCESS_TOKEN`, `ONEMAP_API_KEY`, and the supplied `ONEMAP_APIKKEY` are accepted aliases. An explicit `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT` or `ONEMAP_ACCESS_TOKEN_EXPIRES_AT` cutoff is preferred; without one, the adapter uses the documented three-day lifetime and requires a restart after expiry. |
+| `AMR_ONEMAP_CREDENTIALS_FILE` | Assigned absolute path outside this worktree to JSON containing `email`/`password`, or the accepted `ONEMAP_EMAIL` plus `ONEMAP_APIKKEY` aliases. The regular file must belong to the server user, have mode 600, one link, and at most 16 KiB. Symlinks and repository files are rejected. No file path is supplied or discovered automatically. |
 | `AMR_ONEMAP_ACCESS_TOKEN_FILE` | Alternative to the account credential file: an assigned absolute external path to a regular server-owned mode-600 file with one link. One token of 1–8192 characters using letters, digits, `.`, `_`, `~`, or `-`, optionally followed by one LF or CRLF; at most 8194 bytes. No JSON, `Bearer` prefix, spaces, symlinks or repository files. |
 | `AMR_ONEMAP_ACCESS_TOKEN_EXPIRES_AT` | Required with the access-token file. ISO timestamp with `Z` or an explicit timezone offset. This is an operator use-until cutoff, not proof of provider expiry. No default or date-only value. Missing/invalid pairs and simultaneous account/token configuration fail startup. |
 | `AMR_ONEMAP_BASE_URL` | Exactly `https://www.onemap.gov.sg` for live use. Redirects are rejected. |
@@ -469,9 +472,11 @@ The retained CAG factors cover conventional car, public bus and MRT. Returned
 rail other than SUBWAY/METRO_RAIL, or other bus vehicle categories, stays
 `unsupported_transit_factor`; the general parser can still show those routes.
 Walking/cycling zeroes describe sourced operational travel only. Unknown
-geography never receives those zeroes. If any candidate's factor applicability
-is unverified, the query withholds the recommendation while retaining all route
-availability and individually supported estimates. It never discards a faster
+geography never receives those zeroes. Candidates whose factor applicability
+is unverified are excluded from the comparison while retaining all route
+availability and individually supported estimates; the time reference still
+comes from every valid route. Only when no verified candidate or baseline
+remains does the query withhold the recommendation. It never discards a faster
 route to relax the fan's time limit.
 
 ## Source lineage and verification

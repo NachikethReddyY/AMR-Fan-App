@@ -572,7 +572,7 @@ test('fresh clock after a session authority-row wait refuses expired settlement 
   }
 });
 
-test('expiry during the later profile wait preserves the accepted authority-lock semantics', async () => {
+test('expiry during the later profile wait denies settlement before effects', async () => {
   const f = await fixture();
   const hash = createHash('sha256').update(f.token).digest('hex');
   await pool.query(
@@ -595,10 +595,21 @@ test('expiry during the later profile wait preserves the accepted authority-lock
       journeyId: f.journeyId,
       input: f.input,
     });
+    const denial = assert.rejects(pending, { status: 401 });
     await waitForBlocker(pid);
     await blocker.query('SELECT pg_sleep(0.45)');
     await blocker.query('COMMIT');
-    assert.equal((await pending).entry.delta, 120);
+    await denial;
+    const fresh = (await createSession(pool, f.account.id)).token;
+    assert.equal(
+      (await readPointsHistory(pool, fresh, f.profile.id)).balance,
+      0,
+    );
+    assert.equal(
+      (await readJourneyAward({ pool, token: fresh, journeyId: f.journeyId }))
+        .latestReceipt,
+      null,
+    );
   } finally {
     await blocker.query('ROLLBACK');
     blocker.release();

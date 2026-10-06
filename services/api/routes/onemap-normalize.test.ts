@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { normalizeOneMap, resolveOneMapAddress } from './onemap-normalize.ts';
+import {
+  normalizeOneMap,
+  resolveOneMapAddress,
+  searchOneMapAddresses,
+} from './onemap-normalize.ts';
 import { road, roadFor, transit, address } from './testing/onemap-fixtures.ts';
 
 test('road summary and returned polyline become OneMap evidence without invented geometry', async () => {
@@ -137,6 +141,11 @@ test('documented transit stop/shape offsets preserve metrics but cannot invent a
       result.evidence[0].factorApplicability,
       'geography_unverified',
     );
+    // Each leg's own verified shape is kept for map drawing even though the
+    // joints do not line up; gaps stay gaps.
+    assert.equal(result.evidence[0].legShapes.length, 2);
+    for (const shape of result.evidence[0].legShapes)
+      assert.ok(shape.points.length >= 2);
   }
 });
 
@@ -150,4 +159,34 @@ test('continuous OneMap leg geometry remains bound to its original leg ordering'
     geometry.legs.map((l) => l.legIndex),
     [0, 1],
   );
+});
+
+test('place search keeps only bounded Singapore suggestions', () => {
+  const result = searchOneMapAddresses({
+    results: [
+      {
+        SEARCHVAL: 'Bayfront MRT Station',
+        ADDRESS: '10 Bayfront Avenue',
+        POSTAL: '018956',
+        LATITUDE: '1.2816',
+        LONGITUDE: '103.8602',
+      },
+      {
+        SEARCHVAL: 'Outside Singapore',
+        ADDRESS: 'Elsewhere',
+        POSTAL: '000000',
+        LATITUDE: '51.5',
+        LONGITUDE: '-0.1',
+      },
+    ],
+  });
+  assert.equal(result.kind, 'places');
+  if (result.kind === 'places') {
+    assert.equal(result.places.length, 1);
+    assert.equal(result.places[0]?.label, 'Bayfront MRT Station');
+    assert.deepEqual(result.places[0]?.coordinate, {
+      latitude: 1.2816,
+      longitude: 103.8602,
+    });
+  }
 });

@@ -7,6 +7,7 @@
     "./emissions": "./src/emissions.ts",
     "./recommendation": "./src/recommendation.ts",
     "./google-routes": "./src/googleRoutes.ts",
+    "./transit-estimates": "./src/transit-estimates.ts",
     "./comparison": "./src/comparison.ts"
   },
   "dependencies": {

@@ -77,7 +77,7 @@ async function lockProfile(
   if (access === 'owner')
     return lockOwnedProfile(client, actor.principalId, profileId);
   const result = await client.query<Record<string, unknown>>(
-    'SELECT id, kind, display_name, balance FROM app.profiles WHERE id = $1 FOR UPDATE',
+    'SELECT id, kind, display_name, balance, email, birthday FROM app.profiles WHERE id = $1 FOR UPDATE',
     [profileId],
   );
   if (!result.rows[0]) throw new ApiError(404, 'Profile not found.');
@@ -230,7 +230,7 @@ export async function listAdminProfiles(
   return transaction(pool, async (client) => {
     await authorize(client, actor, token, 'admin');
     const result = await client.query<Record<string, unknown>>(
-      `SELECT id, kind, display_name, balance FROM app.profiles
+      `SELECT id, kind, display_name, balance, email, birthday FROM app.profiles
        WHERE ($1::uuid IS NULL OR id > $1::uuid) ORDER BY id LIMIT 51`,
       [page.after ?? null],
     );

@@ -24,7 +24,7 @@ export async function readAccount(
   )
     throw new Error('Invalid stored principal.');
   const profiles = await db.query<Record<string, unknown>>(
-    "SELECT id, kind, display_name, balance FROM app.profiles WHERE principal_id = $1 ORDER BY CASE kind WHEN 'real' THEN 0 ELSE 1 END",
+    "SELECT id, kind, display_name, balance, email, birthday FROM app.profiles WHERE principal_id = $1 ORDER BY CASE kind WHEN 'real' THEN 0 ELSE 1 END",
     [principalId],
   );
   return {
@@ -48,10 +48,17 @@ export function ensureAccount(
     const principal = inserted.rows[0];
     if (!principal) throw new Error('Principal was not persisted.');
     await client.query(
-      `INSERT INTO app.profiles(principal_id, kind) VALUES ($1, 'real'), ($1, 'demo')
+      `INSERT INTO app.profiles(principal_id, kind, display_name)
+       VALUES ($1, 'real', COALESCE($2, 'Fan')), ($1, 'demo', 'Fan')
        ON CONFLICT (principal_id, kind) DO NOTHING`,
-      [principal.id],
+      [principal.id, identity.displayName ?? null],
     );
+    if (identity.displayName)
+      await client.query(
+        `UPDATE app.profiles SET display_name = $2
+         WHERE principal_id = $1 AND kind = 'real' AND display_name = 'Fan'`,
+        [principal.id, identity.displayName],
+      );
     return readAccount(client, principal.id);
   });
 }
@@ -62,7 +69,7 @@ export async function readOwnedProfile(
   profileId: string,
 ) {
   const result = await db.query<Record<string, unknown>>(
-    'SELECT id, kind, display_name, balance FROM app.profiles WHERE id = $1 AND principal_id = $2',
+    'SELECT id, kind, display_name, balance, email, birthday FROM app.profiles WHERE id = $1 AND principal_id = $2',
     [profileId, principalId],
   );
   const row = result.rows[0];
@@ -77,7 +84,7 @@ export async function lockOwnedProfile(
   profileId: string,
 ) {
   const result = await client.query<Record<string, unknown>>(
-    'SELECT id, kind, display_name, balance FROM app.profiles WHERE id = $1 AND principal_id = $2 FOR UPDATE',
+    'SELECT id, kind, display_name, balance, email, birthday FROM app.profiles WHERE id = $1 AND principal_id = $2 FOR UPDATE',
     [profileId, principalId],
   );
   const row = result.rows[0];
@@ -97,6 +104,45 @@ export async function renameProfile(
       'UPDATE app.profiles SET display_name = $1 WHERE id = $2',
       [displayName, profileId],
     );
+    return readOwnedProfile(client, principalId, profileId);
+  });
+}
+
+export type ProfilePatch = {
+  displayName?: string;
+  email?: string | null;
+  birthday?: string | null;
+};
+
+export async function updateProfile(
+  pool: Pool,
+  principalId: string,
+  profileId: string,
+  patch: ProfilePatch,
+) {
+  return transaction(pool, async (client) => {
+    await lockOwnedProfile(client, principalId, profileId);
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (patch.displayName !== undefined) {
+      values.push(patch.displayName);
+      sets.push(`display_name = $${values.length}`);
+    }
+    if (patch.email !== undefined) {
+      values.push(patch.email);
+      sets.push(`email = $${values.length}`);
+    }
+    if (patch.birthday !== undefined) {
+      values.push(patch.birthday);
+      sets.push(`birthday = $${values.length}`);
+    }
+    if (sets.length) {
+      values.push(profileId);
+      await client.query(
+        `UPDATE app.profiles SET ${sets.join(', ')} WHERE id = $${values.length}`,
+        values,
+      );
+    }
     return readOwnedProfile(client, principalId, profileId);
   });
 }

@@ -53,8 +53,14 @@ unavailable even when a route can be shown.
 The fastest valid available route sets the time reference. Exact seconds and
 unrounded emissions determine eligibility. Equal emissions use shorter duration,
 then stable route ID. The conventional-car baseline uses its own summed leg
-distance for the same requested endpoints. Missing geography or a baseline
-withholds the recommendation without changing route availability. No AI, points
+distance for the same requested endpoints. Routes without verified geography
+or factors are excluded from the comparison while staying visible with their
+own estimate state; when none remain, or the baseline itself is unverified,
+the recommendation is withheld without changing route availability. The time
+reference always comes from every valid route, so excluding an unverified
+route never relaxes the fan's time limit. Walk and cycle trips over 30 minutes
+stay listed with honest estimates but can never win: that long on foot is not
+a real option for most fans, while long motorized rides are. No AI, points
 rounding, persistence or journey award is introduced by this candidate.
 
 The [production release procedure](../operations/journey-award-release.md) records

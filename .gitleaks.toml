@@ -1,0 +1,6 @@
+# Gitleaks allowlist for values that look like secrets but are documented
+# public identity metadata. Narrow: fingerprint-pinned to exact values,
+# never whole files, so any other finding in those files still blocks.
+[allowlist]
+description = "Entra audience UUIDs are public non-secret identity metadata (see deploy/bb1/README.md)"
+regexes = ["mf278be1f-21a5-455b-bb14-b2fc60373939"]

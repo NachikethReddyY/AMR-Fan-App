@@ -168,6 +168,8 @@ function scan(kind, directory) {
         tools.gitleaks,
         'dir',
         '/src',
+        '--config',
+        '/src/.gitleaks.toml',
         '--redact',
         '--no-banner',
         '--exit-code',
@@ -284,14 +286,17 @@ function dast(target, fixtureMode) {
   rmSync(reportPath, { force: true });
   let result;
   try {
+    const buildContext = fixtureMode
+      ? join(directory, 'security/fixtures/dast')
+      : directory;
     docker([
       'build',
       '-q',
       '-t',
       id,
       '-f',
-      join(directory, target.dockerfile),
-      directory,
+      join(buildContext, fixtureMode ? 'Dockerfile' : target.dockerfile),
+      buildContext,
     ]);
     docker(['network', 'create', '--internal', id], { capture: true });
     docker(
