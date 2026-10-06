@@ -26,6 +26,67 @@ struct BackendAccount: Codable, Equatable {
     var realProfile: BackendProfile? { profiles.first(where: { $0.kind == "real" }) }
 }
 
+struct BackendHistoryEntry: Decodable, Identifiable {
+    let id: String
+    let sequence: String
+    let profileId: String
+    let actorId: String
+    let kind: String
+    let delta: Int
+    let balanceAfter: Int
+    let reason: String
+    let recordedAt: String
+}
+
+struct BackendHistoryPage: Decodable {
+    let profile: BackendProfile
+    let balance: Int
+    let entries: [BackendHistoryEntry]
+    let nextCursor: String?
+}
+
+struct BackendImpactTotal: Decodable {
+    let kind: String
+    let savingsKg: String?
+    let journeyCount: Int?
+    let excludedJourneys: Int?
+    let reasons: [String]?
+}
+
+struct BackendParticipation: Decodable {
+    let kind: String
+    let activityCount: Int?
+    let missionsCompleted: Int?
+    let pointsEarned: Int?
+    let reason: String?
+}
+
+struct BackendImpactOverview: Decodable {
+    let personal: BackendImpactTotal
+    let community: BackendImpactTotal
+    let personalParticipation: BackendParticipation
+    let communityParticipation: BackendParticipation
+    let officialStatus: String
+
+    init(from decoder: Decoder) throws {
+        let root = try decoder.container(keyedBy: CodingKeys.self)
+        let fan = try root.nestedContainer(keyedBy: FanKeys.self, forKey: .fan)
+        let personal = try fan.nestedContainer(keyedBy: ImpactKeys.self, forKey: .personal)
+        let community = try fan.nestedContainer(keyedBy: ImpactKeys.self, forKey: .community)
+        self.personal = try personal.decode(BackendImpactTotal.self, forKey: .travel)
+        self.community = try community.decode(BackendImpactTotal.self, forKey: .travel)
+        self.personalParticipation = try personal.decode(BackendParticipation.self, forKey: .participation)
+        self.communityParticipation = try community.decode(BackendParticipation.self, forKey: .participation)
+        let official = try root.nestedContainer(keyedBy: OfficialKeys.self, forKey: .official)
+        officialStatus = try official.decode(String.self, forKey: .status)
+    }
+
+    private enum CodingKeys: String, CodingKey { case fan, official }
+    private enum FanKeys: String, CodingKey { case personal, community }
+    private enum ImpactKeys: String, CodingKey { case travel, participation }
+    private enum OfficialKeys: String, CodingKey { case status }
+}
+
 struct BackendSessionResponse: Codable {
     let token: String
     let expiresAt: String
@@ -240,6 +301,8 @@ final class BackendSession: ObservableObject {
     @Published private(set) var account: BackendAccount?
     @Published private(set) var isBusy = false
     @Published var errorMessage: String?
+    @Published private(set) var history: BackendHistoryPage?
+    @Published private(set) var impact: BackendImpactOverview?
 
     private let client = BackendClient()
     private let sessionStore: SessionTokenStore
@@ -286,6 +349,8 @@ final class BackendSession: ObservableObject {
             try await self.client.logout(token: token)
             self.token = nil
             self.account = nil
+            self.history = nil
+            self.impact = nil
             try self.sessionStore.delete()
         }
     }
@@ -301,6 +366,18 @@ final class BackendSession: ObservableObject {
     func routes(origin: String, destination: String) async throws -> BackendRouteResponse {
         guard let token else { throw BackendError.notSignedIn }
         return try await client.routes(token: token, origin: origin, destination: destination)
+    }
+
+    func loadHistory() async {
+        guard let token, let profile = realProfile else { return }
+        do { history = try await client.history(token: token, profileId: profile.id) }
+        catch { errorMessage = error.localizedDescription }
+    }
+
+    func loadImpact() async {
+        guard let token, let profile = realProfile else { return }
+        do { impact = try await client.impact(token: token, profileId: profile.id) }
+        catch { errorMessage = error.localizedDescription }
     }
 
     func transportPlan(origin: String, destination: String) async throws -> BackendTransportPlan {
@@ -459,6 +536,14 @@ private final class BackendClient {
 
     func routes(token: String, origin: String, destination: String) async throws -> BackendRouteResponse {
         try await request(path: "v1/routes/query", method: "POST", token: token, body: RouteRequest(origin: origin, destination: destination, extraMinutes: 15, modes: ["DRIVE", "TRANSIT", "WALK", "BICYCLE"]))
+    }
+
+    func history(token: String, profileId: String) async throws -> BackendHistoryPage {
+        try await request(path: "v1/profiles/\(profileId)/points/history?limit=25", method: "GET", token: token, body: EmptyBody())
+    }
+
+    func impact(token: String, profileId: String) async throws -> BackendImpactOverview {
+        try await request(path: "v1/impact/overview?profileId=\(profileId)", method: "GET", token: token, body: EmptyBody())
     }
 
     func transportPlan(token: String?, origin: String, destination: String) async throws -> BackendTransportPlan {

@@ -424,7 +424,7 @@ evidence rejection; route, transport, and typecheck checks pass; the Android
 unit tests and debug APK build pass; and `com.amr.fanapp` was installed on the
 Pixel_10_API_36 emulator. The emulator is currently showing the Entra sign-in
 confirmation, so an authenticated camera upload and result screen remain
-unverified. BB-1 has no `/home/bb-1/.auth/amr-ai.env` yet, so live Luna calls
+unverified. BB-1 has no `$AMR_AUTH_DIR/amr-ai.env` yet, so live Luna calls
 remain disabled until that mode-600 file is added. JEV remains uncalled because
 its provider protocol is not verified.
 
@@ -616,7 +616,7 @@ account `password` is the real OneMap account password used to obtain a
 three-day access token. `ONEMAP_APIKKEY` is accepted as an existing access token
 alongside `ONEMAP_API_KEY`; `ONEMAP_EMAIL_PASSWORD`, `ONEMAP_API_EMAIL`, and
 `ONEMAP_API_PASSWORD` remain accepted compatibility names. BB-1 now optionally
-loads `/home/bb-1/.auth/amr-onemap.env`, while `AMR_ROUTES_PROVIDER` remains the
+loads `$AMR_AUTH_DIR/amr-onemap.env`, while `AMR_ROUTES_PROVIDER` remains the
 provider switch. The TokenRouter adapter also accepts `AI_API_KEY` and the
 exact `AI_BASE_URL` alias without weakening its endpoint allowlist.
 
@@ -655,7 +655,7 @@ boundary tests for the 60-point evidence threshold, confidence gate and absence
 of provider-supplied points.
 
 Documented BB-1 secret locations outside the checkout. Compose now optionally
-loads `/home/bb-1/.auth/amr-ai.env` and mounts `/home/bb-1/.auth` read-only at
+loads `$AMR_AUTH_DIR/amr-ai.env` and mounts `$AMR_AUTH_DIR` read-only at
 `/run/secrets/amr-private`; the OneMap example points at the mounted JSON file.
 Live Luna/JEV inference remains disabled until a reviewed provider adapter and
 gateway contract are configured.
