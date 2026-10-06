@@ -62,11 +62,31 @@ const syntheticIdentities: Record<string, Identity> = {
   'fan-a': { issuer: 'urn:amr:local-synthetic', subject: 'fan-a' },
   'fan-b': { issuer: 'urn:amr:local-synthetic', subject: 'fan-b' },
 };
+const SESSION_COOKIE = 'amr_session';
+const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 function bearer(req: IncomingMessage) {
   const value = req.headers.authorization;
   if (!value?.startsWith('Bearer ') || value.length > 16400)
     throw new ApiError(401, 'Sign in again.');
   return value.slice(7);
+}
+function sessionToken(req: IncomingMessage) {
+  const authorization = req.headers.authorization;
+  if (authorization) return bearer(req);
+  const cookie = req.headers.cookie
+    ?.split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_COOKIE}=`));
+  const value = cookie?.slice(SESSION_COOKIE.length + 1);
+  if (!value || !/^[A-Za-z0-9_-]{43}$/.test(value))
+    throw new ApiError(401, 'Sign in again.');
+  return value;
+}
+function sessionCookie(token: string) {
+  return `${SESSION_COOKIE}=${token}; Max-Age=${SESSION_MAX_AGE}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+}
+function clearedSessionCookie() {
+  return `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`;
 }
 async function body(
   req: IncomingMessage,
@@ -95,8 +115,16 @@ function onlyField(value: Record<string, unknown>, name: string) {
     throw new ApiError(400, `Only ${name} is accepted.`);
   return value[name];
 }
-function send(res: ServerResponse, status: number, value: unknown) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+function send(
+  res: ServerResponse,
+  status: number,
+  value: unknown,
+  headers: Record<string, string> = {},
+) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    ...headers,
+  });
   res.end(JSON.stringify(value));
 }
 
@@ -296,20 +324,26 @@ export function createApi({
           : undefined;
         if (!identity) throw new ApiError(400, 'Select a local test account.');
         const account = await ensureAccount(pool, identity);
-        return send(res, 201, {
-          ...(await createSession(pool, account.id)),
-          account,
-        });
+        const session = await createSession(pool, account.id);
+        return send(
+          res,
+          201,
+          { ...session, account },
+          { 'Set-Cookie': sessionCookie(session.token) },
+        );
       }
       if (path === '/v1/session' && req.method === 'POST') {
         if (!verifier)
           throw new ApiError(503, 'Live sign-in is not configured.');
         const identity = await verifier(bearer(req));
         const account = await ensureAccount(pool, identity);
-        return send(res, 201, {
-          ...(await createSession(pool, account.id)),
-          account,
-        });
+        const session = await createSession(pool, account.id);
+        return send(
+          res,
+          201,
+          { ...session, account },
+          { 'Set-Cookie': sessionCookie(session.token) },
+        );
       }
       if (path === '/v1/rewards/offers' && req.method === 'GET') {
         const catalogue = await publicRewardsCatalogue(
@@ -320,7 +354,7 @@ export function createApi({
         );
         return send(res, catalogue.status, catalogue.value);
       }
-      const token = bearer(req);
+      const token = sessionToken(req);
       const photoResponse = await photoActivity(req, path);
       if (photoResponse)
         return send(res, photoResponse.status, photoResponse.body);
@@ -547,7 +581,12 @@ export function createApi({
         return send(res, 200, await queryRoutes(actor, await body(req)));
       if (path === '/v1/session' && req.method === 'DELETE') {
         await revokeSession(pool, token);
-        return send(res, 200, { signedOut: true });
+        return send(
+          res,
+          200,
+          { signedOut: true },
+          { 'Set-Cookie': clearedSessionCookie() },
+        );
       }
       if (path === '/v1/me' && req.method === 'GET')
         return send(res, 200, await readAccount(pool, actor.principalId));

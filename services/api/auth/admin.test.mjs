@@ -1,11 +1,24 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { passwordSession } from './admin.js';
+import { loadAdminConfig, passwordSession } from './admin.js';
 const config = {
   mode: 'supabase',
   url: 'https://folakoxsilrfemctvlxj.supabase.co',
   publishableKey: 'sb_publishable_' + 'fixture'.repeat(3),
 };
+test('admin config falls back while the API wakes from sleep', async () => {
+  let calls = 0;
+  const result = await loadAdminConfig(async (_url, init) => {
+    calls++;
+    assert.equal(init.credentials, 'omit');
+    assert.equal(init.cache, 'no-store');
+    return new Response('warming up', { status: 503 });
+  });
+  assert.equal(result.synthetic, false);
+  assert.equal(result.auth.mode, 'supabase');
+  assert.equal(calls, 1);
+});
+
 test('email/password goes only to fixed identity provider, then token exchanges for app session', async () => {
   const calls = [];
   const request = async (url, init) => {
@@ -38,11 +51,10 @@ test('email/password goes only to fixed identity provider, then token exchanges 
     calls[1].init.headers.Authorization,
     'Bearer synthetic.jwt.token',
   );
-  assert.ok(
-    calls.every(
-      (x) => x.init.redirect === 'error' && x.init.credentials === 'omit',
-    ),
-  );
+  assert.equal(calls[0].init.redirect, 'error');
+  assert.equal(calls[0].init.credentials, 'omit');
+  assert.equal(calls[1].init.redirect, 'error');
+  assert.equal(calls[1].init.credentials, 'include');
 });
 test('unsafe provider/key/missing credentials refuse without any network call; provider error is sanitized', async () => {
   let calls = 0;

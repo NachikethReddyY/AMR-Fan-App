@@ -1,4 +1,4 @@
-import { bindPasswordSignIn } from '../../auth/admin.js';
+import { bindPasswordSignIn, loadAdminConfig } from '../../auth/admin.js';
 
 const byId = (id) => window.document.getElementById(id);
 const fieldNames = [
@@ -49,7 +49,7 @@ function signedOut() {
 async function api(path, method = 'GET', value, pdf = false) {
   const response = await fetch(path, {
     method,
-    credentials: 'omit',
+    credentials: 'include',
     cache: 'no-store',
     signal: AbortSignal.timeout(pdf ? 65000 : 20000),
     headers: {
@@ -103,7 +103,14 @@ async function refreshReports(append = false) {
   const rows = await api(
     `/v1/admin/reports${append && cursor ? `?after=${cursor}` : ''}`,
   );
-  if (!append) byId('report').replaceChildren();
+  if (!append) {
+    byId('report').replaceChildren();
+    option(
+      byId('report'),
+      rows.length ? 'Select a report to review' : 'No reports uploaded yet',
+      '',
+    );
+  }
   for (const row of rows)
     option(
       byId('report'),
@@ -111,6 +118,7 @@ async function refreshReports(append = false) {
       row.id,
     );
   cursor = rows.length === 50 ? rows.at(-1).id : null;
+  byId('report').disabled = rows.length === 0;
   byId('more').hidden = !cursor;
 }
 async function refreshOfficial() {
@@ -362,7 +370,7 @@ byId('decision-form').addEventListener('submit', (event) => {
   });
 });
 void work(async () => {
-  const config = await api('/admin/config');
+  const config = await loadAdminConfig();
   byId('fixtures').hidden = !config.synthetic;
   bindPasswordSignIn(config.auth, { work, onSession: activate });
   byId('setup').textContent = config.synthetic
@@ -370,4 +378,14 @@ void work(async () => {
     : config.auth?.mode === 'supabase'
       ? ''
       : 'Admin sign-in setup is pending.';
+  try {
+    await activate(null);
+  } catch (error) {
+    if (
+      !['Sign in again.', 'Assigned admin access required.'].includes(
+        error.message,
+      )
+    )
+      throw error;
+  }
 });

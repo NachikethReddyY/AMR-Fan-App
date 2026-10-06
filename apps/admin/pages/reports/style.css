@@ -3,7 +3,28 @@
 #report,
 #candidate,
 #replacement {
+  width: 100%;
   max-width: 100%;
+}
+#upload-form,
+#select-form,
+#detail {
+  background: #101b18;
+  border: 1px solid #29433c;
+  border-radius: 12px;
+  padding: 20px;
+}
+#select-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+#select-form label {
+  grid-column: 1 / -1;
+}
+#select-form button {
+  white-space: nowrap;
 }
 #upload-form input,
 #review-form input {
@@ -30,14 +51,33 @@
   padding: 16px 0;
   overflow-wrap: anywhere;
 }
-#select-form,
+@media (max-width: 600px) {
+  #upload-form,
+  #select-form,
+  #detail {
+    padding: 16px;
+    border-radius: 10px;
+  }
+  #select-form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  #select-form button,
+  #decision-form button,
+  #more,
+  #download {
+    width: 100%;
+  }
+  #file {
+    font-size: 14px;
+  }
+}
 #decision-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
-#select-form label,
 #decision-form h2,
 #decision-form label,
 #decision-form textarea {

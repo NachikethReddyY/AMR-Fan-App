@@ -1,4 +1,12 @@
 const provider = 'https://folakoxsilrfemctvlxj.supabase.co';
+const publicFallbackConfig = {
+  synthetic: false,
+  auth: {
+    mode: 'supabase',
+    url: provider,
+    publishableKey: 'sb_publishable_my3PjogHDqH66C3luGiL6w_wjtVesMB',
+  },
+};
 const failure = () =>
   new Error('Sign-in failed. Check your email and password.');
 
@@ -79,6 +87,7 @@ export async function passwordSession(
     const session = await json(
       await request('/v1/session', {
         ...options,
+        credentials: 'include',
         headers: { Authorization: `Bearer ${signed.access_token}` },
       }),
     );
@@ -90,6 +99,22 @@ export async function passwordSession(
     return session.token;
   } catch {
     throw failure();
+  }
+}
+
+export async function loadAdminConfig(request = fetch) {
+  try {
+    const response = await request('/admin/config', {
+      credentials: 'omit',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error('Admin configuration unavailable.');
+    return await response.json();
+  } catch {
+    // Render may sleep. Supabase's publishable key is safe to expose; role and
+    // session checks still happen through the API before any admin data loads.
+    return publicFallbackConfig;
   }
 }
 

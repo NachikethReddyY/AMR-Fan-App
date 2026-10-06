@@ -1,4 +1,4 @@
-import { bindPasswordSignIn } from '../../auth/admin.js';
+import { bindPasswordSignIn, loadAdminConfig } from '../../auth/admin.js';
 
 const byId = (id) => document.getElementById(id);
 let token = null;
@@ -24,7 +24,7 @@ function signedOut() {
 async function api(path, method = 'GET', value) {
   const response = await fetch(path, {
     method,
-    credentials: 'omit',
+    credentials: 'include',
     cache: 'no-store',
     signal: AbortSignal.timeout(10000),
     headers: {
@@ -208,13 +208,23 @@ byId('adjustment').addEventListener('submit', (event) => {
   });
 });
 try {
-  const config = await api('/admin/config');
+  const config = await loadAdminConfig();
   byId('fixtures').hidden = !config.synthetic;
   bindPasswordSignIn(config.auth, { work, onSession: activate });
   byId('setup').textContent =
     config.synthetic || config.auth?.mode === 'supabase'
       ? ''
       : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
+  try {
+    await activate(null);
+  } catch (error) {
+    if (
+      !['Sign in again.', 'Assigned admin access required.'].includes(
+        error.message,
+      )
+    )
+      throw error;
+  }
 } catch {
   byId('setup').textContent = 'Sign-in is unavailable. Reload to try again.';
 }
