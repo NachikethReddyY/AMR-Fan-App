@@ -1,3 +1,29 @@
+## 2026-10-05: travel showed no carbon figures (unlinked)
+
+Fans compared routes by duration only; the backend's per-option CO2 estimates
+never reached the screen, and transit options have no estimate source at all.
+
+Fix: "Other routes" rows show the service estimate with a lowest-CO2 badge and
+an unavailable state instead of zero; transit options disclose that estimates
+are unavailable. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: travel dock blocked the planner action (unlinked)
+
+The global navigation dock rendered inside the Travel planner sheet and covered
+its call to action, so places could not be seen or searched. The expanded sheet
+also stayed at compact height because its height preferences never delivered.
+
+Fix: the dock hides on the Travel tab with a "‹ Home" exit pill, the expanded
+planner is a full-height Google-Maps-style search page, and sheet heights flow
+through onAppear/onChange instead of the dead preference keys.
+
+Proof: device screenshots show the visible action, full search page, working
+swap, a calculated route, and dock restoration on Home. Recorded in work.md.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-05: live model evidence and OneMap route completion (unlinked)
 
 The activity screen was awarding points from synthetic output and allowed a

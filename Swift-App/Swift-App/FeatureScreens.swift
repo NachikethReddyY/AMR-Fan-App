@@ -782,56 +782,361 @@ private struct ForestLocationMarker: View {
     }
 }
 
+private struct ProfileRow: View {
+    let title: String
+    let symbol: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .foregroundStyle(FanStyle.teal)
+                    .frame(width: 22)
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundStyle(FanStyle.muted)
+            }
+            .foregroundStyle(.white)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(FanPressStyle())
+    }
+}
+
+private func fanInitials(from displayName: String) -> String {
+    let words = displayName.split(separator: " ")
+    if words.count >= 2 {
+        return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+    }
+    return String(displayName.prefix(2)).uppercased()
+}
+
+private struct PennantEdge: Shape {
+    func path(in rect: CGRect) -> Path {
+        let notch: CGFloat = 26
+        var path = Path()
+        path.move(to: .zero)
+        path.addLine(to: CGPoint(x: rect.maxX - notch, y: 0))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX - notch, y: rect.maxY))
+        path.addLine(to: CGPoint(x: 0, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct AchievementPin: View {
+    let symbol: String
+    let earned: Bool
+    let pinColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(earned ? FanStyle.darkTeal : FanStyle.muted)
+                .frame(width: 48, height: 48)
+                .background(pinColor, in: Circle())
+        }
+        .buttonStyle(FanPressStyle())
+        .accessibilityLabel(earned ? "Achievement earned. View achievements." : "Locked achievement. View achievements.")
+    }
+}
+
+private struct AchievementCorkPin: View {
+    let badge: FanAchievement
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack(alignment: .top) {
+                Image(systemName: badge.earned ? badge.symbol : "lock.fill")
+                    .font(.title2)
+                    .foregroundStyle(badge.earned ? .white : FanStyle.muted)
+                    .frame(width: 58, height: 58)
+                    .background(badge.earned ? badge.tint : FanStyle.panel, in: Circle())
+                    .overlay(Circle().strokeBorder(Color(red: 0.85, green: 0.81, blue: 0.75), lineWidth: 2))
+                Circle()
+                    .fill(.red)
+                    .frame(width: 10, height: 10)
+                    .offset(y: -4)
+            }
+            .opacity(badge.earned ? 1 : 0.45)
+            Text(badge.title)
+                .font(.caption2.bold())
+                .foregroundStyle(FanStyle.muted)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+
+private struct AchievementDetail: View {
+    let badge: FanAchievement
+    let earnedOn: String?
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: badge.earned ? badge.symbol : "lock.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.white)
+                .frame(width: 96, height: 96)
+                .background(badge.earned ? badge.tint : FanStyle.panel, in: Circle())
+            Text(badge.title)
+                .font(.title2.bold())
+            Text(badge.earned ? "Earned" : "Locked")
+                .font(.caption.bold())
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(badge.earned ? badge.tint : FanStyle.panel, in: Capsule())
+            Text(badge.requirement)
+                .font(.subheadline)
+                .foregroundStyle(FanStyle.muted)
+                .multilineTextAlignment(.center)
+            if let earnedOn, let display = displayEarnedDate(earnedOn) {
+                Text("Earned on \(display).")
+                    .font(.caption)
+                    .foregroundStyle(FanStyle.muted)
+            }
+            Spacer()
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity)
+        .background(FanStyle.background)
+    }
+}
+
+struct FanAchievement: Identifiable {
+    let id: String
+    let symbol: String
+    let title: String
+    let earned: Bool
+    let tint: Color
+    let requirement: String
+}
+
+// FIXME: placeholder set until the backend supplies achievements and ranks.
+// Earned dates also need backend event history before "earned when" can be shown.
+let fanAchievements: [FanAchievement] = [
+    FanAchievement(id: "first-race", symbol: "trophy.fill", title: "First race", earned: true, tint: Color(red: 0.96, green: 0.70, blue: 0.01), requirement: "Open the app on a Grand Prix race day."),
+    FanAchievement(id: "green-trip", symbol: "leaf.fill", title: "Green trip", earned: true, tint: Color(red: 0.30, green: 0.75, blue: 0.35), requirement: "Log one lower-impact trip to a race weekend."),
+    FanAchievement(id: "seven-day", symbol: "flame.fill", title: "7-day streak", earned: true, tint: Color(red: 0.95, green: 0.45, blue: 0.10), requirement: "Open the app 7 days in a row."),
+    FanAchievement(id: "race-iq", symbol: "brain.head.profile", title: "Race IQ debut", earned: true, tint: Color(red: 0.55, green: 0.35, blue: 0.85), requirement: "Play your first Race IQ quiz."),
+    FanAchievement(id: "early-fan", symbol: "star.fill", title: "Early supporter", earned: true, tint: FanStyle.teal, requirement: "Pick your driver in the first week of the season."),
+    FanAchievement(id: "quiz-master", symbol: "questionmark.circle.fill", title: "Quiz master", earned: false, tint: Color(red: 0.20, green: 0.55, blue: 0.95), requirement: "Score 5 out of 5 in three daily quizzes."),
+    FanAchievement(id: "superfan", symbol: "heart.fill", title: "Superfan", earned: false, tint: Color(red: 0.90, green: 0.25, blue: 0.35), requirement: "Earn 1,000 lifetime Green Points."),
+    FanAchievement(id: "globetrotter", symbol: "globe", title: "Globetrotter", earned: false, tint: Color(red: 0.10, green: 0.65, blue: 0.80), requirement: "Plan trips to three different Grands Prix."),
+    FanAchievement(id: "helper", symbol: "hand.raised.fill", title: "Helper", earned: false, tint: Color(red: 0.95, green: 0.75, blue: 0.20), requirement: "Verify five fan activities."),
+    FanAchievement(id: "night-owl", symbol: "moon.fill", title: "Night owl", earned: false, tint: Color(red: 0.30, green: 0.30, blue: 0.70), requirement: "Check race results after midnight five times."),
+    FanAchievement(id: "photographer", symbol: "camera.fill", title: "Paddock eye", earned: false, tint: Color(red: 0.60, green: 0.40, blue: 0.65), requirement: "Submit ten verified sustainability photos."),
+    FanAchievement(id: "legend", symbol: "crown.fill", title: "Legend", earned: false, tint: Color(red: 0.85, green: 0.60, blue: 0.05), requirement: "Earn every other badge on this board."),
+]
+
+func showcasedBadgeIDs(from raw: String) -> [String] {
+    let ids = raw.split(separator: ",").map(String.init).filter { id in fanAchievements.contains(where: { $0.id == id }) }
+    return Array((ids + ["", "", ""]).prefix(3))
+}
+
+func achievement(for id: String) -> FanAchievement? {
+    fanAchievements.first(where: { $0.id == id })
+}
+
+/// Earliest-known earned dates, stamped on device the first time each badge is
+/// seen as earned. True historical dates need backend event history.
+func earnedDates(from raw: String) -> [String: String] {
+    var dates: [String: String] = [:]
+    for pair in raw.split(separator: ";") {
+        let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+        if parts.count == 2 { dates[parts[0]] = parts[1] }
+    }
+    return dates
+}
+
+func stampEarnedDates(current: String) -> String {
+    var dates = earnedDates(from: current)
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    let today = formatter.string(from: .now)
+    for badge in fanAchievements where badge.earned && dates[badge.id] == nil {
+        dates[badge.id] = today
+    }
+    return dates.map { "\($0.key)=\($0.value)" }.sorted().joined(separator: ";")
+}
+
+func displayEarnedDate(_ isoDate: String?) -> String? {
+    guard let isoDate else { return nil }
+    let parser = DateFormatter()
+    parser.dateFormat = "yyyy-MM-dd"
+    guard let date = parser.date(from: isoDate) else { return nil }
+    let formatter = DateFormatter()
+    formatter.dateFormat = "d MMM yyyy"
+    return formatter.string(from: date)
+}
+
+struct AchievementsScreen: View {
+    private let pins = fanAchievements
+    @State private var selected: FanAchievement?
+    @AppStorage("badgeEarnedDates") private var badgeEarnedDates = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                SectionHeader(title: "Achievements.",
+                              description: "Earned pins live on your corkboard. Tap any pin to see how to earn it.")
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                    ForEach(pins) { badge in
+                        Button { selected = badge } label: {
+                            AchievementCorkPin(badge: badge)
+                        }
+                        .buttonStyle(FanPressStyle())
+                    }
+                }
+                .padding(18)
+                .background(Color(red: 0.54, green: 0.37, blue: 0.19), in: RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color(red: 0.5, green: 0.7, blue: 0.68), lineWidth: 8))
+            }
+            .padding(22)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+        }
+        .background(FanStyle.background)
+        .onAppear {
+            badgeEarnedDates = stampEarnedDates(current: badgeEarnedDates)
+        }
+        .sheet(item: $selected) { badge in
+            NavigationStack {
+                AchievementDetail(badge: badge, earnedOn: earnedDates(from: badgeEarnedDates)[badge.id])
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Close", systemImage: "xmark") { selected = nil }
+                                .labelStyle(.iconOnly)
+                        }
+                    }
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+}
+
+private struct ProfileStatRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(FanStyle.muted)
+            Spacer()
+            Text(value)
+                .font(.headline)
+        }
+        .padding(.vertical, 10)
+    }
+}
+
 struct ProfileScreen: View {
     @ObservedObject var backend: BackendSession
     let driver: Driver
+    let streak: Int
+    let greenPoints: Int
     let changeDriver: () -> Void
     let showTour: () -> Void
     @State private var showAccount = false
+    @State private var showAchievements = false
+    @AppStorage("showcaseBadges") private var showcaseBadges = "first-race,green-trip,seven-day"
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                SectionHeader(title: "Profile.",
-                              description: "Your driver. Your journey.")
+                if let profile = backend.realProfile {
+                    profileBanner(displayName: profile.displayName, balance: profile.balance)
 
-                Image(driver.imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 235)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 22))
+                    FeatureCard {
+                        VStack(spacing: 0) {
+                            ProfileStatRow(label: "Earned points", value: "\(profile.balance)")
+                            Divider().background(.white.opacity(0.08))
+                            ProfileStatRow(label: "Day streak", value: "\(streak)")
+                            Divider().background(.white.opacity(0.08))
+                            ProfileStatRow(label: "Green Points", value: "\(greenPoints)")
+                        }
+                    }
+                } else {
+                    SectionHeader(title: "Profile.",
+                                  description: "Your driver. Your journey.")
 
-                FeatureCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label("Your driver", systemImage: "flag.checkered")
-                            .font(.caption.bold()).foregroundStyle(FanStyle.teal)
-                        Text("\(driver.firstName) \(driver.rawValue) · #\(driver.number)")
-                            .font(.title3.bold())
-                        Text("Your choice is saved on this device.")
-                            .font(.caption).foregroundStyle(FanStyle.muted)
+                    Image(driver.imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 235)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .overlay(alignment: .bottomLeading) {
+                            HStack(spacing: 10) {
+                                Text("#\(driver.number)")
+                                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 7)
+                                    .background(FanStyle.teal.opacity(0.85), in: Capsule())
+                                Spacer()
+                            }
+                            .padding(16)
+                        }
+
+                    FeatureCard {
+                        HStack(spacing: 14) {
+                            Text(String(driver.firstName.prefix(1) + driver.rawValue.prefix(1)))
+                                .font(.headline.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 52, height: 52)
+                                .background(FanStyle.teal.opacity(0.35), in: Circle())
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(driver.firstName) \(driver.rawValue)")
+                                    .font(.title3.bold())
+                                Text("Your choice is saved on this device.")
+                                    .font(.caption).foregroundStyle(FanStyle.muted)
+                            }
+                            Spacer()
+                        }
                     }
                 }
 
-                FanButton(title: "Change your driver", symbol: "arrow.left.arrow.right") {
-                    dismiss()
-                    changeDriver()
+                FeatureCard {
+                    VStack(spacing: 0) {
+                        ProfileRow(title: "Change your driver", symbol: "arrow.left.arrow.right") {
+                            dismiss()
+                            changeDriver()
+                        }
+                        Divider().background(.white.opacity(0.08)).padding(.leading, 46)
+                        if backend.realProfile != nil {
+                            ProfileRow(title: "Change name", symbol: "person.crop.circle.fill") {
+                                showAccount = true
+                            }
+                        } else {
+                            ProfileRow(title: "Sign in or create account", symbol: "person.crop.circle") {
+                                showAccount = true
+                            }
+                        }
+                        Divider().background(.white.opacity(0.08)).padding(.leading, 46)
+                        ProfileRow(title: "Explore app features", symbol: "questionmark.circle") {
+                            dismiss()
+                            showTour()
+                        }
+                    }
                 }
 
-                FanButton(title: "Sign in or create account", symbol: "person.crop.circle") {
-                    showAccount = true
+                if backend.realProfile == nil {
+                    Text("Sign in to sync your backend profile and earned balance.")
+                        .font(.caption).foregroundStyle(FanStyle.muted)
                 }
-
-                FanButton(title: "Explore app features", symbol: "questionmark.circle") {
-                    dismiss()
-                    showTour()
-                }
-
-                Text("Sign in to sync your backend profile and earned balance.")
-                    .font(.caption).foregroundStyle(FanStyle.muted)
             }
-            .padding(22)
+            .padding([.horizontal, .bottom], 22)
+            .padding(.top, -64)
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
         }
@@ -847,6 +1152,92 @@ struct ProfileScreen: View {
                     }
             }
             .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showAchievements) {
+            NavigationStack {
+                AchievementsScreen()
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Close", systemImage: "xmark") { showAchievements = false }
+                                .labelStyle(.iconOnly)
+                        }
+                    }
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    private func profileBanner(displayName: String, balance: Int) -> some View {
+        // FIXME: rank, tier and pins are sketch placeholders until the backend
+        // supplies leaderboard and achievement data.
+        let pinGrey = Color(red: 0.85, green: 0.85, blue: 0.85)
+        let nameWords = displayName.split(separator: " ")
+        let firstName = nameWords.first.map(String.init) ?? displayName
+        let restName = nameWords.dropFirst().joined(separator: " ")
+        return VStack(spacing: 0) {
+            ZStack(alignment: .topLeading) {
+                Color.clear.frame(height: 214)
+                PennantEdge()
+                    .fill(FanStyle.teal)
+                    .frame(height: 100)
+                    .padding(.top, 90)
+                Image(driver.cutoutImageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 185)
+                    .padding(.leading, 6)
+                    .padding(.top, 5)
+                    .offset(x: -18)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(firstName)
+                            .font(.system(size: 22, weight: .black))
+                        Spacer()
+                        Text("#146")
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundStyle(Color(red: 1, green: 0.8, blue: 0))
+                    }
+                    if !restName.isEmpty {
+                        Text(restName)
+                            .font(.system(size: 22, weight: .black))
+                    }
+                }
+                .padding(.leading, 150)
+                .padding(.trailing, 34)
+                .padding(.top, 100)
+            }
+            .overlay(alignment: .bottomLeading) {
+                HStack(spacing: 12) {
+                    ForEach(Array(showcasedBadgeIDs(from: showcaseBadges).enumerated()), id: \.offset) { _, id in
+                        let badge = achievement(for: id)
+                        AchievementPin(symbol: badge?.symbol ?? "circle.dotted", earned: badge?.earned ?? false, pinColor: pinGrey) { showAchievements = true }
+                    }
+                }
+                .padding(.leading, 16)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Text("Rookie")
+                    .font(.system(size: 14, weight: .black))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(Color(red: 0.72, green: 0.94, blue: 0.29), in: Capsule())
+                    .foregroundStyle(.black)
+                    .padding(.trailing, 10)
+                    .offset(y: -9)
+            }
+            Spacer().frame(height: 8)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showAccount = true } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Color(red: 0, green: 0.53, blue: 1), in: Circle())
+                }
+                .accessibilityLabel("Change name")
+            }
         }
     }
 }

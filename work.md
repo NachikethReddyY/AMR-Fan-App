@@ -1,3 +1,85 @@
+## 2026-10-06 (planned): recommended route badge and transit CO2
+
+Saved plan, not yet implemented. The user wants no "unavailable" CO2 gaps and a
+"Recommended" badge that balances time against carbon (e.g. prefer a 19 min
+train over a 64 min walk or a 10 min car ride).
+
+What the investigation found:
+
+- The server already computes this in `v1/routes/query` via deterministic
+  `recommendRoute` (`packages/travel-domain/src/recommendation.ts`): fastest
+  route plus the 15 extra minutes iOS already sends sets the limit, and the
+  lowest-emission option inside it wins against a single-driver car baseline,
+  returning `recommended_co2`/`recommended` with routeId, estimate, baseline
+  and avoided-kg. iOS decodes `{result, estimates}` and drops `recommendation`.
+- A Jev version exists (`services/api/ai/jev-decisions.ts`) but needs journey
+  snapshots from the Start-journey flow, plus an unverified upstream gateway
+  with per-call cost and latency. It ranks; it never calculates amounts.
+- Transit options (`v1/transport/plan`) carry no estimates and their legs have
+  no distances, only endpoint coordinates, so honest per-leg math is impossible
+  on device today. Crow-flies apportioning would be invented data.
+
+Plan for tomorrow:
+
+1. Decode `recommendation` in `BackendClient.swift` (`recommended_co2`,
+   `recommended`, `unavailable` with reason).
+2. Badge the recommended option in "Other routes" and add one line with the
+   avoided figure against the driving baseline. Keep the existing lowest-CO2
+   badge; the two agree when kinds match.
+3. Transit options: keep the unavailable note until the server adds estimates
+   to the transport plan (backend change, not yet scoped).
+4. Do not integrate Jev for ranking unless the deterministic badge is judged
+   insufficient; that choice needs explicit approval (cost, latency, gateway).
+
+Acceptance: badge appears on the train option for Orchard-to-Marina-Bay with
+the avoided figure; unavailable states stay honest; clean build plus device
+screenshots. Factor release/version disclosure stays a separate follow-up.
+
+Planned by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: show per-option CO₂ estimates on Travel
+
+The route service already returned per-option CO₂ estimates but iOS decoded and
+dropped them, so fans compared only duration. `TravelScreen` now stores
+`response.estimates` alongside routes: every "Other routes" row shows its
+server estimate ("0.42 kg CO₂" / "0.96 kg CO₂e", two decimals below 1 kg),
+options without one read "CO₂ unavailable" instead of an invented zero, and the
+lowest estimate across comparable kinds gets a "LOWEST CO₂" badge (withheld when
+kinds mix CO₂ with CO₂e). The collapsed card shows the selected option's figure
+via a separate `selectedRouteOptionID`, since the shared selection is
+overwritten by transport-plan IDs that have no estimates. Transit options carry
+an honest "CO₂ estimates are unavailable for transit options" note because that
+endpoint sends no estimates and its legs have no distances to calculate from.
+
+Proof: clean simulator build; device screenshots show "Public transport · 19 min
+· 0.96 kg CO₂e" collapsed, per-option figures with the lowest badge, and both
+footnotes on a real Orchard-to-Marina-Bay route. Evidence under `/tmp/travelC*.png`.
+
+Edited by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-05: hide dock on Travel and restyle search like Google Maps
+
+The global dock overlapped the Travel planner and covered its action, and the
+expanded search did not match the supplied Google Maps references. `ContentView.swift`
+now hides `BottomBar` while `selectedTab == .travel`, and `TravelScreen` takes an
+optional `onExitToHome` that renders a floating "‹ Home" pill (the ostatni sheet
+destination keeps its own Close control). The expanded planner is a full-height
+search page: back chevron, From/To card with origin dot, destination pin and
+clear buttons, a swap control that exchanges endpoints and recalculates, an
+icon-tile mode strip, and suggestion rows with pin, title, subtitle and arrow.
+`PlaceSearchField` and the three dead `PreferenceKey` height readers were removed;
+viewport, safe-area and compact heights now flow through `onAppear`/`onChange`
+because the preference values stayed at their initial defaults (`vp=0 safe=0
+exp=260`), which pinned the expanded sheet at compact height.
+
+Proof: clean simulator build; device screenshots show the dockless collapsed
+card with visible action, the full-height Maps-style search, suggestion rows,
+resolved endpoints with mode strip and backend route lists, swap reversing the
+route (Marina Bay Sands to Orchard Station, 15 min), and the Home pill restoring
+the dock on Home. Evidence under `/tmp/travelB*.png`.
+
+Edited by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-05: match the reference navigation on iPhone 18
 
 Updated `BottomBar.swift` to use a light rounded capsule for Home, Rewards, and

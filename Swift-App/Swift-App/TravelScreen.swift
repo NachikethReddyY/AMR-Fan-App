@@ -3,6 +3,7 @@ import MapKit
 import Observation
 
 struct TravelScreen: View {
+    var onExitToHome: (() -> Void)?
     @State private var originText = ""
     @State private var destinationText = ""
     @State private var origin: MKMapItem?
@@ -28,11 +29,12 @@ struct TravelScreen: View {
     @State private var viewportHeight: CGFloat = 1
     @State private var bottomSafeAreaInset: CGFloat = 0
     @State private var compactContentHeight: CGFloat = 120
-    @State private var expandedContentHeight: CGFloat = 260
     @FocusState private var focusedField: PlaceSearchModel.Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var backend: BackendSession
     @State private var backendRoutes: [BackendRouteOption] = []
+    @State private var backendEstimates: [BackendRouteEstimate] = []
+    @State private var selectedRouteOptionID: String?
     @State private var selectedBackendRouteID: String?
     @State private var transportPlan: BackendTransportPlan?
     @State private var guidance = NavigationGuidance()
@@ -72,19 +74,37 @@ struct TravelScreen: View {
                     Spacer()
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 25)
+                .padding(.top, onExitToHome == nil ? 25 : 112)
                 .frame(maxWidth: .infinity)
                 .allowsHitTesting(false)
+            }
+
+            if mapHasLoaded, let exit = onExitToHome {
+                VStack {
+                    Button {
+                        exit()
+                    } label: {
+                        Label("Home", systemImage: "chevron.left")
+                            .font(.subheadline.bold())
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.55), in: Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 1))
+                    }
+                    .buttonStyle(FanPressStyle())
+                    .accessibilityLabel("Back to Home")
+                    .padding(.leading, 16)
+                    .padding(.top, 64)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .background(FanStyle.background.ignoresSafeArea())
         .overlay(alignment: .bottom) {
             GeometryReader { geometry in
                 let compactHeight = compactContentHeight + 52 + geometry.safeAreaInsets.bottom + 16
-                let expandedHeight = min(
-                    max(expandedContentHeight + 52 + geometry.safeAreaInsets.bottom + 16, compactHeight),
-                    geometry.size.height - 20
-                )
+                let expandedHeight = max(geometry.size.height - 20, compactHeight)
                 let restingHeight = plannerState == .collapsed ? compactHeight : expandedHeight
                 let displayedHeight = min(
                     max(currentSheetHeight ?? restingHeight, compactHeight),
@@ -96,17 +116,8 @@ struct TravelScreen: View {
                     plannerSheet
                         .frame(width: geometry.size.width)
                         .frame(height: displayedHeight, alignment: .top)
-                        .background {
-                            GeometryReader { sheetGeometry in
-                                Color.clear.preference(
-                                    key: SheetMetricsPreferenceKey.self,
-                                    value: SheetMetrics(
-                                        height: sheetGeometry.size.height,
-                                        viewportHeight: geometry.size.height,
-                                        bottomSafeAreaInset: geometry.safeAreaInsets.bottom
-                                    )
-                                )
-                            }
+                        .onChange(of: displayedHeight) { _, height in
+                            renderedSheetHeight = height
                         }
                         .clipShape(
                             UnevenRoundedRectangle(
@@ -116,6 +127,16 @@ struct TravelScreen: View {
                         )
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
+                .onAppear {
+                    viewportHeight = geometry.size.height
+                    bottomSafeAreaInset = geometry.safeAreaInsets.bottom
+                }
+                .onChange(of: geometry.size.height) { _, height in
+                    viewportHeight = height
+                }
+                .onChange(of: geometry.safeAreaInsets.bottom) { _, inset in
+                    bottomSafeAreaInset = inset
+                }
             }
             .ignoresSafeArea(.container, edges: .bottom)
             .allowsHitTesting(isPlannerPresented)
@@ -125,29 +146,6 @@ struct TravelScreen: View {
             if !mapHasLoaded {
                 FanStyle.background
                     .ignoresSafeArea()
-            }
-        }
-        .onPreferenceChange(SheetMetricsPreferenceKey.self) { metrics in
-            renderedSheetHeight = metrics.height
-            viewportHeight = metrics.viewportHeight
-            bottomSafeAreaInset = metrics.bottomSafeAreaInset
-        }
-        .onPreferenceChange(CompactPlannerHeightPreferenceKey.self) { height in
-            guard height > 0, compactContentHeight != height else { return }
-            compactContentHeight = height
-            if plannerState == .collapsed && dragStartSheetHeight == nil {
-                withAnimation(sheetAnimation) {
-                    currentSheetHeight = detentHeight(for: .collapsed)
-                }
-            }
-        }
-        .onPreferenceChange(ExpandedPlannerHeightPreferenceKey.self) { height in
-            guard height > 0, expandedContentHeight != height else { return }
-            expandedContentHeight = height
-            if plannerState == .expanded && dragStartSheetHeight == nil {
-                withAnimation(sheetAnimation) {
-                    currentSheetHeight = detentHeight(for: .expanded)
-                }
             }
         }
         .onChange(of: focusedField) { _, field in
@@ -243,10 +241,7 @@ struct TravelScreen: View {
 
     private func detentHeight(for state: PlannerState) -> CGFloat {
         let compactHeight = compactContentHeight + 52 + bottomSafeAreaInset + 16
-        let expandedHeight = min(
-            max(expandedContentHeight + 52 + bottomSafeAreaInset + 16, compactHeight),
-            max(viewportHeight - 20, compactHeight)
-        )
+        let expandedHeight = max(viewportHeight - 20, compactHeight)
         return state == .collapsed ? compactHeight : expandedHeight
     }
 
@@ -334,9 +329,9 @@ struct TravelScreen: View {
             }
 
             if let route {
-                compactRoute(travelTime: route.expectedTravelTime)
+                compactRoute(travelTime: route.expectedTravelTime, co2Text: selectedRouteCo2Text)
             } else if let transitTravelTime {
-                compactRoute(travelTime: transitTravelTime)
+                compactRoute(travelTime: transitTravelTime, co2Text: selectedRouteCo2Text)
             } else {
                 Button {
                     transitionToPlannerState(.expanded)
@@ -353,19 +348,38 @@ struct TravelScreen: View {
         .padding(.top, 24)
         .background {
             GeometryReader { geometry in
-                Color.clear.preference(
-                    key: CompactPlannerHeightPreferenceKey.self,
-                    value: geometry.size.height
-                )
+                Color.clear
+                    .onAppear {
+                        if geometry.size.height > 0 {
+                            compactContentHeight = geometry.size.height
+                        }
+                    }
+                    .onChange(of: geometry.size.height) { _, height in
+                        if height > 0, compactContentHeight != height {
+                            compactContentHeight = height
+                            if plannerState == .collapsed && dragStartSheetHeight == nil {
+                                withAnimation(sheetAnimation) {
+                                    currentSheetHeight = detentHeight(for: .collapsed)
+                                }
+                            }
+                        }
+                    }
             }
         }
     }
 
-    private func compactRoute(travelTime: TimeInterval) -> some View {
+    private func compactRoute(travelTime: TimeInterval, co2Text: String?) -> some View {
         HStack(spacing: 12) {
-            Label("\(selectedMode.title) · \(travelTime.formattedDuration)", systemImage: selectedMode.symbol)
-                .font(.subheadline)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Label("\(selectedMode.title) · \(travelTime.formattedDuration)", systemImage: selectedMode.symbol)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                if let co2Text {
+                    Text(co2Text)
+                        .font(.caption)
+                        .foregroundStyle(FanStyle.muted)
+                }
+            }
             Spacer(minLength: 0)
             Button("Navigate", systemImage: "location.north.fill") {
                 startInAppNavigation()
@@ -377,26 +391,117 @@ struct TravelScreen: View {
         .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
     }
 
+    private func co2Estimate(for routeId: String) -> (kind: String, text: String, value: Double)? {
+        guard let item = backendEstimates.first(where: { $0.routeId == routeId }) else { return nil }
+        switch item.estimate.kind {
+        case "estimated_co2":
+            guard let kg = item.estimate.kg else { return nil }
+            return (item.estimate.kind, formatKg(kg, gas: "CO₂"), kg)
+        case "estimated":
+            guard let kg = item.estimate.kgCo2e else { return nil }
+            return (item.estimate.kind, formatKg(kg, gas: "CO₂e"), kg)
+        default:
+            return nil
+        }
+    }
+
+    private func formatKg(_ value: Double, gas: String) -> String {
+        value < 1
+            ? String(format: "%.2f kg %@", value, gas)
+            : String(format: "%.1f kg %@", value, gas)
+    }
+
+    private var lowestCo2RouteID: String? {
+        let available = backendRoutes.compactMap { route -> (String, Double)? in
+            guard let estimate = co2Estimate(for: route.id) else { return nil }
+            return (route.id, estimate.value)
+        }
+        let kinds = Set(backendRoutes.compactMap { co2Estimate(for: $0.id)?.kind })
+        guard kinds.count == 1, let best = available.min(by: { $0.1 < $1.1 }) else { return nil }
+        return best.0
+    }
+
+    private var selectedRouteCo2Text: String? {
+        guard let id = selectedRouteOptionID else { return nil }
+        return co2Estimate(for: id)?.text
+    }
+
     private var expandedPlanner: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 15) {
-                PlaceSearchField(
-                    title: "From",
-                    placeholder: "Search starting place",
-                    symbol: "circle.dotted.circle.fill",
-                    text: placeText(for: .origin),
-                    isActive: searchModel.activeField == .origin
-                )
-                .focused($focusedField, equals: .origin)
+                HStack(alignment: .center, spacing: 10) {
+                    Button {
+                        focusedField = nil
+                        transitionToPlannerState(.collapsed)
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(FanPressStyle())
+                    .accessibilityLabel("Collapse route planner")
 
-                PlaceSearchField(
-                    title: "To",
-                    placeholder: "Search destination",
-                    symbol: "mappin.and.ellipse",
-                    text: placeText(for: .destination),
-                    isActive: searchModel.activeField == .destination
-                )
-                .focused($focusedField, equals: .destination)
+                    VStack(spacing: 0) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "circle")
+                                .foregroundStyle(FanStyle.teal)
+                                .frame(width: 22)
+                            TextField("Choose starting point", text: placeText(for: .origin))
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .origin)
+                            if !originText.isEmpty {
+                                Button { clearEndpoint(.origin) } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(FanStyle.muted)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Clear starting point")
+                            }
+                        }
+                        .padding(14)
+
+                        Divider().overlay(.white.opacity(0.08)).padding(.leading, 48)
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "mappin")
+                                .foregroundStyle(FanStyle.teal)
+                                .frame(width: 22)
+                            TextField("Choose destination", text: placeText(for: .destination))
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .destination)
+                            if !destinationText.isEmpty {
+                                Button { clearEndpoint(.destination) } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(FanStyle.muted)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Clear destination")
+                            }
+                        }
+                        .padding(14)
+                    }
+                    .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(focusedField == nil ? .clear : FanStyle.teal, lineWidth: 1)
+                    )
+
+                    Button {
+                        swapEndpoints()
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(.white.opacity(0.07), in: Circle())
+                    }
+                    .buttonStyle(FanPressStyle())
+                    .accessibilityLabel("Swap starting point and destination")
+                    .disabled(originText.isEmpty && destinationText.isEmpty)
+                }
 
                 if focusedField != nil && searchModel.completions.isEmpty &&
                     (focusedField == .origin ? originText : destinationText).count >= 2 {
@@ -449,9 +554,31 @@ struct TravelScreen: View {
                             ForEach(backendRoutes) { option in
                                 Button {
                                     selectedBackendRouteID = option.id
+                                    selectedRouteOptionID = option.id
                                 } label: {
                                     HStack {
-                                        Text(option.mode.capitalized)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack(spacing: 8) {
+                                                Text(option.mode.capitalized)
+                                                if option.id == lowestCo2RouteID {
+                                                    Text("LOWEST CO₂")
+                                                        .font(.caption2.bold())
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 3)
+                                                        .background(FanStyle.teal, in: Capsule())
+                                                        .foregroundStyle(FanStyle.background)
+                                                }
+                                            }
+                                            if let co2 = co2Estimate(for: option.id) {
+                                                Text(co2.text)
+                                                    .font(.caption)
+                                                    .foregroundStyle(FanStyle.muted)
+                                            } else {
+                                                Text("CO₂ unavailable")
+                                                    .font(.caption)
+                                                    .foregroundStyle(FanStyle.muted)
+                                            }
+                                        }
                                         Spacer()
                                         if let seconds = option.durationSeconds {
                                             Text("\(Int(seconds / 60)) min")
@@ -471,6 +598,9 @@ struct TravelScreen: View {
                                     }
                                 }
                             }
+                            Text("CO₂ estimates are calculated by the route service.")
+                                .font(.caption)
+                                .foregroundStyle(FanStyle.muted)
                         }
                     }
 
@@ -505,6 +635,9 @@ struct TravelScreen: View {
                                     .font(.caption)
                                     .foregroundStyle(FanStyle.muted)
                             }
+                            Text("CO₂ estimates are unavailable for transit options.")
+                                .font(.caption)
+                                .foregroundStyle(FanStyle.muted)
                         }
                     }
 
@@ -559,14 +692,6 @@ struct TravelScreen: View {
             .padding(.top, 12)
             .padding(.bottom, 28)
             .frame(maxWidth: .infinity)
-            .background {
-                GeometryReader { geometry in
-                    Color.clear.preference(
-                        key: ExpandedPlannerHeightPreferenceKey.self,
-                        value: geometry.size.height
-                    )
-                }
-            }
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
@@ -593,6 +718,37 @@ struct TravelScreen: View {
                 searchModel.update(query: value, field: field)
             }
         )
+    }
+
+    private func clearEndpoint(_ field: PlaceSearchModel.Field) {
+        routeRequestID = UUID()
+        route = nil
+        transitTravelTime = nil
+        routeError = nil
+        isCalculatingRoute = false
+        if field == .origin {
+            originText = ""
+            origin = nil
+        } else {
+            destinationText = ""
+            destination = nil
+        }
+        searchModel.clear()
+    }
+
+    private func swapEndpoints() {
+        (originText, destinationText) = (destinationText, originText)
+        let item = origin
+        origin = destination
+        destination = item
+        route = nil
+        transitTravelTime = nil
+        routeError = nil
+        searchModel.clear()
+        focusedField = nil
+        if origin != nil && destination != nil {
+            Task { await calculateRoute(for: selectedMode) }
+        }
     }
 
     private var canSearchEnteredPlaces: Bool {
@@ -667,15 +823,21 @@ struct TravelScreen: View {
                     let response = try await backend.routes(origin: origin.displayName, destination: destination.displayName)
                     if response.result.kind == "unavailable" {
                         backendRoutes = []
+                        backendEstimates = []
                         selectedBackendRouteID = nil
+                        selectedRouteOptionID = nil
                         routeError = "More route choices are unavailable right now. Showing the map route instead."
                     } else {
                         backendRoutes = response.result.routes ?? []
+                        backendEstimates = response.estimates
                         selectedBackendRouteID = backendRoutes.first?.id
+                        selectedRouteOptionID = backendRoutes.first?.id
                     }
                 } catch {
                     backendRoutes = []
+                    backendEstimates = []
                     selectedBackendRouteID = nil
+                    selectedRouteOptionID = nil
                     routeError = "More route choices are unavailable right now. Showing the map route instead."
                 }
             }
@@ -754,35 +916,6 @@ private extension Array {
     }
 }
 
-private struct PlaceSearchField: View {
-    let title: String
-    let placeholder: String
-    let symbol: String
-    @Binding var text: String
-    let isActive: Bool
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol)
-                .foregroundStyle(FanStyle.teal)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption.bold())
-                    .foregroundStyle(FanStyle.muted)
-                TextField(placeholder, text: $text)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-            }
-        }
-        .padding(14)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(isActive ? FanStyle.teal : .clear, lineWidth: 1)
-        )
-    }
-}
-
 private struct SearchSuggestionsView: View {
     let completions: [MKLocalSearchCompletion]
     let select: (MKLocalSearchCompletion) -> Void
@@ -793,27 +926,35 @@ private struct SearchSuggestionsView: View {
                 Button {
                     select(completion)
                 } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(completion.title)
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
-                        if !completion.subtitle.isEmpty {
-                            Text(completion.subtitle)
-                                .font(.caption)
-                                .foregroundStyle(FanStyle.muted)
+                    HStack(spacing: 14) {
+                        Image(systemName: "mappin")
+                            .foregroundStyle(FanStyle.muted)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(completion.title)
+                                .font(.subheadline)
+                                .foregroundStyle(.white)
+                            if !completion.subtitle.isEmpty {
+                                Text(completion.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(FanStyle.muted)
+                            }
                         }
+                        Spacer(minLength: 8)
+                        Image(systemName: "arrow.up.left")
+                            .foregroundStyle(FanStyle.muted)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 14)
                 }
                 .buttonStyle(.plain)
 
                 if completion !== completions.last {
-                    Divider().overlay(.white.opacity(0.08))
+                    Divider().overlay(.white.opacity(0.08)).padding(.leading, 52)
                 }
             }
         }
-        .padding(.horizontal, 14)
         .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
     }
 }
@@ -823,34 +964,34 @@ private struct TravelModePicker: View {
     let select: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(TravelMode.allCases) { mode in
-                Button {
-                    selectedMode = mode
-                    select()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: mode.symbol)
-                            .font(.subheadline.weight(.semibold))
-                        Text(mode.shortTitle)
-                            .font(.caption.bold())
-                            .lineLimit(1)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(TravelMode.allCases) { mode in
+                    Button {
+                        selectedMode = mode
+                        select()
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: mode.symbol)
+                                .font(.system(size: 20, weight: .semibold))
+                            Text(mode.shortTitle)
+                                .font(.caption2.bold())
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(selectedMode == mode ? FanStyle.background : .white)
+                        .frame(width: 68, height: 58)
+                        .background(
+                            selectedMode == mode ? FanStyle.teal : .white.opacity(0.07),
+                            in: RoundedRectangle(cornerRadius: 14)
+                        )
                     }
-                    .foregroundStyle(selectedMode == mode ? FanStyle.background : .white)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(
-                        selectedMode == mode ? FanStyle.teal : .clear,
-                        in: Capsule()
-                    )
+                    .buttonStyle(FanPressStyle())
+                    .accessibilityLabel(mode.title)
+                    .accessibilityAddTraits(selectedMode == mode ? .isSelected : [])
                 }
-                .buttonStyle(FanPressStyle())
-                .accessibilityLabel(mode.title)
-                .accessibilityAddTraits(selectedMode == mode ? .isSelected : [])
             }
+            .padding(.vertical, 2)
         }
-        .padding(4)
-        .background(.white.opacity(0.08), in: Capsule())
-        .overlay(Capsule().strokeBorder(FanStyle.teal.opacity(0.35)))
     }
 }
 
@@ -933,36 +1074,6 @@ private struct TravelMapView: View {
 private enum PlannerState: Equatable {
     case collapsed
     case expanded
-}
-
-private struct SheetMetrics: Equatable {
-    let height: CGFloat
-    let viewportHeight: CGFloat
-    let bottomSafeAreaInset: CGFloat
-}
-
-private struct SheetMetricsPreferenceKey: PreferenceKey {
-    static let defaultValue = SheetMetrics(height: 0, viewportHeight: 0, bottomSafeAreaInset: 0)
-
-    static func reduce(value: inout SheetMetrics, nextValue: () -> SheetMetrics) {
-        value = nextValue()
-    }
-}
-
-private struct CompactPlannerHeightPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-private struct ExpandedPlannerHeightPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
 }
 
 @MainActor

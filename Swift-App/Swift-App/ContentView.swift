@@ -82,22 +82,24 @@ struct ContentView: View {
                         .tabItem { Label(FanTab.impact.rawValue, systemImage: FanTab.impact.symbol) }
                         .tag(FanTab.impact)
 
-                    TravelScreen()
+                    TravelScreen(onExitToHome: { selectTab(.home) })
                         .tabItem { Label(FanTab.travel.rawValue, systemImage: FanTab.travel.symbol) }
                         .tag(FanTab.travel)
                 }
                 .tint(FanStyle.navigationTeal)
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .overlay(alignment: .bottom) {
-                    BottomBar(
-                        selectedTab: $selectedTab,
-                        openTravel: {
-                            withAnimation(reduceMotion ? nil : FanMotion.page) {
-                                selectedTab = .travel
-                            }
-                        },
-                        selectTab: selectTab
-                    )
+                    if selectedTab != .travel {
+                        BottomBar(
+                            selectedTab: $selectedTab,
+                            openTravel: {
+                                withAnimation(reduceMotion ? nil : FanMotion.page) {
+                                    selectedTab = .travel
+                                }
+                            },
+                            selectTab: selectTab
+                        )
+                    }
                 }
                 .transition(.opacity)
             } else if driver != nil {
@@ -124,11 +126,17 @@ struct ContentView: View {
         }
         .environmentObject(backend)
         .preferredColorScheme(.dark)
-        .task { await backend.resume() }
+        .task {
+            await backend.resume()
+            if let balance = backend.realProfile?.balance { demoState.greenPoints = balance }
+        }
         .onChange(of: backend.isConnected) { _, isConnected in
             if isConnected {
                 hasCompletedAccountSetup = true
             }
+        }
+        .onChange(of: backend.realProfile?.balance) { _, balance in
+            if let balance { demoState.greenPoints = balance }
         }
         .onChange(of: demoState.greenPoints) { _, value in
             UserDefaults.standard.set(value, forKey: "demoGreenPoints")
@@ -231,7 +239,7 @@ struct ContentView: View {
     private func destinationView(for page: FanDestination) -> some View {
         switch page {
         case .profile:
-            ProfileScreen(backend: backend, driver: driver ?? .alonso, changeDriver: { supportedDriver = "" },
+            ProfileScreen(backend: backend, driver: driver ?? .alonso, streak: demoState.currentStreak, greenPoints: demoState.greenPoints, changeDriver: { supportedDriver = "" },
                           showTour: {
                               replayTourAfterDismiss = true
                               destination = nil

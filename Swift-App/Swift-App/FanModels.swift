@@ -28,6 +28,7 @@ enum Driver: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var number: String { self == .alonso ? "14" : "18" }
     var imageName: String { self == .alonso ? "AlonsoCard" : "StrollCard" }
+    var cutoutImageName: String { self == .alonso ? "AlonsoCutout" : "StrollCutout" }
     var capPortraitImageName: String { self == .alonso ? "AlonsoCapPortrait" : "StrollCapPortrait" }
     var teamwearPortraitImageName: String { self == .alonso ? "AlonsoTeamwearPortrait" : "StrollTeamwearPortrait" }
     var outerwearPortraitImageName: String { self == .alonso ? "AlonsoOuterwearPortrait" : "StrollOuterwearPortrait" }
