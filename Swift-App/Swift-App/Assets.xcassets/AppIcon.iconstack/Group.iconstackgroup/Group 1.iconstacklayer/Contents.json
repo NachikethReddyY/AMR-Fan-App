@@ -1,0 +1,384 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "properties" : {
+    "blend-mode" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : "normal"
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : "normal"
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : "normal"
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : "normal"
+      }
+    ],
+    "fill" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "color" : {
+            "matching-style" : "fully-qualified-name",
+            "name" : "AM F1_Assets\/Color-5",
+            "type" : "color-set"
+          },
+          "type" : "solid"
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "color" : {
+            "matching-style" : "fully-qualified-name",
+            "name" : "AM F1_Assets\/Color-5",
+            "type" : "color-set"
+          },
+          "type" : "solid"
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "color" : {
+            "matching-style" : "fully-qualified-name",
+            "name" : "AM F1_Assets\/Color-5",
+            "type" : "color-set"
+          },
+          "type" : "solid"
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "color" : {
+            "matching-style" : "fully-qualified-name",
+            "name" : "AM F1_Assets\/Color-5",
+            "type" : "color-set"
+          },
+          "type" : "solid"
+        }
+      }
+    ],
+    "frame" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "macOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "macOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "macOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "macOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 406.6887824035135,
+          "origin.y" : 608.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "watchOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 438.6887824035135,
+          "origin.y" : 640.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "watchOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 438.6887824035135,
+          "origin.y" : 640.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "watchOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 438.6887824035135,
+          "origin.y" : 640.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "watchOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "origin.x" : 438.6887824035135,
+          "origin.y" : 640.6999999999999,
+          "size.height" : 64.63999999999999,
+          "size.width" : 404
+        }
+      }
+    ],
+    "image" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "matching-style" : "fully-qualified-name",
+          "name" : "AM F1_Assets\/Group 1",
+          "type" : "image-set"
+        }
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "matching-style" : "fully-qualified-name",
+          "name" : "AM F1_Assets\/Group 1",
+          "type" : "image-set"
+        }
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "matching-style" : "fully-qualified-name",
+          "name" : "AM F1_Assets\/Group 1",
+          "type" : "image-set"
+        }
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : {
+          "matching-style" : "fully-qualified-name",
+          "name" : "AM F1_Assets\/Group 1",
+          "type" : "image-set"
+        }
+      }
+    ],
+    "is-glass" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : true
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : true
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : true
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : true
+      }
+    ],
+    "opacity" : [
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "unspecified",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "unspecified",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "light",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "dark",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      },
+      {
+        "icon-studio-appearance" : "tinted",
+        "icon-studio-idiom" : "iOS",
+        "icon-studio-localization" : "unspecified",
+        "value" : 1
+      }
+    ]
+  }
+}
