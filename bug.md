@@ -123,7 +123,7 @@ Proof: multimodal dispatch and invalid-evidence tests pass; OneMap search and
 route calls on BB-1 return live-source metadata; API typecheck, route and
 transport suites, and the Android unit/build checks pass. BB-1 still needs the
 private AI env file before Luna inference can execute:
-`/home/bb-1/.auth/amr-ai.env` with mode 600. Authenticated phone submission is
+`$AMR_AUTH_DIR/amr-ai.env` with mode 600. Authenticated phone submission is
 unverified because the emulator is currently at the Entra sign-in confirmation.
 
 Recorded by gpt-6.1-sol through Codex (T3 Code).
@@ -411,7 +411,7 @@ The owner confirmed that the existing server evidence-to-points policy should
 remain unchanged and that AI output should select the evidence result inside
 the AI module. `selectActivityAssessment` now owns that validated classification
 while reward settlement stays in the points transaction. BB-1 operators should
-use `/home/bb-1/.auth/amr-onemap.json` and `/home/bb-1/.auth/amr-ai.env`, both
+use `$AMR_AUTH_DIR/amr-onemap.json` and `$AMR_AUTH_DIR/amr-ai.env`, both
 outside the repository and mode 600. Tracking: unlinked.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
