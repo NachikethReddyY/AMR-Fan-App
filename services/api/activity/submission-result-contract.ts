@@ -18,7 +18,10 @@ const modelCategory = z
   .min(1)
   .max(64)
   .transform((value, ctx) => {
-    const normalized = value.trim().toLowerCase().replace(/[\s-]+/gu, '_');
+    const normalized = value
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/gu, '_');
     const alias = normalized.replace(/_/gu, '');
     for (const category of activityCategories) {
       if (category === normalized || category.replace(/_/gu, '') === alias)
@@ -28,7 +31,14 @@ const modelCategory = z
       return 'cleanup';
     if (alias === 'reuse' || alias === 'reuse_refill' || alias === 'refill')
       return 'reuse_refill';
-    if (alias === 'transport' || alias === 'activetransport' || alias === 'walking' || alias === 'cycling' || alias === 'bus' || alias === 'train')
+    if (
+      alias === 'transport' ||
+      alias === 'activetransport' ||
+      alias === 'walking' ||
+      alias === 'cycling' ||
+      alias === 'bus' ||
+      alias === 'train'
+    )
       return 'active_transport';
     if (alias === 'gardening' || alias === 'treeplanting') return 'planting';
     if (alias === 'unclear' || alias === 'unknown') return 'unclear';
