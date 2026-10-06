@@ -177,16 +177,35 @@ fun TravelScreen(onBack: () -> Unit, session: SessionViewModel) {
         if (loading) CircularProgressIndicator(color = FanColors.teal)
         error?.let { Text(it, color = FanColors.orange) }
         plan?.let { value ->
-            value.routes.forEach { route ->
+            val recommendedId = com.amr.fanapp.domain.recommendedTransitRouteId(value)
+            val lowestId = com.amr.fanapp.domain.lowestCo2RouteId(value)
+            var sort by remember { mutableStateOf(com.amr.fanapp.domain.TransitSort.SUGGESTED) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.amr.fanapp.domain.TransitSort.entries.forEach { option ->
+                    androidx.compose.material3.FilterChip(
+                        selected = sort == option,
+                        onClick = { sort = option },
+                        label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                    )
+                }
+            }
+            com.amr.fanapp.domain.sortedTransportRoutes(value, sort).forEach { route ->
                 val isSelected = route.id == selected?.id
                 Row(Modifier.fillMaxWidth().panelCard(16).padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(if (route.mode == "car") Icons.Filled.DirectionsCar else if (route.mode == "walk") Icons.Filled.DirectionsWalk else Icons.Filled.Train, contentDescription = null, tint = FanColors.teal)
-                    val modeLabel = when {
-                        route.legs.any { it.mode == "train" } && route.legs.any { it.mode == "bus" } -> "Train + bus"
-                        route.mode == "transit" -> "Train + bus"
-                        else -> route.mode.replaceFirstChar { it.uppercase() }
+                    Column(Modifier.weight(1f)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(com.amr.fanapp.domain.displayTitle(route), fontWeight = FontWeight.Bold)
+                            if (route.id == lowestId) Text("LOWEST CO₂", color = FanColors.background, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.background(FanColors.teal, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp))
+                            if (route.id == recommendedId) Text("RECOMMENDED", color = FanColors.teal, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Text(com.amr.fanapp.domain.transitSummary(route), color = FanColors.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                        val co2 = com.amr.fanapp.domain.transitCo2(value, route.id)
+                        if (co2 != null) Text(co2.first, fontWeight = FontWeight.SemiBold)
+                        else Text("CO₂ unavailable" + (com.amr.fanapp.domain.transitUnavailableReason(value, route.id)?.let { " · $it" } ?: ""), color = FanColors.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                        Text("${route.durationSeconds.toInt() / 60} min · ${formatArrival(route.arrivesAt)} arrival", color = FanColors.muted)
+                        if (isSelected && route.legs.size > 1) Text(route.legs.joinToString(" → ") { it.description }, color = FanColors.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                     }
-                    Column(Modifier.weight(1f)) { Text(modeLabel, fontWeight = FontWeight.Bold); Text("${route.durationSeconds.toInt() / 60} min · ${formatArrival(route.arrivesAt)} arrival", color = FanColors.muted); Text(route.legs.joinToString(" → ") { it.description }, color = FanColors.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall) }
                     FanButton(if (isSelected) "Selected" else "Use", { selectedRoute = route.id; stepIndex = 0 }, Modifier)
                 }
             }
@@ -272,18 +291,39 @@ private fun OSMRouteMap(
                 }
                 if (route == null) view.controller.setCenter(GeoPoint(location.latitude, location.longitude))
             }
-            val points = route?.legs.orEmpty().flatMap { leg ->
-                listOfNotNull(leg.fromCoordinate, leg.toCoordinate).map { GeoPoint(it.latitude, it.longitude) }
-            }.distinctBy { "${it.latitude},${it.longitude}" }
-            if (points.size >= 2) {
-                view.overlays += Polyline(view).apply {
-                    setPoints(points)
-                    outlinePaint.color = AndroidColor.rgb(65, 190, 177)
-                    outlinePaint.strokeWidth = 8f
+            val shapes = route?.legs.orEmpty().mapNotNull { leg ->
+                leg.path?.takeIf { it.size > 1 }?.map { GeoPoint(it.latitude, it.longitude) }
+            }
+            if (shapes.isNotEmpty()) {
+                shapes.forEach { shape ->
+                    view.overlays += Polyline(view).apply {
+                        setPoints(shape)
+                        outlinePaint.color = AndroidColor.rgb(65, 190, 177)
+                        outlinePaint.strokeWidth = 8f
+                    }
                 }
-                points.first().let { point -> view.overlays += Marker(view).apply { position = point; title = "Start" } }
-                points.last().let { point -> view.overlays += Marker(view).apply { position = point; title = "Destination" } }
-                view.controller.setCenter(points[points.size / 2])
+                val longest = shapes.maxBy { it.size }
+                view.overlays += Marker(view).apply { position = longest.first(); title = "Start" }
+                view.overlays += Marker(view).apply { position = longest.last(); title = "Destination" }
+                view.controller.setCenter(longest[longest.size / 2])
+            } else {
+                val points = route?.legs.orEmpty().flatMap { leg ->
+                    listOfNotNull(leg.fromCoordinate, leg.toCoordinate).map { GeoPoint(it.latitude, it.longitude) }
+                }.fold(mutableListOf<GeoPoint>()) { acc, point ->
+                    if (acc.lastOrNull()?.let { Math.abs(it.latitude - point.latitude) < 1e-9 && Math.abs(it.longitude - point.longitude) < 1e-9 } != true) acc += point
+                    acc
+                }
+                // A bare start-to-end pair is a straight lie, not a route.
+                if (points.size > 2) {
+                    view.overlays += Polyline(view).apply {
+                        setPoints(points)
+                        outlinePaint.color = AndroidColor.rgb(65, 190, 177)
+                        outlinePaint.strokeWidth = 8f
+                    }
+                    points.first().let { point -> view.overlays += Marker(view).apply { position = point; title = "Start" } }
+                    points.last().let { point -> view.overlays += Marker(view).apply { position = point; title = "Destination" } }
+                    view.controller.setCenter(points[points.size / 2])
+                }
             }
             view.invalidate()
         })

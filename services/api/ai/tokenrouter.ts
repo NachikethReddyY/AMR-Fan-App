@@ -27,12 +27,18 @@ const request = z.strictObject({
     .string()
     .min(1)
     .max(2000)
-    .refine((value) => !/[\u0000-\u001f\u007f]/.test(value)),
+    // Multiline prompts are legitimate; NUL, DEL and other C0 controls stay out.
+    .refine(
+      (value) => !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value),
+    ),
   input: z
     .string()
     .min(1)
     .max(12000)
-    .refine((value) => !/[\u0000-\u001f\u007f]/.test(value)),
+    // Multiline prompts are legitimate; NUL, DEL and other C0 controls stay out.
+    .refine(
+      (value) => !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value),
+    ),
   images: z
     .array(
       z.strictObject({
@@ -50,7 +56,9 @@ const request = z.strictObject({
     .optional(),
 });
 const completion = z.object({
-  model: z.literal('openai/gpt-6-luna'),
+  // Live gateway strips the provider prefix: observed `gpt-6-luna` on
+  // 2026-10-06. Both spellings name Luna; anything else still fails closed.
+  model: z.enum(['openai/gpt-6-luna', 'gpt-6-luna']),
   choices: z
     .array(
       z.object({
@@ -59,6 +67,8 @@ const completion = z.object({
           role: z.literal('assistant'),
           content: z.string().min(1).max(48000),
           refusal: z.null().optional(),
+          // Observed informational annotations on live responses; ignored.
+          annotations: z.array(z.unknown()).max(100).optional(),
         }),
       }),
     )
@@ -92,7 +102,7 @@ export type TokenRouterResult<T> =
       kind: 'candidate';
       value: T;
       reviewRequired: true;
-      model: 'openai/gpt-6-luna';
+      model: 'openai/gpt-6-luna' | 'gpt-6-luna';
       adapterVersion: 'amr-tokenrouter-v1';
       usage: Usage;
       requestBytes: number;
@@ -237,7 +247,19 @@ export function createTokenRouter(input: unknown) {
         if (containsConfiguredKey(decoded, apiKey))
           return fail('invalid-output', usage);
         const candidate = outputSchema.safeParse(decoded);
-        if (!candidate.success) return fail('invalid-output', usage);
+        if (!candidate.success) {
+          // Shape metadata only: paths and codes, never values or content.
+          console.error(
+            JSON.stringify({
+              event: 'tokenrouter_output_rejected',
+              issues: candidate.error.issues.map((issue) => ({
+                path: issue.path,
+                code: issue.code,
+              })),
+            }),
+          );
+          return fail('invalid-output', usage);
+        }
         return {
           kind: 'candidate',
           value: candidate.data,

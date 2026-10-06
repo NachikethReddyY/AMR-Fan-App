@@ -30,6 +30,78 @@ live call can succeed.
 
 Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
 
+## 2026-10-06: Android APK with the travel work ported (local)
+
+`Kotlin-App/app/build/outputs/apk/debug/app-debug.apk` (43 MB, debug,
+pointed at `http://192.168.0.31:18080`). Ported to the transport list:
+per-option CO2 with reasons, RECOMMENDED (Jev pick, else estimate-backed
+deterministic), LOWEST CO2 single-gas badge, walk/transfer summaries,
+Suggested/Fastest/Greenest/Simplest chips, leg path drawing with the
+no-fake-line guard, and `extraMinutes: 15`. Pure rules live in
+`domain/TravelLogic.kt` with unit tests; full suite green. Not ported: the
+query Other-routes section and mode-tile filters (Android never had them),
+cross-section badge suppression, Jev needs the same BB-1 flag and key.
+No commit from here unless asked.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: planting selfies and screen photos, policy answers (no code)
+
+No APK rebuild needed for rationale display; server re-deploy suffices.
+Two policy gaps named, neither built: planting has verification rules but no
+category, so a tree-planting selfie likely lands `other` and stays uncertain;
+screen photos are already invalid by instruction plus keyword backstop, with
+residual risk when Luna never mentions the screen. Awaiting the user's call
+on a dedicated planting category versus mapping to volunteering.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: Result screen back arrow and Continue (Android, local)
+
+The full-size scrollable result column sat above the back arrow and swallowed
+its taps, so Back did nothing; the arrow now draws on top. The bottom button
+is Continue (filled, leaves the flow) on accepted results and stays Retake
+photo otherwise. Fresh debug APK built against the BB-1 LAN address. No
+commit from here unless asked.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: potted and balcony gardening allowed (local)
+
+Per the owner's explicit decision, container gardening counts: pots,
+planters and balconies with visible hands-on care are planting activity,
+and the indoor/potted auto-reject is gone from both the instruction and the
+code backstop. Screens, stock, AI images and unrelated objects still fail.
+Proof local: units including the balcony-trowel case, typecheck, Prettier.
+Accepted tradeoff: touching a desk plant can now earn. Needs the BB-1
+re-deploy before the balcony photo verifies.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: screen detector stops eating the verb displays (local)
+
+The watch rejection was our own bug, not Luna's: substring matching flagged
+"watch displays metrics" as a depiction of a display. Screen detection now
+uses word boundaries, so the verb survives while depicted screens, including
+smartphones showing photos, still fail. The potted-plant rejection stands by
+the explicit indoor rule. Proof local: units, typecheck, Prettier. Needs the
+BB-1 re-deploy, then the watch photo should verify.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: inference rules plus planting category (local)
+
+Luna is instructed to count faceless selfies and POV hands as the person,
+tools-with-context (soil shovel at a planting site) as activity, and live
+smartwatch workout metrics as active-transport corroboration, with a new
+`planting` category so garden planting has somewhere to land besides
+`other`. Screens stay invalid. Proof local: policy units, related suites,
+typecheck, Prettier. Needs the BB-1 re-deploy before any photo changes
+behavior. Tradeoff owned: looser inference is easier to game; kept outdoor,
+no-screen, hands-on gates.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-06: walk and transfer summary on every transit row (local, final)
 
 Every transit row now states its door-to-door shape up front ("9 min walk ·
@@ -76,6 +148,17 @@ Train+bus 0.15, Bus 0.29, Car 0.64; Fastest runs Car 9 through Walk 55;
 Simplest runs Car, Train, Bus, Train+bus, Walk. The map-overhaul app edits
 were fully backed out of the tree; the dormant server `paths` field is the
 only remainder. No server change, no re-deploy needed.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
+
+## 2026-10-06: Backend CI green via issue 72 (remote proof)
+
+Backend quality was red from two causes: the onemap journey test asserting
+the retired withhold-everything recommendation, and gitleaks flagging two
+public Entra audience UUIDs. Fixed the test to the narrowed behavior and added
+a fingerprint-pinned allowlist with the config wired into the scanner.
+Commit abede6d pushed; run 37445444289 green; issue 72 auto-closed by the
+push. The older Black Box CI reds are separate workflow runs, untouched.
 
 Recorded by opencode/muse-spark-1.3-contributor-free through opencode.
 
@@ -4397,3 +4480,34 @@ worktree is not provisioned for it. Rendered onboarding behavior is unverified
 without explicit device observation.
 
 Edited by opencode/fledge-alpha-free through T3 Code.
+
+## 2026-10-06: iOS app icon rebuild, stale-install diagnosis
+
+The `AM F1.icon` artwork was wired as the Swift-App app icon
+(`AppIcon.iconstack` in Assets.xcassets plus
+`ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon` in Debug and Release), but the
+home screen still showed the placeholder icon. A clean simulator rebuild
+succeeds and the fresh `Swift-App.app` declares
+`CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName = AppIcon` with the green
+AM wings and F1 FAN artwork rendered into `AppIcon60x60@2x.png`, so the cause
+is a stale install: iOS caches home-screen icons and keeps showing the old
+one until the app is deleted and reinstalled.
+
+Rebuilt by opencode/muse-spark-1.3-contributor-free through T3 Code.
+
+## 2026-10-06: device-target rebuild confirms icon in product
+
+Clean `iphoneos` device build of Swift-App succeeds with signing disabled.
+Fresh `Debug-iphoneos/Swift-App.app` declares
+`CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName = AppIcon` and bundles
+`AppIcon60x60@2x.png`, `AppIcon76x76@2x~ipad.png`, and `Assets.car`. Remaining
+step is on-device install: delete every stale copy, then install from Xcode
+onto the connected iPhone.
+
+Rebuilt by opencode/muse-spark-1.3-contributor-free through T3 Code.
+
+## 2026-10-06: admin dashboard deployment routing
+
+Added a root-level `vercel.json` so the deployed admin app redirects `/` to `/admin/` and proxies `/admin/config` plus authenticated `/v1/*` admin routes to the private Render API. The existing `/admin/submissions/` page is the approval outbox, and `/admin/reports/` is the source-evidence digest/review workspace. Admin self-sign-up remains intentionally disabled; assigned admins sign in through the configured Supabase provider.
+
+Edited by gpt-6-luna through pi (T3 Code).

@@ -74,14 +74,22 @@ test('AI selector applies the existing evidence policy without awarding points',
       { ...base, evidenceScore: 59 },
       '00000000-0000-4000-8000-000000000001',
     ),
-    { kind: 'rejected', reason: 'unsupported_activity' },
+    {
+      kind: 'rejected',
+      reason: 'unsupported_activity',
+      rationale: 'clear evidence',
+    },
   );
   assert.deepEqual(
     selectActivityAssessment(
       { ...base, confidence: 0.5 },
       '00000000-0000-4000-8000-000000000001',
     ),
-    { kind: 'uncertain', reason: 'low_confidence' },
+    {
+      kind: 'uncertain',
+      reason: 'low_confidence',
+      rationale: 'clear evidence',
+    },
   );
   assert.ok(
     !(
@@ -91,7 +99,67 @@ test('AI selector applies the existing evidence policy without awarding points',
   );
 });
 
-test('screen and indoor evidence is rejected before points policy', () => {
+test('planting is an accepted category with hands-on evidence', () => {
+  const result = selectActivityAssessment(
+    {
+      ...out(80),
+      category: 'planting',
+      rationale: 'Hands covering a seedling with a soil shovel outdoors.',
+      evidenceItems: ['hands', 'shovel with soil', 'seedling'],
+    },
+    '00000000-0000-4000-8000-000000000001',
+  );
+  assert.equal(result.kind, 'accepted');
+});
+
+test('watch metrics verb never trips the screen rule; depicted screens still fail', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.equal(
+    selectActivityAssessment(
+      {
+        ...out(80),
+        category: 'active_transport',
+        rationale: 'A wrist-worn watch displays live workout metrics outdoors.',
+        evidenceItems: ['watch', 'elapsed time', 'heart rate'],
+      },
+      id,
+    ).kind,
+    'accepted',
+  );
+  assert.deepEqual(
+    selectActivityAssessment(
+      {
+        ...out(90),
+        rationale: 'A smartphone showing a photo of a run.',
+        evidenceItems: ['smartphone display'],
+      },
+      id,
+    ),
+    {
+      kind: 'rejected',
+      reason: 'invalid_evidence',
+      rationale: 'A smartphone showing a photo of a run.',
+    },
+  );
+});
+
+test('potted balcony gardening is awardable with visible hands-on care', () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  assert.equal(
+    selectActivityAssessment(
+      {
+        ...out(85),
+        category: 'planting',
+        rationale:
+          'A hand is using a trowel in the soil of a potted plant on a balcony.',
+        evidenceItems: ['hand', 'trowel', 'soil', 'potted plant'],
+      },
+      id,
+    ).kind,
+    'accepted',
+  );
+});
+test('screen depictions are rejected even beside real plants', () => {
   const id = '00000000-0000-4000-8000-000000000001';
   assert.deepEqual(
     selectActivityAssessment(
@@ -102,7 +170,11 @@ test('screen and indoor evidence is rejected before points policy', () => {
       },
       id,
     ),
-    { kind: 'rejected', reason: 'invalid_evidence' },
+    {
+      kind: 'rejected',
+      reason: 'invalid_evidence',
+      rationale: 'A computer screen shows a planting photo indoors.',
+    },
   );
 });
 

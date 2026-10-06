@@ -14,9 +14,7 @@ struct SustainabilityCamScreen: View {
     @State private var isProcessing = false
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            VStack {
+        VStack {
                 HStack {
                     Button {
                         dismiss()
@@ -34,36 +32,68 @@ struct SustainabilityCamScreen: View {
 
                 Spacer()
 
-                if isProcessing {
+                previewCard
+
+                Spacer()
+
+            if isProcessing {
+                statusCard {
                     ProgressView()
                         .tint(FanStyle.teal)
                     Text("Sending…")
                         .font(.headline)
                         .foregroundStyle(.white)
-                } else if let result {
+                }
+            } else if let result {
+                statusCard {
                     resultView(result)
-                } else if let errorMessage {
+                }
+            } else if let errorMessage {
+                statusCard {
                     Label("Could not process photo", systemImage: "exclamationmark.triangle.fill")
                         .font(.title3.bold())
                         .foregroundStyle(.orange)
                     Text(errorMessage)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(FanStyle.muted)
-                        .padding(.horizontal, 28)
                     Button("Try again") {
                         Task { await verify() }
                     }
                     .buttonStyle(ResultButtonStyle())
-                } else {
-                    confirmationView
                 }
+            } else {
+                confirmationView
+            }
 
                 Spacer()
             }
             .padding(.horizontal, 24)
             .padding(.top, 16)
             .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black.ignoresSafeArea())
+    }
+
+    private var previewCard: some View {
+        Image(uiImage: initialImage)
+            .resizable()
+            .scaledToFill()
+            .frame(height: 220)
+            .frame(maxWidth: .infinity)
+            .clipped()
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.white.opacity(0.12)))
+    }
+
+    private func statusCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 14) {
+            content()
         }
+        .frame(maxWidth: .infinity)
+        .padding(18)
+        .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.white.opacity(0.12)))
     }
 
     private var confirmationView: some View {
@@ -82,7 +112,7 @@ struct SustainabilityCamScreen: View {
             Button {
                 Task { await verify() }
             } label: {
-                Text("Use this photo")
+                Text("Continue")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(CameraPrimaryButtonStyle())
@@ -108,7 +138,7 @@ struct SustainabilityCamScreen: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 if let score = result.evidenceScore {
-                    Text("Score (score)/100")
+                    Text("Score \(score)/100")
                         .font(.title3.bold())
                         .foregroundStyle(FanStyle.teal)
                 }

@@ -49,6 +49,7 @@ export const missionCategory = z.enum([
   'repair',
   'active_transport',
   'volunteering',
+  'planting',
 ]);
 export type MissionCategory = z.infer<typeof missionCategory>;
 const progressState = z.discriminatedUnion('kind', [

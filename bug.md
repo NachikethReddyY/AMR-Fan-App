@@ -1,3 +1,24 @@
+## 2026-10-06: photo activity Luna call chain (unlinked)
+
+Android photo submission ended in "No points yet" with reason `provider`,
+verbatim server output for an attempted-but-failed TokenRouter Luna call.
+Traced layer by layer with the user's live probes: missing env flag and key
+variable, a parser rejecting the gateway's dated model echo, a validator
+rejecting newlines in the two-paragraph instruction, each fixed with unit
+proof. Rejected and uncertain results now also carry the model's bounded
+rationale through to both apps, which already display it, so verdicts
+explain themselves. Same trust boundary as accepted-path rationale. Database
+suites fail identically with and without these changes (no local PostgreSQL
+here). Needs the BB-1 re-deploy; then a verdict should state its own why.
+
+Update 2026-10-06 (shape tracing): intermittent `invalid-output` on a gallery
+photo means Luna answered but the answer broke strict validation somewhere
+between the wire envelope and the activity schema. Both rejection points now
+log issue paths and codes only, never values or content, so the next failure
+names the exact field. Permanent observability, no posture change.
+
+Fixed by opencode/muse-spark-1.3-contributor-free through opencode.
+
 ## 2026-10-06: transfer station names and stop counts unavailable (unlinked)
 
 Transit legs show generic labels ("Transfer", "MRT/LRT") instead of station
@@ -2401,3 +2422,9 @@ Live OneMap credentials and a permitted Luna/JEV provider configuration remain
 unassigned, so those provider calls stay disabled. Tracking: unlinked.
 
 Recorded by gpt-6-astra through Codex (T3 Code).
+
+## 2026-10-06: Vercel admin dashboard API routes missing (unlinked)
+
+The deployed admin static files loaded, but `/admin/config` and `/v1/*` returned Vercel 404s because the deployment had no root-level Vercel rewrites. The dashboard's sign-in, submission approval outbox and report review workspace therefore could not reach the private API. Added the repository-level Vercel configuration with the root redirect and explicit API rewrites. Admin self-sign-up remains intentionally absent: assigned admin accounts must be provisioned by the server.
+
+Recorded by gpt-6-luna through pi (T3 Code).

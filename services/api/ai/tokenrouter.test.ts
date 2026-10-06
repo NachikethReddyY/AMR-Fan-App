@@ -185,6 +185,31 @@ test('one bounded request returns schema-validated review data and supplied usag
   assert.equal(f.calls(), 1);
 });
 
+test('multiline prompts pass validation; NUL and DEL stay rejected', async (t) => {
+  const f = await fixture(t, (_req, res) => {
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify(completion()));
+  });
+  const ai = createTokenRouter(config);
+  const result = await ai.complete(
+    {
+      ...input,
+      instruction: 'Line one.\nLine two.\tTabbed.',
+      input: 'First paragraph.\r\nSecond paragraph.',
+    },
+    output,
+  );
+  assert.equal(result.kind, 'candidate');
+  assert.equal(f.calls(), 1);
+  for (const bad of [
+    { ...input, instruction: 'bad\u0000here' },
+    { ...input, input: 'bad\u007fhere' },
+  ]) {
+    assert.equal(reason(await ai.complete(bad, output)), 'invalid-input');
+  }
+  assert.equal(f.calls(), 1);
+});
+
 test('multimodal activity requests carry image bytes as an image part', async (t) => {
   let body: any;
   const f = await fixture(t, async (req, res) => {
@@ -347,6 +372,48 @@ test('rejects a Unicode-escaped configured key in a decoded object name', async 
   assert.equal(f.calls(), 1);
 });
 
+test('live gateway echo shape parses to a candidate', async (t) => {
+  await fixture(t, (_req, res) => {
+    res.setHeader('content-type', 'application/json');
+    res.end(
+      JSON.stringify({
+        id: 'chatcmpl-live',
+        object: 'chat.completion',
+        created: 1791267604,
+        model: 'gpt-6-luna',
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: '{"status":"review"}',
+              refusal: null,
+              annotations: [],
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: 41,
+          completion_tokens: 10,
+          total_tokens: 51,
+          prompt_tokens_details: { cached_tokens: 0 },
+          completion_tokens_details: { reasoning_tokens: 10 },
+        },
+        service_tier: 'default',
+        system_fingerprint: null,
+      }),
+    );
+  });
+  const ai = createTokenRouter(config);
+  const result = await ai.complete(input, output);
+  assert.equal(result.kind, 'candidate');
+  if (result.kind === 'candidate') {
+    assert.deepEqual(result.value, { status: 'review' });
+    assert.equal(result.model, 'gpt-6-luna');
+  }
+});
+
 test('usage is retained for rejected untrusted output while raw provider content is discarded', async (t) => {
   await fixture(t, (_req, res) => {
     res.setHeader('content-type', 'application/json');
@@ -382,7 +449,7 @@ test('usage is retained for rejected untrusted output while raw provider content
 });
 
 for (const [name, response] of [
-  ['wrong model', completion({ model: 'gpt-6-luna' })],
+  ['wrong model', completion({ model: 'gpt-6-luna-unknown' })],
   [
     'refusal alongside valid content',
     completion({

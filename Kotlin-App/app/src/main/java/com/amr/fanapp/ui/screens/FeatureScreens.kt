@@ -198,23 +198,30 @@ fun SustainabilityCamScreen(onBack: () -> Unit, session: SessionViewModel) {
         }
     } else if (phase == CameraPhase.Result) {
         val value = result
+        val accepted = value?.kind == "accepted"
         Box(Modifier.fillMaxSize().background(Color.Black)) {
-            BackButton({ phase = CameraPhase.Capturing; selected = null; result = null }, Modifier.align(Alignment.TopStart).padding(20.dp))
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 100.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Text("Result", fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 FeatureCard {
-                    Icon(if (value?.kind == "accepted") Icons.Filled.CheckCircle else Icons.Filled.Info, contentDescription = null, tint = FanColors.teal)
-                    Text(if (value?.kind == "accepted") "Activity verified" else "No points yet", fontWeight = FontWeight.Bold)
+                    Icon(if (accepted) Icons.Filled.CheckCircle else Icons.Filled.Info, contentDescription = null, tint = FanColors.teal)
+                    Text(if (accepted) "Activity verified" else "No points yet", fontWeight = FontWeight.Bold)
                     Text("${value?.evidenceScore ?: 0}/100", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = FanColors.teal)
                     Text("${value?.creditedPoints ?: 0} points", fontWeight = FontWeight.Bold)
                     value?.category?.let { Text(it.replace('_', ' '), color = FanColors.muted) }
                     value?.rationale?.let { Text(it, color = FanColors.muted) }
                     value?.reason?.let { Text(it.replace('_', ' '), color = FanColors.orange) }
                 }
-                CameraActionButton("Retake photo", {
-                    cleanupCamera?.invoke(); cleanupCamera = null; selected = null; result = null; phase = CameraPhase.Capturing
-                })
+                if (accepted) {
+                    CameraActionButton("Continue", { onBack() }, filled = true)
+                } else {
+                    CameraActionButton("Retake photo", {
+                        cleanupCamera?.invoke(); cleanupCamera = null; selected = null; result = null; phase = CameraPhase.Capturing
+                    })
+                }
             }
+            // Above the scrollable content: the full-size scroll column
+            // otherwise swallows taps aimed at the back arrow.
+            BackButton({ phase = CameraPhase.Capturing; selected = null; result = null }, Modifier.align(Alignment.TopStart).padding(20.dp))
         }
     } else {
         Box(Modifier.fillMaxSize().background(Color.Black)) {

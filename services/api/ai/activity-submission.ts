@@ -25,16 +25,29 @@ export { activitySubmissionAssessmentResultSchema };
 export type { ActivitySubmissionAssessmentResult };
 const policyVersion = 'activity-evidence-v1' as const;
 
+const screenPatterns = [
+  /\bscreens?\b/,
+  /\bscreenshots?\b/,
+  /\bcomputers?\b/,
+  /\blaptops?\b/,
+  /\bmonitors?\b/,
+  /\bphones?\b/,
+  /\bsmartphones?\b/,
+  /\bmobiles?\b/,
+  // A bare display device, not the verb: a watch that "displays metrics"
+  // must not trip the screen rule.
+  /\bdisplay(?![a-z])/,
+  /\bposter\b/,
+  /\bstock images?\b/,
+  /\bai-generated\b/,
+  /\bgenerated images?\b/,
+];
 function hasExplicitlyInvalidEvidence(value: ActivityAssessmentOutput) {
   const text =
     `${value.rationale} ${value.evidenceItems.join(' ')}`.toLowerCase();
-  const screen =
-    /screen|screenshot|computer|laptop|monitor|phone|mobile|display|poster|stock image|ai-generated|generated image/.test(
-      text,
-    );
-  const indoorPlant =
-    /indoor|houseplant|potted plant|plant in a pot|inside/.test(text);
-  return screen || indoorPlant;
+  // Container gardening is awardable, so potted, indoor and inside must
+  // never trip this rule; only depicted screens and fabricated media do.
+  return screenPatterns.some((pattern) => pattern.test(text));
 }
 
 function unavailable(
@@ -55,7 +68,11 @@ export function selectActivityAssessment(
   assessmentId: string,
 ): ActivitySubmissionAssessmentResult {
   if (hasExplicitlyInvalidEvidence(value))
-    return { kind: 'rejected', reason: 'invalid_evidence' };
+    return {
+      kind: 'rejected',
+      reason: 'invalid_evidence',
+      rationale: value.rationale,
+    };
   if (
     value.category === 'other' ||
     value.category === 'unclear' ||
@@ -63,13 +80,18 @@ export function selectActivityAssessment(
   )
     return {
       kind: 'uncertain',
+      rationale: value.rationale,
       reason:
         value.category === 'other' || value.category === 'unclear'
           ? 'unclear'
           : 'low_confidence',
     };
   if (value.evidenceScore < 60)
-    return { kind: 'rejected', reason: 'unsupported_activity' };
+    return {
+      kind: 'rejected',
+      reason: 'unsupported_activity',
+      rationale: value.rationale,
+    };
   return {
     kind: 'accepted',
     assessmentId: z.uuid().parse(assessmentId),
@@ -186,7 +208,19 @@ export function createActivitySubmissionAssessor({
               ({ kind: 'cancelled', reason: 'request_cancelled' } as const)
             );
           const parsed = activityAssessmentOutputSchema.safeParse(output);
-          if (!parsed.success) return unavailable('invalid_output');
+          if (!parsed.success) {
+            // Shape metadata only: paths and codes, never values or content.
+            console.error(
+              JSON.stringify({
+                event: 'activity_output_rejected',
+                issues: parsed.error.issues.map((issue) => ({
+                  path: issue.path,
+                  code: issue.code,
+                })),
+              }),
+            );
+            return unavailable('invalid_output');
+          }
           const value = parsed.data;
           return selectActivityAssessment(value, id());
         } catch {
