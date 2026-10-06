@@ -1,3 +1,25 @@
+## 2026-10-06: profile setup exposed backend schema error (unlinked)
+
+The iOS profile setup screen displayed the backend response "Only displayName
+is accepted." after a valid name, email and birthday were entered. The screen
+also lacked local validation, presented email as required-looking, used an
+ambiguous disabled state, and placed the action too low in a large empty layout.
+The Swift profile screen now validates name, optional email and birthday,
+translates the known schema failure to user-facing copy, uses explicit optional
+labeling, improves spacing and hierarchy, and makes the save action state clear.
+The first current-source build was unsigned (`CODE_SIGNING_ALLOWED=NO`), so its
+keychain write failed before authentication could persist. The fix removes the
+unneeded custom keychain group for this single-app target, rebuilds with
+simulator signing enabled, and reinstalls `com.amr.fanapp` on iPhone 18 Pro.
+The authenticated pass reached the live API, but the API rejected the payload
+before writing it. The staging inventory confirms that Azure is pinned to old
+source `36996ec`, whose profile PATCH accepts only `displayName`; the local API
+already accepts name, email and birthday. Updating the app alone cannot make
+all three fields persist. Deployment of the current API is the required next
+step, and was not performed without deployment authority.
+
+Fixed by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-06: photo activity Luna call chain (unlinked)
 
 Android photo submission ended in "No points yet" with reason `provider`,

@@ -4460,6 +4460,20 @@ credentials or reviewed JEV gateway contract are configured.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+## 2026-10-06: profile setup validation and hierarchy correction
+
+The Swift profile setup screen now validates the required name and birthday,
+validates optional email when present, and rejects future birthdays before the
+request. It no longer exposes the known backend `displayName` schema error to
+fans. The email label identifies the field as optional, fields show focused
+error treatment after submission, the primary action has explicit valid and
+unavailable states with readable text, and the top spacing and secondary action
+hit area are tighter and clearer.
+
+Proof: `xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/amr-profile-build build CODE_SIGNING_ALLOWED=NO` succeeded. The first current-source build was unsigned (`CODE_SIGNING_ALLOWED=NO`), which removed the keychain entitlement required by the session write. The custom keychain group was unnecessary for this single-app target and is now removed. A simulator-signed build was rebuilt and installed as `com.amr.fanapp` on iPhone 18 Pro. The authenticated pass reached the live API, but the API rejected the payload before writing it. The staging inventory confirms Azure is pinned to old source `36996ec`, whose profile PATCH accepts only `displayName`; the local API already accepts name, email and birthday. Deployment of the current API is the required next step and was not performed without deployment authority.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-05: profile name, email, birthday in onboarding
 
 Signed-in accounts now carry `email` and `birthday` on `app.profiles`
