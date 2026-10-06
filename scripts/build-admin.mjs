@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const api = 'https://amr-fan-app.onrender.com';
+const api = 'https://bb-1.tailaf0363.ts.net/amr-api';
 const sections = [
   ['points', ''],
   ['rewards', 'rewards/'],
