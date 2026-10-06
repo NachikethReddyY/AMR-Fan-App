@@ -168,6 +168,8 @@ function scan(kind, directory) {
         tools.gitleaks,
         'dir',
         '/src',
+        '--config',
+        '/src/.gitleaks.toml',
         '--redact',
         '--no-banner',
         '--exit-code',

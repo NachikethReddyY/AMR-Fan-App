@@ -496,10 +496,15 @@ test('query keeps genuine modes and disconnected transit honest through journey 
       const second = await query(actor, request);
       assert.equal(second.result.kind, 'routes');
       if (second.result.kind !== 'routes') return;
-      assert.deepEqual(second.recommendation, {
-        kind: 'unavailable',
-        reason: 'factor_applicability_unverified',
-      });
+      // The disconnected transit candidate leaves the comparison instead of
+      // withholding it; verified car and walk still compare.
+      assert.equal(second.recommendation.kind, 'recommended');
+      if (second.recommendation.kind === 'recommended') {
+        assert.equal(second.recommendation.route.mode, 'walk');
+        assert.equal(second.recommendation.fastestSeconds, 600);
+        assert.equal(second.recommendation.limitSeconds, 720);
+        assert.ok(Math.abs(second.recommendation.avoidedKgCo2e - 0.17) < 1e-9);
+      }
       assert.deepEqual(
         routeSnapshots(second).find((r) => r.routeId === 'onemap-transit-0'),
         {
