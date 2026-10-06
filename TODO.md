@@ -237,3 +237,16 @@ Publishing, deployment, shared tracker writes, commits, and pushes are outside t
 - [x] Persist only the connected-account bypass and leave auth integration note.
 - [x] Verify build, repository checks, security checks, and iPhone 18 Pro relaunch.
 - [ ] Commit, file PR, monitor CI/review, and merge to main as authorized.
+
+## Swift and Flutter completion, 2026-10-02 thread 01a8418c
+
+- [x] Locate current Swift and Flutter clients; preserve existing branches and work.
+- [x] Check the existing Flutter suite and reproduce Swift project failure.
+- [x] Repair committed Swift conflict artifacts; run Debug/Release builds and auth/photo checks.
+- [x] Connect the supported points-history and impact-overview adapters without changing local-demo accounting.
+- [x] Run focused tests and permitted native acceptance; mark provider gates honestly.
+- [x] Record completed slices and remaining decisions, authority or prerequisites.
+
+The remaining accepted Swift client work is rewards catalogue/purchase, submission ranking/contributions, and journey prepare/start/evidence/finish/background location. Those slices need additional UI and native location work; provider/account completion remains external.
+
+No commit, push, merge, shared provider changes or deployment is authorized in this task.

@@ -852,15 +852,38 @@ struct ProfileScreen: View {
 }
 
 struct HistoryScreen: View {
+    @EnvironmentObject private var backend: BackendSession
+
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             SectionHeader(title: "History.",
                           description: "Your journeys and points.")
-            FeatureCard {
-                Label("No activity yet", systemImage: "clock.arrow.circlepath")
-                    .font(.headline)
-                Text("Every great journey begins somewhere.")
-                    .font(.subheadline).foregroundStyle(FanStyle.muted).padding(.top, 10)
+            if let history = backend.history {
+                if history.entries.isEmpty {
+                    emptyState("No points activity yet.")
+                } else {
+                    ForEach(history.entries) { entry in
+                        FeatureCard {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(entry.reason).font(.headline)
+                                    Text(entry.recordedAt).font(.caption).foregroundStyle(FanStyle.muted)
+                                }
+                                Spacer()
+                                Text("\(entry.delta >= 0 ? "+" : "")\(entry.delta)")
+                                    .font(.headline)
+                                    .foregroundStyle(entry.delta >= 0 ? FanStyle.teal : .orange)
+                            }
+                        }
+                    }
+                }
+            } else {
+                FeatureCard {
+                    Label("Connect your account", systemImage: "person.crop.circle")
+                        .font(.headline)
+                    Text("Sign in to load points history from the backend.")
+                        .font(.subheadline).foregroundStyle(FanStyle.muted).padding(.top, 10)
+                }
             }
             Spacer()
         }
@@ -868,6 +891,14 @@ struct HistoryScreen: View {
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
         .background(FanStyle.background)
+        .task { await backend.loadHistory() }
+    }
+
+    private func emptyState(_ text: String) -> some View {
+        FeatureCard {
+            Label(text, systemImage: "clock.arrow.circlepath")
+                .font(.headline)
+        }
     }
 }
 

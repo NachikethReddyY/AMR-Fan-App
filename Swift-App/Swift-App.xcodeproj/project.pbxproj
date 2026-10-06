@@ -250,6 +250,7 @@
 		000000000000000111000000 /* Debug configuration for PBXNativeTarget "Swift-App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -275,10 +276,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
-<<<<<<< Updated upstream
-=======
-				INFOPLIST_KEY_CFBundleURLTypes = ({CFBundleTypeRole=Editor;CFBundleURLSchemes=("msauth.com.amr.fanapp");});
->>>>>>> Stashed changes
 				PRODUCT_BUNDLE_IDENTIFIER = com.amr.fanapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				INFOPLIST_KEY_CFBundleDisplayName = "AMR Fan App";
@@ -298,6 +295,7 @@
 		000000000000000112000000 /* Release configuration for PBXNativeTarget "Swift-App" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -323,10 +321,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
-<<<<<<< Updated upstream
-=======
-				INFOPLIST_KEY_CFBundleURLTypes = ({CFBundleTypeRole=Editor;CFBundleURLSchemes=("msauth.com.amr.fanapp");});
->>>>>>> Stashed changes
 				PRODUCT_BUNDLE_IDENTIFIER = com.amr.fanapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				INFOPLIST_KEY_CFBundleDisplayName = "AMR Fan App";

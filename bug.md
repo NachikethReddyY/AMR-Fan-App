@@ -1602,3 +1602,11 @@ Evidence: `.evidence/swift-photo-upload/photo-upload-checks.log`,
 `.evidence/swift-photo-upload/photo-picker.png`.
 
 Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## NATIVE-COMPLETION-20261002: Swift and Flutter remaining work (unlinked)
+
+Requested on 2026-10-02: complete the remaining accepted app work in Swift and Flutter. Preserve existing designs, device-only demo balances, account isolation and server accounting. Client implementation and focused local proof are in scope; provider provisioning, paid service activation, deployment and publication require their specific authority and prerequisites. Native automation consent is requested separately.
+
+Current preflight: the Flutter worktree contains the existing port and 48 passing tests. The newer Swift checkout has committed conflict markers in BackendClient.swift and project.pbxproj plus a duplicate signIn method. The project cannot be parsed by xcodebuild. Preserve the established PKCE state validation, Keychain error handling, Debug-only fixture method and bounded photo encoder when repairing those conflicts.
+
+Recorded by gpt-6.1-sol through Codex (T3 Code).

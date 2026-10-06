@@ -3282,3 +3282,23 @@ change occurred.
 Evidence is stored under `.evidence/swift-photo-upload/`.
 
 Implemented by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-10-02: Swift and Flutter client completion pass
+
+Repaired committed Swift conflict artifacts in the current iOS client branch. The repair kept the established OIDC/PKCE flow with state validation, Keychain session persistence, Debug-only synthetic sign-in, `/v1/session` exchange, versioned photo activity routes and bounded photo encoding. Swift auth checks and Debug/Release simulator builds passed.
+
+The existing Flutter port passed its 48-test suite, static analysis with only 20 existing style infos, Android debug APK build, iOS device build and iOS simulator build. Both Flutter artifacts and the Swift app were installed on the available Pixel 10 and iPhone 17 simulator. Snapshots exposed the expected onboarding/driver and account gates. Provider callback and authenticated exchange remain unverified without a registered account; photo assessment remains disabled in staging; map tiles require the approved restricted key.
+
+Evidence: `.evidence/swift-flutter-completion/verification.md`. No commit, push, merge, deployment or provider mutation occurred.
+
+Edited by gpt-6.1-sol through Codex (T3 Code).
+
+## 2026-10-02: server history and impact adapters
+
+Added typed points-history and impact-overview decoders to the Swift client. History now loads the authenticated real profile ledger and renders server reasons, timestamps and deltas. Impact now loads the strict overview endpoint and preserves unavailable reasons, community status and official-report status without turning unavailable data into zeroes. The Swift Debug and Release simulator builds pass, and the updated app was installed and opened on iPhone 17; the first-run gate remained observable.
+
+Remaining accepted client work is explicit: rewards catalogue/purchase, submission ranking/contributions, and journey prepare/start/evidence/finish/background location are not yet wired into the Swift UI. CIAM account completion, routing providers, Google Maps keys and real activity-analysis availability remain external prerequisites. Paid services and deployment were unchanged.
+
+Proof: `swiftc ... BackendAuthChecks` passed; Debug and Release `xcodebuild` succeeded; iPhone 17 launch verified.
+
+Edited by gpt-6.1-sol through Codex (T3 Code).

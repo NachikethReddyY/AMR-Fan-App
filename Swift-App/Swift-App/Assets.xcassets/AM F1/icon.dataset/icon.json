@@ -1,0 +1,66 @@
+{
+  "fill" : {
+    "solid" : "display-p3:0.00000,0.40000,0.36863,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Logo.svg",
+          "name" : "Logo",
+          "position" : {
+            "scale" : 1.37,
+            "translation-in-points" : [
+              0.02243519297292096,
+              -13
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "solid" : "srgb:0.80784,0.86275,0.00000,1.00000"
+          },
+          "image-name" : "Group 1.png",
+          "name" : "Group 1",
+          "position" : {
+            "scale" : 2.02,
+            "translation-in-points" : [
+              96.68878240351353,
+              129.02000000000004
+            ]
+          }
+        },
+        {
+          "image-name" : "F1 1.png",
+          "name" : "F1 1",
+          "position" : {
+            "scale" : 2.02,
+            "translation-in-points" : [
+              -177.4887824035136,
+              126.99999999999994
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
