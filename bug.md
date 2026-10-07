@@ -21,7 +21,9 @@ Preceding checks confirmed the redirect URI `https://amr-admin.vercel.app/admin/
 is already registered (the authorize endpoint returns the sign-in page, not
 `AADSTS50011`) and the CIAM token endpoint returns `Access-Control-Allow-Origin:
 *`. No `deploy/bb1/.env` change was required, because `ADMIN_ORIGIN` alone
-resolves the redirect.
+resolves the redirect. The API was rebuilt on BB-1 and `GET /admin/config` now
+returns `mode: oidc`, with `/health` and `/ready` still `200`. The rendered
+button was not observed in a browser; no browser consent was given for this turn.
 
 Edited by gpt-6-luna through pi (host unknown).
 

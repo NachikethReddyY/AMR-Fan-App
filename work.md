@@ -11,6 +11,26 @@ root configuration, and `scripts/admin-web.test.mjs` asserts the root file's
 rewrites and policy match the build script. The guard was confirmed red against
 the old policy and green after the fix.
 
+Deployed and verified live:
+
+- Vercel rebuilt from `0c33e9c`. The `https://amr-admin.vercel.app/admin/`
+  response now carries `connect-src 'self' ... ciamlogin.com ...`.
+- BB-1 was rebuilt from the current source and restarted. The previous image is
+  retained as `amr-fan-api:bb1-prev`; the running image is `9072c72483e6`.
+- `GET /admin/config` returns `mode: oidc` with `redirectUri
+  https://amr-admin.vercel.app/admin/`, both directly and through the Vercel
+  origin rewrite.
+- `GET /health` and `GET /ready` return `200`, the latter with
+  `dependencies.database: ok`.
+- The origin guard is unchanged: an unknown origin gets `403`, the exact origin
+  gets `200`.
+- Unauthenticated `/v1/me`, `/v1/impact/official` and `/v1/submissions/ranking`
+  return `401`, and `/v1/dev/session` returns `404` in production.
+
+Not verified: the rendered button in a browser. No browser or device consent was
+given for this turn, so the visible result is inferred from the `mode: oidc`
+response that gates it rather than observed.
+
 Edited by gpt-6-luna through pi (host unknown).
 
 ## 2026-10-07: Challenge submission is ledger-backed
