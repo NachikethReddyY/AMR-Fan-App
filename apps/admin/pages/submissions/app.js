@@ -177,7 +177,7 @@ try {
   byId('fixtures').hidden = !config.synthetic;
   bindPasswordSignIn(config.auth, { work, onSession: activate });
   byId('setup').textContent =
-    config.synthetic || config.auth?.mode === 'supabase'
+    config.synthetic || ['supabase', 'oidc'].includes(config.auth?.mode)
       ? ''
       : 'Admin sign-in setup is pending. No local test sign-in is enabled.';
   try {

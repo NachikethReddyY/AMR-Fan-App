@@ -284,6 +284,32 @@ struct BackendRouteSummary: Decodable {
     let routeCount: Int
 }
 
+struct BackendSubmission: Decodable, Identifiable {
+    let id: String
+    let sequence: String
+    let ownerProfileId: String
+    let pointsOperationId: String
+    let text: String
+    let tag: String?
+    let fee: Int
+    let rankingPoints: Int
+    let resubmissionOf: String?
+    let createdAt: String
+    let status: String
+    let moderatedBy: String?
+    let moderatedAt: String?
+}
+
+struct BackendChallengeSubmission {
+    let submission: BackendSubmission
+    let balanceAfter: Int
+}
+
+struct BackendSubmissionResponse: Decodable {
+    let outcome: BackendSubmission
+    let entry: BackendHistoryEntry
+}
+
 struct BackendActivityResponse: Decodable {
     let kind: BackendActivityKind
     let assessmentId: String?
@@ -394,6 +420,24 @@ final class BackendSession: ObservableObject {
 
     func transportPlan(origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
         return try await client.transportPlan(token: token, origin: origin, destination: destination)
+    }
+
+    func submitChallenge(text: String, requestId: UUID) async throws -> BackendChallengeSubmission {
+        guard let token, let profile = realProfile else { throw BackendError.notSignedIn }
+        let result = try await client.createSubmission(
+            token: token,
+            profileId: profile.id,
+            requestId: requestId,
+            text: text
+        )
+        // The submission and debit are already committed together. A balance
+        // refresh is best-effort so a transient /v1/me failure cannot make the
+        // UI report a failed submission after the server accepted it.
+        account = try? await client.account(token: token)
+        return BackendChallengeSubmission(
+            submission: result.outcome,
+            balanceAfter: result.entry.balanceAfter
+        )
     }
 
     func awardRouteReward(savedKg: Double, distanceMeters: Double?, routeId: String, requestId: UUID) async throws -> BackendRouteRewardResponse {
@@ -580,6 +624,30 @@ private final class BackendClient {
 
     func transportPlan(token: String?, origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
         try await transportPlan(token: token, origin: .coordinate(origin), destination: .coordinate(destination))
+    }
+
+    private struct SubmissionRequest: Encodable {
+        let requestId: String
+        let text: String
+        let tag: String?
+        let confirmedFee: Int
+        let resubmissionOf: String?
+    }
+
+    func createSubmission(token: String, profileId: String, requestId: UUID, text: String) async throws -> BackendSubmissionResponse {
+        let response: BackendSubmissionResponse = try await request(
+            path: "v1/profiles/\(profileId)/submissions",
+            method: "POST",
+            token: token,
+            body: SubmissionRequest(
+                requestId: requestId.uuidString.lowercased(),
+                text: text,
+                tag: "activity",
+                confirmedFee: 500,
+                resubmissionOf: nil
+            )
+        )
+        return response
     }
 
     func awardRouteReward(token: String, profileId: String, requestId: UUID, routeId: String, savedKg: Double, distanceMeters: Double?) async throws -> BackendRouteRewardResponse {

@@ -293,8 +293,17 @@ enum SustainabilityAction: String, CaseIterable, Identifiable {
     }
 }
 
+struct SubmittedChallenge: Codable, Equatable, Identifiable {
+    let id: UUID
+    let race: String
+    let title: String
+    let tag: String
+    let moderation: String
+}
+
 struct DemoFanState {
     var greenPoints: Int
+    var submittedChallenges: [SubmittedChallenge] = []
     var plantedTrees: [PlantedTree] = []
     var sustainabilityActionsCompleted = 0
     var redeemedMerchIDs = Set<String>()

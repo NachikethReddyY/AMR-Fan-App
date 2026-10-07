@@ -1,16 +1,36 @@
-## 2026-10-07: Admin dashboard cannot authenticate against CIAM (blocked)
+## 2026-10-07: Challenge submission charged points without adding a challenge (fixed)
 
-The live API is configured correctly for CIAM/OIDC and allows the deployed admin
-origin. `/admin/config` returns `auth.mode: unavailable` because the static
-admin dashboard only implements Supabase email/password sign-in, while the API
-intentionally rejects Supabase Auth and verifies CIAM access tokens. No API
-bypass or direct balance edit was added.
+The challenge screen deducted 500 points and inserted the idea only into its local
+SwiftUI state. It never called the authenticated submissions API, so the debit
+was not ledger-backed and the idea disappeared when the destination sheet was
+recreated. Challenge submission now posts to `/v1/profiles/:profileId/submissions`;
+the server atomically creates the pending submission and records the 500-point
+debit. The app updates its balance from the committed ledger result, adds the
+returned challenge, persists its display metadata, and does not change points on
+request failure. A stable request ID is reused while retrying the same failed
+submission.
 
-A safe fix needs a registered CIAM web client with a web redirect URI and PKCE
-support in the dashboard, or an explicit product decision to restore a separate
-Supabase Auth admin identity path. The current native CIAM client uses the
-`msauth.com.amr.fanapp://auth` redirect, which cannot be used as a hosted web
-callback without provider registration.
+Proof: iOS Simulator build succeeded, API typecheck passed, focused submission
+contract/HTTP tests passed, and `git diff --check` passed. UI/device interaction
+was not run in this turn.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Admin dashboard CIAM sign-in support (provider registration pending)
+
+The admin API and static dashboard previously disagreed: BB-1 verified CIAM/OIDC
+access tokens, while the dashboard only attempted Supabase password sign-in. The
+API now exposes public OIDC browser metadata, and all admin pages support
+authorization-code + PKCE sign-in with an in-memory API session. Server role
+checks and ledger authorization are unchanged.
+
+Remaining blocker: the CIAM client must have the hosted redirect URI
+`https://amr-admin.vercel.app/admin/` registered. Until that provider setting is
+made, the authorization callback may reject the redirect even though the code
+path is ready.
+
+Proof: admin artifact, API typecheck, OIDC/auth tests, exact-origin tests and
+`git diff --check` passed. No deployment was performed in this turn.
 
 Edited by gpt-6-luna through pi (host unknown).
 

@@ -9,6 +9,11 @@ struct ChallengesScreen: View {
     @State private var activeContribution: ChallengeIdea?
     @State private var contributionPoints = "10"
     @State private var displayedIdeaCount = 4
+    @State private var isSubmitting = false
+    @State private var submissionError: String?
+    @State private var submissionRequestId: UUID?
+    @State private var submissionRequestText = ""
+    @EnvironmentObject private var backend: BackendSession
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var selectedChallenge: RaceChallenge? {
@@ -108,7 +113,17 @@ struct ChallengesScreen: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(14)
                                 .background(FanStyle.darkTeal, in: RoundedRectangle(cornerRadius: 14))
-                                .disabled(idea.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || demoState.greenPoints < 500)
+                                .disabled(isSubmitting || idea.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || demoState.greenPoints < 500)
+                                if let submissionError {
+                                    Text(submissionError)
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                }
+                                if isSubmitting {
+                                    ProgressView("Submitting…")
+                                        .font(.caption)
+                                        .tint(FanStyle.teal)
+                                }
                             }
                         }
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -122,6 +137,8 @@ struct ChallengesScreen: View {
             .scrollIndicators(.hidden)
         }
         .background(FanStyle.background)
+        .onAppear(perform: restoreSubmittedChallenges)
+        .onChange(of: selectedRace) { _, _ in restoreSubmittedChallenges() }
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
                 Button {
@@ -207,6 +224,26 @@ struct ChallengesScreen: View {
         .accessibilityLabel(idea.isSelected ? "Selected idea \(idea.title)" : "Add points to \(idea.title)")
     }
 
+    private func restoreSubmittedChallenges() {
+        guard let challengeIndex = challenges.firstIndex(where: { $0.race == selectedRace }) else { return }
+        let existing = Set(challenges[challengeIndex].ideas.map(\.id))
+        for submitted in demoState.submittedChallenges where submitted.race == selectedRace && !existing.contains(submitted.id) {
+            challenges[challengeIndex].ideas.insert(
+                ChallengeIdea(
+                    id: submitted.id,
+                    title: submitted.title,
+                    author: "You",
+                    tag: submitted.tag,
+                    rankingPoints: 0,
+                    moderation: submitted.moderation,
+                    lifecycle: "backlog",
+                    fulfilment: "demonstration"
+                ),
+                at: 0
+            )
+        }
+    }
+
     private func contribute() {
         guard let activeContribution,
               let points = Int(contributionPoints),
@@ -222,16 +259,52 @@ struct ChallengesScreen: View {
 
     private func submitIdea() {
         let trimmedIdea = idea.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedIdea.isEmpty, demoState.greenPoints >= 500 else { return }
-        demoState.greenPoints -= 500
-        if let challengeIndex = challenges.firstIndex(where: { $0.race == selectedRace }) {
-            challenges[challengeIndex].ideas.insert(
-                ChallengeIdea(id: UUID(), title: trimmedIdea, author: "You", tag: "activity", rankingPoints: 0, moderation: "pending", lifecycle: "backlog", fulfilment: "demonstration"),
-                at: 0
-            )
+        guard !trimmedIdea.isEmpty, demoState.greenPoints >= 500, !isSubmitting else { return }
+        submissionError = nil
+        isSubmitting = true
+        let requestId = submissionRequestText == trimmedIdea ? (submissionRequestId ?? UUID()) : UUID()
+        let race = selectedRace
+        submissionRequestId = requestId
+        submissionRequestText = trimmedIdea
+        Task { @MainActor in
+            do {
+                let result = try await backend.submitChallenge(text: trimmedIdea, requestId: requestId)
+                demoState.greenPoints = result.balanceAfter
+                let submission = result.submission
+                let submittedChallenge = SubmittedChallenge(
+                    id: UUID(uuidString: submission.id) ?? UUID(),
+                    race: race,
+                    title: submission.text,
+                    tag: submission.tag ?? "activity",
+                    moderation: submission.status
+                )
+                demoState.submittedChallenges.removeAll { $0.id == submittedChallenge.id }
+                demoState.submittedChallenges.insert(submittedChallenge, at: 0)
+                if let challengeIndex = challenges.firstIndex(where: { $0.race == race }) {
+                    challenges[challengeIndex].ideas.removeAll { $0.id == submittedChallenge.id }
+                    challenges[challengeIndex].ideas.insert(
+                        ChallengeIdea(
+                            id: submittedChallenge.id,
+                            title: submittedChallenge.title,
+                            author: "You",
+                            tag: submittedChallenge.tag,
+                            rankingPoints: submission.rankingPoints,
+                            moderation: submittedChallenge.moderation,
+                            lifecycle: "backlog",
+                            fulfilment: "demonstration"
+                        ),
+                        at: 0
+                    )
+                }
+                idea = ""
+                submissionRequestId = nil
+                submissionRequestText = ""
+                showComposer = false
+            } catch {
+                submissionError = error.localizedDescription
+            }
+            isSubmitting = false
         }
-        idea = ""
-        showComposer = false
     }
 }
 

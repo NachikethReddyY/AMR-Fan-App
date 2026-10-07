@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { before, test } from 'node:test';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { createIdentityVerifier } from './oidc.ts';
+import { createIdentityVerifier, oidcBrowserConfig } from './oidc.ts';
 
 const config = {
   kind: 'oidc',
@@ -38,6 +38,22 @@ async function token(
     .setProtectedHeader({ alg: 'RS256', kid: 'fixture' })
     .sign(signingKey);
 }
+test('browser config exposes only the public OIDC metadata and requires HTTPS redirect', () => {
+  assert.deepEqual(
+    oidcBrowserConfig(config, 'web-client', 'https://admin.example.test/admin/'),
+    {
+      mode: 'oidc',
+      authority: 'https://identity.example.test/tenant',
+      clientId: 'web-client',
+      redirectUri: 'https://admin.example.test/admin/',
+      scope: 'api://amr-api/account.access',
+    },
+  );
+  assert.deepEqual(oidcBrowserConfig(config, 'web-client', 'http://evil.test/'), {
+    mode: 'unavailable',
+  });
+});
+
 test('verified access token returns only issuer and subject, never client roles or email identity', async () => {
   assert.deepEqual(
     await verify(

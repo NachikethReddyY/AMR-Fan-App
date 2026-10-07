@@ -13,7 +13,7 @@ import {
 } from '../accounts/store.ts';
 import { ApiError, type Identity } from '../accounts/types.ts';
 import { authConfig } from '../auth/config.ts';
-import { createIdentityVerifier } from '../auth/oidc.ts';
+import { createIdentityVerifier, oidcBrowserConfig } from '../auth/oidc.ts';
 import {
   createSupabaseVerifier,
   supabaseBrowserConfig,
@@ -165,7 +165,14 @@ export function createApi({
   const adminAuth =
     config.kind === 'supabase'
       ? supabaseBrowserConfig(env.SUPABASE_PUBLISHABLE_KEY)
-      : { mode: 'unavailable' };
+      : config.kind === 'oidc'
+        ? oidcBrowserConfig(
+            config,
+            env.ADMIN_OIDC_CLIENT_ID,
+            env.ADMIN_OIDC_REDIRECT_URI ??
+              (env.ADMIN_ORIGIN ? `${env.ADMIN_ORIGIN}/admin/` : undefined),
+          )
+        : { mode: 'unavailable' };
   const browserOrigins = new Set([
     adminOrigin(env.ADMIN_ORIGIN),
     adminOrigin(env.ADMIN_ADDITIONAL_ORIGIN),

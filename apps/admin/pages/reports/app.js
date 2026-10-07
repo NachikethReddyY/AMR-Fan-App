@@ -375,7 +375,7 @@ void work(async () => {
   bindPasswordSignIn(config.auth, { work, onSession: activate });
   byId('setup').textContent = config.synthetic
     ? 'Choose the assigned local test admin.'
-    : config.auth?.mode === 'supabase'
+    : ['supabase', 'oidc'].includes(config.auth?.mode)
       ? ''
       : 'Admin sign-in setup is pending.';
   try {

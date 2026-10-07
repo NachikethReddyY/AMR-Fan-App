@@ -38,8 +38,8 @@ retaining its contents, then build into a fresh empty directory. Never upload
 All data requests use the existing Render API through explicitly listed fixed
 rewrites. No client-controlled destination, Origin rewrite, general proxy,
 cookie session or privileged CORS policy is added. API and HTML responses use
-`no-store`. CSP permits scripts/styles only from self and connections only to
-self and the fixed Supabase identity provider.
+`no-store`. CSP permits scripts/styles only from self and connections only to self and the
+fixed Supabase and CIAM identity-provider origins.
 
 Keep Render's existing `ADMIN_ORIGIN` unchanged. The infrastructure owner sets
 `ADMIN_ADDITIONAL_ORIGIN=https://amr-admin.vercel.app` only after the reviewed API
@@ -48,12 +48,15 @@ comma-separated list or preview wildcard. Both values use the same startup
 validation. Requests lacking Origin still pass the existing native/server
 boundary and must satisfy ordinary authentication and authorization.
 
-Supabase email/password login proves identity; application roles remain assigned
-by the API database. A publishable key is retrieved from `/admin/config`; no
-service-role key is built into the app. Login inputs omit native form names and use POST; a failed JavaScript handler
-cannot serialize credentials into a URL or native form body. Tokens stay in page memory. Changing
-sections or reloading therefore requires sign-in again. Finish any pending action
-before leaving a section. Login does not create or grant an admin role.
+CIAM/OIDC authorization-code + PKCE login proves identity for the hosted
+dashboard; application roles remain assigned by the API database. The API
+returns only public OIDC metadata from `/admin/config`; no client secret is built
+into the app. The dashboard keeps the PKCE verifier and state in session storage,
+exchanges the code for a short-lived API session, and keeps that API session in
+memory. Reloading therefore requires sign-in again. Finish any pending action
+before leaving a section. Login does not create or grant an admin role. A
+Supabase email/password fallback remains supported only when the API explicitly
+reports `mode: supabase`.
 
 ## Verification and limits
 

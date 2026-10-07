@@ -36,6 +36,10 @@ struct ContentView: View {
         state.currentStreak = defaults.integer(forKey: "demoCurrentStreak")
         state.lastActivityDay = defaults.string(forKey: "demoLastActivityDay")
         state.lastQuizRewardDay = defaults.string(forKey: "demoLastQuizRewardDay")
+        if let data = defaults.data(forKey: "demoSubmittedChallenges"),
+           let submittedChallenges = try? JSONDecoder().decode([SubmittedChallenge].self, from: data) {
+            state.submittedChallenges = submittedChallenges
+        }
         _demoState = State(initialValue: state)
     }
 
@@ -140,6 +144,11 @@ struct ContentView: View {
         }
         .onChange(of: demoState.greenPoints) { _, value in
             UserDefaults.standard.set(value, forKey: "demoGreenPoints")
+        }
+        .onChange(of: demoState.submittedChallenges) { _, value in
+            if let data = try? JSONEncoder().encode(value) {
+                UserDefaults.standard.set(data, forKey: "demoSubmittedChallenges")
+            }
         }
         .onChange(of: demoState.currentStreak) { _, value in
             UserDefaults.standard.set(value, forKey: "demoCurrentStreak")

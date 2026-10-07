@@ -1,3 +1,32 @@
+## 2026-10-07: Challenge submission is ledger-backed
+
+The challenge screen deducted 500 points and inserted the idea only into local
+SwiftUI state. It now calls the authenticated submissions API; the server
+atomically creates the pending submission and records the non-refundable debit.
+The app uses the committed balance, shows the returned challenge, persists its
+local display metadata, and leaves points unchanged on request failure. A stable
+request ID prevents a retry from charging twice.
+
+Proof: iOS Simulator build succeeded, API typecheck passed, focused submission
+contract/HTTP tests passed, and `git diff --check` passed. UI/device interaction
+was not run in this turn.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Admin dashboard CIAM sign-in support
+
+The admin API and static dashboard previously disagreed: BB-1 verified CIAM/OIDC
+access tokens, while the dashboard only attempted Supabase password sign-in. The
+API now exposes public OIDC browser metadata, and all admin pages support
+authorization-code + PKCE sign-in with an in-memory API session. Server role
+checks and ledger authorization are unchanged.
+
+Proof: admin artifact build, API typecheck, OIDC/auth tests, exact-origin tests
+and `git diff --check` passed. The hosted redirect URI still needs CIAM client
+registration, and no deployment was performed in this turn.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-07: Hide Impact travel distance
 
 Removed the travel-distance tile from the personal Impact stat grid at the user's

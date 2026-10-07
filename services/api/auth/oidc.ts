@@ -2,6 +2,25 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { ApiError, type Identity } from '../accounts/types.ts';
 import type { AuthConfig } from './config.ts';
 
+const defaultAdminClientId = '616286cc-a22b-49a2-b5a3-27011fd615a1';
+
+export function oidcBrowserConfig(
+  config: Extract<AuthConfig, { kind: 'oidc' }>,
+  clientId: string | undefined = defaultAdminClientId,
+  redirectUri: string | undefined,
+) {
+  if (!redirectUri || !/^https:\/\//.test(redirectUri))
+    return { mode: 'unavailable' } as const;
+  const authority = config.issuer.replace(/\/v2\.0\/?$/, '');
+  return {
+    mode: 'oidc' as const,
+    authority,
+    clientId: clientId ?? defaultAdminClientId,
+    redirectUri,
+    scope: `api://${config.audience}/${config.scope}`,
+  };
+}
+
 function displayNameClaim(payload: Record<string, unknown>) {
   const direct = typeof payload.name === 'string' ? payload.name : '';
   const parts = [payload.given_name, payload.family_name].filter(

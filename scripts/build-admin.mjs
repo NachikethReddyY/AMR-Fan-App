@@ -90,7 +90,7 @@ export async function buildAdmin(destination) {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://folakoxsilrfemctvlxj.supabase.co; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+              "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://folakoxsilrfemctvlxj.supabase.co https://9dcdff78-04a7-49fc-90bd-e9c7b76e4774.ciamlogin.com https://amrfancustomers.ciamlogin.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
           },
         ],
       },

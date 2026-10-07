@@ -62,6 +62,45 @@ test('existing and added exact origins retain browser access without granting au
   }
 });
 
+test('OIDC deployment exposes public browser config without changing server authorization', async () => {
+  const pool = new Pool({
+    connectionString: 'postgres://unused:unused@127.0.0.1:1/unused',
+  });
+  const server = createApi({
+    pool,
+    env: {
+      NODE_ENV: 'production',
+      AUTH_PROVIDER: 'oidc',
+      AUTH_ISSUER: 'https://identity.example.test/tenant/v2.0',
+      AUTH_AUDIENCE: 'api-id',
+      AUTH_JWKS_URL: 'https://identity.example.test/keys',
+      AUTH_REQUIRED_SCOPE: 'account.access',
+      ADMIN_ORIGIN: 'https://admin.example.test',
+    },
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/admin/config`, {
+      headers: { Origin: 'https://admin.example.test' },
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).auth, {
+      mode: 'oidc',
+      authority: 'https://identity.example.test/tenant',
+      clientId: '616286cc-a22b-49a2-b5a3-27011fd615a1',
+      redirectUri: 'https://admin.example.test/admin/',
+      scope: 'api://api-id/account.access',
+    });
+  } finally {
+    server.close();
+    await once(server, 'close');
+    await pool.end();
+  }
+});
+
 test('additional origin rejects wildcard, credentials, insecure and non-origin settings', async () => {
   const pool = new Pool();
   try {

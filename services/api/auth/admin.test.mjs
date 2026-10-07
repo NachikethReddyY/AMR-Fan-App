@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadAdminConfig, passwordSession } from './admin.js';
+import {
+  loadAdminConfig,
+  oidcAuthorizeUrl,
+  passwordSession,
+} from './admin.js';
 const config = {
   mode: 'supabase',
   url: 'https://folakoxsilrfemctvlxj.supabase.co',
@@ -15,8 +19,29 @@ test('admin config falls back while the API wakes from sleep', async () => {
     return new Response('warming up', { status: 503 });
   });
   assert.equal(result.synthetic, false);
-  assert.equal(result.auth.mode, 'supabase');
+  assert.equal(result.auth.mode, 'unavailable');
   assert.equal(calls, 1);
+});
+
+test('OIDC authorize URL uses PKCE and the configured web redirect', () => {
+  const url = new URL(
+    oidcAuthorizeUrl(
+      {
+        mode: 'oidc',
+        authority: 'https://login.example.test/tenant',
+        clientId: 'client-id',
+        redirectUri: 'https://admin.example.test/admin/',
+        scope: 'api://api-id/account.access',
+      },
+      'state-value',
+      'challenge-value',
+    ),
+  );
+  assert.equal(url.origin, 'https://login.example.test');
+  assert.equal(url.pathname, '/tenant/oauth2/v2.0/authorize');
+  assert.equal(url.searchParams.get('redirect_uri'), 'https://admin.example.test/admin/');
+  assert.equal(url.searchParams.get('code_challenge'), 'challenge-value');
+  assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
 });
 
 test('email/password goes only to fixed identity provider, then token exchanges for app session', async () => {

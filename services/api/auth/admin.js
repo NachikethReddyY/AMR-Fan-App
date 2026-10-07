@@ -1,11 +1,7 @@
 const provider = 'https://folakoxsilrfemctvlxj.supabase.co';
 const publicFallbackConfig = {
   synthetic: false,
-  auth: {
-    mode: 'supabase',
-    url: provider,
-    publishableKey: 'sb_publishable_my3PjogHDqH66C3luGiL6w_wjtVesMB',
-  },
+  auth: { mode: 'unavailable' },
 };
 const failure = () =>
   new Error('Sign-in failed. Check your email and password.');
@@ -118,9 +114,121 @@ export async function loadAdminConfig(request = fetch) {
   }
 }
 
+function randomBytes(size) {
+  const bytes = new Uint8Array(size);
+  crypto.getRandomValues(bytes);
+  return bytes;
+}
+
+function base64Url(bytes) {
+  let value = '';
+  for (const byte of bytes) value += String.fromCharCode(byte);
+  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
+}
+
+async function pkcePair() {
+  const verifier = base64Url(randomBytes(32));
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(verifier),
+  );
+  return { verifier, challenge: base64Url(new Uint8Array(digest)) };
+}
+
+export function oidcAuthorizeUrl(config, state, challenge) {
+  if (
+    config?.mode !== 'oidc' ||
+    !/^https:\/\//.test(config.authority) ||
+    !/^https:\/\//.test(config.redirectUri) ||
+    !config.clientId ||
+    !config.scope
+  )
+    throw failure();
+  const url = new URL(
+    `${config.authority.replace(/\/$/u, '')}/oauth2/v2.0/authorize`,
+  );
+  url.search = new URLSearchParams({
+    client_id: config.clientId,
+    response_type: 'code',
+    redirect_uri: config.redirectUri,
+    response_mode: 'query',
+    scope: `openid profile email ${config.scope}`,
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  }).toString();
+  return url.toString();
+}
+
+export async function oidcSession(config, request = fetch) {
+  if (config?.mode !== 'oidc') throw failure();
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const returnedState = params.get('state');
+  const state = sessionStorage.getItem('amr_oidc_state');
+  const verifier = sessionStorage.getItem('amr_oidc_verifier');
+  if (!code || !returnedState || !state || returnedState !== state || !verifier)
+    throw failure();
+  sessionStorage.removeItem('amr_oidc_state');
+  sessionStorage.removeItem('amr_oidc_verifier');
+  const tokenResponse = await request(
+    `${config.authority.replace(/\/$/u, '')}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      credentials: 'omit',
+      cache: 'no-store',
+      redirect: 'error',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: config.redirectUri,
+        code_verifier: verifier,
+      }),
+    },
+  );
+  const signed = await json(tokenResponse);
+  if (typeof signed.access_token !== 'string') throw failure();
+  const session = await request('/v1/session', {
+    method: 'POST',
+    credentials: 'include',
+    cache: 'no-store',
+    redirect: 'error',
+    headers: { Authorization: `Bearer ${signed.access_token}` },
+  });
+  const appSession = await json(session);
+  if (typeof appSession.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/u.test(appSession.token))
+    throw failure();
+  window.history.replaceState({}, '', window.location.pathname);
+  return appSession.token;
+}
+
 export function bindPasswordSignIn(config, { work, onSession }) {
   const form = document.getElementById('password-signin');
   form.hidden = config?.mode !== 'supabase';
+  if (config?.mode === 'oidc') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Sign in with CIAM';
+    button.id = 'oidc-signin';
+    form.after(button);
+    button.addEventListener('click', () =>
+      work(async () => {
+        const { verifier, challenge } = await pkcePair();
+        const state = base64Url(randomBytes(32));
+        sessionStorage.setItem('amr_oidc_state', state);
+        sessionStorage.setItem('amr_oidc_verifier', verifier);
+        window.location.assign(oidcAuthorizeUrl(config, state, challenge));
+      }),
+    );
+    const callback = new URLSearchParams(window.location.search).has('code');
+    if (callback)
+      void work(async () => {
+        await onSession(await oidcSession(config));
+      });
+    return;
+  }
   if (form.hidden) return;
   form.addEventListener('submit', (event) => {
     event.preventDefault();
