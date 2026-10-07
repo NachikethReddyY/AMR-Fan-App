@@ -10,6 +10,35 @@ let busy = false;
 const message = (text) => {
   byId('message').textContent = text;
 };
+// crypto.randomUUID needs a secure context (https or localhost). Fall back to
+// a local UUID-shaped key so the button still submits instead of throwing.
+function requestId() {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID)
+      return crypto.randomUUID();
+  } catch {
+    // Fall through to the Math.random key below.
+  }
+  const bytes = Array.from({ length: 16 }, () =>
+    Math.floor(Math.random() * 256),
+  );
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+function timeoutSignal(ms) {
+  try {
+    if (
+      typeof AbortSignal !== 'undefined' &&
+      typeof AbortSignal.timeout === 'function'
+    )
+      return AbortSignal.timeout(ms);
+  } catch {
+    // Older browsers have no timeout helper; fetch without a signal.
+  }
+  return undefined;
+}
 function signedOut() {
   token = null;
   profileId = null;
@@ -26,7 +55,7 @@ async function api(path, method = 'GET', value) {
     method,
     credentials: 'include',
     cache: 'no-store',
-    signal: AbortSignal.timeout(10000),
+    signal: timeoutSignal(10000),
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(value === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -162,37 +191,44 @@ byId('more-history').addEventListener('click', () =>
 );
 byId('adjustment').addEventListener('submit', (event) => {
   event.preventDefault();
-  const delta = Number(byId('delta').value);
-  const reason = byId('reason').value.trim();
-  if (!profileId || profileId !== byId('profile').value) {
-    message('View the selected profile’s History first.');
+  let action;
+  try {
+    const delta = Number(byId('delta').value);
+    const reason = byId('reason').value.trim();
+    if (!profileId || profileId !== byId('profile').value) {
+      message('View the selected profile’s History first.');
+      return;
+    }
+    if (
+      !Number.isInteger(delta) ||
+      delta === 0 ||
+      Math.abs(delta) > 2147483647 ||
+      !reason
+    ) {
+      message('Enter a nonzero whole point change and a reason.');
+      return;
+    }
+    const signature = JSON.stringify([profileId, delta, reason]);
+    if (!pending || pending.signature !== signature)
+      pending = {
+        signature,
+        input: {
+          targetProfileId: profileId,
+          delta,
+          reason,
+          requestId: requestId(),
+        },
+      };
+    action = pending.input;
+  } catch (error) {
+    message(`${error?.message ?? error} Retry when ready.`);
     return;
   }
-  if (
-    !Number.isInteger(delta) ||
-    delta === 0 ||
-    Math.abs(delta) > 2147483647 ||
-    !reason
-  ) {
-    message('Enter a nonzero whole point change and a reason.');
-    return;
-  }
-  const signature = JSON.stringify([profileId, delta, reason]);
-  if (!pending || pending.signature !== signature)
-    pending = {
-      signature,
-      input: {
-        targetProfileId: profileId,
-        delta,
-        reason,
-        requestId: crypto.randomUUID(),
-      },
-    };
   void work(async () => {
     const result = await api(
       '/v1/admin/points/adjustments',
       'POST',
-      pending.input,
+      action,
     );
     pending = null;
     byId('delta').value = '';

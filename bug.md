@@ -2784,3 +2784,26 @@ this provisional route reward.
 Tracking: unlinked.
 
 Recorded by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-07: Grant admin to ynrdevs+admin@gmail.com (blocked, owner step ready)
+
+Tried live. Principal ea21f6d8-07cf-466a-8933-e0d889231697 created 2026-10-07T09:00:15Z is fan. Runtime role refused UPDATE with 42501, by design. No owner credential on this machine or BB-1. No role changed.
+
+Next unblocker: run the owner SQL in the Supabase editor, then retry admin sign-in. Tracking: unlinked.
+
+## 2026-10-07: Admin Points Apply adjustment silently did nothing (fixed)
+
+No `POST /v1/admin/points/adjustments` reached BB-1 in 24h of logs, so the
+click died in the page before the request. `crypto.randomUUID()` throws outside
+a secure context, synchronously, before `work()` runs, leaving no message and
+no request. The handler now uses a UUID-shaped fallback key, a guarded fetch
+timeout, and a try/catch that surfaces synchronous errors in the status line.
+Retry semantics are unchanged: identical input reuses the request key.
+
+Proof: `node --check`, fallback UUID shape/ uniqueness check, `node --test
+scripts/admin-web.test.mjs` (3 pass), full `pnpm test:tooling` (30 pass),
+`git diff --check`. Rendered click and hosted adjustment remain unverified;
+no browser consent was given. Same `crypto.randomUUID()` pattern still exists
+in rewards/participation/submissions/reports admin pages.
+
+Fixed by opencode/muse-spark-1.3-contributor-free through OpenCode (T3 Code).

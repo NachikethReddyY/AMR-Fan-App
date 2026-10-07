@@ -4941,3 +4941,17 @@ route has no stored distance, so it remains unavailable until a new route is
 completed.
 
 Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Points admin adjustment button no longer fails silently
+
+The Apply adjustment submit handler threw synchronously on
+`crypto.randomUUID()` outside a secure context, so nothing was sent and no
+message appeared; server logs show zero adjustment POSTs in 24h. The page now
+falls back to a local UUID-shaped request key, guards the fetch timeout, and
+reports synchronous errors in the status line. Validation, retry-key reuse and
+server behavior are unchanged.
+
+Proof: syntax check, UUID fallback shape/uniqueness, admin-web tests,
+`pnpm test:tooling` 30 pass, `git diff --check`. Browser/hosted verification
+pending user retry. Note: the signed-in account still needs the owner-side
+admin grant from the earlier handoff, or the next click returns 403 and signs out.
