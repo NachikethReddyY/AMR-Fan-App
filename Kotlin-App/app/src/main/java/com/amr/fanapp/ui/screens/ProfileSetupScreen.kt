@@ -32,6 +32,8 @@ internal fun profileNeedsSetup(account: BackendAccount?): Boolean {
     return name.isEmpty() || name == "Fan" || name == "Unknown" || profile.birthday.isNullOrBlank()
 }
 
+internal fun normalizeBirthdayInput(value: String): String = value.replace('/', '-')
+
 @Composable
 fun ProfileSetupScreen(
     account: BackendAccount?,
@@ -64,7 +66,7 @@ fun ProfileSetupScreen(
         )
         OutlinedTextField(
             value = birthday,
-            onValueChange = { birthday = it },
+            onValueChange = { birthday = normalizeBirthdayInput(it) },
             label = { Text("Birthday (YYYY-MM-DD)") },
             singleLine = true,
             colors = profileFieldColors(),
