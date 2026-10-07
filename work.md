@@ -2566,3 +2566,341 @@ path, API health on this change, and live routes remain unverified. No real toke
 read, provider/DB/cloud/device/CI/deployment or Git delivery occurred.
 
 Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## 2026-09-28: provisional Expo News tab for standalone RSS feed
+
+The user selected the Expo phone app for a fifth News tab while the separate
+Swift design is in progress. Added `src/features/news/` with bounded RSS 2.0
+parsing, official `www.astonmartinf1.com/en-GB/news/` article URL validation,
+deduplication, a 50-item display cap, and a 512,000-character feed cap. The tab
+shows title, summary, publication date and an external article action. It has
+loading, empty, invalid-override, refresh, retained-list refresh failure
+and article-open failure states. News now defaults to the verified public Azure
+feed (`https://green-sky-08b27ad10.4.azurestaticapps.net/feed.xml`) and accepts
+an optional public HTTPS `EXPO_PUBLIC_NEWS_FEED_URL` override. The Azure feed is
+a manually deployed snapshot; there is no scheduled publication yet. News remains
+separate from admin-entered point offers and account/profile state.
+
+Focused parser tests failed first when the module was absent, then passed 6/6.
+The live Azure feed returned HTTP 200, `application/rss+xml`, 11,464 bytes and
+parsed into 20 stories. All 32 phone Jest suites passed (310 tests). A frozen
+pnpm install, affected-file ESLint
+and Prettier, and Expo iOS/Android exports passed. The exported Hermes bundles
+were about 7.1 MB each; this Windows build has no comparable before measurement.
+Full typecheck remains red on four existing server errors in journey and report
+files, with no News file error. `agents:check` remains red on existing Windows
+skill frontmatter/link checks. `security:check` did not run to completion because
+its nested `pnpm` resolves v11 under this shell and the direct scanner requires
+unavailable Docker; direct audit passed the high threshold with one moderate
+advisory. On the Android emulator the fifth tab loaded real Azure stories with
+dates and summaries, and tapping a story launched Chrome. Chrome's first-run
+setup prevented verification of the article page; iOS device behavior and
+device accessibility remain unverified. The Android screenshot is retained in
+ignored `.evidence/rss-news/android-news.png`.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: standalone RSS handoff and Azure snapshot
+
+Created private `ashura-oss/AMR-F1-RSS-Feed` on GitHub and pushed two commits
+(`98003da`, `c217779`) with the Python generator, fixtures, 20-item sample XML,
+README, scheduler example and Azure static configuration. Local `.dev-team`,
+Python caches and deployment output are ignored. The repository remains private;
+the published XML itself is public at
+`https://green-sky-08b27ad10.4.azurestaticapps.net/feed.xml` on an Azure Static
+Web App Free plan. The checked-in and hosted XML SHA-256 match exactly
+(`928682D59F8CF52AAA63CDC27CF1E446A959597778175C1E8137108964644389`).
+The host returned HTTP 200, `application/rss+xml` and 20 distinct ordered
+official article links. The generator passed 18 offline tests, and one fresh
+live generation matched the checked-in XML byte for byte. No automatic refresh
+schedule or deployment pipeline is active; the teammate's hosting handoff still
+needs that decision. The deployment token was shown in a tool response during
+setup; the user was asked to reset it in Azure Portal. No app repository commit,
+push, PR or publication was made.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: News review corrections
+
+The independent reviewer found three failed criteria in the provisional Expo
+News integration: midnight UTC publication dates shifted to the prior day for
+fans west of UTC, `response.text()` could allocate an unbounded body despite a
+small or absent Content-Length, and failed refresh after a previously empty
+feed falsely claimed to show old stories. These are one-off implementation
+corrections; project guidance is to preserve the source calendar day for
+date-only feeds and bound public content while reading it.
+
+Visible and accessibility dates now share a UTC formatter. `expo/fetch` supplies
+the native-backed response stream; the client counts at most 512,000 bytes while
+decoding UTF-8 and cancels an oversized stream. Missing streams fail closed, and
+Content-Length over the cap is rejected early. A refresh failure after an empty
+feed now presents the retry state; a nonempty prior feed remains visible with an
+accurate last-loaded-stories message. No feed generator, host or points behavior
+changed.
+
+The new cases failed before implementation. Focused News suites pass 11/11,
+including a western timezone comparison, split multibyte UTF-8, absent and
+dishonest Content-Length, missing stream, and both refresh histories. The live
+Azure XML parsed as 20 items through the bounded reader. All 33 app Jest suites
+pass (315 tests); affected-file lint/format and iOS/Android Expo exports pass.
+Full typecheck still reports only the four existing journey/report server errors.
+Android Expo Go loaded the public Azure feed through the native streaming path,
+showed the September 22 source date, and refreshed without error. The updated
+screenshot is retained in ignored `.evidence/rss-news/android-news.png`.
+Accessibility output and iOS device behavior remain unverified. No app repo
+commit, push or publication occurred.
+
+Corrected and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: final independent RSS and News review
+
+A fresh gpt-6-sol high-effort read-only reviewer found no actionable defect in
+the corrected date, bounded stream, refresh state or adjacent parsing paths.
+It independently passed 18 RSS Python tests and 315 Expo Jest tests, and read
+the live Azure XML as HTTP 200, `application/rss+xml`, 20 items and 11,464 bytes,
+byte-identical to the checked-in feed. It inspected Expo 57's installed native
+stream and cancellation implementation. Direct TypeScript checking still has
+the four previously reported server-only errors. The reviewer did not rerun
+device automation or platform exports; the primary agent verified Android Expo
+Go live load and refresh after the corrections. The hosted snapshot still needs
+manual generation and redeployment for new stories. No extra files, Git state or
+external service settings were changed by the review.
+
+Reviewed by gpt-6-sol through Codex (local Windows).
+
+## 2026-09-28: hosted RSS UTF-8 response correction
+
+The user's Chrome screenshot showed mojibake in the public raw XML view. The
+hosted response lacked a charset, while the checked-in and hosted XML bytes
+matched and parsed accented names correctly as UTF-8. The failed criterion was
+readable accented text in the browser view. This is a project-level hosting
+lesson: on this Azure Static Web App, a route-specific `Content-Type` header was
+ignored when `.xml` had a MIME mapping. Setting the mapping itself to
+`application/rss+xml; charset=utf-8` produced the required live header.
+
+The first deployment with a route header still returned `application/rss+xml`;
+the second deployment with the MIME mapping returned HTTP 200,
+`application/rss+xml; charset=utf-8`, and the same five-minute cache policy.
+The published XML remained byte-identical to `feed.xml` (SHA-256
+`928682D59F8CF52AAA63CDC27CF1E446A959597778175C1E8137108964644389`),
+and a UTF-8 XML parse yielded `Ella Lähdemaa`. All 18 standalone Python tests
+passed. Committed and pushed `9c1687e` to the private RSS repository. The
+browser automation service returned `ERR_BLOCKED_BY_CLIENT` for raw RSS
+navigation after deployment, so the user's refreshed Chrome rendering remains
+the final visual check. The user was asked to report that result. No Expo code
+or feed content changed; the Azure deployment token reset remains pending.
+
+Corrected and verified by gpt-6 through Codex (local Windows).
+
+The fresh gpt-6-sol high-effort read-only reviewer found no actionable issue in
+commit `9c1687e` or the deployed response. It independently passed 18 tests,
+verified 20 items, strict UTF-8 decoding, the expected cache and MIME headers,
+and byte identity with the committed XML. Chrome rendering remains the only
+unverified acceptance check because raw RSS navigation is blocked by the
+browser tool and the user has not yet reported the refreshed view.
+
+Reviewed by gpt-6-sol through Codex (local Windows).
+
+## 2026-09-28: official images in hosted RSS and Expo News
+
+The user requested article images in the public RSS feed and Expo News, selected direct links to official Aston Martin CDN images, and authorized Azure deployment. The standalone generator now extracts bounded `og:image` URLs from official article pages and emits Media RSS `media:content` fields. Current `feed.xml` has 20 stories and 20 official images at `w=480`; image files remain on the source CDN. The Expo News screen validates the same host, path, format and 480-pixel transform, renders images with text-card fallback on failure, and initially mounts five stories with a Show more control. Article links, dates and summaries remain as before.
+
+The first independent review found the failed criterion: the generator allowed AVIF while Expo did not, and Expo accepted image widths above the generator's 480-pixel policy. These were corrected before release. This is a project-level lesson about matching media contracts across the RSS and phone repositories; no reusable guidance file was changed. The 20 RSS Python tests and 317 Expo Jest tests pass. Affected ESLint and Prettier checks pass. Full typecheck still reports four existing errors in journey/report server files, with no News error.
+
+Committed and pushed RSS changes `b637b1a` and `8baff27` to the private repository. Azure Static Web Apps production now returns HTTP 200, `application/rss+xml; charset=utf-8`, `Cache-Control: public, max-age=300`, and 15,201 bytes byte-identical to local `feed.xml` (SHA-256 `D96F7A49B01D2EE08605C2E6B2AC34CF7712E831EC5AAB4A6EB94503F55A9C77`). The hosted XML parses as 20 items with 20 official CDN images. Android Expo Go fetched the updated feed and visibly rendered article photos; ignored screenshot: `.evidence/rss-news/android-news-images.png`. The main Expo repository remains uncommitted and unpushed. The previously exposed Azure deployment token still needs owner rotation.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: independent post-deployment RSS image review
+
+A fresh gpt-6-sol high-effort read-only reviewer found no remaining source defect after the image URL contract correction. It independently checked the live Azure response against the checked-in XML hash and byte count, verified 20 items and 20 `media:content` URLs on `assets.astonmartinf1.com` at `w=480`, and inspected the Android screenshot at original resolution to confirm visible article images. It did not edit files or deploy.
+
+Reviewed by gpt-6-sol through Codex (local Windows).
+
+## 2026-09-28: six-hour RSS refresh draft awaiting authority
+
+The user asked whether new stories would update automatically and selected a six-hour cadence. The Azure feed is currently a static snapshot; the Expo Refresh control only reloads what Azure already serves. A private-repository GitHub Actions workflow is drafted locally at `.github/workflows/refresh-feed.yml`, with pinned checkout and Azure deploy actions, read-only repository permissions, a six-hour UTC schedule, manual dispatch, a ten-minute job limit, source tests, production byte comparison, staging of only three public files, and post-deployment byte verification. README handoff text describes the workflow and that activation requires an Actions secret. No workflow has been committed, pushed, or run.
+
+Local proof: the workflow parses as YAML, all four embedded Bash scripts pass `bash -n`, the comparison emits `deploy=false` for the current byte-identical Azure feed and `deploy=true` for a changed local fixture, and all 20 RSS Python tests pass. GitHub Actions is enabled on the private repository and currently has no repository secrets. The project contract requires explicit authority for CI/shared settings; approval to rotate the previously exposed Azure deployment token, store the replacement as `AMR_RSS_SWA_DEPLOYMENT_TOKEN`, push the workflow, and trigger a run is pending. Until then, new stories do not publish automatically.
+
+Drafted and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: public RSS repository
+
+The user authorized publication of `ashura-oss/AMR-F1-RSS-Feed`. Audited all five then-existing commits and tracked paths: no credential-pattern matches, `.dev-team` ignored, and no private evidence or environment files in Git history. Committed and pushed README wording correction as `bc16fc7`, with only that change staged; the drafted six-hour workflow and its separate README edits remain local and unpushed. Changed GitHub visibility from PRIVATE to PUBLIC. An unauthenticated GitHub API read confirms `private=false` and the published README says automatic refresh is not active. The public Azure feed still returns HTTP 200 with 20 Media RSS images. The pending deployment-token rotation and scheduler activation were not performed by this publication action.
+
+Published and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: activate automatic RSS publication
+
+The user authorized automatic publication after choosing a six-hour cadence. The
+public RSS repository now has a default-branch GitHub Actions workflow at
+`.github/workflows/refresh-feed.yml`: 00:17, 06:17, 12:17 and 18:17 UTC, plus
+manual dispatch. It tests and generates from the official source, compares the
+validated feed with Azure, deploys changed snapshots, and verifies published
+bytes. Manual dispatch always deploys. The job has read-only repository
+permissions, pinned checkout and Azure actions, a ten-minute limit, and no PR
+trigger. Only the three public static files enter the deployment directory.
+
+The previously exposed Azure Static Web Apps deployment token was reset through
+Azure CLI; only the replacement was stored in the GitHub Actions repository
+secret `AMR_RSS_SWA_DEPLOYMENT_TOKEN`. Neither token was committed or printed.
+The workflow and README were committed as `2884c31` and pushed to public
+`ashura-oss/AMR-F1-RSS-Feed` main. The first manual Actions run
+`36416358122` succeeded, including tests, generation, deployment, and its own
+byte check. An independent public request then returned HTTP 200,
+`application/rss+xml; charset=utf-8`, five-minute cache, 20 items, 20 official
+image URLs, and 15,059 bytes identical to local generation (SHA-256
+`6bff39c84f98b30a2ddf373d3c6488ef98a53a8154c84976df32ae61cd403a28`).
+RSS Python tests pass 20/20; YAML schedule validation and all four embedded
+Bash syntax checks pass. The main Expo repository's `pnpm security:check` was
+attempted but stopped before scanning because local Corepack supplies pnpm
+11.19.0 while the app requires 12.x; Docker is also unavailable. The workflow
+is active, but a scheduled tick has not yet occurred; its future timing is
+subject to GitHub Actions scheduling. The Expo app was not changed, committed,
+or pushed for this task. The main repository `agents:check` exits 1 on existing
+skill frontmatter and Claude-link issues; its changed-file whitespace check
+passes. These main-repository checks do not test the separate RSS workflow.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-09-28: independent review of automatic RSS publication
+
+A fresh gpt-6-sol high-effort read-only reviewer independently confirmed that
+the default-branch workflow is active, the manual Actions run `36416358122`
+completed successfully with deploy and byte-verification steps, and the public
+feed returns 20 valid stories with 20 official images and the expected headers.
+Its own local RSS test run passed 20/20. The reviewer found no immediate source
+defect. The first scheduled tick has not happened yet. GitHub documents that
+public-repository schedules may be delayed or dropped and can be disabled after
+60 days without repository activity; the public handoff README now records this
+monitoring and re-enable condition in follow-up commit `6a11e33`. The workflow
+still does not commit snapshots to Git, so the checked-in XML can lag behind
+the live Azure feed.
+
+Reviewed by gpt-6-sol through Codex (local Windows).
+
+## Overnight vertical slice progress — 2026-09-29
+
+Gate 1 evidence validation and Gate 2 deterministic activity rewards/missions are implemented locally in the React Native repository. Provider defaults remain disabled. Fixed 50-point rewards are capped at three per real profile per UTC day; canonical duplicate images, durable request replay, mission eligibility and atomic rollback are server-owned. Synthetic image identity is isolated from production, and synthetic mission events are excluded from community totals. New capability and request-recovery contracts are shared data-only schemas for React.
+
+Root verification: 29 isolated PostgreSQL cases passed across assessment, mission, accounting, reward and HTTP suites, including concurrent replay, cap enforcement, duplicate races, UTC historical fixtures and rollback after mission work. Evidence/media/provider-fixture unit tests passed 13/13; impact unit tests 15/15 and award factor/policy tests 22/22 passed. Changed-source ESLint/Prettier passed. Typecheck still reports four baseline journey/report errors. An Astra-medium combined security/quality re-review passed with follow-up for the local provider-disabled slice; it does not clear live-provider or Azure activation. Additional lock-wait/deadline fault proof remains an enablement gate.
+
+Gate 3 impact composition and React wiring are next. No Azure resource creation, deployment, live Luna call or new Blender asset occurred. Android emulator is reachable but the new flow has no rendered proof yet. Existing teammate News changes are preserved.
+
+Coordinated and verified by GPT-6 through Codex (local Windows).
+
+## 2026-09-29: overnight vertical slice final evidence
+
+The approved React Native/backend slice is implemented locally. Fans can submit
+one to five canonical photos with a bounded description; the server validates
+media, keeps Luna disabled without configured secrets, assesses through a strict
+provider contract, issues deterministic 50-point receipts with a three-per-UTC-day
+cap, and advances eligible missions atomically. Mission listing/enrollment is
+real-profile-only and identity-scoped; demo and signed-out states cannot load or
+enroll real missions. The Impact overview keeps approved Aston Martin figures,
+personal fan participation and community participation separate, preserves
+method/unit/provenance, and excludes demo, pending, rejected, superseded and
+synthetic rows from the relevant totals.
+
+Final proof executed after the review corrections:
+
+- Web Jest: 10 suites, 61 tests passed.
+- Legacy activity assessor: 9/9; multi-photo activity unit/contract suite: 13/13.
+- Impact unit/composition: 18/18; account/auth: 11/11.
+- Owned disposable PostgreSQL wrapper: 34/34 across assessment replay, HTTP
+  ownership/provider states, mission enrollment/concurrency, exact-once rewards,
+  rollback and impact provenance/isolation.
+- Changed-source ESLint has zero errors (two pre-existing warnings elsewhere),
+  changed-source Prettier and `git diff --check` pass.
+
+The full typecheck still reports four unrelated baseline errors in journey/report
+files. Docker is unavailable, so repository secret/SAST self-tests were not run.
+Azure files are preparation only: no resource creation, deployment, provider call,
+commit or push occurred. Native exports were previously produced for Android, iOS
+and web. Android evidence is limited to signed-out Expo Go shell screenshots in
+`.evidence/overnight/android/final-browse.png` and `final-impact.png`; authenticated
+camera, mission enrollment, reward submission, TalkBack and accessibility behavior
+remain unverified. The stale `ui.xml` compile-error capture is excluded from proof.
+Blender was audited; no asset or MCP integration was added.
+
+Implemented and verified by GPT-6 through Codex (local Windows).
+
+## 2026-10-07: main-branch Azure staging promotion
+
+The user approved the `main` GitHub OIDC credential for the existing Azure app
+registration. Azure now has two federated credentials: the existing
+`feat/azure-staging` subject and the new repository- and branch-scoped `main`
+subject. GitHub Actions run `37507939282` built the remote `main` commit
+`9e6275d373ff1eb27b6f163b8033dbe319edbb5a` successfully. ACR digest
+`sha256:a670e5e575e5f7bd869bad9628ea9942c58d95f16bd189e09170134710082e63`
+was promoted to Container Apps revision
+`amr-fan-api-x324zttj6p6tg--main-9e6275d`; it is running with one replica and
+uses the immutable digest. The database migration succeeded, the temporary
+migration job was deleted, and the runtime database secret was updated without a
+query string. Public `/health` and `/ready` returned HTTP 200 with the database
+ready, while an unauthenticated protected session request returned HTTP 401.
+
+This is a staging deployment. Activity assessment remains disabled and route
+provider access remains disabled. The local worktree was not reset or pushed;
+existing local changes remain intact. The Azure portal showed $197.17 of free
+credit remaining with an eight-day expiry at the time of verification, and the
+current single-replica staging footprint was forecast below that remaining
+credit for the requested week.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-10-07: hosted Android emulator validation
+
+Reused the existing `AMR_Pixel_Emulator` (Android 16/API 36, x86_64) and ran
+an Expo SDK 57 guest smoke using the Azure API URL as a process-only variable.
+Home signed-out gating, News with hosted official images, Impact gating and
+Travel gating all rendered; a cleared bounded log capture found no app-level
+ReactNativeJS or AndroidRuntime errors. The News snapshot displayed October 1,
+so the hosted RSS source is a static snapshot rather than a current-date feed.
+
+The origin/main Kotlin port was extracted into a temporary checkout, built with
+an official checksum-verified Temurin JDK 17, and passed `:app:assembleDebug
+:app:test` (72 Gradle tasks). Its debug APK installed and launched on the same
+emulator. Onboarding, driver selection and the login gate rendered. Pressing
+sign-in emitted the expected Entra authorization URL and opened Chrome, but the
+emulator was at Chrome's first-run Terms of Service screen. No agreement was
+accepted and no credentials were entered. Authenticated account, profile,
+journey, camera, points and reward flows therefore remain unverified. Swift
+iOS simulator/device validation requires macOS.
+
+Evidence is under `.evidence/hosted-emulator-20261007/` and remains local.
+No repository source was changed or pushed for this validation.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-10-07: Android Entra handoff completed
+
+The user explicitly approved the Chrome first-run Terms of Service action on the
+disposable Android emulator. The Kotlin port's PKCE flow reached the live Entra
+custom tab titled AMR FAN APP CUSTOMERS, using the configured HTTPS authority,
+client and API scope. I did not enter an email, password, OTP or other account
+credential. Closing the custom tab returned to the login gate cleanly. Hosted
+API checks remained healthy: `/health` and `/ready` returned 200 with database
+ready, while unauthenticated `/v1/me` returned 401.
+
+The authenticated journey, camera/photo submission, profile updates, points,
+rewards and route flows still need a test account or user-driven sign-in. A
+macOS/Xcode environment is required for Swift iOS simulator/device proof.
+Evidence is retained in `.evidence/hosted-emulator-20261007/`. No source code
+was changed or pushed.
+
+Implemented and verified by gpt-6 through Codex (local Windows).
+
+## 2026-10-07: Android login failure triage opened
+
+A friend reports login failure on a newly downloaded APK. Read-only comparison
+found the origin/main Kotlin port opens the live Entra page and declares the
+matching `msauth.com.amr.fanapp://auth` callback. The Azure API currently uses
+issuer `https://9dcdff78-04a7-49fc-90bd-e9c7b76e4774/v2.0`, audience
+`f278be1f-21a5-455b-bb14-b2fc60373939`, and required scope `account.access`.
+The current portal session cannot inspect the separate CIAM app registration.
+Exact APK hash/version, Android version, and visible error after submitting
+credentials are required before selecting a fix.
+
+Implemented and verified by gpt-6 through Codex (local Windows).

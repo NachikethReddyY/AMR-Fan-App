@@ -1147,3 +1147,161 @@ startup cases pass after implementation. Arbitrary paths and final-target swaps
 still reject symlinks. Hosted mount/private-copy/runtime-path proof remains pending.
 
 Implemented and verified by gpt-6-astra through Codex (T3 Code).
+
+## RSS-NEWS-001: show official team RSS stories in the Expo app (unlinked)
+
+The user selected the Expo app as the current phone target and a fifth News tab
+as the provisional integration, while the team develops a separate Swift design.
+Read a separately hosted public RSS URL supplied through app configuration.
+Show official article title, summary, and date; refresh and open the original
+article; provide honest loading, empty, invalid-configuration, and failure states.
+Keep article links on the official Aston Martin F1 news host and do not mix news
+with admin-entered point offers or implement the other deferred features.
+
+The public Azure feed was later verified with HTTP 200, RSS content type and 20
+items. Use it as the default so the tab works without local configuration, while
+keeping an explicit public HTTPS override. Publication is currently manual and
+must not be described as a scheduled live refresh.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## RSS-CHARSET-001: browser displays accented feed text incorrectly (unlinked)
+
+The user showed the public Azure `/feed.xml` page with names and punctuation
+rendered as mojibake and asked for a fix. The checked-in and hosted XML bytes
+match and contain valid UTF-8, but the hosted response reports
+`application/rss+xml` without an explicit charset. Keep the feed bytes and RSS
+type unchanged; send `application/rss+xml; charset=utf-8` for `/feed.xml`, then
+verify the live header, XML parse, and browser rendering. Preserve the existing
+five-minute cache policy and Expo feed behavior.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+RSS-CHARSET-001 correction: Azure ignored a route-specific Content-Type but
+honored the `.xml` MIME mapping with `charset=utf-8`. The live response now
+reports the expected type and cache header, and its XML bytes/hash are unchanged.
+The private handoff repository contains commit `9c1687e`. Browser automation
+blocked raw RSS navigation; the user was asked to check refreshed Chrome text.
+
+Corrected and verified by gpt-6 through Codex (local Windows).
+
+## RSS-DELIVERY-001: hand off standalone RSS repository and Azure snapshot (unlinked)
+
+The user requested a separate private GitHub repository for the RSS folder so
+their teammate can later assemble the monorepo, and allowed Azure hosting for
+the feed. Deliver the generator, tests, sample XML and handoff instructions
+without local `.dev-team` notes or caches. The Azure Free Static Web App serves
+the verified feed at `https://green-sky-08b27ad10.4.azurestaticapps.net/feed.xml`.
+Its current publication is a manual snapshot; automatic generation and deploy
+remain open for the hosting handoff. The Azure deployment token appeared in a
+tool response during setup; the user was asked to reset it in Azure Portal.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## RSS-IMAGES-001: add official article images to feed and Expo News (unlinked)
+
+The user asked for images in the RSS feed and the Expo News experience, then
+requested that the result be hosted and deployed on the existing Azure Static
+Web App. The user selected direct links to official Aston Martin image URLs,
+without copying image files into Azure. Extract and validate image URLs from
+official article metadata, publish them as RSS media fields, and show them in
+News cards with graceful fallback when an image is absent or fails. Preserve
+feed bounds, official article links, text-only compatibility, and the current
+public feed URL. This request does not authorize unrelated shop, tree or PDF work.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## RSS-AUTO-001: refresh hosted official news every six hours (unlinked)
+
+The user asked whether the feed always updates when new news appears and selected
+a six-hour check. The currently deployed Azure Static Web App serves a static XML
+snapshot. Add a scheduled, manually triggerable private-repository workflow that
+runs the bounded generator, preserves the last good public feed on source failure,
+and deploys only a validated changed snapshot. Use a scoped deployment secret,
+minimal CI permissions and pinned actions. Confirm owner authority before rotating
+the deployment token or adding it to GitHub repository secrets.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## RSS-PUBLIC-001: publish the RSS source repository (unlinked)
+
+The user explicitly authorized making `ashura-oss/AMR-F1-RSS-Feed` public. Audit the tracked history and README before changing GitHub visibility. Keep the pending six-hour workflow and deployment-token work local until separately authorized.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## RSS-AUTO-002: activate six-hour RSS publication (unlinked)
+
+The user now authorizes automatic publication. The RSS source repository is public.
+Acceptance: a default-branch schedule runs at 00:17, 06:17, 12:17 and 18:17 UTC;
+an authorized manual run succeeds; a changed validated feed deploys to the
+existing Azure URL with article images; unchanged scheduled runs skip deployment;
+source or test failure does not replace the last good feed. Rotate the Azure
+deployment token previously exposed in a tool response, store only its replacement
+in a GitHub Actions repository secret, and verify the live result without
+disclosing the token. Preserve the unrelated Expo worktree changes.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+
+## OVERNIGHT-20260928
+Unlinked local task. User approved the v0.3 React Native/backend vertical slice and requested overnight implementation after Blender specialist completion. Root owns frozen decisions; GPT-6 Luna xhigh programs, Astra medium security/UX/quality/anti-slop specialists review executed evidence, one Astra low test engineer writes tests. User permits emulator/visual checks, optional researched Blender assets with mandatory rendered inspection. Keep existing teammate changes, no Azure resource creation/deployment and no provider activation without preconfigured secrets. Active goal includes bounded multi-photo evidence, deterministic rewards, missions, separate team/fan/community impact, React wiring, Android proof and local deployment package. Work underway; no feature-complete claim yet.
+
+## OVERNIGHT-20260929 final review corrections (unlinked)
+
+The evidence-based anti-slop review found three trust and copy defects in the
+moving worktree: signed-out Home described missions as an empty feed, signed-out
+Impact offered a refresh action with no profile context, and a generic mission
+unavailable response used demo-specific copy. The Gate 2 programmer corrected
+these states and added rendered web assertions. The legacy single-photo assessor
+also restored its original 2,000,000-byte boundary after the new multi-photo
+constant caused its existing invalid-input regression to fail. These corrections
+are limited to the approved slice and do not change the new multi-photo contract.
+
+Final review evidence: web 60/60, legacy assessor 9/9, activity 13/13, impact
+18/18, account 11/11, PostgreSQL 34/34 in the owned disposable database, and
+changed-source ESLint/Prettier clean. Android artifacts remain signed-out shell
+proof only; the stale `ui.xml` compile-error artifact is not current evidence.
+
+Corrected and verified by GPT-6 through Codex (local Windows).
+
+## AZURE-STAGING-002: approve main-branch image federation and promote latest API (unlinked)
+
+The user explicitly authorized adding the GitHub Actions `main` branch federated credential for the existing Azure app registration and completing the staging promotion. The credential was added with repository- and branch-scoped immutable claims. The `main` image workflow succeeded, the matching database migration completed, the runtime Key Vault secret was refreshed without query parameters, and the API was promoted to the immutable `main` image. Keep the migration job disposable and preserve activity-assessment and route-provider defaults until separately enabled.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## ANDROID-EMULATOR-001: hosted Android smoke and auth handoff (unlinked)
+
+The user authorized emulator testing against the hosted Azure API. The existing
+Expo shell passed signed-out navigation and hosted News image loading. The
+origin/main Kotlin port built and installed successfully on Android 16/API 36;
+its onboarding and driver selection reached the Entra auth gate, and the auth
+button generated the expected HTTPS authorization request. Full authenticated
+coverage stopped at Chrome's first-run Terms of Service screen; do not accept
+that agreement or enter credentials without the user taking over. Swift iOS
+simulator proof remains unavailable on Windows.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## ANDROID-EMULATOR-002: Entra handoff reached; authenticated session pending (unlinked)
+
+The user explicitly approved Chrome's first-run Terms of Service action on the
+Android emulator. The origin/main Kotlin port now opens the live Entra custom
+tab for AMR FAN APP CUSTOMERS and returns to its login gate when the tab closes.
+No account credentials were entered, so authenticated profile, journey, camera,
+points and rewards behavior remains unverified. iOS remains blocked because the
+host is Windows and has no macOS/Xcode simulator.
+
+Recorded by gpt-6 through Codex (local Windows).
+
+## ANDROID-AUTH-003: friend reports login failure on downloaded APK (unlinked)
+
+A friend reports that login does not work on a newly downloaded Android APK.
+The local origin/main Kotlin port reaches the live Entra sign-in page, uses
+`msauth.com.amr.fanapp://auth`, and returns to the login gate when the auth tab
+is closed. The hosted API issuer, audience and required scope match the Kotlin
+OIDC values. Exact device, APK SHA/version and post-credential error are still
+needed to distinguish redirect registration, token exchange, and API audience
+failure. Do not change Azure or ship a new APK until that evidence is captured.
+
+Recorded by gpt-6 through Codex (local Windows).

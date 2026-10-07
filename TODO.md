@@ -180,3 +180,56 @@ Publishing, deployment, shared tracker writes, commits, and pushes are outside t
 - [x] Confirm Expo structure and preserve existing starter dependencies.
 - [x] Replace the custom dock with standard bottom tabs and wire four destinations.
 - [x] Finish local checks and verify tab interaction on a device.
+
+## RSS News and standalone feed handoff — 2026-09-28
+
+- [x] Verify the official-source RSS generator, bounded output, and offline tests.
+- [x] Deliver the generator and snapshot in a separate private GitHub repository.
+- [x] Publish the current XML on Azure Static Web Apps and document manual updates.
+- [x] Add the provisional Expo News tab and verify live Android load and refresh.
+- [x] Correct the first review's date, response-size, and empty-refresh findings.
+- [x] Finish the fresh independent review of the final changes.
+- [x] Have the Azure deployment token reset after it appeared in a tool response.
+
+## RSS browser character display — 2026-09-28
+
+- [x] Reproduce the missing charset and confirm UTF-8 XML bytes are intact.
+- [x] Add a scoped `Content-Type` charset header to the Azure route config.
+- [x] Pass local RSS tests, JSON validation, and unchanged XML hash checks.
+- [x] Deploy and confirm the live header and XML parse; browser text awaits the user's refreshed view because browser automation blocked raw RSS navigation.
+- [x] Record evidence and update the private handoff repository.
+
+## RSS article images — 2026-09-28
+
+- [x] Extract and validate official article image URLs in the generator.
+- [x] Add RSS media fields and verify image coverage with live generation.
+- [x] Parse and display feed images in Expo News with missing-image fallback.
+- [x] Run focused tests and Android device proof for image cards.
+- [x] Push the private RSS repo and deploy the new XML to Azure.
+- [x] Run a fresh high-effort independent review and record final evidence.
+
+## RSS automatic refresh — 2026-09-28
+
+- [x] Draft a six-hour scheduler and manual trigger in the RSS repository.
+- [x] Validate source success/failure, exact static output, and workflow syntax locally.
+- [x] Rotate the previously exposed Azure deployment token and configure the GitHub Actions secret with owner authorization.
+- [x] Run and verify one GitHub Actions deployment plus live feed equality.
+- [x] Obtain fresh high-effort review of the final automatic updater.
+
+
+## Overnight sustainability vertical slice - 2026-09-28
+- [x] Specialist skills/research and v0.3 plan approved; Blender visual inspection rule recorded.
+- [x] Gate0 contract decisions and protected teammate snapshot saved to OS temp.
+- [x] Gate1 multi-photo evidence with real PostgreSQL and specialist proof.
+- [x] Gate2 deterministic receipt, mission progress, concurrency/rollback proof.
+- [x] Gate3 impact overview and React Native end-to-end wiring.
+- [x] Android emulator artifacts captured and final specialist reviews recorded; authenticated camera/accessibility behavior remains unverified.
+- [x] Reviewed Azure deployment files only; no deployment or Azure resource creation.
+
+Final evidence remains bounded: signed-out Android Expo Go screenshots prove shell rendering only; they do not prove authenticated missions, camera submission, rewards, or impact separation. Docker-backed secret/SAST scans are unavailable on this Windows host, and the full typecheck retains four unrelated journey/report baseline errors.
+
+## Hosted emulator validation — 2026-10-07
+- [x] Boot existing Android AVD and run guest Expo smoke against Azure configuration.
+- [x] Build and launch remote-main Kotlin port, inspect hosted auth path; auth stops at Chrome first-run Terms of Service.
+- [x] Record reproducible issues and verification limits in bug.md/work.md.
+- [ ] Swift simulator run requires macOS environment.
