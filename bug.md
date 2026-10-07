@@ -17,10 +17,17 @@ The CSP now lives in one exported constant shared by the build script and the
 root configuration, and the tooling test compares both files so the pair cannot
 drift again.
 
-Preceding checks confirmed the redirect URI `https://amr-admin.vercel.app/admin/`
-is already registered (the authorize endpoint returns the sign-in page, not
-`AADSTS50011`) and the CIAM token endpoint returns `Access-Control-Allow-Origin:
-*`. No `deploy/bb1/.env` change was required, because `ADMIN_ORIGIN` alone
+The CIAM token endpoint returns `Access-Control-Allow-Origin: *`, so the
+remaining blocker is the redirect URI registration. An earlier claim in this
+entry that `https://amr-admin.vercel.app/admin/` was already registered was
+wrong and is corrected here. The customer tenant serves sign-in through a
+client-rendered app, so a static fetch sees only the page shell; a malformed URI
+surfaces `AADSTS90102` in the markup, but an unregistered HTTPS URI is validated
+only after credentials are entered. A deliberately unregistered control domain
+returned an identical response, which showed the probe could not tell the two
+cases apart. A real sign-in returns `AADSTS50011` for client
+`616286cc-a22b-49a2-b5a3-27011fd615a1`, so the hosted redirect must be added to
+that app registration. No `deploy/bb1/.env` change was required, because `ADMIN_ORIGIN` alone
 resolves the redirect. The API was rebuilt on BB-1 and `GET /admin/config` now
 returns `mode: oidc`, with `/health` and `/ready` still `200`. The rendered
 button was not observed in a browser; no browser consent was given for this turn.

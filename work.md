@@ -31,6 +31,15 @@ Not verified: the rendered button in a browser. No browser or device consent was
 given for this turn, so the visible result is inferred from the `mode: oidc`
 response that gates it rather than observed.
 
+Correction: an earlier note in this entry said the hosted redirect was already
+registered with CIAM. That was wrong. Signing in returns `AADSTS50011` for client
+`616286cc-a22b-49a2-b5a3-27011fd615a1`. The probe behind the earlier claim was
+invalid because the tenant's sign-in page is client-rendered and its
+redirect-URI check runs after credential entry; an unregistered control domain
+produced the same response. `https://amr-admin.vercel.app/admin/` must be added
+to the app registration under the Single-page application platform, since the
+dashboard exchanges the code in the browser without a client secret.
+
 Edited by gpt-6-luna through pi (host unknown).
 
 ## 2026-10-07: Challenge submission is ledger-backed
