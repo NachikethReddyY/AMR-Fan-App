@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { adminApiBase, adminApiPaths, buildAdmin } from './build-admin.mjs';
+import {
+  adminApiBase,
+  adminApiPaths,
+  adminContentSecurityPolicy,
+  buildAdmin,
+} from './build-admin.mjs';
 
 test('deploy artifact contains only public admin assets and fixed API routes', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'amr-admin-build-'));
@@ -77,8 +82,20 @@ test('repository Vercel config routes the deployed dashboard to the API', async 
   );
   assert.equal(config.outputDirectory, 'dist/admin-vercel');
   assert.equal(config.redirects[0].destination, '/admin/');
-  assert.ok(config.rewrites.some((route) => route.source === '/admin/config'));
-  assert.ok(config.rewrites.some((route) => route.source === '/v1/session'));
+  // Vercel reads this file, not the generated copy, so a stale value here
+  // silently ships. Keep routing and the browser policy identical to the build.
+  assert.deepEqual(
+    config.rewrites,
+    adminApiPaths.map((path) => ({
+      source: path,
+      destination: adminApiBase + path,
+    })),
+  );
+  const policy = config.headers[0].headers.find(
+    (header) => header.key === 'Content-Security-Policy',
+  );
+  assert.equal(policy?.value, adminContentSecurityPolicy);
+  assert.match(policy.value, /ciamlogin\.com/);
 });
 
 test('build refuses output containing a secret or stale file', async () => {

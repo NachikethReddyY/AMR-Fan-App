@@ -1,3 +1,18 @@
+## 2026-10-07: Hosted admin CIAM sign-in was blocked by two stale deploy configs
+
+The dashboard shipped current assets but the BB-1 API ran source from 2026-10-04,
+so `/admin/config` reported `mode: unavailable` and the page hid the sign-in
+button. The repository-root `vercel.json` also kept the Supabase-only
+`connect-src`, which would have blocked the browser-side CIAM token exchange
+even after the API was fixed.
+
+The CSP is now one exported constant shared by `scripts/build-admin.mjs` and the
+root configuration, and `scripts/admin-web.test.mjs` asserts the root file's
+rewrites and policy match the build script. The guard was confirmed red against
+the old policy and green after the fix.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-07: Challenge submission is ledger-backed
 
 The challenge screen deducted 500 points and inserted the idea only into local

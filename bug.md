@@ -1,3 +1,30 @@
+## 2026-10-07: Hosted admin dashboard could not start CIAM sign-in (fixed)
+
+The live dashboard at `https://amr-admin.vercel.app/admin/` showed "Admin sign-in
+setup is pending. No local test sign-in is enabled." and never rendered a
+sign-in button. The dashboard assets were current; two deploy configurations
+were not.
+
+The `bb1-api-1` container was built from a source copy dated 2026-10-04, before
+the OIDC browser-config branch existed, so `/admin/config` returned
+`{"auth":{"mode":"unavailable"}}`. Separately, the repository-root `vercel.json`
+still carried the Supabase-only `connect-src`, while the browser performs the
+CIAM token exchange itself, so the corrected API alone would have failed at that
+fetch. Vercel's Root Directory is `.`, so the root file governs and the copy
+inside the build output is ignored.
+
+The CSP now lives in one exported constant shared by the build script and the
+root configuration, and the tooling test compares both files so the pair cannot
+drift again.
+
+Preceding checks confirmed the redirect URI `https://amr-admin.vercel.app/admin/`
+is already registered (the authorize endpoint returns the sign-in page, not
+`AADSTS50011`) and the CIAM token endpoint returns `Access-Control-Allow-Origin:
+*`. No `deploy/bb1/.env` change was required, because `ADMIN_ORIGIN` alone
+resolves the redirect.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-07: Challenge submission charged points without adding a challenge (fixed)
 
 The challenge screen deducted 500 points and inserted the idea only into its local

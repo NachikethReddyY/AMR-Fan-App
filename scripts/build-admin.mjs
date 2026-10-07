@@ -37,6 +37,14 @@ export const adminApiPaths = [
   '/v1/admin/report-candidates/:id/revisions',
   '/v1/admin/report-candidates/:id/decisions',
 ];
+/**
+ * Browser policy for the deployed dashboard. Sign-in exchanges the CIAM code
+ * from the page, so `connect-src` must allow the CIAM origins. Vercel reads the
+ * repository-root `vercel.json`, not this generated one; both carry this value
+ * and the tooling test fails if they drift.
+ */
+export const adminContentSecurityPolicy =
+  "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://folakoxsilrfemctvlxj.supabase.co https://9dcdff78-04a7-49fc-90bd-e9c7b76e4774.ciamlogin.com https://amrfancustomers.ciamlogin.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
 /** Publish only the explicit browser asset list. Refuse stale/foreign output. */
 export async function buildAdmin(destination) {
@@ -87,11 +95,7 @@ export async function buildAdmin(destination) {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
-          {
-            key: 'Content-Security-Policy',
-            value:
-              "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://folakoxsilrfemctvlxj.supabase.co https://9dcdff78-04a7-49fc-90bd-e9c7b76e4774.ciamlogin.com https://amrfancustomers.ciamlogin.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
-          },
+          { key: 'Content-Security-Policy', value: adminContentSecurityPolicy },
         ],
       },
     ],
