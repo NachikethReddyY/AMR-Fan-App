@@ -1,3 +1,155 @@
+## 2026-10-07: Admin dashboard cannot authenticate against CIAM (blocked)
+
+The live API is configured correctly for CIAM/OIDC and allows the deployed admin
+origin. `/admin/config` returns `auth.mode: unavailable` because the static
+admin dashboard only implements Supabase email/password sign-in, while the API
+intentionally rejects Supabase Auth and verifies CIAM access tokens. No API
+bypass or direct balance edit was added.
+
+A safe fix needs a registered CIAM web client with a web redirect URI and PKCE
+support in the dashboard, or an explicit product decision to restore a separate
+Supabase Auth admin identity path. The current native CIAM client uses the
+`msauth.com.amr.fanapp://auth` redirect, which cannot be used as a hosted web
+callback without provider registration.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Retry 5,000-point testrun grant (blocked)
+
+The account now exists in live BB-1 as the real profile `Nachiketh Reddy`, with
+current balance 132, and its principal role is `fan`. The requested 5,000-point
+adjustment was not applied because this operation still lacks an authorized
+admin session token. No balance or ledger row was changed.
+
+Next unblocker: sign in as an assigned admin through the approved admin flow,
+then submit the adjustment for the resolved profile.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Grant 5,000 points to testrun account (blocked)
+
+Requested a 5,000-point ledger-backed grant for `ynrdevs+testrun@gmail.com`.
+The live BB-1 database has no profile matching that email. No balance or ledger
+row was changed.
+
+Blocked until the account signs in through CIAM and its created profile ID can be
+resolved, or the user supplies an already-created profile identity through the
+approved admin adjustment flow.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Grant 5,000 points to ieslrun account (blocked)
+
+Requested a 5,000-point ledger-backed grant for `ynrdevs+ieslrun@gmail.com`.
+The live BB-1 database has no profile matching that email, and the current
+identity model stores CIAM issuer/subject rather than a usable email lookup.
+No balance or ledger row was changed.
+
+Blocked until the account signs in through CIAM and its created profile ID can be
+resolved, or the user supplies an already-created profile identity through the
+approved admin adjustment flow.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Hide Impact travel distance (unlinked)
+
+The user asked to hide the travel-distance statistic. Removed the distance tile
+from the personal Impact stat grid while retaining backend route distance
+persistence and all other Impact values.
+
+Proof: iOS Simulator Debug build succeeded. Installed app accessibility snapshot
+on iPhone 18 Pro Simulator shows verified activities and Green Points, with no
+travel-distance label or unavailable tile.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Impact car left the supplied circuit (unlinked)
+
+The supplied screenshot showed the animated car drifting away from the Singapore
+circuit because the overlay used a hand-sampled polyline that did not match the
+SVG centerline. Replaced that approximation with a Canvas overlay driven by the
+SVG's exact cubic centerline. The map remains the supplied asset, while the
+Canvas draws the muted track, teal progress, and shared geometry for the car
+position.
+
+Proof: iOS Simulator Debug build succeeded. The updated app was installed on
+the iPhone 18 Pro Simulator, opened to Impact, and the direct screenshot showed
+the teal car centered on the SVG track.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Live BB-1 rejected OIDC tokens (unlinked)
+
+The live BB-1 `.env` selected `AUTH_PROVIDER=supabase`, so an Entra External ID
+access token sent to `POST /v1/session` was verified as a Supabase token and
+returned 401. Switched BB-1 to `AUTH_PROVIDER=oidc` with the documented Entra
+values and removed the Supabase key, then recreated `bb1-api-1`. The Swift
+client default base URL now targets BB-1 (`http://100.117.231.37:18080/`).
+BB-1 `/v1/session` now reaches the OIDC verifier. Live sign-in through BB-1
+is verified only after a real Entra token is exercised; if the audience or
+`scp` value differs, update `AUTH_AUDIENCE` / `AUTH_REQUIRED_SCOPE` on BB-1.
+
+Fixed by opencode/big-pickle through opencode (T3 Code).
+
+## 2026-10-07: Remove automatic demo-mode fallback (unlinked)
+
+The native sign-in path caught any provider or backend error and replaced it with
+an invented local `Demo Fan` profile, hiding the real failure. Removed the
+automatic fallback, demo banner, synthetic profile, and local profile mutation
+branch. Failed authentication now stays at the account gate and preserves the
+actual error message. Device check after reinstall shows the sign-in gate with no
+demo profile. The underlying prior failure was a backend identity-verification
+401, not a valid account sign-in.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Navigation completion used stale CO₂ and points (unlinked)
+
+The iPhone recording showed the navigation result using the backend's original
+recommendation instead of the selected route's computed saving. The result also
+used 10 points/kg while the accepted journey rule is 50 points/kg. Navigation
+completion now receives the selected route's computed CO₂ saving and uses the
+shared 50-point conversion with the 2,000 cap. A simulator build passed.
+
+Device verification was attempted on the iPhone 18 Pro simulator after install,
+but the app opened at the sign-in gate and no route could be reproduced without
+account access. The result screen remains device-unverified for this fix.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: iPhone review: Impact color and transport estimates (unlinked)
+
+Review of the supplied iPhone recordings found two concrete mismatches: the
+Singapore SVG rendered red in the dark Impact card, and selecting a transit route
+updated only the map route state, not the summary's selected-option state. The
+route cards also omitted provisional points. The supplied SVG now renders through
+the app's teal template tint. Transit and other route taps synchronize both
+selection states and show provisional points calculated from the available car
+baseline at 50 points per avoided kilogram, capped at 2,000. Simulator rendering
+and live backend values remain unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Use the supplied Singapore circuit SVG (unlinked)
+
+Replaced the hand-drawn circuit geometry in the native Impact animation with the
+user-supplied `/Users/nr/Downloads/Singapore_street_circuit.svg`, copied into the
+app asset catalog as `SingaporeStreetCircuit`. The animation still uses the same
+slow-fast-slow timing and Replay/reduced-motion behavior. Native rendering remains
+unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Full Impact views implemented natively (unlinked)
+
+Expanded the native Impact screen to include the approved You, Fans, and AMF1
+views. Added tabs, personal contribution comparison, fan progress and travel
+breakdowns, team footprint and target charts, report metrics, carbon decoder,
+and the existing slow-fast-slow lap animation. Simulator rendering remains
+unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-07: Impact lap animation uses slow-fast-slow easing (unlinked)
 
 Implemented the approved lap animation in the native SwiftUI Impact screen with a
@@ -2550,3 +2702,29 @@ No credit was at risk at any point. The phone app only calculates and displays t
 reward; awarding a journey still requires validated start and arrival evidence.
 
 Recorded by deepseek-v4.1-flash through pi (T3 Code).
+
+## 2026-10-07: BB-1 activity provider returned masked provider failure (fixed)
+
+BB-1 had `ACTIVITY_ASSESSMENT_PROVIDER=tokenrouter` and
+`ACTIVITY_ASSESSMENT_ENABLED=true`, but the TokenRouter adapter rejected the
+activity request locally as `invalid-input`: the activity instruction exceeded
+the adapter's 2,000-character limit. Shortened the instruction from 2,227 to
+1,771 characters, rebuilt and restarted the BB-1 API, and verified readiness and
+provider environment. An authenticated live photo submission remains pending.
+Tracking: unlinked.
+
+Recorded by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-07: route completion showed points without crediting balance (fixed)
+
+The iOS travel celebration calculated 11 points locally but explicitly skipped
+all ledger writes, so the account stayed at 200. Added an authenticated,
+idempotent BB-1 route-reward operation and wired native travel completion to call
+it before showing the celebration. The server converts the submitted CO2-saving
+estimate to whole points with the 2,000-point cap, locks the owned profile, and
+replays the same request key without a second credit. BB-1 was rebuilt and
+restarted; readiness passes. Physical GPS evidence is intentionally not used by
+this provisional route reward.
+Tracking: unlinked.
+
+Recorded by gpt-6-luna through pi (T3 Code).

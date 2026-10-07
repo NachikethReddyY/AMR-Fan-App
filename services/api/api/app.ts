@@ -29,6 +29,8 @@ import {
   readPointsHistory,
   listAdminProfiles,
 } from '../points/index.ts';
+import { awardRouteReward } from '../points/route-reward.ts';
+import { readRouteSummary } from '../points/route-summary.ts';
 import { adminOrigin, serveAdmin } from '../points/admin.ts';
 import { createRouteQuery } from '../routes/query.ts';
 import { createPlaceSearch } from '../routes/places.ts';
@@ -225,6 +227,7 @@ export function createApi({
       "default-src 'none'; frame-ancestors 'none'",
     );
     res.setHeader('Referrer-Policy', 'no-referrer');
+    const requestPath = new URL(req.url ?? '/', 'http://api.invalid').pathname;
     try {
       const path = new URL(req.url ?? '/', 'http://api.invalid').pathname;
       if (req.method === 'GET' && path === '/auth/admin.js') {
@@ -355,6 +358,19 @@ export function createApi({
         return send(res, catalogue.status, catalogue.value);
       }
       const token = sessionToken(req);
+      const routeReward = /^\/v1\/profiles\/([^/]+)\/route-rewards$/.exec(path);
+      if (routeReward && req.method === 'POST')
+        return send(
+          res,
+          200,
+          await awardRouteReward(pool, token, {
+            ...(await body(req)),
+            profileId: routeReward[1],
+          }),
+        );
+      const routeSummary = /^\/v1\/profiles\/([^/]+)\/route-summary$/.exec(path);
+      if (routeSummary && req.method === 'GET')
+        return send(res, 200, await readRouteSummary(pool, token, routeSummary[1]));
       const photoResponse = await photoActivity(req, path);
       if (photoResponse)
         return send(res, photoResponse.status, photoResponse.body);
@@ -691,6 +707,15 @@ export function createApi({
       }
       throw new ApiError(404, 'Not found.');
     } catch (error) {
+      console.error(
+        JSON.stringify({
+          event: 'api_request_failed',
+          method: req.method,
+          path: requestPath,
+          status: error instanceof ApiError ? error.status : 500,
+          error: error instanceof Error ? error.message : 'unknown_error',
+        }),
+      );
       if (!res.headersSent)
         send(res, error instanceof ApiError ? error.status : 500, {
           error:
@@ -701,8 +726,11 @@ export function createApi({
       else res.end();
     }
   });
-  server.requestTimeout = 10000;
-  server.headersTimeout = 10000;
+  // Photo evidence and provider responses can exceed Node's default demo
+  // window. The activity service still enforces its own bounded operation
+  // timeout and returns a typed unavailable result when it expires.
+  server.requestTimeout = 60000;
+  server.headersTimeout = 60000;
   server.keepAliveTimeout = 5000;
   return server;
 }

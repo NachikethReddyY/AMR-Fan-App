@@ -1,3 +1,113 @@
+## 2026-10-07: Hide Impact travel distance
+
+Removed the travel-distance tile from the personal Impact stat grid at the user's
+request. Kept route distance persistence and the rest of the Impact screen
+unchanged.
+
+Proof: iOS Simulator Debug build succeeded. The installed app accessibility
+snapshot on iPhone 18 Pro Simulator shows verified activities and Green Points,
+with no travel-distance label or unavailable tile.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Align Impact car with the SVG track
+
+The supplied Impact screenshot showed the car off the track. The previous
+hand-sampled polyline was only an approximation of the SVG and could diverge at
+corners. Replaced it with a Canvas overlay using the SVG's exact cubic centerline
+and calculate the car position from that same geometry. The supplied map remains
+visible underneath; no second offset map is used.
+
+Proof: iOS Simulator Debug build succeeded and `git diff --check` passed. The
+updated app was installed on the iPhone 18 Pro Simulator, opened to Impact, and
+the direct screenshot showed the teal car centered on the SVG track.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Highlight Impact lap count
+
+Separated the calculated Marina Bay lap count from its explanatory caption. The
+lap number now uses a larger rounded teal value, followed by the lap label and a
+smaller savings note. The calculation and animation remain unchanged.
+
+Proof: iOS Simulator Debug build succeeded and the updated Impact screen was
+installed and inspected on the iPhone 18 Pro Simulator. The rendered card shows
+`0.1 Marina Bay laps` as the primary value for the current 1.64 kg estimate.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: BB-1 signs against Entra External ID (local)
+
+Pointed BB-1 at Entra External ID auth and the Swift app at BB-1.
+bb1 `.env` now uses `AUTH_PROVIDER=oidc` with the documented
+`AUTH_ISSUER`, `AUTH_AUDIENCE`, `AUTH_JWKS_URL`, `AUTH_REQUIRED_SCOPE`;
+removed the Supabase key and recreated `bb1-api-1`. Swift default API
+base URL is now `http://100.117.231.37:18080/`. `xcodebuild` simulator
+build succeeded. A fresh Entra sign-in through BB-1 remains unverified
+until a live token exchange is run; check the actual token `aud`/`scp`
+if BB-1 still rejects it.
+
+Edited by opencode/big-pickle through opencode (T3 Code).
+
+## 2026-10-07: Removed automatic demo authentication fallback (local)
+
+`BackendSession.signIn()` previously called `enterDemoMode()` whenever OIDC or
+`POST /v1/session` failed, cleared the error, and fabricated `Demo Fan` with a
+local balance. Removed that path and all demo-mode UI/profile branches from the
+Swift app. Authentication failure now leaves the user signed out and shows the
+actual error. iOS Simulator Debug build succeeded; reinstall/device check shows
+the sign-in gate without demo data. The earlier backend failure was a 401 identity
+verification mismatch, so real provider/backend configuration still must be fixed.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Navigation result uses selected CO₂ and points (local)
+
+Fixed the completion overlay to use `avoidedKilograms` for the selected route
+instead of the original route recommendation. Updated the shared journey points
+conversion from 10 to the accepted 50 points per kg, retaining the 2,000 cap.
+Simulator Debug build succeeded and the updated app installed on iPhone 18 Pro.
+Device flow could not be reproduced because the installed app opened at the sign-in
+gate and no account access was available, so the result remains unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: iPhone review and transport estimate fix (local)
+
+Reviewed the two supplied iPhone recordings. Impact now tints the supplied SVG
+teal instead of showing its original red stroke. Travel route selection now sets
+both backend and legacy selected-route IDs, including the initial plan choice, so
+the selected transport's CO₂ flows into the summary. Route cards show provisional
+points when a car baseline and compatible estimate exist, using 50 points per
+avoided kg and the 2,000 cap. iOS Simulator Debug build succeeded. Live rendered
+and backend proof remain unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Supplied Singapore circuit asset (local)
+
+Copied `/Users/nr/Downloads/Singapore_street_circuit.svg` into
+`Swift-App/Swift-App/Assets.xcassets/SingaporeStreetCircuit.imageset` and changed
+`ImpactLapView` to display that asset instead of the generated circuit path. The
+moving car remains an animation overlay; report and three-view behavior are
+unchanged. Proof: iOS Simulator Debug build succeeded. Rendered asset appearance
+remains unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Full native Impact views (local)
+
+Replaced the partial Impact addition with the full three-view experience:
+You, Fans, and AMF1. Added native tabs, personal and community comparisons,
+monthly and weekly charts, team target and footprint sections, official report
+metrics, decoder disclosures, and preserved the 11.3-second ease-in-out lap
+animation with reduced-motion completion. Initial chart tuple data failed the
+Swift Charts Identifiable requirement; typed chart point models fixed it.
+Proof: iOS Simulator Debug build succeeded. Native rendered interaction remains
+unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-07: Native Impact lap animation uses slow-fast-slow easing (local)
 
 The native Impact screen now includes a replayable circuit trace based on estimated
@@ -4633,3 +4743,128 @@ Station to Bugis Station showed the burst, the car run and a summary of 27 pts,
 account, so in-app row rendering remains unverified.
 
 Edited by deepseek-v4.1-flash through pi (T3 Code).
+
+## 2026-10-07: Supabase database and BB-1 API target (local)
+
+Reconfigured the BB-1 deployment package to use Supabase PostgreSQL for
+application data while retaining CIAM / Entra External ID for authentication.
+Removed the BB-1-local PostgreSQL service, switched the runtime image to a
+provider-neutral Dockerfile, and documented optional server-only Supabase
+Storage for approved retained report originals. Activity photos remain
+transient and activity assessment is disabled in the BB-1 example. Azure is
+now documented as historical rather than the active runtime target.
+
+Proof: PostgreSQL/OIDC configuration tests passed, deployment Compose config
+renders, and affected Markdown formatting passed. Live Supabase migration,
+BB-1 deployment, backups and authenticated cloud transaction proof remain
+unverified because no cloud credentials or migration window were supplied.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: BB-1 activity provider activation fix
+
+BB-1 already had the TokenRouter activity provider enabled with its private AI
+configuration. Photo analysis still returned the masked provider error because
+the live activity instruction was 2,227 characters while the TokenRouter adapter
+accepts instructions up to 2,000 characters. Shortened the instruction to 1,771
+characters, ran the focused activity tests and API typecheck, rebuilt and
+restarted BB-1, and verified `/ready` plus the enabled provider environment.
+The unauthenticated activity endpoint correctly returns 401; an authenticated
+photo submission is still needed to prove a live provider response.
+
+Edited and deployed by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-07: provisional route points credit
+
+The native travel celebration previously displayed locally calculated points but
+never wrote them to the account ledger. Added `POST
+/v1/profiles/:profileId/route-rewards` with authenticated owner checks, request
+replay protection and the existing points operation transaction. Native
+completion now calls the endpoint once per route completion, refreshes the
+account, and shows the server-returned points. The provisional path accepts the
+selected CO2-saving estimate because GPS evidence is unavailable; it does not
+award directly from the UI and uses the existing 50-points-per-kilogram and
+2,000-point cap.
+
+Proof: route point conversion test passes, API typecheck passes, signed iOS
+simulator build succeeds, the app was installed/launched on iPhone 18 Pro
+Simulator, BB-1 was rebuilt/restarted, and `/ready` passes. The authenticated
+200 to 211 device transition remains unverified in this turn.
+
+Edited and deployed by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-07: Supabase cutover completed on BB-1
+
+Applied migrations 0013 through 0020 to the linked Supabase project
+`folakoxsilrfemctvlxj`, preserving its existing 6 principals and 12 profiles.
+Created a custom Supabase runtime role password, configured BB-1 to use the
+Supabase session pooler with the Supabase root CA, rebuilt the API image, and
+restarted BB-1. The previous BB-1 PostgreSQL container was stopped after the
+new API reported database readiness. Its application data was retained as a
+local custom-format backup and was not merged because the Supabase project
+already contained application records.
+
+Proof: Supabase migration history ends at `0020_profile_details.sql`; BB-1
+`/health` and `/ready` returned 200, `/ready` reported database `ok`, and
+production `/v1/dev/session` returned 404. Authenticated user and admin flows
+remain unverified because no live CIAM account exchange was performed.
+
+External action: BB-1 runtime deployment and Supabase role password rotation
+completed. No repository commit or push was performed.
+
+## 2026-10-07: Impact participation figures use stored backend values
+
+Changed the native Impact screen's personal stats to read the authenticated
+Impact overview participation response. Verified activities now use the stored
+credited activity count, and Green Points now use stored credited activity
+points. Travel distance remains unavailable because the current backend does
+not provide a distance aggregate for photo activity.
+
+Proof: iOS Simulator Debug build succeeded. Live authenticated rendering remains
+unverified in this turn.
+
+## 2026-10-07: Impact zero state and circuit animation corrected
+
+Fixed the Impact request URL so its `profileId` query reaches BB-1 as a query
+instead of becoming part of the path. Empty authenticated participation now
+renders zero values. Replaced the static circuit asset fade with an animated
+SwiftUI path stroke, so Replay visibly draws the line. The personal comparison
+now derives laps from the stored travel savings and shows zero when unavailable.
+
+Proof: iOS Simulator Debug build succeeded. Live authenticated rendering remains
+unverified in this turn.
+
+## 2026-10-07: Impact travel demo uses stored route rewards
+
+Updated the Impact screen to load account history with the overview. Green Points
+now use the real profile balance, and stored route-completion ledger points
+provide a retained travel-saving fallback when the older route record lacks a
+saved-kg value. The supplied Singapore SVG is layered under a progressive
+SwiftUI route stroke, and the stroke amount is capped to the account's current
+lap fraction instead of drawing a full hardcoded lap.
+
+For the current account, Supabase shows a 132-point balance and 82 route points,
+which yields a display fallback of 1.64 kg at the existing 50-points-per-kg
+conversion. Exact distance remains unavailable because the existing route
+record did not persist distance metadata.
+
+Proof: iOS Simulator Debug build succeeded. The BB-1 API was rebuilt and
+`/ready` returned 200. The updated app was installed and launched on the iPhone
+18 Pro Simulator; authenticated Impact navigation was not replayed in this turn.
+
+## 2026-10-07: Impact map alignment and route distance persistence
+
+Removed the independently scaled overlay map behavior. The supplied Singapore
+SVG now occupies one aspect-fit rectangle, and the animated route stroke and
+car use that same rectangle. Added route distance and saved kilograms to new
+route-reward outcomes, exposed a protected route-summary endpoint, and passed
+the selected calculated route distance from Travel into the reward operation.
+Impact now displays the persisted route distance when available and uses the
+persisted saved kilograms before its legacy points fallback.
+
+Proof: API typecheck and route-reward test passed. iOS Simulator Debug build
+succeeded. BB-1 was rebuilt and `/ready` returned 200. The existing historical
+route has no stored distance, so it remains unavailable until a new route is
+completed.
+
+Edited by gpt-6-luna through pi (host unknown).

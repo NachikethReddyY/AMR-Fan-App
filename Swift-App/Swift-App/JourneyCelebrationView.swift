@@ -4,7 +4,7 @@ import SwiftUI
 /// displays these values. It writes nothing to the journey or points ledger,
 /// because awarding a journey needs validated start and arrival evidence.
 enum JourneyCelebrationRewards {
-    static let pointsPerKilogram = 10
+    static let pointsPerKilogram = 50
     static let maximumPoints = 2000
     /// Accepted comparison for this demo: one lap of the Marina Bay Street
     /// Circuit is treated as 7 kg CO₂e for a Formula One car. This is a display

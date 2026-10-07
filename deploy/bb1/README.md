@@ -1,14 +1,15 @@
-# BB-1 API and AI pipeline host
+# BB-1 API host with Supabase PostgreSQL
 
-This bundle runs the existing API and AI adapter boundary on BB-1 as an MVP
-staging host. It keeps
-Postgres private to BB-1's loopback interface and binds the API to the BB-1
-LAN address on port `18080`. The native phone APK can reach this address without
-joining Tailscale.
+This bundle runs the API on BB-1 and uses Supabase PostgreSQL for application
+persistence. BB-1 binds the API to its LAN address on port `18080`; the native
+phone APK can reach it without joining Tailscale. The API is the only component
+that reads or writes users, points, journeys and impact data.
 
-Authenticated native-app requests use the Entra External ID issuer, audience,
-JWKS URL and scope in `.env.example`. These are public identity metadata; no
-provider credentials are copied into the checkout.
+CIAM / Entra External ID remains the identity provider. Supabase Auth is not
+used. The API validates CIAM access tokens with the issuer, audience, JWKS URL
+and scope in `.env.example`, then maps the CIAM subject to `app.principals`.
+These are public identity metadata; no provider credentials are copied into the
+checkout.
 
 AI inference is disabled by default. The API does not accept photo activity
 submissions until a reviewed provider is configured, and the LUNA/LAYA URLs
@@ -19,17 +20,11 @@ On BB-1, from this directory:
 
 ```sh
 install -d -m 700 /home/bb-1/.auth
-install -d -m 700 secrets
-umask 077
-openssl rand -hex 32 > secrets/postgres_password
-db_password=$(cat secrets/postgres_password)
-sed -e "s#REPLACE_WITH_THE_SAME_VALUE_AS_THE_DB_SECRET#$db_password#" \
-    -e "s#REPLACE_WITH_BB1_LAN_ADDRESS#${BB1_LAN_ADDRESS:?set BB1_LAN_ADDRESS}#" \
-    .env.example > .env
-chmod 600 .env
-docker compose build api migrate
-docker compose up -d db
-docker compose run --rm migrate
+# Create .env privately from .env.example with the Supabase session-pooler
+# DATABASE_URL and BB-1 LAN address. Keep it mode 600.
+# Copy Supabase's root CA to /home/bb-1/.auth/supabase-root-ca.pem.
+chmod 600 .env /home/bb-1/.auth/supabase-root-ca.pem
+docker compose build api
 docker compose up -d api
 curl --fail "http://${BB1_LAN_ADDRESS:?set BB1_LAN_ADDRESS}:18080/health"
 curl --fail "http://${BB1_LAN_ADDRESS:?set BB1_LAN_ADDRESS}:18080/ready"
@@ -66,10 +61,10 @@ in a plain file, use a mode-600
 `/home/bb-1/.auth/amr-onemap-access-token.txt` and set the token-file variables
 described in `docs/operations/routes.md`.
 
-The BB-1 example enables the explicit `synthetic` activity provider for the
-MVP. It returns a bounded review candidate from transient image bytes so the
-capture-to-points flow can be tested; it is not a live vision model. Replace
-`ACTIVITY_ASSESSMENT_PROVIDER` with a reviewed provider before production.
+The BB-1 example uses the reviewed TokenRouter activity provider through the
+server-only `/home/bb-1/.auth/amr-ai.env` configuration. Raw activity photos
+remain transient and are never placed in Supabase Storage. The provider key is
+never copied into this checkout or sent to the phone app.
 
 The optional `amr-ai.env` file may contain server-only `LUNA_API_KEY` and
 `TOKENROUTER_API_KEY` values. The TokenRouter adapter also accepts the supplied
@@ -78,5 +73,12 @@ Keep `ACTIVITY_ASSESSMENT_ENABLED=false` until a reviewed activity provider is
 installed; the current code keeps Luna/JEV inference disabled when that provider
 boundary is absent.
 
-The migration step is intentionally explicit. It applies the repository's
-ordered schema once and does not seed accounts, points, or real activity data.
+The migration step is intentionally explicit and runs from a controlled
+operator environment with the Supabase migration owner. Apply the repository's
+ordered schema only during an authorized window after a backup or restore point
+is confirmed. BB-1's runtime role is not allowed to alter the schema.
+
+Supabase Storage is optional. If enabled, configure the server-only
+`SUPABASE_STORAGE_KEY` and keep the private `amr-report-originals` bucket. It is
+for approved retained report originals only. Activity photos remain transient
+and are not stored.

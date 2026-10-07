@@ -3,8 +3,8 @@
 The infrastructure owner runs one PostgreSQL 17.11 Docker Compose service for
 this host. Each worktree gets its own development/test databases and login.
 The Expo phone app still calls a backend API; it never receives database access.
-This setup supports implementation before Azure provisioning. It does not create
-accounts, points, authentication, an API, or an admin app.
+This setup supports implementation before Supabase provisioning. It does not
+create accounts, points, authentication, an API, or an admin app.
 
 ## Prerequisites and ownership
 
@@ -132,26 +132,24 @@ The CI `local-postgres` job uses the same pinned service and proof on its own
 isolated runner. It has no production secrets. Other repository security gates
 remain enabled. An unavailable database or scanner is unverified, not a pass.
 
-## Azure staging setup
+## Supabase and BB-1 staging setup
 
-The reviewed Azure staging package is in [`deploy/azure`](../../deploy/azure/README.md).
-This local choice does not provision cloud resources. Before a cloud rollout:
+The active package is in [`deploy/bb1`](../../deploy/bb1/README.md). Before a
+cloud rollout:
 
-1. Create the approved resource group and deploy the first Bicep pass with the
-   API disabled. The template provisions private PostgreSQL, network/DNS, Key
-   Vault and the Consumption environment.
-2. Create separate migration-owner and runtime database credentials. Run the
-   controlled Azure migration operation; never copy local superuser access.
-3. Store only the runtime TLS URL in Key Vault, then deploy the immutable API
-   image and prove connection, transaction, backup/restore and rollback there.
-4. The account/API owner selects verified authentication and production roles.
-   Any local identity adapter must be production-disabled and still authorize
-   every server operation. This infrastructure contains no test auth bypass.
-5. The API/admin owners set `API_HOST`, leased `API_PORT`, `ADMIN_ORIGIN`, and the
-   phone's public `EXPO_PUBLIC_API_URL`. AI owners configure server-only
-   `LUNA_BASE_URL`, `LUNA_API_KEY`, and `LAYA_BASE_URL` after verifying providers.
+1. Select the Supabase project and confirm backups, restore testing and the
+   migration owner. Use the session-pooler `DATABASE_URL` with TLS.
+2. Run the ordered migrations against Supabase during an authorized window.
+   Never copy local superuser access or seed accounts and points.
+3. Put the Supabase database URL and any server-only Storage key in BB-1's
+   private environment, then start the immutable API image on BB-1.
+4. Keep `AUTH_PROVIDER=oidc` with the CIAM issuer, audience, JWKS URL and scope.
+   Synthetic authentication remains development-only.
+5. Set `API_HOST`, `API_PORT`, `ADMIN_ORIGIN`, and the phone's public
+   `EXPO_PUBLIC_API_URL`. Keep Supabase Storage disabled unless the private
+   bucket and retained-file purpose have been approved.
 
-Live Azure credentials, identity provider, API deployment, provider inference
-and cloud transaction proof remain pending until these actions occur.
+Live Supabase credentials, CIAM account exchange, BB-1 deployment, provider
+inference and cloud transaction proof remain pending until these actions occur.
 
 Written by gpt-6-astra through Codex (T3 Code).

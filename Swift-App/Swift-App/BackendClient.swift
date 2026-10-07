@@ -270,6 +270,20 @@ struct BackendActivityReward: Decodable {
     let reason: String?
 }
 
+struct BackendRouteRewardResponse: Decodable {
+    let points: Int
+    let balanceAfter: Int
+    let routeId: String
+    let distanceMeters: Double?
+    let receiptId: String
+}
+
+struct BackendRouteSummary: Decodable {
+    let distanceMeters: Double
+    let savedKg: Double
+    let routeCount: Int
+}
+
 struct BackendActivityResponse: Decodable {
     let kind: BackendActivityKind
     let assessmentId: String?
@@ -303,15 +317,13 @@ final class BackendSession: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var history: BackendHistoryPage?
     @Published private(set) var impact: BackendImpactOverview?
-    @Published private(set) var isDemoMode = false
-
+    @Published private(set) var routeSummary: BackendRouteSummary?
     private let client = BackendClient()
     private let sessionStore: SessionTokenStore
     private(set) var token: String?
-    private var demoProfile: BackendProfile?
 
-    var isConnected: Bool { (token != nil && account != nil) || isDemoMode }
-    var realProfile: BackendProfile? { isDemoMode ? demoProfile : account?.realProfile }
+    var isConnected: Bool { token != nil && account != nil }
+    var realProfile: BackendProfile? { account?.realProfile }
 
     init(sessionStore: SessionTokenStore? = nil) {
         let sessionStore = sessionStore ?? KeychainSessionStore()
@@ -324,17 +336,6 @@ final class BackendSession: ObservableObject {
         await run { self.account = try await self.client.account(token: token) }
     }
 
-    #if DEBUG
-    func signInForLocalDemo() async {
-        await run {
-            let session = try await self.client.syntheticSignIn(fixture: "fan-a")
-            self.token = session.token
-            self.account = session.account
-            try self.sessionStore.write(session.token)
-        }
-    }
-    #endif
-
     func signIn() async {
         await run {
             let providerToken = try await self.client.authorize()
@@ -343,37 +344,9 @@ final class BackendSession: ObservableObject {
             self.token = session.token
             self.account = session.account
         }
-        if errorMessage != nil {
-            await enterDemoMode()
-        }
-    }
-
-    private func enterDemoMode() async {
-        isDemoMode = true
-        isBusy = false
-        errorMessage = nil
-        demoProfile = BackendProfile(
-            id: "demo-profile",
-            kind: "real",
-            displayName: "Demo Fan",
-            balance: 1000,
-            email: "demo@amr.fan",
-            birthday: "2000-01-01"
-        )
-        account = BackendAccount(
-            id: "demo-account",
-            role: "fan",
-            profiles: [demoProfile!]
-        )
     }
 
     func signOut() async {
-        if isDemoMode {
-            isDemoMode = false
-            demoProfile = nil
-            account = nil
-            return
-        }
         guard let token else { return }
         await run {
             try await self.client.logout(token: token)
@@ -381,29 +354,12 @@ final class BackendSession: ObservableObject {
             self.account = nil
             self.history = nil
             self.impact = nil
+            self.routeSummary = nil
             try self.sessionStore.delete()
         }
     }
 
     func updateProfile(displayName: String?, email: String?, birthday: String?) async {
-        if isDemoMode {
-            if let profile = demoProfile {
-                demoProfile = BackendProfile(
-                    id: profile.id,
-                    kind: profile.kind,
-                    displayName: displayName ?? profile.displayName,
-                    balance: profile.balance,
-                    email: email ?? profile.email,
-                    birthday: birthday ?? profile.birthday
-                )
-                account = BackendAccount(
-                    id: account?.id ?? "demo-account",
-                    role: account?.role ?? "fan",
-                    profiles: [demoProfile!]
-                )
-            }
-            return
-        }
         guard let token, let profile = realProfile else { errorMessage = BackendError.notSignedIn.errorDescription; return }
         await run {
             _ = try await self.client.updateProfile(token: token, profileId: profile.id, displayName: displayName, email: email, birthday: birthday)
@@ -424,8 +380,12 @@ final class BackendSession: ObservableObject {
 
     func loadImpact() async {
         guard let token, let profile = realProfile else { return }
-        do { impact = try await client.impact(token: token, profileId: profile.id) }
-        catch { errorMessage = error.localizedDescription }
+        do {
+            async let overview = client.impact(token: token, profileId: profile.id)
+            async let routes = client.routeSummary(token: token, profileId: profile.id)
+            impact = try await overview
+            routeSummary = try await routes
+        } catch { errorMessage = error.localizedDescription }
     }
 
     func transportPlan(origin: String, destination: String) async throws -> BackendTransportPlan {
@@ -436,11 +396,25 @@ final class BackendSession: ObservableObject {
         return try await client.transportPlan(token: token, origin: origin, destination: destination)
     }
 
+    func awardRouteReward(savedKg: Double, distanceMeters: Double?, routeId: String, requestId: UUID) async throws -> BackendRouteRewardResponse {
+        guard let token, let profile = realProfile else { throw BackendError.notSignedIn }
+        let result = try await client.awardRouteReward(
+            token: token,
+            profileId: profile.id,
+            requestId: requestId,
+            routeId: routeId,
+            savedKg: savedKg,
+            distanceMeters: distanceMeters
+        )
+        account = try await client.account(token: token)
+        return result
+    }
+
     func verify(image: UIImage, capture: PhotoCapture) async throws -> BackendActivityResponse {
         guard let token, let profile = realProfile else { throw BackendError.notSignedIn }
-        guard try await client.activityAvailable(token: token, profileId: profile.id) else {
-            throw BackendError.verificationUnavailable
-        }
+        // Do not gate submission on the availability probe. The probe can be
+        // stale while the POST endpoint is healthy, and it prevents the
+        // server from returning the real submission result.
         let result = try await client.uploadActivity(
             token: token,
             profileId: profile.id,
@@ -515,10 +489,12 @@ private final class BackendClient {
         oidc: OIDCConfiguration = .staging,
         urlSession: URLSession = .shared
     ) {
-        let configured = UserDefaults.standard.string(forKey: "amr.apiBaseURL")
-            ?? ProcessInfo.processInfo.environment["AMR_API_URL"]
-            ?? "https://amr-fan-api-x324zttj6p6tg.greenmeadow-563586c6.southeastasia.azurecontainerapps.io/"
-        self.baseURL = baseURL ?? URL(string: configured.hasSuffix("/") ? configured : configured + "/")!
+        // The API host is fixed for the demo build. A persisted UserDefaults or
+        // scheme environment override can silently send submissions to an old
+        // server, which is especially confusing because the UI only shows a
+        // generic request error.
+        let configured = "http://100.117.231.37:18080/"
+        self.baseURL = baseURL ?? URL(string: configured)!
         self.oidc = oidc
         self.urlSession = urlSession
     }
@@ -594,12 +570,31 @@ private final class BackendClient {
         try await request(path: "v1/impact/overview?profileId=\(profileId)", method: "GET", token: token, body: EmptyBody())
     }
 
+    func routeSummary(token: String, profileId: String) async throws -> BackendRouteSummary {
+        try await request(path: "v1/profiles/\(profileId)/route-summary", method: "GET", token: token, body: EmptyBody())
+    }
+
     func transportPlan(token: String?, origin: String, destination: String) async throws -> BackendTransportPlan {
         try await transportPlan(token: token, origin: .name(origin), destination: .name(destination))
     }
 
     func transportPlan(token: String?, origin: BackendTransportCoordinate, destination: BackendTransportCoordinate) async throws -> BackendTransportPlan {
         try await transportPlan(token: token, origin: .coordinate(origin), destination: .coordinate(destination))
+    }
+
+    func awardRouteReward(token: String, profileId: String, requestId: UUID, routeId: String, savedKg: Double, distanceMeters: Double?) async throws -> BackendRouteRewardResponse {
+        struct Payload: Encodable {
+            let requestId: String
+            let routeId: String
+            let savedKg: Double
+            let distanceMeters: Double?
+        }
+        return try await request(
+            path: "v1/profiles/\(profileId)/route-rewards",
+            method: "POST",
+            token: token,
+            body: Payload(requestId: requestId.uuidString.lowercased(), routeId: routeId, savedKg: savedKg, distanceMeters: distanceMeters)
+        )
     }
 
     private func transportPlan(token: String?, origin: BackendTransportPlace, destination: BackendTransportPlace) async throws -> BackendTransportPlan {
@@ -645,7 +640,10 @@ private final class BackendClient {
     }
 
     private func request<T: Decodable, Body: Encodable>(path: String, method: String, token: String?, body: Body?) async throws -> T {
-        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else {
+            throw BackendError.invalidResponse
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

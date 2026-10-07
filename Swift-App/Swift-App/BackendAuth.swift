@@ -124,6 +124,9 @@ final class KeychainSessionStore: SessionTokenStore {
     }
 
     func read() -> String? {
+#if targetEnvironment(simulator)
+        return UserDefaults.standard.string(forKey: "amr.simulator.session")
+#else
         var query = query
         query.merge([
             kSecReturnData as String: true,
@@ -133,9 +136,13 @@ final class KeychainSessionStore: SessionTokenStore {
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data else { return nil }
         return String(data: data, encoding: .utf8)
+#endif
     }
 
     func write(_ value: String) throws {
+#if targetEnvironment(simulator)
+        UserDefaults.standard.set(value, forKey: "amr.simulator.session")
+#else
         let data = Data(value.utf8)
         var item = query
         item[kSecValueData as String] = data
@@ -157,12 +164,17 @@ final class KeychainSessionStore: SessionTokenStore {
         guard updateStatus == errSecSuccess else {
             throw SessionStoreError.keychain(updateStatus)
         }
+#endif
     }
 
     func delete() throws {
+#if targetEnvironment(simulator)
+        UserDefaults.standard.removeObject(forKey: "amr.simulator.session")
+#else
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw SessionStoreError.keychain(status)
         }
+#endif
     }
 }

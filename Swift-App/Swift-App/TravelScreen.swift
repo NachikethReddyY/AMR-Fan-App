@@ -43,6 +43,7 @@ struct TravelScreen: View {
     @State private var showJourneyCompletion = false
     @State private var completionIsDemo = false
     @State private var celebration: JourneyCelebrationSummary?
+    @State private var routeRewardRequestID: UUID?
     @State private var routeTask: Task<Void, Never>?
 
     private static let defaultRegion = MKCoordinateRegion(
@@ -173,7 +174,7 @@ struct TravelScreen: View {
             if showJourneyCompletion {
                 JourneyCompletionView(
                     pointsText: transportPlan?.awardEligible == true ? "Pending assessment" : "Not credited",
-                    savedText: routeRecommendationAvoidedText ?? "Unavailable",
+                    savedText: avoidedKilograms.map { formatKg($0, gas: "CO₂e") } ?? "Unavailable",
                     routeTitle: selectedMode.title,
                     isDemo: completionIsDemo,
                     reduceMotion: reduceMotion,
@@ -191,6 +192,7 @@ struct TravelScreen: View {
             if let celebration {
                 JourneyCelebrationView(summary: celebration, reduceMotion: reduceMotion) {
                     self.celebration = nil
+                    routeRewardRequestID = nil
                     guidance.stop()
                     onExitToHome?()
                 }
@@ -798,6 +800,7 @@ struct TravelScreen: View {
                             ForEach(sortedTransportRoutes) { option in
                                 Button {
                                     selectedBackendRouteID = option.id
+                                    selectedRouteOptionID = option.id
                                 } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 2) {
@@ -822,6 +825,11 @@ struct TravelScreen: View {
                                             if let co2 = transitCo2Text(for: option.id) {
                                                 Text(co2)
                                                     .font(.subheadline.weight(.semibold))
+                                                if let points = provisionalTransitPoints(for: option.id) {
+                                                    Text("+\(points) pts provisional")
+                                                        .font(.caption)
+                                                        .foregroundStyle(FanStyle.teal)
+                                                }
                                             } else {
                                                 Text(transitCo2UnavailableReason(for: option.id).map { "CO₂ unavailable · \($0)" } ?? "CO₂ unavailable")
                                                     .font(.caption)
@@ -902,6 +910,11 @@ struct TravelScreen: View {
                                             if let co2 = co2Estimate(for: option.id) {
                                                 Text(co2.text)
                                                     .font(.subheadline.weight(.semibold))
+                                                if let points = provisionalRoutePoints(for: option.id) {
+                                                    Text("+\(points) pts provisional")
+                                                        .font(.caption)
+                                                        .foregroundStyle(FanStyle.teal)
+                                                }
                                             } else {
                                                 Text(co2UnavailableReason(for: option.id).map { "CO₂ unavailable · \($0)" } ?? "CO₂ unavailable")
                                                     .font(.caption)
@@ -1140,7 +1153,9 @@ struct TravelScreen: View {
             guard requestID == routeRequestID else { return }
             transportPlan = plan
             if let plan {
-                selectedBackendRouteID = plan.recommendation.routeId ?? plan.routes.first?.id
+                let initialRouteID = plan.recommendation.routeId ?? plan.routes.first?.id
+                selectedBackendRouteID = initialRouteID
+                selectedRouteOptionID = initialRouteID
             }
             let directions = MKDirections(request: request)
             if mode == .transit {
@@ -1255,6 +1270,29 @@ struct TravelScreen: View {
         }
     }
 
+    private func provisionalPoints(for avoidedKilograms: Double?) -> Int? {
+        guard let avoidedKilograms, avoidedKilograms > 0 else { return nil }
+        return min(2_000, Int((avoidedKilograms * 50).rounded(.down)))
+    }
+
+    private func provisionalTransitPoints(for routeId: String) -> Int? {
+        guard let car = transportPlan?.routes
+            .filter({ $0.mode == "car" })
+            .compactMap({ planCo2Kilograms(for: $0.id) })
+            .min(),
+            let route = planCo2Kilograms(for: routeId) else { return nil }
+        return provisionalPoints(for: max(0, car - route))
+    }
+
+    private func provisionalRoutePoints(for routeId: String) -> Int? {
+        guard let car = backendRoutes
+            .filter({ $0.mode == "car" })
+            .compactMap({ co2Estimate(for: $0.id)?.value })
+            .min(),
+            let route = co2Estimate(for: routeId)?.value else { return nil }
+        return provisionalPoints(for: max(0, car - route))
+    }
+
     /// Plan modes that stand for the tab the user picked.
     private func planModes(for mode: TravelMode) -> Set<String> {
         switch mode {
@@ -1304,18 +1342,37 @@ struct TravelScreen: View {
 
     private func startInAppNavigation() {
         routeError = nil
-        // Presentation only. The phone app calculates and shows these rewards;
-        // the journey and points ledger stays untouched because awarding a
-        // journey needs validated start and arrival evidence.
         guidance.stop()
-        let saved = avoidedKilograms
-        let summary = JourneyCelebrationSummary(
-            points: saved.map(JourneyCelebrationRewards.points(savedKg:)) ?? 0,
-            savedKg: saved,
-            routeTitle: selectedMode.title
-        )
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeInOut(duration: 0.25)) {
-            celebration = summary
+        guard let saved = avoidedKilograms,
+              let routeID = selectedPlanRouteID
+        else {
+            routeError = "Points are unavailable because this route has no verified carbon estimate."
+            return
+        }
+        let requestID = routeRewardRequestID ?? UUID()
+        routeRewardRequestID = requestID
+        let distanceMeters = transportPlan?.routes.first(where: { $0.id == routeID })?.distanceMeters
+            ?? backendRoutes.first(where: { $0.id == routeID })?.distanceMeters
+        Task { @MainActor in
+            do {
+                let reward = try await backend.awardRouteReward(
+                    savedKg: saved,
+                    distanceMeters: distanceMeters,
+                    routeId: routeID,
+                    requestId: requestID
+                )
+                let summary = JourneyCelebrationSummary(
+                    points: reward.points,
+                    savedKg: saved,
+                    routeTitle: selectedMode.title
+                )
+                withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeInOut(duration: 0.25)) {
+                    celebration = summary
+                }
+            } catch {
+                routeRewardRequestID = nil
+                routeError = error.localizedDescription
+            }
         }
     }
 }

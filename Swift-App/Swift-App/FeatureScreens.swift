@@ -1089,6 +1089,13 @@ struct ProfileScreen: View {
                             dismiss()
                             showTour()
                         }
+                        if backend.realProfile != nil {
+                            Divider().background(.white.opacity(0.08)).padding(.leading, 46)
+                            ProfileRow(title: "Log out", symbol: "rectangle.portrait.and.arrow.right") {
+                                Task { await backend.signOut() }
+                                dismiss()
+                            }
+                        }
                     }
                 }
 

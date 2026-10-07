@@ -807,3 +807,14 @@ Project delivery correction: interim APK packaging is not completion. Onboarding
 - [x] Run focused backend tests and native builds where available.
 
 Acceptance: a signed-in account without a real username or birthday gets a setup page; after saving, Home greets by the chosen name and the account screen edits name, email and birthday.
+
+## Transit CO₂ rows and the Navigate celebration, 2026-10-07
+
+- [x] Point the iOS app at BB-1 through `amr.apiBaseURL`.
+- [x] Raise the OneMap normalization ceilings and make the call ceilings and
+      provider timeout environment driven.
+- [x] Deploy the API to BB-1 and verify multi-mode plans with CO₂.
+- [x] Add the celebration: burst, car run with green wipe, reward summary.
+- [x] Serialize route requests and retry an empty plan.
+- [x] Verify on the simulator and record evidence.
+- [ ] Confirm the planner's own bus, train and walk rows on a signed-in build.

@@ -31,16 +31,18 @@ Keep `Swift-App/` and `Kotlin-App/` as independent native projects outside the J
 `services/api/database/`; its private module marker supports Node ESM without moving
 the phone app. See [local development](../operations/local-development.md) for
 service ownership, per-worktree databases, commands and cloud setup gates. The authorized workspace migration adds pnpm/Turbo package entrypoints for the API and static admin build without moving runtime source. Do not add a service layer or event system without a concrete need.
-Azure is the selected backend platform. The reviewable staging package is under
-[`deploy/azure`](../../deploy/azure/README.md): it targets a new resource group
-in southeastasia, private PostgreSQL Flexible Server, Key Vault managed
-identity, and a Consumption Container Apps API. An authorized deployment
-created the staging resources and runs image source
-`36996ec95b1cc62a3c1ef583e1e30714a814efe0`. The current PR head is
-`c2aba734e0d8036fb4f83a738354ee49722ba11e`, which is newer than that running
-revision and has not been deployed. The configurable account adapter and local
-setup are documented in [account operations](../operations/accounts.md). Earlier
-Convex plans are superseded.
+Supabase PostgreSQL is the selected application database. BB-1 is the selected
+API host for the current MVP deployment package under [`deploy/bb1`](../../deploy/bb1/README.md).
+CIAM / Entra External ID remains the authentication provider; Supabase Auth is
+not used. The API validates CIAM tokens and maps their issuer/subject to
+`app.principals`. Supabase Storage is optional and server-only for explicitly
+approved retained report originals; raw activity photos remain transient.
+
+The earlier Azure package under [`deploy/azure`](../../deploy/azure/README.md)
+was preparation for a superseded database/hosting choice. It is retained as
+historical deployment material and is not the active runtime target. The
+configurable account adapter and local setup are documented in [account
+operations](../operations/accounts.md). Earlier Convex plans are superseded.
 
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.
@@ -62,7 +64,8 @@ When persistence is implemented, preserve these accepted invariants:
 The [feature specifications](../features/README.md) own product rules and acceptance cases.
 The [points/rewards design](../points-rewards-design.md) owns the shared module responsibility.
 Baseline, time tolerance, top-ups and lifetime totals are confirmed. Numerical
-inputs, authentication, Azure services and final screen selection remain open.
+inputs, CIAM deployment, Supabase operations and final screen selection remain
+open.
 
 Update this map when adding an entry point or integration. Record hard-to-reverse
 accepted tradeoffs in `docs/adr/` and link them here.

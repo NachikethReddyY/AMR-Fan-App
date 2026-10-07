@@ -114,7 +114,7 @@ must be selected before real accounts use it.
   `EXPO_PUBLIC_AUTH_CLIENT_ID`, `EXPO_PUBLIC_AUTH_API_SCOPE`, and
   `EXPO_PUBLIC_AUTH_REDIRECT_URI`; keep local sign-in disabled. `amrfan` is the
   held UI branch's app scheme, not an externally registered redirect destination.
-- Provision Azure PostgreSQL/network/TLS and run the migrations with a designated
+- Provision the selected Supabase PostgreSQL project, TLS connection and
   migration identity. No paid resource or production deployment is created here.
 - Verify real email sign-in, cancellation, sign-out, expiry and another-device
   resume against the selected provider. Assign the authorized admin through the

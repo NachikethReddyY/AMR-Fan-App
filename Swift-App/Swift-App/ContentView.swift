@@ -101,21 +101,6 @@ struct ContentView: View {
                         )
                     }
                 }
-                .overlay(alignment: .top) {
-                    if backend.isDemoMode {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption)
-                            Text("Demo mode")
-                                .font(.caption.bold())
-                        }
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(FanStyle.panel, in: Capsule())
-                        .padding(.top, 8)
-                    }
-                }
                 .transition(.opacity)
             } else if driver != nil {
                 LoginGateScreen(openAuthentication: openAuthentication)

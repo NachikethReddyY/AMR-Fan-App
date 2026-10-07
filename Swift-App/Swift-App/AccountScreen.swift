@@ -31,18 +31,6 @@ struct AccountScreen: View {
                     description: backend.isConnected ? "" : "Sign in securely with your AMR Fan account."
                 )
 
-                if backend.isDemoMode {
-                    HStack(spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text("Demo mode. Sign-in could not be verified by the server. Your data is saved on this device only.")
-                            .font(.footnote)
-                            .foregroundStyle(.orange)
-                    }
-                    .padding(12)
-                    .background(FanStyle.panel, in: RoundedRectangle(cornerRadius: 12))
-                }
-
                 if let profile = backend.realProfile {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 6) {

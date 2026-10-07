@@ -1,41 +1,17 @@
 services:
-  db:
-    image: postgres:17.11-bookworm@sha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652
-    environment:
-      POSTGRES_USER: amr_api
-      POSTGRES_DB: amr
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-    secrets:
-      - postgres_password
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    ports:
-      - '127.0.0.1:15432:5432'
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U amr_api -d amr']
-      interval: 2s
-      timeout: 3s
-      retries: 30
-    restart: unless-stopped
-    mem_limit: 512m
-    cpus: 1.0
-    shm_size: 128mb
-
   api:
     image: amr-fan-api:bb1
     build:
       context: ../..
-      dockerfile: services/api/Dockerfile.azure
+      dockerfile: services/api/Dockerfile.api
     env_file:
       - .env
       - path: /home/bb-1/.auth/amr-onemap.env
         required: false
       - path: /home/bb-1/.auth/amr-ai.env
         required: false
-    depends_on:
-      db:
-        condition: service_healthy
+    environment:
+      NODE_EXTRA_CA_CERTS: /run/secrets/amr-private/supabase-root-ca.pem
     network_mode: host
     restart: unless-stopped
     read_only: true
@@ -50,27 +26,3 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-
-  migrate:
-    image: amr-fan-api:bb1
-    env_file:
-      - .env
-      - path: /home/bb-1/.auth/amr-onemap.env
-        required: false
-      - path: /home/bb-1/.auth/amr-ai.env
-        required: false
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./migrate.ts:/app/deploy/bb1/migrate.ts:ro
-    network_mode: host
-    command: ['node', 'deploy/bb1/migrate.ts']
-    restart: 'no'
-
-secrets:
-  postgres_password:
-    file: ./secrets/postgres_password
-
-volumes:
-  db_data:
