@@ -12,7 +12,14 @@ import {
   createBottomTabNavigator,
   type BottomTabScreenProps,
 } from '@react-navigation/bottom-tabs';
-import { Gift, House, Leaf, Route, type LucideIcon } from 'lucide-react-native';
+import {
+  Gift,
+  House,
+  Leaf,
+  Newspaper,
+  Route,
+  type LucideIcon,
+} from 'lucide-react-native';
 import {
   ScrollView,
   StyleSheet,
@@ -34,6 +41,7 @@ import { RewardsScreen as PointsRewards } from './features/points/RewardsScreen'
 
 import { TravelScreen as TravelComparison } from './features/routes/TravelScreen';
 import { ImpactScreen as OfficialImpact } from './features/impact/ImpactScreen';
+import { NewsScreen as OfficialNews } from './features/news/NewsScreen';
 import { useProfileContext } from './features/account/useResource';
 
 type Tabs = {
@@ -41,6 +49,7 @@ type Tabs = {
   Travel: undefined;
   Rewards: { section?: 'History' | 'Redemption' } | undefined;
   Impact: undefined;
+  News: undefined;
 };
 const Tab = createBottomTabNavigator<Tabs>();
 
@@ -163,6 +172,14 @@ function ImpactScreen() {
   );
 }
 
+function NewsScreen() {
+  return (
+    <Screen showTestDataNotice={false}>
+      <OfficialNews />
+    </Screen>
+  );
+}
+
 function AccountNavigation() {
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -236,7 +253,7 @@ function AccountNavigation() {
                 name="Home"
                 component={HomeScreen}
                 options={{
-                  tabBarAccessibilityLabel: 'Home, tab, 1 of 4',
+                  tabBarAccessibilityLabel: 'Home, tab, 1 of 5',
                   tabBarIcon: ({ focused }) => (
                     <TabIcon Icon={House} focused={focused} />
                   ),
@@ -246,7 +263,7 @@ function AccountNavigation() {
                 name="Travel"
                 component={TravelScreen}
                 options={{
-                  tabBarAccessibilityLabel: 'Travel, tab, 2 of 4',
+                  tabBarAccessibilityLabel: 'Travel, tab, 2 of 5',
                   tabBarIcon: ({ focused }) => (
                     <TabIcon Icon={Route} focused={focused} />
                   ),
@@ -256,7 +273,7 @@ function AccountNavigation() {
                 name="Rewards"
                 component={RewardsScreen}
                 options={{
-                  tabBarAccessibilityLabel: 'Rewards, tab, 3 of 4',
+                  tabBarAccessibilityLabel: 'Rewards, tab, 3 of 5',
                   tabBarIcon: ({ focused }) => (
                     <TabIcon Icon={Gift} focused={focused} />
                   ),
@@ -266,9 +283,19 @@ function AccountNavigation() {
                 name="Impact"
                 component={ImpactScreen}
                 options={{
-                  tabBarAccessibilityLabel: 'Impact, tab, 4 of 4',
+                  tabBarAccessibilityLabel: 'Impact, tab, 4 of 5',
                   tabBarIcon: ({ focused }) => (
                     <TabIcon Icon={Leaf} focused={focused} />
+                  ),
+                }}
+              />
+              <Tab.Screen
+                name="News"
+                component={NewsScreen}
+                options={{
+                  tabBarAccessibilityLabel: 'News, tab, 5 of 5',
+                  tabBarIcon: ({ focused }) => (
+                    <TabIcon Icon={Newspaper} focused={focused} />
                   ),
                 }}
               />

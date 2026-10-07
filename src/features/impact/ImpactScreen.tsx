@@ -1,198 +1,250 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { Action, Text } from '../points/controls';
 import { api } from '../account/native-auth';
-import { useResource } from '../account/useResource';
-import { useContributions } from './useContributions';
-import { contributionText } from './presentation';
-import { createOfficialApi } from './api';
-const read = createOfficialApi(api.request);
+import { useProfileContext, useResource } from '../account/useResource';
+import { createOverviewApi } from './api';
+import type { ImpactOverview } from './contracts';
+
+const read = createOverviewApi(api.request);
+
+function travelText(total: ImpactOverview['fan']['personal']['travel']) {
+  if (total.kind === 'empty') return 'No qualifying journeys yet.';
+  if (total.kind === 'unavailable') {
+    return total.reasons.includes('source_unavailable')
+      ? 'Travel estimate unavailable. Retry to refresh the reviewed methodology.'
+      : 'Travel estimate unavailable until the journey evidence is ready.';
+  }
+  return `Estimated travel savings: ${total.savingsKg} kgCO2 · Lifetime`;
+}
+
+function participationText(
+  participation:
+    | ImpactOverview['fan']['personal']['participation']
+    | ImpactOverview['fan']['community']['participation'],
+) {
+  if (participation.kind === 'unavailable') {
+    return participation.reason === 'demo_profile'
+      ? 'Participation is unavailable for demo profiles.'
+      : 'Participation data unavailable. Retry to refresh.';
+  }
+  return `${participation.activityCount} credited photo activities · ${participation.missionsCompleted} missions completed`;
+}
+
 export function ImpactScreen() {
-  const { state, controller } = useResource(read);
-  const impact = useContributions();
+  const { state: resourceState, controller } = useResource(read);
+  const profile = useProfileContext();
+  const state = !profile
+    ? null
+    : resourceState.kind === 'ready' &&
+        resourceState.items[0]?.id !== profile.profileId
+      ? ({ kind: 'loading' } as const)
+      : resourceState;
   const [expanded, setExpanded] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      void controller.refresh();
+    }, [controller]),
+  );
+  const overview = state?.kind === 'ready' ? state.items[0] : null;
+  const official = overview?.official;
   return (
     <View style={styles.content}>
       <Text accessibilityRole="header" style={styles.title}>
         Impact
       </Text>
-      <View style={styles.summary}>
-        <Text accessibilityRole="header" style={styles.heading}>
-          Your contribution
-        </Text>
-        <Text>{contributionText(impact.state, 'personal')}</Text>
-      </View>
-      <View style={styles.community}>
-        <Text accessibilityRole="header" style={styles.heading}>
-          Community impact
-        </Text>
-        <Text>{contributionText(impact.state, 'community')}</Text>
-      </View>
-      <Text style={styles.caption}>
-        Lifetime estimates compare recorded journeys with one person driving a
-        car between the same endpoints. Points and official team figures are
-        separate. These are estimates, not measured savings or carbon offsets.
-        Published surface-access factors estimate CO2 only, excluding other
-        greenhouse gases and lifecycle emissions.
-      </Text>
-      <Action
-        secondary
-        label={
-          impact.state?.kind === 'loading'
-            ? 'Loading impact…'
-            : 'Refresh impact'
-        }
-        disabled={impact.state?.kind === 'loading'}
-        onPress={() => {
-          void impact.controller.refresh();
-        }}
-      />
-      {impact.state?.kind === 'ready' && (
-        <>
-          {impact.state.items[0]?.validation.includes(
-            'unvalidated_estimate',
-          ) && (
-            <Text style={styles.caption}>
-              Includes estimates using unvalidated journey calibration.
-            </Text>
-          )}
-          {impact.state.items[0]?.validation.includes('reviewed_release') && (
-            <Text style={styles.caption}>
-              Uses retained reviewed journey rules and emissions factors.
-            </Text>
-          )}
-          {(['personal', 'community'] as const).map((scope) => {
-            const total =
-              impact.state?.kind === 'ready'
-                ? impact.state.items[0]?.[scope]
-                : null;
-            return total?.kind === 'available' ? (
-              <Text key={scope} style={styles.caption}>
-                {scope === 'personal'
-                  ? 'Your contribution'
-                  : 'Community impact'}
-                : {total.journeyCount} qualifying journeys.
-                {total.excludedJourneys > 0
-                  ? ` ${total.excludedJourneys} journeys await sufficient evidence or approved calculation data.`
-                  : ''}
-              </Text>
-            ) : null;
-          })}
-          {impact.state.items[0]?.sources.map((source) => (
-            <View key={JSON.stringify(source)} style={styles.row}>
-              <Text selectable>Emissions source: {source.source}</Text>
-              <Text>
-                Factor {source.id} · {source.period}
-              </Text>
-              <Text>{source.method}</Text>
-              <Text>{source.assumptions}</Text>
-              <Text>
-                {source.releaseVersion}: {source.sourceValue}{' '}
-                {source.sourceUnit}. Published unit: {source.publishedUnit};
-                occupants: {source.occupants}.
-              </Text>
-            </View>
-          ))}
-        </>
+      {!profile && <Text>Sign in to view impact.</Text>}
+      {state?.kind === 'loading' && (
+        <Text accessibilityLiveRegion="polite">Loading impact...</Text>
       )}
-      <Text accessibilityRole="header" style={styles.heading}>
-        Official team figures
-      </Text>
-      <Action
-        secondary
-        label={
-          state.kind === 'loading'
-            ? 'Loading approved figures…'
-            : 'Refresh approved figures'
-        }
-        disabled={state.kind === 'loading'}
-        onPress={() => {
-          void controller.refresh();
-        }}
-      />
-      {state.kind === 'error' && (
-        <Text accessibilityLiveRegion="polite">{state.error}</Text>
+      {state?.kind === 'error' && (
+        <Text accessibilityLiveRegion="polite">
+          Impact unavailable. Open Impact to retry.
+        </Text>
       )}
-      {state.kind === 'ready' && (
+      {overview && (
         <>
-          {state.items.length === 0 && (
-            <Text>No approved figures have been published.</Text>
-          )}
-          {state.items.map((row) => (
-            <View key={row.id} style={styles.row}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${row.fields.name.text}, ${row.fields.value.text} ${row.fields.unit.text}, ${row.fields.period.text}${row.sourceKind === 'synthetic' ? ', sample report' : ''}, source details`}
-                accessibilityState={{ expanded: expanded === row.id }}
-                onPress={() => setExpanded(expanded === row.id ? null : row.id)}
-                style={({ pressed }) => [
-                  styles.figureSummary,
-                  pressed && { opacity: 0.75 },
-                ]}
-              >
-                <View style={styles.figureText}>
-                  <Text style={styles.heading}>
-                    {row.fields.value.text} {row.fields.unit.text}
-                  </Text>
-                  <Text>{row.fields.name.text}</Text>
-                  <Text style={styles.caption}>{row.fields.period.text}</Text>
-                  {row.sourceKind === 'synthetic' && (
-                    <Text style={styles.caption}>Sample report</Text>
+          <View style={styles.section}>
+            <Text accessibilityRole="header" style={styles.heading}>
+              Aston Martin reported impact
+            </Text>
+            {official?.status === 'unavailable' && (
+              <Text accessibilityLiveRegion="polite">
+                Reported figures unavailable (source_unavailable). Retry to
+                refresh.
+              </Text>
+            )}
+            {official?.status === 'empty' && (
+              <Text>No approved Aston Martin figures have been published.</Text>
+            )}
+            {official?.status === 'available' &&
+              official.metrics.map((row) => (
+                <View key={row.id} style={styles.row}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${row.fields.name.text}, ${row.fields.value.text} ${row.fields.unit.text}, ${row.fields.period.text}, source details`}
+                    accessibilityState={{ expanded: expanded === row.id }}
+                    onPress={() =>
+                      setExpanded(expanded === row.id ? null : row.id)
+                    }
+                    style={({ pressed }) => [
+                      styles.figureSummary,
+                      pressed && { opacity: 0.75 },
+                    ]}
+                  >
+                    <View style={styles.figureText}>
+                      <Text style={styles.heading}>
+                        {row.fields.value.text} {row.fields.unit.text}
+                      </Text>
+                      <Text>{row.fields.name.text}</Text>
+                      <Text style={styles.caption}>
+                        {row.fields.period.text}
+                      </Text>
+                      <Text style={styles.detailsLabel}>
+                        {expanded === row.id
+                          ? 'Hide source details'
+                          : 'View source details'}
+                      </Text>
+                    </View>
+                    {expanded === row.id ? (
+                      <ChevronDown
+                        size={20}
+                        color="#F5F5F3"
+                        accessible={false}
+                      />
+                    ) : (
+                      <ChevronRight
+                        size={20}
+                        color="#F5F5F3"
+                        accessible={false}
+                      />
+                    )}
+                  </Pressable>
+                  {expanded === row.id && (
+                    <View style={styles.details}>
+                      <Text selectable>
+                        {row.fields.value.text} {row.fields.unit.text}
+                      </Text>
+                      <Text>{row.fields.meaning.text}</Text>
+                      {row.fields.category && (
+                        <Text>Category: {row.fields.category.text}</Text>
+                      )}
+                      <Text>
+                        Method:{' '}
+                        {row.fields.method?.text ??
+                          'Not supplied in the approved source'}
+                      </Text>
+                      <Text>
+                        Source: {row.title}, page {row.evidence.page}; source
+                        kind: {row.sourceKind}
+                      </Text>
+                      <Text selectable>Document: {row.documentId}</Text>
+                      <Text selectable>
+                        Approval status: approved - {row.approvalId}
+                      </Text>
+                      <Text selectable>{row.evidence.quote}</Text>
+                      <Text>
+                        Approved {new Date(row.approvedAt).toLocaleString()}
+                      </Text>
+                      <Text selectable>Reviewer: {row.reviewerId}</Text>
+                    </View>
                   )}
-                  <Text style={styles.detailsLabel}>
-                    {expanded === row.id
-                      ? 'Hide source details'
-                      : 'View source details'}
-                  </Text>
                 </View>
-                {expanded === row.id ? (
-                  <ChevronDown size={20} color="#F5F5F3" accessible={false} />
-                ) : (
-                  <ChevronRight size={20} color="#F5F5F3" accessible={false} />
-                )}
-              </Pressable>
-              {expanded === row.id && (
-                <>
-                  <Text selectable>
-                    {row.fields.value.text} {row.fields.unit.text}
-                  </Text>
-                  <Text>{row.fields.meaning.text}</Text>
-                  {row.fields.category && (
-                    <Text>Category: {row.fields.category.text}</Text>
-                  )}
+              ))}
+          </View>
+
+          <View style={styles.summary}>
+            <Text accessibilityRole="header" style={styles.heading}>
+              Your contribution
+            </Text>
+            <Text>
+              {participationText(overview.fan.personal.participation)}
+            </Text>
+            {overview.fan.personal.participation.kind === 'available' && (
+              <Text style={styles.caption}>
+                Photo activity points earned:{' '}
+                {overview.fan.personal.participation.pointsEarned}
+              </Text>
+            )}
+            <Text>{travelText(overview.fan.personal.travel)}</Text>
+          </View>
+
+          <View style={styles.community}>
+            <Text accessibilityRole="header" style={styles.heading}>
+              AMR fan community
+            </Text>
+            <Text>
+              {participationText(overview.fan.community.participation)}
+            </Text>
+            <Text>{travelText(overview.fan.community.travel)}</Text>
+          </View>
+
+          <Text style={styles.caption}>
+            Participation counts and points are separate from estimated travel
+            savings and Aston Martin reported figures. Travel estimates use the
+            reviewed journey factor receipt method; they are not measured
+            savings or carbon offsets.
+          </Text>
+          <Text accessibilityRole="header" style={styles.heading}>
+            Travel methodology
+          </Text>
+          {overview.travelMethodology.kind === 'unavailable' ? (
+            <Text>Travel methodology unavailable. Retry to refresh.</Text>
+          ) : (
+            <>
+              <Text style={styles.caption}>
+                {overview.travelMethodology.period} ·{' '}
+                {overview.travelMethodology.unit}
+              </Text>
+              {overview.travelMethodology.sources.map((source) => (
+                <View key={JSON.stringify(source)} style={styles.row}>
+                  <Text selectable>Emissions source: {source.source}</Text>
                   <Text>
-                    Method:{' '}
-                    {row.fields.method?.text ??
-                      'Not supplied in the approved source'}
+                    Factor {source.id} · {source.period}
                   </Text>
-                  <Text>
-                    Source: {row.title}, page {row.evidence.page}
-                    {row.sourceKind === 'synthetic'
-                      ? ' · Synthetic demonstration report'
-                      : ''}
-                  </Text>
-                  <Text selectable>{row.evidence.quote}</Text>
-                  <Text>
-                    Approved {new Date(row.approvedAt).toLocaleString()}
-                  </Text>
-                  <Text selectable>Reviewer: {row.reviewerId}</Text>
-                </>
+                  <Text>{source.method}</Text>
+                  <Text>{source.assumptions}</Text>
+                </View>
+              ))}
+            </>
+          )}
+          {overview.methodology.map((entry) => (
+            <View key={entry.label} style={styles.row}>
+              <Text>{entry.label}</Text>
+              {entry.unit && entry.period && (
+                <Text style={styles.caption}>
+                  {entry.unit} - {entry.period}
+                </Text>
+              )}
+              {entry.method && <Text>{entry.method}</Text>}
+              {entry.assumptions && (
+                <Text style={styles.caption}>{entry.assumptions}</Text>
               )}
             </View>
           ))}
-          {state.items.length > 0 && (
-            <Text style={styles.caption}>
-              Up to 100 approved figures, reported by the source.
-            </Text>
-          )}
         </>
+      )}
+      {profile && (
+        <Action
+          secondary
+          label={
+            state?.kind === 'loading' ? 'Loading impact...' : 'Refresh impact'
+          }
+          disabled={state?.kind === 'loading'}
+          onPress={() => {
+            void controller.refresh();
+          }}
+        />
       )}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   content: { marginHorizontal: 20, gap: 16 },
+  section: { gap: 12 },
   summary: {
     padding: 20,
     gap: 12,
@@ -208,6 +260,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   figureText: { flex: 1, gap: 6 },
+  details: { gap: 8, paddingTop: 12 },
   detailsLabel: { color: '#CEDC00', fontSize: 14, lineHeight: 20 },
   title: {
     fontSize: 24,

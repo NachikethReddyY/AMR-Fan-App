@@ -6,7 +6,7 @@ owns product behavior.
 
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
-| Phone app | `src/App.tsx` retains four tabs; held account UI and server balance/History consumer in `src/features/account/` and `src/features/points/`; Travel/Impact placeholders and unavailable Redemption | Native verification, journeys, fan submissions and other accepted rewards, plus ESG views |
+| Phone app | `src/App.tsx` has Home, Travel, Rewards, Impact and News tabs. News defaults to the public Azure RSS feed at `https://green-sky-08b27ad10.4.azurestaticapps.net/feed.xml`; `EXPO_PUBLIC_NEWS_FEED_URL` permits a public HTTPS override. The feed is a manually deployed snapshot with no scheduled refresh yet. News validates official article links and opens them externally. Account and points consumers remain in `src/features/account/` and `src/features/points/`. | Scheduled feed publication and native verification; journeys, fan submissions and other accepted rewards, plus ESG views |
 | Admin web | Separate `/admin/` points adjustment and History page with synthetic local sign-in; live browser sign-in remains pending | Authorized content, price, rule, moderation and demo administration |
 | Backend | `server/api/` account HTTP API, `server/accounts/` PostgreSQL ownership and independent real/demo profiles, and `server/points/` integer adjustments with immutable History and stored outcomes; no deployment | Feature operations and persistence on Azure |
 | Authentication | Configurable OIDC/PKCE adapter, persisted revocable sessions and server-assigned roles; live provider not provisioned | Verified live email sign-in on the selected provider |

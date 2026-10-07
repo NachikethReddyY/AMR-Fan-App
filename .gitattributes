@@ -1,0 +1,6 @@
+# Migration checksums are over exact bytes. Keep SQL portable across Windows and
+# Linux worktrees so checkout line endings cannot change a reviewed digest.
+server/database/migrations/*.sql text eol=lf
+
+# The reviewed factor evidence digest is also byte-bound and must remain LF.
+server/awards/factors/cag-surface-access-co2-v1.md text eol=lf

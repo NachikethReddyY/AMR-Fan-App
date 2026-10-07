@@ -20,7 +20,26 @@ import {
 
 type Actor = Awaited<ReturnType<typeof authenticateSession>>;
 type Access = 'owner' | 'admin';
-
+type PointsOperationOptions<T> = {
+  pool: Pool;
+  token: string;
+  request: z.infer<typeof operationRequest>;
+  access: Access;
+  intent: string;
+  outcomeSchema: z.ZodType<T>;
+  skipLedgerWhenZero?: boolean;
+  databaseTimeoutMs?: number;
+  perform: (context: {
+    client: PoolClient;
+    profile: Profile;
+    actor: Actor;
+    operationId: string;
+  }) => Promise<{
+    delta: number;
+    reason: string;
+    outcome: T;
+  }>;
+};
 // Hold current authority for the transaction, including concurrent role/logout changes.
 async function authorize(
   client: PoolClient,
@@ -68,6 +87,13 @@ const entryColumns = `id, sequence::text, profile_id AS "profileId", actor_id AS
   kind, delta, balance_after AS "balanceAfter", reason,
   to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "recordedAt"`;
 
+export function runPointsOperation<T>(
+  options: PointsOperationOptions<T> & { skipLedgerWhenZero?: false },
+): Promise<{ entry: HistoryEntry; outcome: T }>;
+export function runPointsOperation<T>(
+  options: PointsOperationOptions<T> & { skipLedgerWhenZero: true },
+): Promise<{ entry: HistoryEntry | null; outcome: T }>;
+
 /** Server-only composition point. Callers supply typed policy, never client credit authority.
  * All domain writes must use this client and throw on failure; no nested commit or external I/O.
  * Successful replay runs before perform(), where future price/epoch/eligibility checks belong.
@@ -79,31 +105,33 @@ export async function runPointsOperation<T>({
   access,
   intent,
   outcomeSchema,
+  skipLedgerWhenZero = false,
+  databaseTimeoutMs,
   perform,
-}: {
-  pool: Pool;
-  token: string;
-  request: z.infer<typeof operationRequest>;
-  access: Access;
-  intent: string;
-  outcomeSchema: z.ZodType<T>;
-  perform: (context: {
-    client: PoolClient;
-    profile: Profile;
-    actor: Actor;
-    operationId: string;
-  }) => Promise<{
-    delta: number;
-    reason: string;
-    outcome: T;
-  }>;
-}): Promise<{ entry: HistoryEntry; outcome: T }> {
+}: PointsOperationOptions<T>): Promise<{
+  entry: HistoryEntry | null;
+  outcome: T;
+}> {
   const parsed = parseInput(operationRequest, request);
   const actor = await authenticateSession(pool, token);
   const fingerprint = createHash('sha256')
     .update(JSON.stringify([parsed.profileId, parsed.kind, intent]))
     .digest('hex');
   return transaction(pool, async (client) => {
+    if (databaseTimeoutMs !== undefined) {
+      if (
+        !Number.isInteger(databaseTimeoutMs) ||
+        databaseTimeoutMs < 1 ||
+        databaseTimeoutMs > 1200
+      )
+        throw new Error('Invalid points operation database timeout');
+      // Reward settlement may wait on session, profile, image, or mission
+      // locks. Apply bounds before its first authority/profile lock. Only the
+      // validated integer is interpolated because PostgreSQL SET does not
+      // accept bind parameters for these utility options.
+      await client.query(`SET LOCAL statement_timeout = ${databaseTimeoutMs}`);
+      await client.query(`SET LOCAL lock_timeout = ${databaseTimeoutMs}`);
+    }
     await authorize(client, actor, token, access);
     // Serialize a key even when concurrent requests name different profiles.
     await client.query(
@@ -111,6 +139,9 @@ export async function runPointsOperation<T>({
       [`${actor.principalId}:${parsed.requestId}`],
     );
     const profile = await lockProfile(client, actor, parsed.profileId, access);
+    // The profile lock may wait while the session expires or is revoked.
+    // Recheck authority after that wait before any domain mutation.
+    await authorize(client, actor, token, access);
     const previous = await client.query<Record<string, unknown>>(
       `SELECT ${entryColumns}, fingerprint, outcome FROM app.points_operations WHERE actor_id = $1 AND request_id = $2`,
       [actor.principalId, parsed.requestId],
@@ -137,6 +168,7 @@ export async function runPointsOperation<T>({
     if (!points.safeParse(balanceAfter).success)
       throw new ApiError(409, 'Points balance limit exceeded.');
     const outcome = outcomeSchema.parse(effect.outcome);
+    if (skipLedgerWhenZero && delta === 0) return { entry: null, outcome };
     await client.query('UPDATE app.profiles SET balance = $1 WHERE id = $2', [
       balanceAfter,
       profile.id,

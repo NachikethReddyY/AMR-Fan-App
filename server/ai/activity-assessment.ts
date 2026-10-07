@@ -1,4 +1,20 @@
 import { z } from 'zod';
+import {
+  activityAssessmentOutputSchema,
+  type ActivityAssessmentOutput,
+} from '../activity/submission-result-contract.ts';
+export {
+  activityAssessmentOutputSchema,
+  activityCategories,
+} from '../activity/submission-result-contract.ts';
+export type { ActivityAssessmentOutput } from '../activity/submission-result-contract.ts';
+
+/** Validate the untrusted provider boundary; unknown keys are rejected. */
+export function validateActivityAssessmentOutput(
+  value: unknown,
+): ActivityAssessmentOutput {
+  return activityAssessmentOutputSchema.parse(value);
+}
 
 const inputSchema = z.strictObject({
   photo: z
