@@ -4,10 +4,8 @@ struct ChallengesScreen: View {
     @Binding var demoState: DemoFanState
     @State private var idea = ""
     @State private var showComposer = false
-    @State private var selectedRace = RaceChallenge.examples.first?.race ?? ""
+    @State private var selectedRace = RaceChallenge.examples.first(where: { !$0.isPast })?.race ?? RaceChallenge.examples.first?.race ?? ""
     @State private var challenges = RaceChallenge.examples
-    @State private var showOutbox = false
-    @State private var submittedIdeas: [SubmissionRecord] = []
     @State private var activeContribution: ChallengeIdea?
     @State private var contributionPoints = "10"
     @State private var displayedIdeaCount = 4
@@ -127,15 +125,6 @@ struct ChallengesScreen: View {
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
                 Button {
-                    showOutbox = true
-                } label: {
-                    Image(systemName: "tray.and.arrow.up.fill")
-                        .frame(width: 48, height: 48)
-                        .background(FanStyle.panel, in: Circle())
-                }
-                .accessibilityLabel("Open submitted ideas")
-
-                Button {
                     withAnimation(reduceMotion ? nil : FanMotion.content) { showComposer.toggle() }
                 } label: {
                     Image(systemName: showComposer ? "xmark" : "plus")
@@ -148,38 +137,6 @@ struct ChallengesScreen: View {
             }
             .padding(.trailing, 22)
             .padding(.bottom, 22)
-        }
-        .sheet(isPresented: $showOutbox) {
-            NavigationStack {
-                FeatureCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label("Submitted ideas", systemImage: "tray.and.arrow.up.fill")
-                            .font(.headline)
-                        if submittedIdeas.isEmpty {
-                            Text("Your challenge proposals stay here as pending admin review until the backend is connected.")
-                                .font(.subheadline)
-                                .foregroundStyle(FanStyle.muted)
-                        } else {
-                            ForEach(submittedIdeas) { submission in
-                                VStack(alignment: .leading, spacing: 7) {
-                                    Text(submission.text)
-                                        .font(.subheadline.bold())
-                                    Text("activity · Pending admin review · \(submission.fee) Green Points")
-                                        .font(.caption)
-                                        .foregroundStyle(FanStyle.muted)
-                                }
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(FanStyle.background, in: RoundedRectangle(cornerRadius: 12))
-                            }
-                        }
-                    }
-                }
-                .padding(22)
-                .navigationTitle("Outbox")
-                .toolbar { Button("Done") { showOutbox = false } }
-            }
-            .preferredColorScheme(.dark)
         }
         .sheet(item: $activeContribution) { idea in
             NavigationStack {
@@ -267,21 +224,12 @@ struct ChallengesScreen: View {
         let trimmedIdea = idea.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedIdea.isEmpty, demoState.greenPoints >= 500 else { return }
         demoState.greenPoints -= 500
-        submittedIdeas.insert(
-            SubmissionRecord(
-                id: UUID(),
-                text: trimmedIdea,
-                tag: "activity",
-                createdAt: "Today",
-                fee: 500,
-                resubmissionOf: nil,
-                moderation: "pending",
-                rankingPoints: nil,
-                lifecycle: nil,
-                fulfilment: "demonstration"
-            ),
-            at: 0
-        )
+        if let challengeIndex = challenges.firstIndex(where: { $0.race == selectedRace }) {
+            challenges[challengeIndex].ideas.insert(
+                ChallengeIdea(id: UUID(), title: trimmedIdea, author: "You", tag: "activity", rankingPoints: 0, moderation: "pending", lifecycle: "backlog", fulfilment: "demonstration"),
+                at: 0
+            )
+        }
         idea = ""
         showComposer = false
     }
@@ -835,16 +783,30 @@ private struct AchievementPin: View {
     let pinColor: Color
     let action: () -> Void
 
+    private var isEmptySlot: Bool { symbol == "circle.dotted" }
+
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(earned ? FanStyle.darkTeal : FanStyle.muted)
-                .frame(width: 48, height: 48)
-                .background(pinColor, in: Circle())
+            ZStack {
+                if isEmptySlot {
+                    Circle()
+                        .stroke(FanStyle.muted.opacity(0.8), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "plus")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(FanStyle.muted)
+                } else {
+                    Image(systemName: symbol)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(earned ? FanStyle.darkTeal : FanStyle.muted)
+                        .frame(width: 48, height: 48)
+                        .background(pinColor, in: Circle())
+                }
+            }
+            .frame(width: 48, height: 48)
         }
         .buttonStyle(FanPressStyle())
-        .accessibilityLabel(earned ? "Achievement earned. View achievements." : "Locked achievement. View achievements.")
+        .accessibilityLabel(isEmptySlot ? "Add an achievement badge." : earned ? "Achievement earned. View achievements." : "Locked achievement. View achievements.")
     }
 }
 
@@ -1171,9 +1133,6 @@ struct ProfileScreen: View {
         // FIXME: rank, tier and pins are sketch placeholders until the backend
         // supplies leaderboard and achievement data.
         let pinGrey = Color(red: 0.85, green: 0.85, blue: 0.85)
-        let nameWords = displayName.split(separator: " ")
-        let firstName = nameWords.first.map(String.init) ?? displayName
-        let restName = nameWords.dropFirst().joined(separator: " ")
         return VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
                 Color.clear.frame(height: 214)
@@ -1188,23 +1147,14 @@ struct ProfileScreen: View {
                     .padding(.leading, 6)
                     .padding(.top, 5)
                     .offset(x: -18)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Text(firstName)
-                            .font(.system(size: 22, weight: .black))
-                        Spacer()
-                        Text("#146")
-                            .font(.system(size: 16, weight: .black))
-                            .foregroundStyle(Color(red: 1, green: 0.8, blue: 0))
-                    }
-                    if !restName.isEmpty {
-                        Text(restName)
-                            .font(.system(size: 22, weight: .black))
-                    }
-                }
-                .padding(.leading, 150)
-                .padding(.trailing, 34)
-                .padding(.top, 100)
+                Text(displayName)
+                    .font(.system(size: 18, weight: .black))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.72)
+                    .allowsTightening(true)
+                    .padding(.leading, 150)
+                    .padding(.trailing, 34)
+                    .padding(.top, 100)
             }
             .overlay(alignment: .bottomLeading) {
                 HStack(spacing: 12) {

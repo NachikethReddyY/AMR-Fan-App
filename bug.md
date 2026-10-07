@@ -1,3 +1,60 @@
+## 2026-10-07: Impact lap animation uses slow-fast-slow easing (unlinked)
+
+Implemented the approved lap animation in the native SwiftUI Impact screen with a
+circuit path, replay action, approximately 11-second duration, and accessibility
+reduced-motion support. Changed the timing to ease in, move fastest through the
+middle, and ease out before stopping. Simulator rendering remains unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Slow the Impact lap animation (unlinked)
+
+The user approved the Impact concept and asked for slower animation. Increased the
+lap animation duration in `prototypes/impact-final-mock.html` without changing its
+layout, copy, data or reduced-motion behavior. Rendered animation remains
+unverified because browser consent was not given.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Impact screen mock with laps and team comparison (unlinked)
+
+Request: present the 2025 Make A Mark ESG report to fans as personal, fan and
+AMF1 views, with Marina Bay lap comparisons, an animated AMR car tracing laps,
+and the fan's contribution against team moves. Static mock delivered at
+`prototypes/impact-final-mock.html`; native implementation awaits the user's
+selection. Rendered animation is unverified without browser consent.
+
+Recorded by opencode/exo-free through opencode.
+
+## 2026-10-06: Start navigation ignored taps and map showed no route (unlinked)
+
+The Start navigation button did nothing visible when the transport plan was
+unavailable, and the map drew no line at all when Apple returned no path and
+the backend legs carried no shape. Start navigation now always plays the
+JourneyCompletionView demo animation, and the map falls back to the leg
+endpoints or a direct origin-to-destination line. GPS guidance is removed
+from the demo path per the MVP request.
+
+Proof: `xcodebuild` simulator Debug build succeeded. Rendered behavior on
+device remains unverified without browser consent.
+
+Fixed by opencode/fledge-alpha-free through opencode.
+
+## 2026-10-06: profile screen name and empty badge slots (unlinked)
+
+The profile banner split the saved name awkwardly and showed a global rank value
+without an accepted data source. New accounts also rendered filled badge pins
+instead of a clear empty action. The banner now uses smaller constrained name
+text, removes the unsupported rank, and renders each empty slot as a dotted
+circle with a plus icon. Existing earned badges keep their current controls.
+
+Proof: signed Swift simulator build succeeded and the installed iPhone 18 Pro
+screen exposed the saved name without the rank. Empty-slot rendering was
+verified in source; the current account has earned badges, so no empty-slot
+state was available in the live simulator pass.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-06: profile setup exposed backend schema error (unlinked)
 
 The iOS profile setup screen displayed the backend response "Only displayName
@@ -2450,3 +2507,46 @@ Recorded by gpt-6-astra through Codex (T3 Code).
 The deployed admin static files loaded, but `/admin/config` and `/v1/*` returned Vercel 404s because the deployment had no root-level Vercel rewrites. The dashboard's sign-in, submission approval outbox and report review workspace therefore could not reach the private API. Added the repository-level Vercel configuration with the root redirect and explicit API rewrites. Admin self-sign-up remains intentionally absent: assigned admin accounts must be provisioned by the server.
 
 Recorded by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-07: Swift sign-in fails with "Identity could not be verified." (unlinked)
+
+The native app completes the Entra OIDC flow and exchanges the provider token at
+`POST /v1/session`, but the deployed Azure API returns 401 "Identity could not be
+verified." The app's OIDC config matches `deploy/azure/auth-staging.md` (authority,
+client ID, scope, redirect URI). The likely cause is the deployed API's auth env
+vars (`AUTH_PROVIDER`, `AUTH_ISSUER`, `AUTH_AUDIENCE`, `AUTH_JWKS_URL`,
+`AUTH_REQUIRED_SCOPE`) not matching the Entra tenant, but the Azure container app
+config cannot be inspected from this machine.
+
+Fix: `BackendSession.signIn()` now falls back to a local demo session when the OIDC
+exchange fails. Demo mode is clearly indicated in the UI (orange banner on the main
+tabs and a notice on the Account screen). Profile edits in demo mode are kept locally.
+Real OIDC is still attempted first, so fixing the Azure auth config will restore the
+normal path without further app changes.
+
+Proof: `xcodebuild -scheme Swift-App -destination 'generic/platform=iOS Simulator' build`
+passes. Live OIDC sign-in remains unverified because the deployed API rejects the
+provider token.
+
+Recorded by longcat-2.5-preview-free through OpenCode (T3 Code).
+
+## 2026-10-07: transit rows without CO₂, and a Navigate celebration that reported no saving (unlinked)
+
+Steering request: bus, train and walk options with CO₂ must appear for any typed
+location, and pressing Navigate must play a celebration showing points earned, CO₂
+saved and the same saving as a number of Marina Bay Street Circuit laps.
+
+Three defects. The iOS app still pointed at the stale Azure deployment, whose route
+provider is `disabled`, so `/v1/routes/query` returned `kind:"unavailable"` and the
+sheet printed "More route choices are unavailable right now." On BB-1 the OneMap
+normalization ceilings were too small for real data: an MRT leg measured 4439 points
+against a 2048 cap, and walk itineraries measured 166 to 436 route instructions
+against a 128 cap, so those modes were rejected and dropped from the plan with no
+CO₂ row. The first celebration run then reported 0.00 kg saved because for Woodlands
+to Bugis the plan's own `recommendation.routeId` names the car route, and the client
+treated that recommendation as the route the user chose.
+
+No credit was at risk at any point. The phone app only calculates and displays the
+reward; awarding a journey still requires validated start and arrival evidence.
+
+Recorded by deepseek-v4.1-flash through pi (T3 Code).

@@ -3,6 +3,7 @@ import { normalizeGoogleRoutes } from '@amr/travel-domain/google-routes';
 import {
   coordinate,
   hasDistinctPoints,
+  maxRouteCoordinates,
   singaporeRouteGeography,
   type Coordinate,
 } from './geography.ts';
@@ -111,7 +112,9 @@ export function decodePolyline(encoded: string): Coordinate[] | null {
       values.push(value % 2 === 1 ? -(value + 1) / 2 : value / 2);
       value = 0;
       shift = 0;
-      if (values.length > 4096) return null;
+      // Intentional allocation guard, matching the largest geometry the
+      // geography check accepts: one value occupies at least one character.
+      if (values.length > maxRouteCoordinates * 2) return null;
     } else {
       shift += 5;
       if (shift > 30) return null;

@@ -3,6 +3,7 @@ import type { RouteLeg, RouteOption } from '@amr/travel-domain/routes';
 import {
   coordinate,
   isSingaporeCoordinate,
+  maxRouteCoordinates,
   singaporeRouteGeography,
   type Coordinate,
 } from './geography.ts';
@@ -16,10 +17,15 @@ import {
 const missing = { kind: 'unavailable', reason: 'missing_data' } as const;
 const meters = z.number().nonnegative().max(20_000_000);
 const seconds = z.number().nonnegative().max(604800);
+// Bounds are allocation guards, not expected maxima. OneMap encodes each
+// coordinate as at least two characters, and a single leg can exceed 4000 points
+// on a long MRT run while a long walk or cycle can exceed 128 instructions.
+// Coordinate counts follow the shared geography ceiling; the whole response body
+// is separately capped at 131072 bytes.
 const polyline = z
   .string()
   .min(1)
-  .max(24000)
+  .max(maxRouteCoordinates * 2)
   .regex(/^[?-~]+$/);
 const place = z.object({
   lat: coordinate.shape.latitude,
@@ -32,7 +38,7 @@ const at = (p: z.infer<typeof place>): Coordinate => ({
 const roadResponse = z.object({
   error: z.never().optional(),
   status: z.literal(0),
-  route_instructions: z.array(z.array(z.unknown()).max(12)).min(1).max(128),
+  route_instructions: z.array(z.array(z.unknown()).max(16)).min(1).max(2048),
   route_geometry: polyline,
   route_summary: z.object({
     total_time: seconds.positive(),
@@ -48,7 +54,10 @@ const leg = z.object({
   endTime: z.int().nonnegative(),
   from: place,
   to: place,
-  legGeometry: z.object({ points: polyline, length: z.int().min(2).max(2048) }),
+  legGeometry: z.object({
+    points: polyline,
+    length: z.int().min(2).max(maxRouteCoordinates),
+  }),
 });
 const ptResponse = z.object({
   error: z.never().optional(),
@@ -182,7 +191,10 @@ export async function normalizeOneMap(
             sameEndpoint(points[points.length - 1], decoded[0]));
         points.push(...decoded);
         shapes.push(decoded);
-        if (points.length > 2048) return missing;
+        // Whole-itinerary geometry guard, matching the geography ceiling. Real
+        // multi-leg MRT itineraries reach roughly 4500 points, so the previous
+        // 2048 rejected ordinary journeys.
+        if (points.length > maxRouteCoordinates) return missing;
         previousEnd = item.endTime;
         const legMode =
           item.mode === 'WALK' ? 'walk' : item.mode === 'BUS' ? 'bus' : 'train';

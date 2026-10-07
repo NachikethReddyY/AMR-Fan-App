@@ -6,6 +6,7 @@ import {
   searchOneMapAddresses,
 } from './onemap-normalize.ts';
 import { road, roadFor, transit, address } from './testing/onemap-fixtures.ts';
+import { decodePolyline } from './normalize.ts';
 
 test('road summary and returned polyline become OneMap evidence without invented geometry', async () => {
   for (const mode of ['DRIVE', 'WALK', 'BICYCLE'] as const) {
@@ -110,6 +111,84 @@ test('malformed, contradictory, unsupported or excessive PT data fail closed', a
     { ...road, route_geometry: '_p~iF~ps|U_ulLnnqC' },
   ])
     assert.equal((await normalizeOneMap('WALK', raw)).kind, 'unavailable');
+});
+test('long MRT legs and long walking instruction lists stay inside bounded evidence limits', async () => {
+  // OneMap encodes each coordinate in at least two characters, so an ordinary
+  // cross-island MRT leg carries several thousand points and a long walk carries
+  // well over a hundred instructions. Both were rejected before.
+  function encodePolyline(
+    points: readonly { latitude: number; longitude: number }[],
+  ) {
+    let latitude = 0;
+    let longitude = 0;
+    let encoded = '';
+    const value = (delta: number) => {
+      let remaining = delta < 0 ? ~(delta << 1) : delta << 1;
+      let text = '';
+      while (remaining >= 0x20) {
+        text += String.fromCharCode((0x20 | (remaining & 0x1f)) + 63);
+        remaining >>>= 5;
+      }
+      return text + String.fromCharCode(remaining + 63);
+    };
+    for (const point of points) {
+      const a = Math.round(point.latitude * 1e5);
+      const b = Math.round(point.longitude * 1e5);
+      encoded += value(a - latitude) + value(b - longitude);
+      latitude = a;
+      longitude = b;
+    }
+    return encoded;
+  }
+  const zigzag = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({
+      latitude: 1.29 + (index % 2 === 0 ? 0 : 0.002),
+      longitude: 103.85 + (index % 2 === 0 ? 0 : 0.002),
+    }));
+  const points = encodePolyline(zigzag(3001));
+  const decoded = decodePolyline(points);
+  assert.ok(decoded && decoded.length === 3001);
+  const subway = transit();
+  const leg = subway.plan.itineraries[0].legs[1];
+  leg.mode = 'SUBWAY';
+  leg.from = {
+    name: 'Synthetic start',
+    lat: decoded[0].latitude,
+    lon: decoded[0].longitude,
+  };
+  leg.to = {
+    name: 'Synthetic end',
+    lat: decoded[decoded.length - 1].latitude,
+    lon: decoded[decoded.length - 1].longitude,
+  };
+  leg.legGeometry = { points, length: 3001 };
+  assert.equal((await normalizeOneMap('TRANSIT', subway)).kind, 'routes');
+
+  const walking = roadFor('WALK');
+  walking.route_instructions = Array.from(
+    { length: 300 },
+    () => road.route_instructions[0],
+  );
+  assert.equal((await normalizeOneMap('WALK', walking)).kind, 'routes');
+
+  const excessive = transit();
+  excessive.plan.itineraries[0].legs[1].legGeometry = {
+    points: encodePolyline(zigzag(40_000)),
+    length: 40_000,
+  };
+  assert.deepEqual(await normalizeOneMap('TRANSIT', excessive), {
+    kind: 'unavailable',
+    reason: 'missing_data',
+  });
+  const excessiveInstructions = roadFor('WALK');
+  excessiveInstructions.route_instructions = Array.from(
+    { length: 3000 },
+    () => road.route_instructions[0],
+  );
+  assert.deepEqual(await normalizeOneMap('WALK', excessiveInstructions), {
+    kind: 'unavailable',
+    reason: 'missing_data',
+  });
 });
 test('address search requires one Singapore match and refuses ambiguous, coercible and error payloads', () => {
   assert.deepEqual(resolveOneMapAddress(address()), {

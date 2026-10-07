@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impact lap-comparison mock</title>
+<style>
+:root{--bg:#0b0b0b;--panel:#161616;--border:#2b2b2b;--text:#f5f5f3;--muted:#a9a9a3;--lime:#CEDC00;--green:#04524B}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,system-ui,sans-serif;padding:20px;max-width:900px;margin:0 auto}
+h1{font-size:28px;margin-bottom:4px}
+.sub{color:var(--muted);margin-bottom:16px}
+button.tab{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+button.tab[aria-selected=true]{border-color:var(--lime);color:var(--lime)}
+button.tab:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+section[hidden]{display:none}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px}
+.metric{font-size:44px;font-weight:700;color:var(--lime)}
+.small{color:var(--muted);font-size:13px}
+svg{width:100%;height:auto;display:block}
+.circuitpath{fill:none;stroke:#3d3d3d;stroke-width:8;stroke-linecap:round}
+.circuitdot{fill:var(--lime);stroke:#0b0b0b;stroke-width:2}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-top:8px}
+input[type=range]{width:100%}
+.bar{fill:var(--green)}
+.bar.total{fill:var(--lime)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>Your contribution, team size</h1>
+<p class="sub">Static mock. Official figures from MakeAMark ESG Report 2025. Fan/community numbers are placeholders.</p>
+
+<div class="tabs" role="tablist" aria-label="Views">
+<button class="tab" role="tab" id="t1" aria-selected="true" aria-controls="v1">My travel</button>
+<button class="tab" role="tab" id="t2" aria-selected="false" aria-controls="v2">Community</button>
+<button class="tab" role="tab" id="t3" aria-selected="false" aria-controls="v3">Team 2025</button>
+<button class="tab" role="tab" id="t4" aria-selected="false" aria-controls="v4">Year trend</button>
+</div>
+
+<section role="tabpanel" id="v1" aria-labelledby="t1">
+<div class="panel">
+<div class="small">You</div>
+<div class="metric">128 kg CO₂</div>
+<p class="small">vs 1-person car baseline, 0.1901 kg CO₂ per km</p>
+</div>
+<div class="panel">
+<div class="small">Circuit equivalent</div>
+<svg viewBox="0 0 300 140">
+<path class="circuitpath" d="M30 100 C 30 40, 90 20, 150 40 C 210 60, 260 30, 270 80 C 280 130, 200 130, 150 110 C 100 90, 30 130, 30 100 Z"/>
+<circle class="circuitdot" cx="30" cy="100" r="5"/>
+</svg>
+<p class="small">That's roughly <b id="sgMe">128</b> laps around a 5.06 km circuit like Marina Bay in a normal car, or <b id="f1Me">9</b> F1-car laps vs the team's 88,153 laps = 1,188 tCO₂e reference.</p>
+<div class="legend"><span><span style="display:inline-block;width:10px;height:10px;background:var(--lime);border-radius:99px;margin-right:6px"></span>Your saved laps</span></div>
+</div>
+</section>
+
+<section role="tabpanel" id="v2" aria-labelledby="t2" hidden>
+<div class="panel">
+<div class="small">All fans</div>
+<div class="metric">42 t CO₂</div>
+<p class="small">Estimated, app lifetime</p>
+</div>
+<div class="panel">
+<svg viewBox="0 0 300 120">
+<rect x="20" y="20" width="260" height="20" rx="10" fill="#222"/>
+<rect x="20" y="20" width="120" height="20" rx="10" fill="var(--lime)"/>
+</svg>
+<p class="small">Community saved ≈ <b>3,624</b> normal-car laps around Marina Bay, or ≈ <b>3,118</b> F1 laps using the report's own equivalence.</p>
+</div>
+</section>
+
+<section role="tabpanel" id="v3" aria-labelledby="t3" hidden>
+<div class="panel">
+<div class="small">Team 2025, limited assurance</div>
+<div class="metric">85,974 tCO₂e</div>
+<p class="small">Scope 1&2 499.65, Scope 3 85,474.79</p>
+</div>
+<div class="grid2">
+<div class="panel">
+<div class="small">Avoided via SAFc</div>
+<div class="metric" style="font-size:30px">1,188 t</div>
+<p class="small">= 88,153 laps around Silverstone (official)</p>
+</div>
+<div class="panel">
+<div class="small">Removed 2025</div>
+<div class="metric" style="font-size:30px">2,124 t</div>
+<p class="small">Ethiopia woodland, Kenya mangroves, US concrete</p>
+</div>
+</div>
+</section>
+
+<section role="tabpanel" id="v4" aria-labelledby="t4" hidden>
+<div class="panel">
+<div class="small">Market-based footprint with SAFc</div>
+<svg viewBox="0 0 300 160">
+<rect class="bar" x="40" y="20" width="40" height="120"/>
+<rect class="bar" x="130" y="20" width="40" height="110"/>
+<rect class="bar total" x="220" y="20" width="40" height="107"/>
+<text x="60" y="150" fill="#a9a9a3" font-size="10" text-anchor="middle">2023</text>
+<text x="150" y="150" fill="#a9a9a3" font-size="10" text-anchor="middle">2024</text>
+<text x="240" y="150" fill="#a9a9a3" font-size="10" text-anchor="middle">2025</text>
+</svg>
+<p class="small">2023 97,216.47 → 2024 87,300.62 → 2025 85,974.41 tCO₂e. Methodology changed, check report p. 83.</p>
+</div>
+</section>
+
+<div class="panel">
+<div class="small">Interactive lap check</div>
+<label for="kg">kg CO₂ you saved: <b id="kgv">128</b></label>
+<input type="range" id="kg" min="0" max="1000" value="128" />
+<p class="small">Marina Bay laps ≈ <b id="lapsg">128</b>. F1-car lap ≈ <b id="lapf1">9</b> using report's 13.48 kg per Silverstone lap equivalent.</p>
+</div>
+
+<script>
+var tabs=[].slice.call(document.querySelectorAll('button.tab'));
+var panels=tabs.map(function(t){return document.getElementById(t.getAttribute('aria-controls'))});
+function setTab(i){tabs.forEach(function(t,j){t.setAttribute('aria-selected',j===i?'true':'false');panels[j].hidden=j!==i});}
+tabs.forEach(function(t,i){t.addEventListener('click',function(){setTab(i);t.focus()});
+t.addEventListener('keydown',function(e){if(e.key==='ArrowRight')setTab((i+1)%tabs.length);if(e.key==='ArrowLeft')setTab((i-1+tabs.length)%tabs.length);if(e.key==='Home')setTab(0);if(e.key==='End')setTab(tabs.length-1);});});
+var kg=document.getElementById('kg'),lapsg=document.getElementById('lapsg'),lapf1=document.getElementById('lapf1'),sgMe=document.getElementById('sgMe'),f1Me=document.getElementById('f1Me'),kgv=document.getElementById('kgv');
+function conv(){var v=+kg.value;kgv.textContent=v;lapsg.textContent=Math.round(v/0.1901/5.06);lapf1.textContent=Math.round(v/13.48);sgMe.textContent=Math.round(v/0.1901/5.06);f1Me.textContent=Math.round(v/13.48);}
+kg.addEventListener('input',conv);conv();
+</script>
+</body>
+</html>

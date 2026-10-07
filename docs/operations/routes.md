@@ -59,6 +59,8 @@ which is disabled without its existing key. There is no cross-provider fallback.
 | `AMR_ONEMAP_BASE_URL` | Exactly `https://www.onemap.gov.sg` for live use. Redirects are rejected. |
 | `AMR_ROUTES_TIMEOUT_MS` | Existing 25–5000 ms bound, default 3000. Each auth/search/route request includes bounded body reading; route validation and geography use the same deadline. |
 | `AMR_ROUTES_SYNTHETIC` | Test-only OneMap fixtures require `NODE_ENV=test`, an explicit `http://127.0.0.1:<port>` base, no credential/token file or token cutoff, and no Google key. Only fixed synthetic credentials are sent. |
+| `AMR_ONEMAP_WINDOW_CALLS` | Optional positive integer ceiling for OneMap calls per rolling minute within one provider instance. Defaults to the committed 60. The BB-1 demo host sets 240 so repeated planning does not surface as `budget_exhausted`. |
+| `AMR_ONEMAP_TOTAL_CALLS` | Optional positive integer ceiling for OneMap calls per provider instance lifetime. Defaults to the committed 1000 and resets on restart. The BB-1 demo host sets 5000. |
 
 Account credentials are read only when a query needs a token. The server caches tokens
 in memory until 60 seconds before their supplied expiry, capped at three days.
@@ -178,12 +180,14 @@ module and no provider access. They establish local signal/host/port/same-proces
 compatibility only. Hosted mount metadata, real database startup and real routes
 still require their separately authorized checks.
 
-The same 60-call/minute and 1000-call/provider-lifetime ceilings include OneMap
+The same call/minute and call/provider-lifetime ceilings include OneMap
 authentication and address requests. Each query conservatively reserves one auth
 call, up to two address searches, and one call per selected mode, even if a token
 is cached, token-file mode skips authentication, or both address strings match.
-These process-local ceilings reset on restart; the independent Google budget is
-unchanged and is not used for OneMap. Identical address strings are resolved
+Both ceilings default to the committed 60/minute and 1000/lifetime values and
+are configurable through `AMR_ONEMAP_WINDOW_CALLS` and `AMR_ONEMAP_TOTAL_CALLS`;
+the BB-1 demo host sets 240 and 5000. These process-local ceilings reset on
+restart; the independent Google budget is unchanged and is not used for OneMap. Identical address strings are resolved
 once. Maximum fan-out remains two; a concurrent query returns `busy`. Every
 response has the existing 128 KiB limit. No pagination or automatic retry occurs.
 
@@ -221,8 +225,12 @@ cab or electric car, and OneMap does not supply the emissions calculation.
 
 Geometry uses the documented polyline5 encoding. `google-polyline5` in existing
 evidence names the encoding, not the data provider. Returned points are neither
-invented nor simplified. Each route permits 2048 points and 128 legs/instructions;
-transit permits three itineraries. The existing complete Singapore segment
+invented nor simplified. Each response permits at most 32768 decoded geometry
+coordinates and 2048 instructions; transit permits three itineraries, each with
+at most 128 legs. Singapore MRT legs routinely exceed 4000 coordinates, so the
+coordinate ceiling covers whole cross-island journeys rather than only short ones;
+the earlier 2048-point limit silently rejected ordinary transit rows.
+The existing complete Singapore segment
 containment check also applies. Bad/excessive evidence rejects the mode response
 instead of presenting a truncated route. Distances remain bounded to 20,000 km,
 durations to seven days. The existing journey validator can impose tighter
@@ -428,8 +436,10 @@ At most two mode normalizations share the existing provider request slots. The
 same abort deadline covers network and CPU work, with no background queue or
 worker pool.
 
-The R30-2 local regression accepts four modes, three routes per mode, 2048 points
-and 128 steps per route. Its newly agreed target is at most 50 ms maximum delay
+The R30-2 local regression accepts four modes, three routes per mode, a
+2048-point shape and 128 steps per route; the accepted geometry ceiling is
+covered separately by the route normalization tests. Its newly agreed target is
+at most 50 ms maximum delay
 for a 10 ms heartbeat, plus a concurrent independent-client health response
 during normalization. This is a synthetic local acceptance test, not a production
 SLA. Authenticated measurements and host-load observations remain in private

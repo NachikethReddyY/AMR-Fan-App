@@ -303,13 +303,15 @@ final class BackendSession: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var history: BackendHistoryPage?
     @Published private(set) var impact: BackendImpactOverview?
+    @Published private(set) var isDemoMode = false
 
     private let client = BackendClient()
     private let sessionStore: SessionTokenStore
     private(set) var token: String?
+    private var demoProfile: BackendProfile?
 
-    var isConnected: Bool { token != nil && account != nil }
-    var realProfile: BackendProfile? { account?.realProfile }
+    var isConnected: Bool { (token != nil && account != nil) || isDemoMode }
+    var realProfile: BackendProfile? { isDemoMode ? demoProfile : account?.realProfile }
 
     init(sessionStore: SessionTokenStore? = nil) {
         let sessionStore = sessionStore ?? KeychainSessionStore()
@@ -341,9 +343,37 @@ final class BackendSession: ObservableObject {
             self.token = session.token
             self.account = session.account
         }
+        if errorMessage != nil {
+            await enterDemoMode()
+        }
+    }
+
+    private func enterDemoMode() async {
+        isDemoMode = true
+        isBusy = false
+        errorMessage = nil
+        demoProfile = BackendProfile(
+            id: "demo-profile",
+            kind: "real",
+            displayName: "Demo Fan",
+            balance: 1000,
+            email: "demo@amr.fan",
+            birthday: "2000-01-01"
+        )
+        account = BackendAccount(
+            id: "demo-account",
+            role: "fan",
+            profiles: [demoProfile!]
+        )
     }
 
     func signOut() async {
+        if isDemoMode {
+            isDemoMode = false
+            demoProfile = nil
+            account = nil
+            return
+        }
         guard let token else { return }
         await run {
             try await self.client.logout(token: token)
@@ -356,6 +386,24 @@ final class BackendSession: ObservableObject {
     }
 
     func updateProfile(displayName: String?, email: String?, birthday: String?) async {
+        if isDemoMode {
+            if let profile = demoProfile {
+                demoProfile = BackendProfile(
+                    id: profile.id,
+                    kind: profile.kind,
+                    displayName: displayName ?? profile.displayName,
+                    balance: profile.balance,
+                    email: email ?? profile.email,
+                    birthday: birthday ?? profile.birthday
+                )
+                account = BackendAccount(
+                    id: account?.id ?? "demo-account",
+                    role: account?.role ?? "fan",
+                    profiles: [demoProfile!]
+                )
+            }
+            return
+        }
         guard let token, let profile = realProfile else { errorMessage = BackendError.notSignedIn.errorDescription; return }
         await run {
             _ = try await self.client.updateProfile(token: token, profileId: profile.id, displayName: displayName, email: email, birthday: birthday)

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impact: your laps around Singapore</title>
+<style>
+:root{--bg:#0f1110;--panel:#1c2421;--panel2:#2a3732;--border:#3d514a;--text:#f5f5f3;--muted:#a9a9a3;--green:#04524B;--lime:#CEDC00}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,system-ui,sans-serif;padding:20px;max-width:920px;margin:0 auto}
+h1{font-size:30px;margin-bottom:4px}
+.sub{color:var(--muted);margin-bottom:16px}
+.hero{background:var(--green);border-radius:16px;padding:18px;margin-bottom:16px}
+.hero h2{font-size:24px}
+.metric{font-size:52px;font-weight:700;color:var(--lime);font-variant-numeric:tabular-nums}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px}
+svg{width:100%;height:auto;display:block}
+.circuit{fill:none;stroke:#3d514a;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.lap-seg{fill:none;stroke:var(--lime);stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:8px}
+input[type=range]{width:100%}
+.small{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button.tab{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+button.tab[aria-selected=true]{border-color:var(--lime);color:var(--lime)}
+section[hidden]{display:none}
+.badge{display:inline-block;background:rgba(206,220,0,.15);color:var(--lime);border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<h1>Your laps around Singapore</h1>
+<p class="sub">F1-fan comparison, built on the team's own lap equivalence. Personal value is demo until the Impact read model is populated.</p>
+
+<div class="tabs" role="tablist" aria-label="Views">
+<button class="tab" role="tab" id="t1" aria-selected="true" aria-controls="v1">Me</button>
+<button class="tab" role="tab" id="t2" aria-selected="false" aria-controls="v2">Community</button>
+<button class="tab" role="tab" id="t3" aria-selected="false" aria-controls="v3">Team</button>
+</div>
+
+<section role="tabpanel" id="v1" aria-labelledby="t1">
+<div class="hero">
+<div class="small">You</div>
+<div class="metric" id="meLaps">11</div>
+<p>laps around Marina Bay, Singapore · <span id="meKg">128</span> kg CO₂e avoided</p>
+<p class="small">vs one-person driving the same endpoints</p>
+</div>
+<div class="panel">
+<svg viewBox="0 0 320 140">
+<path class="circuit" d="M30 100 C 30 40, 90 20, 150 40 C 210 60, 260 30, 270 80 C 280 130, 200 130, 150 110 C 100 90, 30 130, 30 100 Z"/>
+<path class="lap-seg" id="meLapPath" d="M30 100 C 30 40, 90 20, 150 40 C 210 60, 260 30, 270 80" />
+</svg>
+<div class="legend"><span><span style="display:inline-block;width:10px;height:10px;background:var(--lime);border-radius:99px;margin-right:6px"></span>Your saved laps (cap at 1 full lap shown)</span></div>
+</div>
+<div class="panel">
+<label for="kg">kg CO₂e you saved: <b id="kgv">128</b></label>
+<input type="range" id="kg" min="0" max="2000" value="128" />
+<p class="small">F1 comparison basis: 1,188 tCO₂e avoided = 88,153 laps around Silverstone (5.89 km). Scaled to Marina Bay (5.06 km) at the same per-km burn: <b>1 SG lap ≈ 11.6 kg CO₂e</b>.</p>
+</div>
+</section>
+
+<section role="tabpanel" id="v2" aria-labelledby="t2" hidden>
+<div class="hero">
+<div class="small">Community</div>
+<div class="metric">3,624</div>
+<p>laps around Marina Bay, Singapore · 42 t CO₂e avoided (demo)</p>
+</div>
+<div class="panel">
+<svg viewBox="0 0 320 100">
+<rect x="10" y="30" width="300" height="24" rx="12" fill="#222"/>
+<rect x="10" y="30" width="300" height="24" rx="12" fill="var(--lime)"/>
+</svg>
+<p class="small">All fans = <b>3,624</b> SG laps. Enough to cover ~7.5 Singapore Grand Prix qualifying sessions.</p>
+</div>
+</section>
+
+<section role="tabpanel" id="v3" aria-labelledby="t3" hidden>
+<div class="hero">
+<div class="small">Team, 2025</div>
+<div class="metric">88,153</div>
+<p>laps around Silverstone, UK · 1,188 tCO₂e avoided via SAFc</p>
+</div>
+<div class="panel">
+<svg viewBox="0 0 320 140">
+<path class="circuit" d="M20 80 L70 40 L120 30 L170 50 L220 40 L260 60 L240 100 L180 110 L120 130 L60 120 Z"/>
+</svg>
+<p class="small">Equivalent: <b>102,470</b> laps around Marina Bay if the same total were spread across SG. That is the report's own equivalence.</p>
+</div>
+<div class="panel">
+<div class="badge">Official</div>
+<p class="small">2025 Market-based total: <b>85,974 tCO₂e</b>, independently assured limited level, reporting period 1 Jan - 31 Dec 2025. App personal and community totals use kg CO₂ against the CAG car baseline and are separate from this team scope.</p>
+</div>
+</section>
+
+<script>
+var tabs=[].slice.call(document.querySelectorAll('button.tab'));
+var panels=tabs.map(function(t){return document.getElementById(t.getAttribute('aria-controls'))});
+function setTab(i){tabs.forEach(function(t,j){t.setAttribute('aria-selected',j===i?'true':'false');panels[j].hidden=j!==i});}
+tabs.forEach(function(t,i){t.addEventListener('click',function(){setTab(i);t.focus()});t.addEventListener('keydown',function(e){if(e.key==='ArrowRight')setTab((i+1)%tabs.length);if(e.key==='ArrowLeft')setTab((i-1+tabs.length)%tabs.length);if(e.key==='Home')setTab(0);if(e.key==='End')setTab(tabs.length-1);});});
+var kg=document.getElementById('kg'),kgv=document.getElementById('kgv'),meLaps=document.getElementById('meLaps'),meKg=document.getElementById('meKg'),meLapPath=document.getElementById('meLapPath');
+function conv(){var v=+kg.value;kgv.textContent=v;meKg.textContent=v;var laps=Math.round(v/11.6);meLaps.textContent=laps;
+var full=Math.min(laps,1);var frac=Math.min(laps/10,1);var d="M30 100 C 30 40, 90 20, 150 40 C 210 60, 260 30, 270 80";meLapPath.style.strokeDasharray=(frac*300)+" 400";}
+kg.addEventListener('input',conv);conv();
+</script>
+</body>
+</html>

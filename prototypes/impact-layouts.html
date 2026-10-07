@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impact direction options</title>
+<style>
+:root {
+  --bg:#0a0a0a; --panel:#141414; --border:#2a2a2a; --text:#f5f5f3; --muted:#a9a9a3;
+  --green:#04524B; --lime:#CEDC00; --lime-dim:rgba(206,220,0,.16);
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,system-ui,sans-serif;padding:24px}
+h1{font-size:32px;margin-bottom:8px}
+.sub{color:var(--muted);margin-bottom:24px}
+.tablist{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tabbtn{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+.tabbtn[aria-selected="true"]{background:var(--lime-dim);border-color:var(--lime);color:var(--lime)}
+.tabpanel[hidden]{display:none}
+.phone{max-width:420px;margin:0 auto;background:#121212;border:1px solid var(--border);border-radius:28px;padding:20px}
+.kicker{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);padding:10px 0}
+.panel{background:var(--green);color:#fff;border-radius:12px;padding:16px;margin:14px 0}
+.panel h2{font-size:18px}
+.panel .num{font-size:36px;font-weight:700}
+.tag{display:inline-block;background:var(--lime-dim);color:var(--lime);font-size:11px;padding:2px 8px;border-radius:999px;margin-top:6px}
+.row small{color:var(--muted);display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cell{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.cell b{display:block;font-size:20px}
+.tabbtn:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+</style>
+</head>
+<body>
+<h1>Impact direction options</h1>
+<p class="sub">Three ways to show personal vs community vs official team ESG data. All demo numbers, real layout only.</p>
+
+<div role="tablist" aria-label="Options">
+<button class="tabbtn" role="tab" id="tab1" aria-selected="true" aria-controls="p1">A: My Impact</button>
+<button class="tabbtn" role="tab" id="tab2" aria-selected="false" aria-controls="p2">B: Compare</button>
+<button class="tabbtn" role="tab" id="tab3" aria-selected="false" aria-controls="p3">C: Report Cards</button>
+</div>
+
+<section role="tabpanel" id="p1" aria-labelledby="tab1">
+<div class="phone">
+<div class="kicker">Impact</div>
+<h2 style="font-size:22px;margin-bottom:4px">My travel savings</h2>
+<p style="color:var(--muted);font-size:13px">Lifetime, vs one person driving</p>
+<div class="panel"><div class="num">128 kg CO₂</div><p style="font-size:13px">~42% lower than driving baseline. 12 qualifying journeys.</p></div>
+<div class="grid">
+<div class="cell"><small>Community</small><b>42 t</b></div>
+<div class="cell"><small>Team 2025</small><b>85,974 t</b></div>
+<div class="cell"><small>SAFc savings</small><b>1,188 t</b></div>
+</div>
+<h3 style="margin-top:16px;font-size:15px">Team highlights</h3>
+<div class="row"><span>Scope 1+2 2025 <small>market-based, SAFc</small></span><b>499 tCO₂e</b></div>
+<div class="row"><span>Scope 3 2025 <small>mostly upstream</small></span><b>85,974 tCO₂e</b></div>
+<div class="row"><span>Removed 2025 <small>community woodland, Ethiopia</small></span><b>2,124 tCO₂e</b></div>
+<p style="margin-top:12px"><span class="tag">Demo layout. Real values after admin approval.</span></p>
+</div>
+</section>
+
+<section role="tabpanel" id="p2" aria-labelledby="tab2" hidden>
+<div class="phone">
+<div class="kicker">Impact</div>
+<h2 style="font-size:22px">How are we doing?</h2>
+<div class="row"><span>You <small>lifetime, estimated</small></span><b>128 kg CO₂ saved</b></div>
+<div class="row"><span>All fans <small>lifetime, app estimate</small></span><b>42 t CO₂ saved</b></div>
+<div class="row"><span>Team <small>official 2025, assured</small></span><b>85,974 tCO₂e total</b></div>
+<hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
+<p style="color:var(--muted);font-size:13px">Unit basis: app in kg CO₂, team in tCO₂e. Periods differ. Official = 1 Jan - 31 Dec 2025, limited assurance ISO 14064-3. App = since first recorded journey.</p>
+</div>
+</section>
+
+<section role="tabpanel" id="p3" aria-labelledby="tab3" hidden>
+<div class="phone">
+<div class="kicker">Impact</div>
+<h2 style="font-size:22px">Team ESG 2025</h2>
+<h3 style="margin-top:14px">Environment</h3>
+<div class="row"><span>Net zero <small>SBTi target 2050</small></span><b>90% cut Scope 1-3</b></div>
+<div class="row"><span>SAFc travel &amp; logistics <small>avoided 2025</small></span><b>1,188 tCO₂e</b></div>
+<div class="row"><span>Removals <small>concrete, mangroves, Ethiopia</small></span><b>2,124 tCO₂e</b></div>
+<h3 style="margin-top:14px">Belong</h3>
+<div class="row"><span>Leadership programme <small>ALETO, 15 students</small></span><b>93% network</b></div>
+<h3 style="margin-top:14px">Community</h3>
+<div class="row"><span>Make A Mark Day <small>14 schools</small></span><b>257 students</b></div>
+</div>
+</section>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
+  var panels = tabs.map(function(t){ return document.getElementById(t.getAttribute('aria-controls')); });
+  function activate(i){
+    tabs.forEach(function(t,j){ t.setAttribute('aria-selected', j===i?'true':'false'); panels[j].hidden = j!==i; });
+    tabs[i].focus();
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click', function(){ activate(i); });
+    t.addEventListener('keydown', function(e){
+      if(e.key==='ArrowRight') activate((i+1)%tabs.length);
+      if(e.key==='ArrowLeft') activate((i-1+tabs.length)%tabs.length);
+      if(e.key==='Home') activate(0);
+      if(e.key==='End') activate(tabs.length-1);
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -119,13 +119,26 @@ export function isSingaporeCoordinate(value: Coordinate): boolean {
   return contains([value.longitude, value.latitude]);
 }
 
+// A single packed transit leg routinely carries more than 4000 coordinates on
+// Singapore's MRT network; the largest observed leg held 4439. This ceiling
+// matches what one bounded provider response can carry (its body is capped at
+// 131072 bytes and each coordinate costs at least two characters). The
+// containment scan below costs about 0.03 ms per coordinate and yields every few
+// milliseconds, so the largest accepted geometry adds about one second to the
+// mode deadline while every observed route stays near 150 ms.
+export const maxRouteCoordinates = 32_768;
+
 // Check the supplied geometry only. Internal region borders are allowed; outer
 // boundaries, missing geometry and segments leaving the polygon union fail closed.
 export async function singaporeRouteGeography(
   coordinates: readonly Coordinate[],
   signal?: AbortSignal,
 ): Promise<'Singapore' | null> {
-  if (coordinates.length > 2050 || !hasDistinctPoints(coordinates)) return null;
+  if (
+    coordinates.length > maxRouteCoordinates ||
+    !hasDistinctPoints(coordinates)
+  )
+    return null;
   // Two provider requests can normalize concurrently. Yield between bounded
   // scans instead of blocking the API for an entire route or mode batch.
   await setImmediate(undefined, { signal });

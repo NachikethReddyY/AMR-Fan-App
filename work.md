@@ -1,3 +1,33 @@
+## 2026-10-07: Native Impact lap animation uses slow-fast-slow easing (local)
+
+The native Impact screen now includes a replayable circuit trace based on estimated
+travel savings. It runs for about 11.3 seconds with `easeInOut`, so it starts slow,
+accelerates through the middle, and slows at the finish. Reduced Motion jumps to
+completion. Simulator Debug build succeeded; rendered interaction remains
+unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: Slower Impact lap animation (local)
+
+Extended the lap animation from about 3.9 seconds to about 11.3 seconds at the
+current sample value. Kept the existing easing, circuit, tabs, replay control and
+reduced-motion behavior. `git diff --check -- prototypes/impact-final-mock.html`
+passed. Rendered behavior remains unverified without browser consent.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-06: Start navigation always plays the completion demo (local)
+
+Removed the transport-plan guard that swallowed Start navigation taps:
+the button now always shows the demo completion animation, and the map
+draws a fallback line from leg endpoints or directly between origin and
+destination when no real geometry exists. GPS guidance is parked from the
+demo path. Proof: simulator Debug build succeeded; on-device behavior is
+unverified without browser consent.
+
+Recorded by opencode/fledge-alpha-free through opencode.
+
 ## 2026-10-06: unavailable reasons surfaced in CO2 rows (local)
 
 Rows now read "CO₂ unavailable · geography unverified" style reasons instead
@@ -4460,6 +4490,21 @@ credentials or reviewed JEV gateway contract are configured.
 
 Edited by gpt-6-astra through Codex (T3 Code).
 
+## 2026-10-06: profile banner name and empty badge polish
+
+The profile banner now renders the saved name at a smaller constrained size so
+it does not break into awkward fragments. The unsupported placeholder global
+rank was removed. Empty badge slots now use a dotted circle with a plus icon and
+an "Add an achievement badge" accessibility label; earned badges retain their
+existing symbols and navigation.
+
+Proof: signed Swift simulator build succeeded and the updated app was installed
+and opened on iPhone 18 Pro. The live account showed `Nachiketh Reddy` without
+`#146`; empty slots remain source-verified because this account has earned
+badges.
+
+Edited by gpt-6-luna through pi (host unknown).
+
 ## 2026-10-06: profile setup validation and hierarchy correction
 
 The Swift profile setup screen now validates the required name and birthday,
@@ -4471,6 +4516,21 @@ unavailable states with readable text, and the top spacing and secondary action
 hit area are tighter and clearer.
 
 Proof: `xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/amr-profile-build build CODE_SIGNING_ALLOWED=NO` succeeded. The first current-source build was unsigned (`CODE_SIGNING_ALLOWED=NO`), which removed the keychain entitlement required by the session write. The custom keychain group was unnecessary for this single-app target and is now removed. A simulator-signed build was rebuilt and installed as `com.amr.fanapp` on iPhone 18 Pro. The authenticated pass reached the live API, but the API rejected the payload before writing it. The staging inventory confirms Azure is pinned to old source `36996ec`, whose profile PATCH accepts only `displayName`; the local API already accepts name, email and birthday. Deployment of the current API is the required next step and was not performed without deployment authority.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-06: static 2025 ESG snapshot in Swift Impact
+
+Processed the supplied Make A Mark ESG Report 2025 locally with the pinned
+pdfjs-dist 6.3.289 parser. Added a static, source-labeled Impact snapshot with
+a 2023–2025 market-based footprint chart and report figures for travel/logistics
+avoided emissions, carbon removal and event energy reduction. Added a separate
+personal contribution card that uses the existing journey estimate and the
+accepted 0.1901 kg CO₂ per vehicle-kilometre single-occupant car baseline.
+
+Proof: local PDF extraction found 92 pages and the cited values; the unsigned
+Swift simulator build succeeded. Native rendered acceptance and dynamic API
+publication remain unverified.
 
 Edited by gpt-6-luna through pi (host unknown).
 
@@ -4525,3 +4585,51 @@ Rebuilt by opencode/muse-spark-1.3-contributor-free through T3 Code.
 Added a root-level `vercel.json` so the deployed admin app redirects `/` to `/admin/` and proxies `/admin/config` plus authenticated `/v1/*` admin routes to the private Render API. The existing `/admin/submissions/` page is the approval outbox, and `/admin/reports/` is the source-evidence digest/review workspace. Admin self-sign-up remains intentionally disabled; assigned admins sign in through the configured Supabase provider.
 
 Edited by gpt-6-luna through pi (T3 Code).
+
+## 2026-10-06: navigation completion celebration
+
+Added the Swift travel completion overlay. Arrival now shows an animated race-car
+entrance and restrained fireworks, followed by a completion summary with truthful
+points and CO₂ states. Continue dismisses the overlay, stops guidance, and returns
+to Home through the existing callback. Reduced-motion mode skips translation and
+scale motion while retaining the state change.
+
+Proof: `xcodebuild -project Swift-App/Swift-App.xcodeproj -scheme Swift-App -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/amr-travel-build build CODE_SIGNING_ALLOWED=NO` succeeded. Native rendered interaction remains unverified.
+
+Edited by gpt-6-luna through pi (host unknown).
+
+## 2026-10-07: transit CO₂ ceilings and the Navigate celebration
+
+Server. The OneMap normalization ceilings rejected valid live data, which is why
+transit rows lost their CO₂. `geography.ts` now exports `maxRouteCoordinates`
+(32768), and the geography check, the polyline decoder cap, the polyline maximum, the
+per-leg geometry maximum and the itinerary total all use it. The route instruction
+maximum is 2048 with 16 entries per instruction. The OneMap call ceilings and the
+provider timeout are now environment driven through `AMR_ONEMAP_WINDOW_CALLS`,
+`AMR_ONEMAP_TOTAL_CALLS` and `AMR_ROUTES_TIMEOUT_MS`, and `createOneMapProvider`
+receives `env`. `deploy/bb1/.env.example` and `docs/operations/routes.md` record the
+new settings. Deployed to BB-1 and verified live: Orchard to Changi Airport returns
+four routes with CO₂ instead of two, and Woodlands to Bugis returns two train routes,
+a bus, a walk and a car, each with an estimate.
+
+App. `JourneyCelebrationView.swift` adds the celebration: a party-popper burst, then
+the race car crossing behind a green wipe, then a summary of points, CO₂ saved and
+the lap comparison. `TravelScreen` computes the saving as the plan's car estimate
+minus the estimate for the route in the selected tab, so a plan whose recommendation
+names another mode cannot hide the saving, and the summary reports an unavailable
+estimate instead of inventing one. Route requests now run through one cancellable
+task, and a plan that arrives empty is retried, because the provider serves one plan
+at a time and drops single modes transiently.
+
+The reward is display only. `JourneyCelebrationRewards` uses 10 points per kilogram,
+a 2000 point cap and 7 kg CO₂e per lap, and nothing is written to the journey or
+points ledger.
+
+Proof: 102 route tests and 15 transport tests pass, and the API typecheck is clean.
+`xcodebuild` succeeds for the iPhone 18 Pro simulator. A simulator run of Woodlands
+Station to Bugis Station showed the burst, the car run and a summary of 27 pts,
+2.72 kg CO₂e and 0.39 laps of the Marina Bay Street Circuit. Evidence is local under
+`.evidence/journey-celebration/`. The planner's own CO₂ rows need a signed-in
+account, so in-app row rendering remains unverified.
+
+Edited by deepseek-v4.1-flash through pi (T3 Code).

@@ -5,8 +5,10 @@ import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createRouteProvider } from './provider.ts';
 
-// R30-2's accepted maximum query. Keep the complete shape, including repeated
+// A large four-mode query. Keep the complete shape, including repeated
 // traversals; responsiveness must not come from discarding provider geometry.
+// The accepted geometry ceiling is covered by the route normalization tests,
+// which exercise maxRouteCoordinates directly.
 const points = Array.from({ length: 2048 }, (_, i) =>
   i % 2
     ? { latitude: 1.34, longitude: 103.85 }

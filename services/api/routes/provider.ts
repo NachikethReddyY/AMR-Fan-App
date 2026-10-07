@@ -82,7 +82,7 @@ export function createRouteProvider(
   budget?: GoogleRouteBudget,
 ) {
   const selected = routeConfig(env);
-  if (selected.kind === 'onemap') return createOneMapProvider(selected);
+  if (selected.kind === 'onemap') return createOneMapProvider(selected, env);
   const config = selected;
   let active = false;
   let totalCalls = 0;

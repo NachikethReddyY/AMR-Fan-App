@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impact: final mock</title>
+<style>
+:root{--bg:#07110f;--p:#0d1b18;--p2:#10231f;--line:#27413a;--text:#f2f5f1;--mut:#99aaa4;--acid:#CEDC00;--am:#04524B;--am2:#0e9a7d;--amber:#ffc857;--track:#22342f}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,system-ui,sans-serif;padding:16px 12px 40px}
+.wrap{max-width:400px;margin:0 auto}
+h1{font-size:26px;letter-spacing:-.02em}
+.sub{color:var(--mut);font-size:13px;margin:2px 0 12px}
+.seg{display:flex;background:var(--p);border:1px solid var(--line);border-radius:999px;padding:3px;margin-bottom:12px;position:sticky;top:8px;z-index:5}
+.tab{flex:1;background:none;border:0;color:var(--mut);padding:8px 4px;border-radius:999px;font:700 13px/1 inherit;cursor:pointer}
+.tab[aria-selected=true]{background:var(--acid);color:#07110f}
+.tab:focus-visible,.btn:focus-visible,summary:focus-visible{outline:2px solid var(--acid);outline-offset:2px}
+section[hidden]{display:none}
+.hero{background:var(--am);border-radius:4px;padding:14px;margin-bottom:8px}
+.k{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acid)}
+.hero .k{color:rgba(255,255,255,.75)}
+.big{font-size:56px;line-height:.95;font-weight:800;color:var(--acid);letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin-top:4px}
+.big small{font-size:17px;color:#fff;font-weight:700;letter-spacing:0;margin-left:4px}
+.hero p{font-size:14px}.fine{font-size:12px;color:rgba(255,255,255,.72);margin-top:4px}
+.card{background:var(--p);border:1px solid var(--line);border-radius:4px;padding:12px;margin-bottom:8px}
+.card h2{font-size:15px;margin:2px 0}
+.m{color:var(--mut);font-size:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.s{background:var(--p);border:1px solid var(--line);border-radius:4px;padding:9px}
+.s b{display:block;font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.s span{font-size:11px;color:var(--mut)}
+.s.hl{background:var(--acid);color:#07110f;border-color:var(--acid)}.s.hl span{color:#24300a}
+svg{display:block;width:100%;height:auto}
+.trk{fill:none;stroke:var(--track);stroke-width:16;stroke-linejoin:round;stroke-linecap:round}
+.lapl{fill:none;stroke:var(--acid);stroke-width:16;stroke-linejoin:round;stroke-linecap:round;opacity:.14}
+.prog{fill:none;stroke:var(--acid);stroke-width:16;stroke-linejoin:round;stroke-linecap:round}
+.btn{background:none;border:1px solid var(--line);color:var(--text);border-radius:999px;padding:4px 11px;font:700 12px/1.4 inherit;cursor:pointer}
+.br{display:grid;grid-template-columns:84px 1fr 64px;gap:8px;align-items:center;font-size:12px;margin:7px 0}
+.bt{height:10px;background:#1a322c;border-radius:2px;overflow:hidden;position:relative}
+.bf{display:block;height:100%;background:linear-gradient(90deg,var(--am2),var(--acid))}
+.br b{text-align:right;font-variant-numeric:tabular-nums}
+.br.you span{color:var(--acid);font-weight:700}
+.note{border-left:3px solid var(--acid);background:var(--p2);padding:8px 10px;font-size:12px;color:#b7c4bf;margin-top:8px}
+.note b{color:var(--text)}
+.dots{display:grid;grid-template-columns:repeat(25,1fr);gap:2px;margin:8px 0 4px}
+.dots i{aspect-ratio:1;border-radius:1px;background:#1d302b}.dots i.f{background:var(--am2)}.dots i.y{background:var(--acid)}
+.lg{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--mut);margin-top:6px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:rgba(206,220,0,.16);color:var(--acid);letter-spacing:.04em;vertical-align:2px}
+.donut{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center}
+.rows div{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #1b302a}
+.rows div:last-child{border:0}.rows span{color:var(--mut)}
+details{border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin-top:6px;background:var(--p2)}
+summary{cursor:pointer;font-weight:700;font-size:13px}
+details p{font-size:12px;color:var(--mut);margin-top:6px}
+a{color:var(--acid)}
+.foot{font-size:11px;color:#6e8179;margin-top:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Impact</h1>
+<p class="sub">Your travel, all fans, and the team, in laps.</p>
+
+<div class="seg" role="tablist" aria-label="Impact views">
+<button class="tab" role="tab" id="t1" aria-selected="true" aria-controls="v1">You</button>
+<button class="tab" role="tab" id="t2" aria-selected="false" aria-controls="v2" tabindex="-1">Fans</button>
+<button class="tab" role="tab" id="t3" aria-selected="false" aria-controls="v3" tabindex="-1">AMF1</button>
+</div>
+
+<!-- ============ YOU ============ -->
+<section role="tabpanel" id="v1" aria-labelledby="t1">
+<div class="hero">
+<div class="k">Your lifetime travel</div>
+<div class="big"><span id="lapsBig">0.0</span><small>laps</small></div>
+<p>of Marina Bay, Singapore</p>
+<p class="fine"><span id="kgHero">128</span> kg CO₂ avoided vs driving alone</p>
+</div>
+
+<div class="card">
+<div class="row"><h2 id="lapLabel">Lap 1</h2><span class="m" id="lapPct"></span><button class="btn" id="replay" type="button">Replay</button></div>
+<svg viewBox="485 -14 645 428" role="img" aria-label="Marina Bay circuit showing the laps your travel has covered">
+<path class="trk" d="M 1101.8455,244.70572 C 1100.4825,236.82644 1087.5408,148.07706 1083.3898,115.19771 C 1079.2446,82.365591 1079.0529,42.268251 1072.7294,36.958271 C 1065.3254,30.740951 1047.0722,35.839701 1036.1542,22.485063 C 1025.9135,9.9589005 1028.3264,9.0090455 1022.878,9.4354665 C 1017.7915,9.8335565 1012.5708,11.166324 1010.8686,22.70159 C 1009.1578,34.294951 1006.184,49.224521 1009.5116,60.606611 C 1013.0955,72.865331 1034.1108,127.54176 1036.0239,139.39678 C 1037.9287,151.19986 1032.6174,171.57796 1018.1202,171.9924 C 1002.8951,172.42766 930.1479,168.48404 912.60082,167.76865 C 893.24839,166.97966 845.68323,169.02666 826.97029,158.35547 C 808.53157,147.84067 742.01137,109.05429 730.86626,101.92237 C 720.03057,94.988451 708.85236,87.704701 703.90914,91.664181 C 698.78337,95.769881 688.52714,113.73058 685.94643,117.76603 C 683.36573,121.80149 669.53641,145.19497 663.13185,154.07703 C 658.84629,160.02038 654.28367,158.57169 652.22344,157.95026 C 645.53883,155.93396 629.43973,139.56333 612.43332,120.85502 C 595.11062,101.79877 585.77689,112.52403 580.79263,120.77826 C 576.99205,127.07225 507.13954,245.85248 504.67681,251.24985 C 501.94444,257.23819 505.87222,260.83771 506.18563,263.6752 C 506.42882,265.87695 504.13801,269.28459 504.26732,272.50073 C 504.36738,274.98935 509.33725,279.19848 514.90124,284.46646 C 520.46523,289.73444 532.27309,300.00936 535.29274,304.60667 C 538.47755,309.45544 535.71402,320.26523 536.10989,329.2349 C 536.44159,336.75054 541.57985,339.62355 550.77134,347.36345 C 560.72472,355.74492 569.51561,361.29966 577.00063,366.48512 C 584.95612,371.99651 588.34336,384.87797 593.88125,390.04265 C 599.7589,395.5242 608.35494,402.25933 612.8937,379.58724 C 617.32067,357.47359 624.37827,290.35683 627.94813,269.84407 C 631.55157,249.13841 650.05585,198.70524 656.16155,185.87771 C 662.69022,172.16153 668.0367,173.24729 681.45874,185.44765 C 694.48897,197.29187 728.15609,223.80305 739.06139,232.41957 C 749.61403,240.75745 768.67311,238.2848 779.4705,240.43535 C 789.58691,242.45027 787.4258,252.57116 789.5658,265.32634 C 792.09496,280.40098 818.13142,275.77002 825.84992,275.78028 C 834.14692,275.7913 861.45565,279.42213 869.86545,278.79638 C 878.19347,278.17672 877.24895,244.62175 889.77069,244.09032 C 902.2824,243.55931 936.10285,249.94599 942.40831,251.32156 C 948.78004,252.71159 951.58386,260.15554 953.18379,272.39095 C 954.83055,284.98461 976.8585,282.93793 999.46262,284.41296 C 1022.0667,285.88798 1040.4799,285.8835 1057.2834,287.77098 C 1074.0426,289.65348 1073.3283,287.55018 1080.6356,280.41921 C 1084.4713,276.67158 1098.3263,264.1551 1100.8443,258.83207 C 1103.3623,253.50904 1102.5577,248.82233 1101.8455,244.70572 Z"/>
+<g id="lapLayers"></g>
+<path class="prog" id="prog" d="M 1101.8455,244.70572 C 1100.4825,236.82644 1087.5408,148.07706 1083.3898,115.19771 C 1079.2446,82.365591 1079.0529,42.268251 1072.7294,36.958271 C 1065.3254,30.740951 1047.0722,35.839701 1036.1542,22.485063 C 1025.9135,9.9589005 1028.3264,9.0090455 1022.878,9.4354665 C 1017.7915,9.8335565 1012.5708,11.166324 1010.8686,22.70159 C 1009.1578,34.294951 1006.184,49.224521 1009.5116,60.606611 C 1013.0955,72.865331 1034.1108,127.54176 1036.0239,139.39678 C 1037.9287,151.19986 1032.6174,171.57796 1018.1202,171.9924 C 1002.8951,172.42766 930.1479,168.48404 912.60082,167.76865 C 893.24839,166.97966 845.68323,169.02666 826.97029,158.35547 C 808.53157,147.84067 742.01137,109.05429 730.86626,101.92237 C 720.03057,94.988451 708.85236,87.704701 703.90914,91.664181 C 698.78337,95.769881 688.52714,113.73058 685.94643,117.76603 C 683.36573,121.80149 669.53641,145.19497 663.13185,154.07703 C 658.84629,160.02038 654.28367,158.57169 652.22344,157.95026 C 645.53883,155.93396 629.43973,139.56333 612.43332,120.85502 C 595.11062,101.79877 585.77689,112.52403 580.79263,120.77826 C 576.99205,127.07225 507.13954,245.85248 504.67681,251.24985 C 501.94444,257.23819 505.87222,260.83771 506.18563,263.6752 C 506.42882,265.87695 504.13801,269.28459 504.26732,272.50073 C 504.36738,274.98935 509.33725,279.19848 514.90124,284.46646 C 520.46523,289.73444 532.27309,300.00936 535.29274,304.60667 C 538.47755,309.45544 535.71402,320.26523 536.10989,329.2349 C 536.44159,336.75054 541.57985,339.62355 550.77134,347.36345 C 560.72472,355.74492 569.51561,361.29966 577.00063,366.48512 C 584.95612,371.99651 588.34336,384.87797 593.88125,390.04265 C 599.7589,395.5242 608.35494,402.25933 612.8937,379.58724 C 617.32067,357.47359 624.37827,290.35683 627.94813,269.84407 C 631.55157,249.13841 650.05585,198.70524 656.16155,185.87771 C 662.69022,172.16153 668.0367,173.24729 681.45874,185.44765 C 694.48897,197.29187 728.15609,223.80305 739.06139,232.41957 C 749.61403,240.75745 768.67311,238.2848 779.4705,240.43535 C 789.58691,242.45027 787.4258,252.57116 789.5658,265.32634 C 792.09496,280.40098 818.13142,275.77002 825.84992,275.78028 C 834.14692,275.7913 861.45565,279.42213 869.86545,278.79638 C 878.19347,278.17672 877.24895,244.62175 889.77069,244.09032 C 902.2824,243.55931 936.10285,249.94599 942.40831,251.32156 C 948.78004,252.71159 951.58386,260.15554 953.18379,272.39095 C 954.83055,284.98461 976.8585,282.93793 999.46262,284.41296 C 1022.0667,285.88798 1040.4799,285.8835 1057.2834,287.77098 C 1074.0426,289.65348 1073.3283,287.55018 1080.6356,280.41921 C 1084.4713,276.67158 1098.3263,264.1551 1100.8443,258.83207 C 1103.3623,253.50904 1102.5577,248.82233 1101.8455,244.70572 Z"/>
+<g aria-hidden="true">
+<rect x="1084" y="240" width="36" height="10" fill="#fff"/>
+<rect x="1084" y="240" width="9" height="5" fill="#000"/><rect x="1102" y="240" width="9" height="5" fill="#000"/>
+<rect x="1093" y="245" width="9" height="5" fill="#000"/><rect x="1111" y="245" width="9" height="5" fill="#000"/>
+</g>
+<g id="car" aria-hidden="true"><g transform="scale(1.25)">
+<rect x="-19" y="-11" width="6" height="22" rx="1" fill="#04524B" stroke="#CEDC00" stroke-width=".8"/>
+<rect x="-14" y="-12" width="8" height="5" rx="1.5" fill="#111"/><rect x="-14" y="7" width="8" height="5" rx="1.5" fill="#111"/>
+<rect x="6" y="-11" width="7" height="4.5" rx="1.5" fill="#111"/><rect x="6" y="6.5" width="7" height="4.5" rx="1.5" fill="#111"/>
+<path d="M-17 -4 L-6 -6.5 L8 -3.5 L22 -1.2 L22 1.2 L8 3.5 L-6 6.5 L-17 4 Z" fill="#04524B" stroke="#CEDC00" stroke-width=".8"/>
+<rect x="19" y="-10" width="4" height="20" rx="1" fill="#04524B" stroke="#CEDC00" stroke-width=".8"/>
+<ellipse cx="-1" cy="0" rx="3.4" ry="2.3" fill="#CEDC00"/>
+</g></g>
+</svg>
+<div class="lg"><span><i class="sw" style="background:var(--acid)"></i>This lap</span><span><i class="sw" style="background:rgba(206,220,0,.35)"></i>Laps done, stacked</span><span>Next lap in <b id="nextKg" style="color:var(--text)"></b></span></div>
+</div>
+
+<div class="g3">
+<div class="s"><b>14</b><span>journeys</span></div>
+<div class="s"><b>186 km</b><span>MRT and bus</span></div>
+<div class="s"><b>6,400</b><span>points</span></div>
+</div>
+
+<div class="card">
+<div class="k">Your part in the team effort</div>
+<h2>1 in 9,281</h2>
+<p class="m">9,281 fans travelling like you would match AMF1's 2025 SAF freight saving (1,188 t).</p>
+<div class="br you"><span>You</span><div class="bt"><i class="bf" style="width:21%"></i></div><b>11 laps</b></div>
+<div class="br"><span>All fans</span><div class="bt"><i class="bf" style="width:71%"></i></div><b>3,621</b></div>
+<div class="br"><span>AMF1 SAF</span><div class="bt"><i class="bf" style="width:100%"></i></div><b>102,414</b></div>
+<p class="m">Marina Bay laps, log scale.</p>
+<div class="note">Your 128 kg equals <b>12 minutes</b> of the team's staff commuting emissions. All fans together: <b>2.7 days</b>.</div>
+</div>
+
+<div class="card">
+<div class="row"><h2>Laps by month</h2><span class="m">running total</span></div>
+<svg viewBox="0 0 320 120" aria-label="Laps per month, May to October">
+<g fill="#16403a"><rect x="18" y="80" width="30" height="14"/><rect x="68" y="70" width="30" height="24"/><rect x="118" y="75" width="30" height="19"/><rect x="168" y="60" width="30" height="34"/><rect x="218" y="50" width="30" height="44"/></g>
+<rect x="268" y="74" width="30" height="20" fill="var(--acid)"/>
+<polyline points="33,88 83,76 133,66 183,48 233,24 283,12" fill="none" stroke="var(--acid)" stroke-width="2"/>
+<g fill="var(--mut)" font-size="10" text-anchor="middle"><text x="33" y="110">May</text><text x="83" y="110">Jun</text><text x="133" y="110">Jul</text><text x="183" y="110">Aug</text><text x="233" y="110">Sep</text><text x="283" y="110">Oct</text></g>
+</svg>
+</div>
+</section>
+
+<!-- ============ FANS ============ -->
+<section role="tabpanel" id="v2" aria-labelledby="t2" hidden>
+<div class="hero">
+<div class="k">All fans, lifetime</div>
+<div class="big">3,621<small>laps</small></div>
+<p>of Marina Bay, together</p>
+<p class="fine">42 t CO₂ avoided · 2,310 fans · 58 full Singapore GPs</p>
+</div>
+
+<div class="card">
+<div class="k">Fans vs team moves</div>
+<h2>Fans already beat the EV switch</h2>
+<p class="m">2025 team savings next to what fans have avoided.</p>
+<div class="br"><span>Team EV cars</span><div class="bt"><i class="bf" style="width:13%"></i></div><b>25 t</b></div>
+<div class="br you"><span>All fans</span><div class="bt"><i class="bf" style="width:22%"></i></div><b>42 t</b></div>
+<div class="br"><span>Fewer flights</span><div class="bt"><i class="bf" style="width:100%"></i></div><b>193 t</b></div>
+<p class="m">Next target: match the team's flight cuts. 151 t to go.</p>
+</div>
+
+<div class="card">
+<h2>Toward the team's SAF saving</h2>
+<p class="m">Each square is 1% of 1,188 t.</p>
+<div class="dots" id="dots" aria-label="All fans have reached 3.5 percent"></div>
+<div class="lg"><span><i class="sw" style="background:var(--am2)"></i>Fans so far: 3.5%</span><span>Your 128 kg: 0.3% of that</span></div>
+</div>
+
+<div class="card">
+<div class="row"><h2>Laps per week</h2><span class="m">Aug to Oct</span></div>
+<svg viewBox="0 0 320 110" aria-label="Weekly community laps with a peak in Singapore GP week">
+<polygon points="10,90 40,86 70,82 100,80 130,74 160,76 190,26 220,68 250,62 280,58 310,52 310,98 10,98" fill="rgba(206,220,0,.10)"/>
+<polyline points="10,90 40,86 70,82 100,80 130,74 160,76 190,26 220,68 250,62 280,58 310,52" fill="none" stroke="var(--acid)" stroke-width="2"/>
+<text x="196" y="22" fill="var(--text)" font-size="11">Singapore GP week · 412</text>
+</svg>
+</div>
+
+<div class="card">
+<h2>How fans travel</h2>
+<div class="br"><span>MRT</span><div class="bt"><i class="bf" style="width:55%"></i></div><b>55%</b></div>
+<div class="br"><span>Bus</span><div class="bt"><i class="bf" style="width:29%"></i></div><b>29%</b></div>
+<div class="br"><span>Walk/cycle</span><div class="bt"><i class="bf" style="width:16%"></i></div><b>16%</b></div>
+</div>
+</section>
+
+<!-- ============ AMF1 ============ -->
+<section role="tabpanel" id="v3" aria-labelledby="t3" hidden>
+<div class="hero">
+<div class="k">AMF1 in 2025 <span class="tag">Official</span></div>
+<div class="big">88,153<small>laps</small></div>
+<p>of Silverstone avoided with sustainable aviation fuel</p>
+<p class="fine">1,188 tCO₂e · Make A Mark ESG Report 2025</p>
+</div>
+
+<div class="g2">
+<div class="s hl"><b>85,974</b><span>tCO₂e footprint</span></div>
+<div class="s"><b style="color:var(--acid)">2050</b><span>net zero target</span></div>
+<div class="s"><b>2,124</b><span>tCO₂e removed</span></div>
+<div class="s"><b>32%</b><span>AMR25 circularity</span></div>
+</div>
+
+<div class="card">
+<div class="k">Follow the carbon</div>
+<h2>81% comes from the supply chain</h2>
+<div class="donut">
+<svg viewBox="0 0 42 42" aria-label="Footprint split: supply chain 81 percent">
+<circle cx="21" cy="21" r="15.9" fill="none" stroke="#1a322c" stroke-width="6"/>
+<circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--acid)" stroke-width="6" stroke-dasharray="81 19" stroke-dashoffset="25"/>
+<circle cx="21" cy="21" r="15.9" fill="none" stroke="#4fbba0" stroke-width="6" stroke-dasharray="6 94" stroke-dashoffset="-56"/>
+<circle cx="21" cy="21" r="15.9" fill="none" stroke="#2e6f63" stroke-width="6" stroke-dasharray="6 94" stroke-dashoffset="-62"/>
+<circle cx="21" cy="21" r="15.9" fill="none" stroke="#8ec4b7" stroke-width="6" stroke-dasharray="7 93" stroke-dashoffset="-68"/>
+<text x="21" y="23.5" fill="#f2f5f1" font-size="8" font-weight="800" text-anchor="middle">81%</text>
+</svg>
+<div class="rows">
+<div><span><i class="sw" style="background:var(--acid)"></i>Supply chain</span><b>69,837 t</b></div>
+<div><span><i class="sw" style="background:#8ec4b7"></i>Staff commuting</span><b>5,717 t</b></div>
+<div><span><i class="sw" style="background:#4fbba0"></i>Freight</span><b>5,560 t</b></div>
+<div><span><i class="sw" style="background:#2e6f63"></i>Business travel</span><b>6%</b></div>
+</div>
+</div>
+<div class="note"><b>Fan translation:</b> most carbon is made before the car leaves the factory, in parts and materials. Commuting is the slice your kind of travel looks like.</div>
+</div>
+
+<div class="card">
+<div class="k">Target chase</div>
+<h2>On the way to the 2030 line</h2>
+<svg viewBox="0 0 320 150" aria-label="Footprint 2023 97,216, 2025 87,162, 2030 target 76,162, 2050 target 9,722">
+<g stroke="#19342c" stroke-dasharray="3 5"><line x1="20" y1="20" x2="310" y2="20"/><line x1="20" y1="70" x2="310" y2="70"/><line x1="20" y1="120" x2="310" y2="120"/></g>
+<polyline points="30,23 110,33" fill="none" stroke="var(--acid)" stroke-width="3"/>
+<polyline points="110,33 200,44 300,113" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-dasharray="6 5"/>
+<g stroke="#07110f" stroke-width="2"><circle cx="30" cy="23" r="5" fill="#e7ece8"/><circle cx="110" cy="33" r="6" fill="var(--acid)"/><circle cx="200" cy="44" r="5" fill="var(--amber)"/><circle cx="300" cy="113" r="5" fill="#7e8b86"/></g>
+<g font-size="10" font-weight="700" text-anchor="middle"><text x="30" y="13" fill="#e7ece8">97,216</text><text x="110" y="24" fill="var(--acid)">87,162</text><text x="200" y="36" fill="var(--amber)">76,162</text><text x="290" y="104" fill="#a9b5b0">9,722</text></g>
+<g fill="var(--mut)" font-size="10" text-anchor="middle"><text x="30" y="142">2023</text><text x="110" y="142">2025</text><text x="200" y="142">2030</text><text x="300" y="142">2050</text></g>
+</svg>
+<div class="br"><span>Scope 1+2</span><div class="bt"><i class="bf" style="width:74%"></i><i style="position:absolute;left:42%;top:-3px;width:2px;height:16px;background:#fff"></i></div><b>−74%</b></div>
+<div class="br"><span>Scope 3</span><div class="bt"><i class="bf" style="width:14%"></i><i style="position:absolute;left:25%;top:-3px;width:2px;height:16px;background:#fff"></i></div><b>−14%</b></div>
+<p class="m">tCO₂e, without SAF certificates. White line: 2030 target (−42%, −25%).</p>
+</div>
+
+<div class="card">
+<div class="k">2025 moves, in Silverstone laps</div>
+<div class="br"><span>SAF freight</span><div class="bt"><i class="bf" style="width:100%"></i></div><b>88,153</b></div>
+<div class="br"><span>No paper cups</span><div class="bt"><i class="bf" style="width:43%"></i></div><b>37,950</b></div>
+<div class="br"><span>Fewer flights</span><div class="bt"><i class="bf" style="width:16%"></i></div><b>14,320</b></div>
+<div class="br"><span>EV pool cars</span><div class="bt"><i class="bf" style="width:2%"></i></div><b>1,855</b></div>
+<div class="br you"><span>All fans</span><div class="bt"><i class="bf" style="width:4%"></i></div><b>3,116</b></div>
+<p class="m">First two laps figures are the report's own. Others use the same rate, 13.5 kg per lap.</p>
+</div>
+
+<div class="card">
+<div class="k">Removing the rest</div>
+<h2>2,124 t removed, 137% of Scope 1+2</h2>
+<div class="rows">
+<div><span>Ethiopia</span><b>community woodland</b></div>
+<div><span>Kenya</span><b>mangrove restoration</b></div>
+<div><span>USA</span><b>CO₂ locked in concrete</b></div>
+</div>
+<p class="m" style="margin-top:6px">Campus: 122% biodiversity net gain, 72,000 m² wild meadow.</p>
+</div>
+
+<div class="card">
+<div class="k">Decoder</div>
+<details><summary>Scope 1, 2, 3</summary><p>1: fuel the team burns. 2: electricity it buys. 3: everything else, from parts to flights and commuting.</p></details>
+<details><summary>SAF certificates</summary><p>The team pays for sustainable fuel that enters the aviation system and claims the saving, without its own plane using that exact fuel.</p></details>
+<details><summary>Why your km count differently</summary><p>Your savings are app estimates against driving alone. Team figures are an assured annual report. We compare them for scale, never add them up.</p></details>
+</div>
+
+<p class="foot">Team figures: <a href="https://downloads.astonmartinf1.com/MakeAMark_ESG_Report_2025.pdf" target="_blank" rel="noopener noreferrer">Make A Mark ESG Report 2025 ↗</a>, 1 Jan to 31 Dec 2025, limited assurance (ISO 14064-3).</p>
+</section>
+
+<p class="foot">Mock. You and Fans values are sample data. Lap rate: 1,188 t = 88,153 Silverstone laps (report), scaled to Marina Bay's 5.06 km: 11.6 kg per lap.</p>
+</div>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('[role=tab]'));
+  function setTab(i,f){tabs.forEach(function(t,j){var on=j===i;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on;});if(f)tabs[i].focus();}
+  tabs.forEach(function(t,i){t.addEventListener('click',function(){setTab(i,false);});
+    t.addEventListener('keydown',function(e){var n=tabs.length,k={ArrowRight:(i+1)%n,ArrowLeft:(i-1+n)%n,Home:0,End:n-1}[e.key];if(k!==undefined){e.preventDefault();setTab(k,true);}});});
+
+  // Dots: 100 squares = team SAF saving; fans 3.5%, your share is a sliver of that.
+  var dots=document.getElementById('dots');
+  for(var d=0;d<100;d++){var s=document.createElement('i');if(d<3)s.className='f';else if(d===3)s.style.background='linear-gradient(90deg,#0e9a7d 50%,#1d302b 50%)';dots.appendChild(s);}
+
+  var KG=128, KG_PER_LAP=11.6, TOTAL=KG/KG_PER_LAP;
+  var prog=document.getElementById('prog'),car=document.getElementById('car'),layers=document.getElementById('lapLayers');
+  var L=prog.getTotalLength(), d0=prog.getAttribute('d'), NS='http://www.w3.org/2000/svg';
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render(laps){
+    var full=Math.floor(laps),frac=laps-full;
+    while(layers.childNodes.length<Math.min(full,14)){var p=document.createElementNS(NS,'path');p.setAttribute('class','lapl');p.setAttribute('d',d0);layers.appendChild(p);}
+    while(layers.childNodes.length>Math.min(full,14))layers.removeChild(layers.lastChild);
+    prog.style.strokeDasharray=(frac*L)+' '+L;
+    var a=prog.getPointAtLength(frac*L),b=prog.getPointAtLength(Math.min(frac*L+2,L-0.01));
+    if(frac*L+2>=L)b=prog.getPointAtLength(2);
+    var ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    car.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+ang+')');
+    document.getElementById('lapsBig').textContent=laps.toFixed(1);
+    document.getElementById('lapLabel').textContent='Lap '+(full+1);
+    document.getElementById('lapPct').textContent=Math.round(frac*100)+'% round';
+    document.getElementById('nextKg').textContent=((1-frac)*KG_PER_LAP).toFixed(1)+' kg';
+  }
+
+  var raf=0;
+  function play(){
+    cancelAnimationFrame(raf);
+    if(reduce){render(TOTAL);return;}
+    var dur=4800+540*Math.min(TOTAL,14),t0=null;
+    function step(t){if(t0===null)t0=t;var x=Math.min((t-t0)/dur,1),e=1-Math.pow(1-x,3);render(TOTAL*e);if(x<1)raf=requestAnimationFrame(step);}
+    raf=requestAnimationFrame(step);
+  }
+  document.getElementById('replay').addEventListener('click',play);
+  play();
+})();
+</script>
+</body>
+</html>

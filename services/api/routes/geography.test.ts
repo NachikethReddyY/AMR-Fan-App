@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { singaporeRouteGeography, boundarySource } from './geography.ts';
+import {
+  singaporeRouteGeography,
+  boundarySource,
+  maxRouteCoordinates,
+} from './geography.ts';
 
 test('pinned official geography accepts central Singapore evidence and rejects outside, boundary and unknown evidence', async () => {
   assert.equal(
@@ -64,7 +68,7 @@ test('containment observes cancellation while processing a maximum-size path', a
   try {
     await assert.rejects(
       singaporeRouteGeography(
-        Array.from({ length: 2048 }, (_, i) => ({
+        Array.from({ length: maxRouteCoordinates }, (_, i) => ({
           latitude: 1.29 + i / 1_000_000,
           longitude: 103.85 + i / 1_000_000,
         })),

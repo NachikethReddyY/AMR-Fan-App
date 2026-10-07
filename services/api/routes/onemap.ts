@@ -147,7 +147,30 @@ export async function readOneMapCredentials(
   throw new ProviderFailure('live_not_configured');
 }
 
-export function createOneMapProvider(config: Config) {
+/** Process-local ceilings. Operators raise them for local/demo hosts where
+ * repeated planning is normal; the defaults keep the committed behaviour. */
+function readCallLimits(env: Record<string, string | undefined>) {
+  const read = (name: string, fallback: number) => {
+    const raw = env[name];
+    if (raw === undefined) return fallback;
+    if (!/^\d+$/.test(raw))
+      throw new Error('Invalid route provider configuration.');
+    const value = Number(raw);
+    if (value < 1 || value > 1_000_000)
+      throw new Error('Invalid route provider configuration.');
+    return value;
+  };
+  return {
+    window: read('AMR_ONEMAP_WINDOW_CALLS', 60),
+    total: read('AMR_ONEMAP_TOTAL_CALLS', 1000),
+  };
+}
+
+export function createOneMapProvider(
+  config: Config,
+  env: Record<string, string | undefined> = {},
+) {
+  const limits = readCallLimits(env);
   let active = false,
     total = 0,
     windowCalls = 0,
@@ -374,7 +397,7 @@ export function createOneMapProvider(config: Config) {
         windowCalls = 0;
       }
       const calls = 2;
-      if (windowCalls + calls > 60 || total + calls > 1000)
+      if (windowCalls + calls > limits.window || total + calls > limits.total)
         return unavailable('budget_exhausted');
       windowCalls += calls;
       total += calls;
@@ -432,7 +455,7 @@ export function createOneMapProvider(config: Config) {
         1 +
         Number(typeof input.origin === 'string') +
         Number(typeof input.destination === 'string');
-      if (windowCalls + calls > 60 || total + calls > 1000)
+      if (windowCalls + calls > limits.window || total + calls > limits.total)
         return unavailable('budget_exhausted');
       windowCalls += calls;
       total += calls;

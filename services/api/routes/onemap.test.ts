@@ -395,6 +395,46 @@ test('token renews near expiry and all address/auth/mode work fits minute and li
     },
   );
 });
+test('operator OneMap call ceilings are configurable and reject unsafe values', async () => {
+  await fixture(
+    (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(
+        JSON.stringify(
+          req.url === '/api/auth/post/getToken'
+            ? {
+                access_token: 'synthetic-token',
+                expiry_timestamp: String(Math.floor(Date.now() / 1000) + 120),
+              }
+            : roadFor('DRIVE'),
+        ),
+      );
+    },
+    async (env) => {
+      // A coordinate DRIVE query reserves one mode call plus one auth call.
+      env.AMR_ONEMAP_TOTAL_CALLS = '1';
+      assert.deepEqual(await createRouteProvider(env).search(input), {
+        kind: 'unavailable',
+        reason: 'budget_exhausted',
+      });
+      env.AMR_ONEMAP_TOTAL_CALLS = '1000';
+      env.AMR_ONEMAP_WINDOW_CALLS = '1000';
+      assert.equal(
+        (await createRouteProvider(env).search(input)).kind,
+        'routes',
+      );
+      for (const name of ['AMR_ONEMAP_WINDOW_CALLS', 'AMR_ONEMAP_TOTAL_CALLS'])
+        for (const value of ['0', '-1', '2.5', 'many', '1000001']) {
+          env.AMR_ONEMAP_WINDOW_CALLS = '1000';
+          env.AMR_ONEMAP_TOTAL_CALLS = '1000';
+          env[name] = value;
+          assert.throws(() => createRouteProvider(env), {
+            message: 'Invalid route provider configuration.',
+          });
+        }
+    },
+  );
+});
 test('OneMap evidence fits existing prepared journey projection without another query or changed metrics', async () => {
   const { projectPlanDisplay, routeSnapshots } =
     await import('../journeys/planning.ts');

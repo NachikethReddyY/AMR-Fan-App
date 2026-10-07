@@ -487,18 +487,18 @@ extension RaceChallenge {
         RaceChallenge(
             id: UUID(),
             race: "Malaysia Grand Prix",
-            dateLabel: "Next upcoming race",
+            dateLabel: "Past race",
             ideas: [
                 ChallengeIdea(id: UUID(), title: "Green pit-lane relay", author: "Maya", tag: "activity", rankingPoints: 1_284, moderation: "approved", lifecycle: "backlog", fulfilment: "demonstration"),
                 ChallengeIdea(id: UUID(), title: "Fan-designed helmet detail", author: "Ravi", tag: "activity", rankingPoints: 1_184, moderation: "approved", lifecycle: "backlog", fulfilment: "demonstration"),
                 ChallengeIdea(id: UUID(), title: "Sunset team photo challenge", author: "Aisha", tag: "activity", rankingPoints: 896, moderation: "pending", lifecycle: "backlog", fulfilment: "demonstration")
             ],
-            isPast: false
+            isPast: true
         ),
         RaceChallenge(
             id: UUID(),
             race: "Singapore Grand Prix",
-            dateLabel: "Following race",
+            dateLabel: "Next upcoming race",
             ideas: [
                 ChallengeIdea(id: UUID(), title: "Night-race fan light trail", author: "Jules", tag: "activity", rankingPoints: 1_006, moderation: "approved", lifecycle: "backlog", fulfilment: "demonstration"),
                 ChallengeIdea(id: UUID(), title: "Green city photo lap", author: "Isha", tag: "activity", rankingPoints: 934, moderation: "approved", lifecycle: "backlog", fulfilment: "demonstration")

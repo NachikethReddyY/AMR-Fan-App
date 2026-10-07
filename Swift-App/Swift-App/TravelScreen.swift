@@ -40,6 +40,10 @@ struct TravelScreen: View {
     @State private var selectedBackendRouteID: String?
     @State private var transportPlan: BackendTransportPlan?
     @State private var guidance = NavigationGuidance()
+    @State private var showJourneyCompletion = false
+    @State private var completionIsDemo = false
+    @State private var celebration: JourneyCelebrationSummary?
+    @State private var routeTask: Task<Void, Never>?
 
     private static let defaultRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 1.2868, longitude: 103.8545),
@@ -155,6 +159,42 @@ struct TravelScreen: View {
                 searchModel.activate(field, query: field == .origin ? originText : destinationText)
             } else {
                 searchModel.clear()
+            }
+        }
+        .onChange(of: guidance.state) { _, state in
+            if state == .arrived {
+                completionIsDemo = false
+                withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.82)) {
+                    showJourneyCompletion = true
+                }
+            }
+        }
+        .overlay {
+            if showJourneyCompletion {
+                JourneyCompletionView(
+                    pointsText: transportPlan?.awardEligible == true ? "Pending assessment" : "Not credited",
+                    savedText: routeRecommendationAvoidedText ?? "Unavailable",
+                    routeTitle: selectedMode.title,
+                    isDemo: completionIsDemo,
+                    reduceMotion: reduceMotion,
+                    continueAction: {
+                        showJourneyCompletion = false
+                        completionIsDemo = false
+                        guidance.stop()
+                        onExitToHome?()
+                    }
+                )
+                .transition(.opacity)
+            }
+        }
+        .overlay {
+            if let celebration {
+                JourneyCelebrationView(summary: celebration, reduceMotion: reduceMotion) {
+                    self.celebration = nil
+                    guidance.stop()
+                    onExitToHome?()
+                }
+                .transition(.opacity)
             }
         }
         .onDisappear {
@@ -371,23 +411,32 @@ struct TravelScreen: View {
     }
 
     private func compactRoute(travelTime: TimeInterval, co2Text: String?) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Label("\(selectedMode.title) · \(travelTime.formattedDuration)", systemImage: selectedMode.symbol)
-                    .font(.subheadline)
-                    .lineLimit(1)
-                if let co2Text {
-                    Text(co2Text)
-                        .font(.caption)
-                        .foregroundStyle(FanStyle.muted)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Label("\(selectedMode.title) · \(travelTime.formattedDuration)", systemImage: selectedMode.symbol)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                    if let co2Text {
+                        Text(co2Text)
+                            .font(.caption)
+                            .foregroundStyle(FanStyle.muted)
+                    }
                 }
+                Spacer(minLength: 0)
+                Button("Navigate", systemImage: "location.north.fill") {
+                    startInAppNavigation()
+                }
+                .font(.subheadline.bold())
+                .buttonStyle(FanPressStyle())
+                .accessibilityHint("Starts guidance when a transport route is available")
             }
-            Spacer(minLength: 0)
-            Button("Navigate", systemImage: "location.north.fill") {
-                startInAppNavigation()
+            if let routeError, guidance.state == .idle {
+                Label(routeError, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .font(.subheadline.bold())
-            .buttonStyle(FanPressStyle())
         }
         .padding(12)
         .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
@@ -585,6 +634,16 @@ struct TravelScreen: View {
         }
     }
 
+    private var routeRecommendationAvoidedText: String? {
+        if let avoided = routeRecommendation?.avoidedKgCo2e {
+            return formatKg(avoided, gas: "CO₂e")
+        }
+        if let avoided = routeRecommendation?.avoidedKg {
+            return formatKg(avoided, gas: "CO₂")
+        }
+        return nil
+    }
+
     private var recommendationAvoidedText: String? {
         guard recommendedRouteID != nil else { return nil }
         if let avoided = routeRecommendation?.avoidedKgCo2e {
@@ -716,7 +775,7 @@ struct TravelScreen: View {
                     TravelModePicker(selectedMode: $selectedMode) {
                         modeFilter = (modeFilter == selectedMode) ? nil : selectedMode
                         transitionToPlannerState(.expanded)
-                        Task { await calculateRoute(for: selectedMode) }
+                        scheduleRoute(for: selectedMode)
                     }
 
                     if let transportPlan {
@@ -973,7 +1032,7 @@ struct TravelScreen: View {
         searchModel.clear()
         focusedField = nil
         if origin != nil && destination != nil {
-            Task { await calculateRoute(for: selectedMode) }
+            scheduleRoute(for: selectedMode)
         }
     }
 
@@ -997,7 +1056,7 @@ struct TravelScreen: View {
                 destination = try await searchModel.resolve(query: destinationText)
                 destinationText = destination?.displayName ?? destinationText
             }
-            await calculateRoute(for: selectedMode)
+            scheduleRoute(for: selectedMode)
         } catch {
             routeError = "We could not find one of those places. Choose a suggestion or try a more specific search."
         }
@@ -1021,7 +1080,7 @@ struct TravelScreen: View {
                 break
             }
             if origin != nil && destination != nil {
-                await calculateRoute(for: selectedMode)
+                scheduleRoute(for: selectedMode)
             }
         } catch {
             routeError = "That place could not be selected. Try another result."
@@ -1046,7 +1105,10 @@ struct TravelScreen: View {
         do {
             if backend.isConnected {
                 do {
-                    let response = try await backend.routes(origin: origin.displayName, destination: destination.displayName)
+                    let response = try await withOneRetry {
+                        try await backend.routes(origin: origin.displayName, destination: destination.displayName)
+                    }
+                    guard requestID == routeRequestID else { return }
                     if response.result.kind == "unavailable" {
                         backendRoutes = []
                         backendEstimates = []
@@ -1064,6 +1126,7 @@ struct TravelScreen: View {
                         selectedRouteOptionID = backendRoutes.first?.id
                     }
                 } catch {
+                    guard requestID == routeRequestID else { return }
                     backendRoutes = []
                     backendEstimates = []
                     routeRecommendation = nil
@@ -1073,14 +1136,11 @@ struct TravelScreen: View {
                     routeError = "More route choices are unavailable right now. Showing the map route instead."
                 }
             }
-            do {
-                transportPlan = try await backend.transportPlan(
-                    origin: BackendTransportCoordinate(latitude: origin.coordinate.latitude, longitude: origin.coordinate.longitude),
-                    destination: BackendTransportCoordinate(latitude: destination.coordinate.latitude, longitude: destination.coordinate.longitude)
-                )
-                selectedBackendRouteID = transportPlan?.recommendation.routeId ?? transportPlan?.routes.first?.id
-            } catch {
-                transportPlan = nil
+            let plan = await fetchPlan(from: origin, to: destination)
+            guard requestID == routeRequestID else { return }
+            transportPlan = plan
+            if let plan {
+                selectedBackendRouteID = plan.recommendation.routeId ?? plan.routes.first?.id
             }
             let directions = MKDirections(request: request)
             if mode == .transit {
@@ -1119,7 +1179,7 @@ struct TravelScreen: View {
                 : "No \(mode.title.lowercased()) route was found for these places."
         }
 
-        isCalculatingRoute = false
+        if requestID == routeRequestID { isCalculatingRoute = false }
     }
 
     private var navigationGuidanceCard: some View {
@@ -1147,12 +1207,202 @@ struct TravelScreen: View {
         .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func startInAppNavigation() {
-        guard let selected = transportPlan?.routes.first(where: { $0.id == selectedBackendRouteID }) ?? transportPlan?.routes.first else {
-            routeError = "AMR navigation is unavailable until a transport route is returned."
-            return
+    /// Cancels any in-flight route request before starting another one. The route
+    /// provider serves one plan at a time and rejects an overlapping request.
+    private func scheduleRoute(for mode: TravelMode) {
+        routeTask?.cancel()
+        routeTask = Task { await calculateRoute(for: mode) }
+    }
+
+    /// The provider serves one plan at a time and drops single modes
+    /// transiently, so a plan that failed to arrive or arrived empty gets two
+    /// more tries. Keeping the last empty plan lets the caller report which
+    /// modes were unavailable.
+    private func fetchPlan(from origin: MKMapItem, to destination: MKMapItem) async -> BackendTransportPlan? {
+        let from = BackendTransportCoordinate(latitude: origin.coordinate.latitude, longitude: origin.coordinate.longitude)
+        let to = BackendTransportCoordinate(latitude: destination.coordinate.latitude, longitude: destination.coordinate.longitude)
+        var lastPlan: BackendTransportPlan?
+        for attempt in 0..<3 {
+            if attempt > 0 {
+                try? await Task.sleep(nanoseconds: 650_000_000)
+                guard !Task.isCancelled else { return lastPlan }
+            }
+            guard let plan = try? await backend.transportPlan(origin: from, destination: to) else { continue }
+            if !plan.routes.isEmpty { return plan }
+            lastPlan = plan
         }
-        guidance.start(route: selected)
+        return lastPlan
+    }
+
+    /// One bounded retry for a request the provider can fail transiently.
+    private func withOneRetry<T>(_ work: () async throws -> T) async throws -> T {
+        do {
+            return try await work()
+        } catch {
+            guard !Task.isCancelled else { throw error }
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard !Task.isCancelled else { throw error }
+            return try await work()
+        }
+    }
+
+    private func planCo2Kilograms(for routeId: String) -> Double? {
+        guard let item = transportPlan?.estimates?.first(where: { $0.routeId == routeId }) else { return nil }
+        switch item.estimate.kind {
+        case "estimated_co2": return item.estimate.kg
+        case "estimated": return item.estimate.kgCo2e
+        default: return nil
+        }
+    }
+
+    /// Plan modes that stand for the tab the user picked.
+    private func planModes(for mode: TravelMode) -> Set<String> {
+        switch mode {
+        case .car: ["car"]
+        case .walking: ["walk"]
+        case .cycling: ["cycle", "bike"]
+        case .transit: ["transit", "train", "bus"]
+        }
+    }
+
+    private var selectedPlanRouteID: String? {
+        guard let plan = transportPlan else { return nil }
+        let modes = planModes(for: selectedMode)
+        // The plan's own recommendation can name a route outside the tab the
+        // user picked, so only trust it when it belongs to that tab.
+        if let id = selectedBackendRouteID,
+            let route = plan.routes.first(where: { $0.id == id }),
+            modes.contains(route.mode)
+        {
+            return id
+        }
+        return plan.routes
+            .filter { modes.contains($0.mode) }
+            .compactMap { route in planCo2Kilograms(for: route.id).map { (route.id, $0) } }
+            .min { $0.1 < $1.1 }?
+            .0
+    }
+
+    private var carBaselineKilograms: Double? {
+        transportPlan?.routes
+            .filter { $0.mode == "car" }
+            .compactMap { planCo2Kilograms(for: $0.id) }
+            .min()
+    }
+
+    private var chosenRouteKilograms: Double? {
+        selectedPlanRouteID.flatMap(planCo2Kilograms(for:))
+    }
+
+    /// Carbon the started trip avoids against driving the same plan. Returns nil
+    /// when this plan has no car baseline or no route for the chosen tab, so the
+    /// summary can say so instead of claiming a saving it cannot support.
+    private var avoidedKilograms: Double? {
+        guard let car = carBaselineKilograms, let chosen = chosenRouteKilograms else { return nil }
+        return max(0, car - chosen)
+    }
+
+    private func startInAppNavigation() {
+        routeError = nil
+        // Presentation only. The phone app calculates and shows these rewards;
+        // the journey and points ledger stays untouched because awarding a
+        // journey needs validated start and arrival evidence.
+        guidance.stop()
+        let saved = avoidedKilograms
+        let summary = JourneyCelebrationSummary(
+            points: saved.map(JourneyCelebrationRewards.points(savedKg:)) ?? 0,
+            savedKg: saved,
+            routeTitle: selectedMode.title
+        )
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeInOut(duration: 0.25)) {
+            celebration = summary
+        }
+    }
+}
+
+private struct JourneyCompletionView: View {
+    let pointsText: String
+    let savedText: String
+    let routeTitle: String
+    let isDemo: Bool
+    let reduceMotion: Bool
+    let continueAction: () -> Void
+
+    @State private var carOffset: CGFloat = -260
+    @State private var carScale = 0.82
+    @State private var burstVisible = false
+
+    private let burstPositions: [(CGFloat, CGFloat, String)] = [
+        (-112, -170, "sparkles"), (0, -214, "sun.max.fill"), (112, -166, "sparkles"),
+        (-150, -60, "star.fill"), (150, -58, "star.fill")
+    ]
+
+    var body: some View {
+        ZStack {
+            FanStyle.background.ignoresSafeArea()
+            ForEach(Array(burstPositions.enumerated()), id: \.offset) { _, position in
+                Image(systemName: position.2)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(FanStyle.teal)
+                    .offset(x: position.0, y: position.1)
+                    .scaleEffect(burstVisible ? 1 : 0.35)
+                    .opacity(burstVisible ? 1 : 0)
+            }
+            VStack(spacing: 22) {
+                Spacer()
+                ZStack {
+                    Circle()
+                        .fill(FanStyle.teal.opacity(0.16))
+                        .frame(width: 148, height: 148)
+                    Image(systemName: "car.side.fill")
+                        .font(.system(size: 58, weight: .bold))
+                        .foregroundStyle(FanStyle.teal)
+                        .scaleEffect(carScale)
+                        .offset(x: carOffset)
+                }
+                Text(isDemo ? "Demo journey complete" : "Journey complete")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                Text(isDemo ? "Preview only. No journey or points were written." : "Your \(routeTitle.lowercased()) route is recorded.")
+                    .font(.subheadline)
+                    .foregroundStyle(FanStyle.muted)
+                VStack(spacing: 12) {
+                    completionRow("Points", pointsText, "star.fill")
+                    completionRow("CO₂ avoided", savedText, "leaf.fill")
+                }
+                .padding(18)
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+                Spacer()
+                FanButton(title: "Continue to Home", symbol: "house.fill", action: continueAction)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 26)
+            }
+            .padding(.horizontal, 22)
+        }
+        .onAppear {
+            if reduceMotion {
+                carOffset = 0
+                carScale = 1
+                burstVisible = true
+            } else {
+                withAnimation(.easeOut(duration: 0.7)) {
+                    carOffset = 0
+                    carScale = 1
+                }
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.55)) {
+                    burstVisible = true
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Journey complete. Points \(pointsText). Carbon avoided \(savedText).")
+    }
+
+    private func completionRow(_ label: String, _ value: String, _ symbol: String) -> some View {
+        HStack {
+            Label(label, systemImage: symbol)
+            Spacer()
+            Text(value).font(.subheadline.bold()).foregroundStyle(FanStyle.teal)
+        }
     }
 }
 
@@ -1311,15 +1561,19 @@ private struct TravelMapView: View {
                             .stroke(FanStyle.teal, lineWidth: 6)
                     }
                 } else {
-                    // Backend legs rarely carry full path geometry. Only draw the
-                    // fallback when the endpoints form a real multi-point path; a
-                    // bare start-to-end pair is a straight lie, not a route.
+                    // MVP: fall back to the endpoint line whenever there is
+                    // no real geometry, so the selection is never blank.
                     let coordinates = Self.lineCoordinates(for: transportRoute.legs)
-                    if coordinates.count > 2 {
+                    if coordinates.count > 1 {
                         MapPolyline(coordinates: coordinates)
                             .stroke(FanStyle.teal, lineWidth: 6)
                     }
                 }
+            }
+            if route == nil, transportRoute == nil, let origin, let destination {
+                // No path geometry available: still show the planned line.
+                MapPolyline(coordinates: [origin.coordinate, destination.coordinate])
+                    .stroke(FanStyle.teal, lineWidth: 6)
             }
         }
         .mapStyle(.standard(emphasis: .muted))
@@ -1340,7 +1594,7 @@ private struct TravelMapView: View {
             }
             points.append(point)
         }
-        guard points.count > 2,
+        guard points.count > 1,
             let first = points.first, let last = points.last,
             abs(first.latitude - last.latitude) >= 1e-9 ||
             abs(first.longitude - last.longitude) >= 1e-9 else { return [] }
