@@ -3,7 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const api = 'https://bb-1.tailaf0363.ts.net/amr-api';
+/** Public origin of the admin API. Repointing the API changes only this line. */
+export const adminApiBase = 'https://bb-1.tailaf0363.ts.net/amr-api';
 const sections = [
   ['points', ''],
   ['rewards', 'rewards/'],
@@ -11,7 +12,8 @@ const sections = [
   ['reports', 'reports/'],
   ['submissions/participation', 'participation/'],
 ];
-const paths = [
+/** Browser paths the deployed dashboard proxies to the admin API. */
+export const adminApiPaths = [
   '/admin/config',
   '/v1/session',
   '/v1/me',
@@ -73,7 +75,10 @@ export async function buildAdmin(destination) {
     buildCommand: '',
     outputDirectory: '.',
     redirects: [{ source: '/', destination: '/admin/', permanent: false }],
-    rewrites: paths.map((path) => ({ source: path, destination: api + path })),
+    rewrites: adminApiPaths.map((path) => ({
+      source: path,
+      destination: adminApiBase + path,
+    })),
     headers: [
       {
         source: '/(.*)',

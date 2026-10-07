@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { buildAdmin } from './build-admin.mjs';
+import { adminApiBase, adminApiPaths, buildAdmin } from './build-admin.mjs';
 
 test('deploy artifact contains only public admin assets and fixed API routes', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'amr-admin-build-'));
@@ -36,10 +36,17 @@ test('deploy artifact contains only public admin assets and fixed API routes', a
     }
     const config = JSON.parse(await readFile(join(dir, 'vercel.json'), 'utf8'));
     assert.equal(config.framework, null);
-    assert.ok(
-      config.rewrites.every((route) =>
-        route.destination.startsWith('https://amr-fan-app.onrender.com/'),
-      ),
+    // The build script owns the API base and the proxy path list. Assert the
+    // emitted config matches both, so repointing the admin API stays a one-line
+    // change instead of also rewriting this test.
+    assert.match(adminApiBase, /^https:\/\/[a-z0-9.-]+\/[a-z0-9-]+$/);
+    assert.doesNotMatch(adminApiBase, /localhost|127\.0\.0\.1|\.local|dev\./);
+    assert.deepEqual(
+      config.rewrites,
+      adminApiPaths.map((path) => ({
+        source: path,
+        destination: adminApiBase + path,
+      })),
     );
     assert.equal(
       config.rewrites.some((route) => /dev|:path\*/.test(route.source)),
