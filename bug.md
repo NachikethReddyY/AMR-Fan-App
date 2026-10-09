@@ -1,3 +1,16 @@
+## 2026-10-08: Travel showed provider errors for all modes (fixed)
+
+All Transit options read `provider error` with no CO2 estimates because BB-1's
+OneMap access token had expired server-side while the cached credential still
+looked valid. The user renewed `/home/bb-1/.auth/amr-onemap.json`; the BB-1 API
+image was rebuilt and `bb1-api-1` recreated. Live coordinate and name plans
+now return routes with a recommendation.
+
+Follow-up: switch that file to the `{email, password}` account shape so BB-1
+auto-renews instead of expiring every 3 days.
+
+Edited by opencode/muse-spark-1.3-contributor-free through T3 Code.
+
 ## 2026-10-07: Hosted admin dashboard could not start CIAM sign-in (fixed)
 
 The live dashboard at `https://amr-admin.vercel.app/admin/` showed "Admin sign-in
@@ -2807,3 +2820,35 @@ no browser consent was given. Same `crypto.randomUUID()` pattern still exists
 in rewards/participation/submissions/reports admin pages.
 
 Fixed by opencode/muse-spark-1.3-contributor-free through OpenCode (T3 Code).
+
+## 2026-10-07: Challenge cards dropped pending text for immediate artwork (uncommitted)
+
+Challenge cards showed `by You · pending` after submitting. Per owner direction,
+the Swift `ChallengesScreen` card no longer renders any moderation suffix and
+shows supplied artwork at once: `Bush` at zero points, `Tree` once the idea has
+contributions. Both PNGs are new `Bush`/`Tree` imagesets. Server moderation is
+stored unchanged, and unapproved-idea contributions are still refused
+server-side. Tree-planting pending state was deliberately left alone: pending
+planting versus confirmed planting is a real-world honesty boundary, not a
+display state.
+
+Proof: Debug simulator `BUILD SUCCEEDED`; fresh `Assets.car` contains `Bush`
+and `Tree` (286 assets). Rendered card unverified; no device consent given.
+Kotlin challenges screen untouched.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through OpenCode (T3 Code).
+
+## 2026-10-07: Pending plantings invisible on the 3D forest plot (fixed, uncommitted)
+
+`IsometricForestPlot` only placed markers for locations with count > 0, so a
+pending planting (no location yet) left the canopy bare. The plot now also
+renders a `Bush` artwork marker per pending planting in free slots, with the
+honesty labels (`Pending · AMR will assign…`, `Location pending AMR
+assignment`) unchanged. Challenge submit was not touched: saving requires a
+connected fan account (`BackendError.notSignedIn` otherwise), and the exact
+composer error text is still needed to diagnose the reported save failure.
+
+Proof: Debug simulator `BUILD SUCCEEDED`. Rendered plot unverified; no device
+consent given.
+
+Recorded by opencode/muse-spark-1.3-contributor-free through OpenCode (T3 Code).

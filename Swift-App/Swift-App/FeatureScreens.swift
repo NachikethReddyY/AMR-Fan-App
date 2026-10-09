@@ -194,7 +194,13 @@ struct ChallengesScreen: View {
             activeContribution = idea
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                if idea.isSelected {
+                if idea.author == "You" {
+                    Image(idea.rankingPoints > 0 ? "Tree" : "Bush")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                        .accessibilityHidden(true)
+                } else if idea.isSelected {
                     Image(systemName: "star.fill")
                         .foregroundStyle(.yellow)
                 }
@@ -202,7 +208,7 @@ struct ChallengesScreen: View {
                     Text(idea.title)
                         .font(.subheadline.bold())
                         .foregroundStyle(.white)
-                    Text("by \(idea.author) · \(idea.moderation)")
+                    Text("by \(idea.author)")
                         .font(.caption)
                         .foregroundStyle(FanStyle.muted)
                 }
@@ -360,7 +366,10 @@ struct TreeScreen: View {
                             .font(.subheadline)
                             .foregroundStyle(.white.opacity(0.72))
 
-                        DigitalForestCanopy(locations: locationSummaries)
+                        DigitalForestCanopy(
+                            locations: locationSummaries,
+                            pendingCount: demoState.plantedTrees.filter { $0.location == nil }.count
+                        )
                             .frame(height: 285)
 
                         HStack(spacing: 18) {
@@ -710,16 +719,23 @@ private struct PlantingConfirmationSheet: View {
 
 private struct DigitalForestCanopy: View {
     let locations: [ForestLocationSummary]
+    let pendingCount: Int
 
     var body: some View {
-        IsometricForestPlot(locations: locations)
+        IsometricForestPlot(locations: locations, pendingCount: pendingCount)
             .accessibilityLabel("Digital forest with locations grouped by country")
     }
 }
 
 private struct IsometricForestPlot: View {
     let locations: [ForestLocationSummary]
-    private let positions: [CGPoint] = [CGPoint(x: 0.26, y: 0.55), CGPoint(x: 0.52, y: 0.32), CGPoint(x: 0.73, y: 0.58)]
+    let pendingCount: Int
+    private let positions: [CGPoint] = [CGPoint(x: 0.26, y: 0.55), CGPoint(x: 0.52, y: 0.32), CGPoint(x: 0.73, y: 0.58), CGPoint(x: 0.38, y: 0.66), CGPoint(x: 0.62, y: 0.70), CGPoint(x: 0.50, y: 0.48)]
+
+    private func markerPosition(_ slot: CGPoint, left: CGFloat, right: CGFloat, top: CGFloat, bottom: CGFloat) -> CGPoint {
+        CGPoint(x: left + (right - left) * slot.x,
+                y: top + (bottom - top) * slot.y)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -738,10 +754,24 @@ private struct IsometricForestPlot: View {
                     .fill(LinearGradient(colors: [Color(red: 0.64, green: 0.86, blue: 0.22), Color(red: 0.37, green: 0.63, blue: 0.13)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .overlay { IsometricGrid().clipShape(IsometricSide(points: [top, right, bottom, left])) }
 
-                ForEach(Array(locations.filter { $0.count > 0 }.enumerated()), id: \.offset) { index, summary in
+                let placed = Array(locations.filter { $0.count > 0 }.enumerated())
+                let usedSlots = min(placed.count, positions.count)
+                ForEach(placed, id: \.offset) { index, summary in
                     ForestLocationMarker(summary: summary)
-                        .position(x: left.x + (right.x - left.x) * positions[min(index, positions.count - 1)].x,
-                                  y: top.y + (bottom.y - top.y) * positions[min(index, positions.count - 1)].y)
+                        .position(markerPosition(
+                            positions[min(index, positions.count - 1)],
+                            left: left.x, right: right.x, top: top.y, bottom: bottom.y
+                        ))
+                }
+                let pendingSlots = min(pendingCount, positions.count - usedSlots)
+                if pendingSlots > 0 {
+                    ForEach(0..<pendingSlots, id: \.self) { offset in
+                        PendingPlantingMarker()
+                            .position(markerPosition(
+                                positions[usedSlots + offset],
+                                left: left.x, right: right.x, top: top.y, bottom: bottom.y
+                            ))
+                    }
                 }
             }
         }
@@ -777,6 +807,24 @@ private struct IsometricGrid: View {
                 context.stroke(diagonal, with: .color(color), lineWidth: 1)
             }
         }
+    }
+}
+
+private struct PendingPlantingMarker: View {
+    var body: some View {
+        VStack(spacing: 4) {
+            Image("Bush")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 54, height: 54)
+                .shadow(color: .black.opacity(0.25), radius: 7, y: 6)
+            Text("Pending")
+                .font(.caption.bold())
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(FanStyle.background.opacity(0.85), in: Capsule())
+        }
+        .accessibilityLabel("Pending planting")
     }
 }
 

@@ -1,3 +1,21 @@
+## 2026-10-08: BB-1 rebuilt after OneMap token renewal; travel routes live again
+
+BB-1's `/home/bb-1/.auth/amr-onemap.json` holds a token-shape value
+(`ONEMAP_EMAIL` + `ONEMAP_APIKKEY`) with a 3-day OneMap-side expiry, cached in
+memory as valid. Route endpoints returned 401, so every transport-plan mode
+reported `provider_error` (the screenshot); name queries hit search's
+200-plus-`error` response, rejected by the strict parser, and reported
+`missing_data`. The user renewed the token file on BB-1; rebuilt
+`amr-fan-api:bb1` from the current BB-1 snapshot source and recreated
+`bb1-api-1`. No repo or config change.
+
+Proof: coordinate Buona Vista to Jurong Point plan returns 3 live OneMap
+routes with a transit recommendation and zero unavailable; the same name query
+returns 5 routes; `/health` and `/ready` return 200; locations search returns
+places again.
+
+Rebuilt by opencode/muse-spark-1.3-contributor-free through T3 Code.
+
 ## 2026-10-07: Hosted admin CIAM sign-in was blocked by two stale deploy configs
 
 The dashboard shipped current assets but the BB-1 API ran source from 2026-10-04,
@@ -4955,3 +4973,21 @@ Proof: syntax check, UUID fallback shape/uniqueness, admin-web tests,
 `pnpm test:tooling` 30 pass, `git diff --check`. Browser/hosted verification
 pending user retry. Note: the signed-in account still needs the owner-side
 admin grant from the earlier handoff, or the next click returns 403 and signs out.
+
+## 2026-10-07: Challenge idea cards show bush/tree immediately
+
+Owner decision: drop the pending state in the Swift challenges flow and show
+the supplied bush/tree artwork at once. Own-idea cards render `Bush` at zero
+points and `Tree` after contributions; the `· pending`/`· approved` suffix is
+gone from challenge cards. No ledger, approval, or planting logic changed.
+
+Proof: simulator Debug build succeeds, `Bush`/`Tree` verified in the built
+asset catalog. Simulator screenshot pending consent. Change is local and
+uncommitted.
+
+## 2026-10-07: Forest canopy shows pending plantings as bushes
+
+Pending plantings had no location, so the 3D plot rendered no marker for them.
+The canopy now draws one `Bush` artwork marker per pending planting alongside
+the confirmed-location markers. All pending/confirmed copy and server behavior
+unchanged. Local and uncommitted; simulator build passes, visual check pending.
