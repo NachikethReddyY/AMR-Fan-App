@@ -501,7 +501,7 @@ their own small-iPhone Dynamic Type/VoiceOver proof; this candidate does not
 approve phone behavior or close #6/#7.
 
 Run `pnpm route:test`, `pnpm route:test:database`, `pnpm account:test:database`,
-`pnpm exec jest apps/fan/src/features/routes --runInBand`, `pnpm check`,
+`pnpm exec jest legacy/react-native/src/features/routes --runInBand`, `pnpm check`,
 `pnpm security:check` and `pnpm security:dast`. The database commands use only
 the namespace assigned to this checkout; see [local setup](local-development.md).
 The root check and CI include route unit/HTTP tests. Synthetic tests run temporary

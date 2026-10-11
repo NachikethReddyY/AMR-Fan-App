@@ -13,7 +13,7 @@ const docs = [
   'CLAUDE.md',
   'CONTRIBUTING.md',
   'SECURITY.md',
-  'ROADMAP.md',
+  'docs/ROADMAP.md',
   'bug.md',
   'work.md',
   'docs/README.md',

@@ -7,7 +7,7 @@ owns product behavior.
 | Area | Current implementation | Planned responsibility |
 | --- | --- | --- |
 | Native phone apps | `Swift-App/` remains the iOS source implementation; `Kotlin-App/` is the standalone Android Jetpack Compose port with matching domain, auth, network, media and fan-flow entry points | Platform-native release and device acceptance |
-| React fan app | `apps/fan/` owns the Expo entrypoint, screens, assets, tests and native/web configuration | Cross-platform React client and shared product experiments |
+| React fan app (archived) | `legacy/react-native/` holds the retired Expo entrypoint, screens, assets, tests and native/web configuration; workspace member for contract-test resolution only | Historical reference only |
 | Admin web | `apps/admin/` owns the workspace entrypoint for the static admin artifact; page sources live under `services/api/` beside their API handlers | Authorized content, price, rule, moderation and demo administration |
 | Backend | `services/api/` owns the HTTP API, PostgreSQL modules, migrations, AI adapters, reports, rewards and admin handlers. The activity submission slice adds canonical multi-photo evidence, durable assessment recovery, deterministic rewards, missions and the combined impact overview. | Feature operations and persistence on the selected hosted platform |
 | Transport MVP | `services/api/transport/` owns a separately runnable Singapore demo timetable/planner, an authenticated app endpoint and an optional OSRM adapter. | GTFS/GTFS-Realtime ingestion, live traffic, GPS navigation and hosted deployment |
@@ -47,7 +47,7 @@ operations](../operations/accounts.md). Earlier Convex plans are superseded.
 At external boundaries, authenticate, authorize the operation and resource,
 validate input, and translate provider failures into domain outcomes.
 Keep policy and calculations independent of network, clock and framework APIs.
-The UI follows `DESIGN.md`; it cannot establish roles, prices or eligibility.
+The UI follows `../DESIGN.md`; it cannot establish roles, prices or eligibility.
 
 When persistence is implemented, preserve these accepted invariants:
 
@@ -150,7 +150,10 @@ and activity. Arbitrary photos return zero. Production remains disabled and no
 vision provider is called. The gpt-6-astra classifier prompt is prepared under
 `docs/backend-prompts/photo-activity-astro.md`, not activated.
 
-The repo is recognized by pnpm as the root workspace plus `@amr/fan`,
-`@amr/admin`, `@amr/api`, `@amr/contracts`, and `@amr/travel-domain`. Turbo runs
-package-local checks. The admin package builds the static pages from its own
-`pages/` directory, while the API serves the same allowlisted files locally.
+The repo is recognized by pnpm as the root workspace plus `@amr/admin`,
+`@amr/api`, `@amr/contracts`, `@amr/travel-domain`, and the archived
+`@amr/fan` under `legacy/react-native/`. Turbo runs package-local checks.
+The admin package builds the static pages from its own `pages/` directory,
+while the API serves the same allowlisted files locally.
+The retired Expo app is a workspace member only so backend contract tests
+resolve its client helpers; it is not built, shipped, or checked standalone.

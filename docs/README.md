@@ -6,7 +6,7 @@
 | Internals | [Architecture and status](internals/architecture.md), [security and privacy](internals/security.md) |
 | Operations | [Setup and maintenance](operations/README.md), [local PostgreSQL](operations/local-development.md), [verification](operations/verification.md), [security testing](operations/security-testing.md), [performance](operations/performance.md), [release](operations/release.md) |
 | Contributors and agents | [Contributing](../CONTRIBUTING.md), [AGENTS.md](../AGENTS.md), [compatibility](agents/compatibility.md), [collaboration](agents/collaboration.md) |
-| Product | [Roadmap](../ROADMAP.md), [specification](fan-app-specification.md), [feature breakdown](features/README.md), [glossary](../CONTEXT.md) |
+| Product | [Roadmap](ROADMAP.md), [specification](fan-app-specification.md), [feature breakdown](features/README.md), [glossary](../CONTEXT.md) |
 | Work | [Steering and bugs](../bug.md), [work record](../work.md), [GitHub Issues](https://github.com/NachikethReddyY/AMR-Fan-App/issues), [Ideas](https://github.com/NachikethReddyY/AMR-Fan-App/discussions/categories/ideas) |
 
 Keep one canonical home for each fact. `CONTEXT.md` defines product terms;
@@ -19,8 +19,8 @@ The [final-spec HTML](fan-app-final-spec.html) is a reading snapshot dated
 25 September 2026, also [published on Postplan](https://dcv0l5eirsbh.postplan.dev).
 The Markdown specification and feature documents remain the maintained source.
 
-Design work is separate and currently uncommitted. When present, consult root
-`DESIGN.md` and `docs/agents/apple-hig-findings.md` before UI work. Obtain the
+Design work is separate and currently uncommitted. When present, consult
+`DESIGN.md` and `agents/apple-hig-findings.md` before UI work. Obtain the
 accepted design inputs if they are absent from your checkout.
 
 Plans and raw research are temporary. Promote accepted conclusions and

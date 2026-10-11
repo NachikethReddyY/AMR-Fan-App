@@ -1,3 +1,82 @@
+## 2026-10-11: Root cleanup — DESIGN.* and ROADMAP moved into docs/
+
+Per owner selection: moved root `DESIGN.md`, `DESIGN.html` and `ROADMAP.md`
+to `docs/` with content unchanged. Fixed internal links inside both documents
+(specification, HIG notes, features, prototypes) and all inbound referrers:
+root README/CONTRIBUTING/AGENTS, `docs/README.md`, `docs/user/README.md`,
+`docs/operations/phone.md`, `docs/internals/architecture.md`,
+`docs/agents/apple-hig-findings.md`, both amr-sdlc skill copies, and the
+`scripts/check-agents.mjs` doc list (`docs/ROADMAP.md`). Historical prose in
+work.md/TODO.md left as written. Proof: `git diff --check` clean, no stale
+link targets, agents:check findings unchanged (2 pre-existing private-path
+notes). Nothing committed.
+
+Recorded by Muse Spark through opencode (exact model variant unconfirmed).
+
+## 2026-10-11: Legacy proposal decisions applied (to-spec, handoff)
+
+Per owner decisions: `deploy/` stays as is, `docs/` stays, `RSS/` stays,
+duplicated merch images stay (one set per native app). Moved
+`Swift-App/Swift-App/to-spec/` (2 greenfield spec files) to `docs/to-spec/`
+and archived root `SWIFT-BACKEND-HANDOFF.md` to
+`legacy/SWIFT-BACKEND-HANDOFF.md` with a legacy README row. References to both
+are plain text in historical logs only. Proof: no code/config/CI refs remain,
+`git diff --check` clean, agents:check findings unchanged (2 pre-existing).
+Still untouched and pending no action: `prototypes/`, `.turbo/` tracking,
+`services/api/ai/` relocation. Nothing committed.
+
+Recorded by Muse Spark through opencode (exact model variant unconfirmed).
+
+## 2026-10-11: Production cleanup — React Native archived, README rewritten, 1.0 drafted
+
+Moved the retired Expo app `apps/fan/` (137 files) to `legacy/react-native/`
+with a new `legacy/README.md` freezing the archive. Swift-App (iOS) and
+Kotlin-App (Android) are the phone apps; `apps/admin/` stays. Rewired
+everything that referenced the old path: root `package.json` scripts (Expo
+start/ios/android/export/test/lint/test:web removed; typecheck and checks now
+target API/admin), 8 Dockerfiles (manifest COPY lines point at the legacy
+path; stale `COPY apps/fan/src` dropped), CI `checks.yml` (Expo export step
+removed), 4 backend test imports, and 7 doc references. Two route-comparison
+tests now import the maintained `@amr/travel-domain/comparison` module
+directly (the archived file re-exported it verbatim). The archived package
+stays a workspace member only so the database-gated awards test resolves its
+journey/account helpers; nothing builds, ships or checks it standalone.
+Removed the stray empty `tagger?}` file. Rewrote the root README around
+native apps + backend + admin + legacy, and drafted (not tagged, not
+published) the 1.0 release notes at
+`docs/operations/release-notes-1.0-draft.md` (iOS 1.0 build 1, Android 1.0/1).
+
+Proof: `pnpm install --frozen-lockfile --lockfile-only` in sync; full frozen
+install; API typecheck green; query routes 5/5; ai 213/213; account 14/14;
+route units 102/102; journey 23/23; submissions 3/3; rewards 1/1; awards 22/22;
+activity 20/20; impact 18/18; reports 44/44; tooling 30/30; database config
+5/5; admin tests and artifact build green; `git diff --check` clean; no stale
+`apps/fan` refs in code/config/CI. Not run here: database-gated suites and
+container builds (no Docker), native device builds (no device consent), full
+`pnpm check` (blocked by the pre-existing failures below).
+
+Baseline failures, proven pre-existing and untouched: 14 participation admin
+eval failures (reproduced with HEAD content), 8 prettier warnings in untouched
+files (pinned prettier 3.9.9 both sides), 2 agents:check private-path findings
+in older entries. Recorded for triage in bug.md. A mid-task `git stash`
+experiment briefly split rename display into add/delete pairs; content
+verified identical afterwards (`git show HEAD` diff per file, 137/137
+legacy paths, stray file gone, no new tag).
+
+Legacy proposal (needs approval before any further move): `prototypes/`
+(superseded mocks); `deploy/azure/` (superseded hosting, BB-1 active);
+`docs/research/` + generated spec variants (`fan-app-final-spec.html`,
+`fan-app-team-brief.html`, reconciliation docs); duplicate
+`Swift-App/.../fan-app-specification.md` and `to-spec/` greenfield specs;
+root `SWIFT-BACKEND-HANDOFF.md` (fold into docs?); `services/api/ai/` runtime
+relocation to top-level `ai/` (14 importer files — separate slice with full
+test proof); duplicated Swift/Kotlin merch images (3.7M class, LFS or
+single-source decision); untracking `.turbo/` cache. `RSS/` needs a usage
+check first (Kotlin has an rss reader). Nothing committed, pushed, tagged or
+deployed from this task.
+
+Cleaned up by Muse Spark through opencode (exact model variant unconfirmed).
+
 ## 2026-10-08: BB-1 rebuilt after OneMap token renewal; travel routes live again
 
 BB-1's `/home/bb-1/.auth/amr-onemap.json` holds a token-shape value
@@ -1413,7 +1492,7 @@ Implemented by gpt-6-sol through Codex (T3 Code).
 
 Tracking: TEST-DATA-001, unlinked. Root approved a data-only slice on
 `feat/labelled-test-data`, based on `7754117`. The public
-[getTestDataView()](apps/fan/src/features/test-data/index.ts) export takes no arguments and
+[getTestDataView()](legacy/react-native/src/features/test-data/index.ts) export takes no arguments and
 returns a deeply readonly display type with string leaves: label, notice,
 summary, activity, rewards, travelNotice and travel. It uses no account hooks,
 session selection, callbacks, API requests, storage or provider objects. Each

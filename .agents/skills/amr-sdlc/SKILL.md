@@ -12,7 +12,7 @@ Resolve repository paths from the Git root. Read the canonical skill through
    Confirm branch, dirty files, owned paths, available commands and authority.
 2. State the five-line contract. Define inputs, success, error states and protected
    invariants. Ask only for blocking product choices. Keep deferred features deferred.
-3. Choose the smallest structure consistent with existing callers and DESIGN.md.
+3. Choose the smallest structure consistent with existing callers and docs/DESIGN.md.
    Use docs/internals/security.md for changed trust boundaries. Obtain design
    selection before substantial new UI; this does not grant browser consent.
 4. Write observable acceptance cases and a focused failing behavior test when a

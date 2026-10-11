@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { parseComparison } from '../../../apps/fan/src/features/routes/api.ts';
+import { parseComparison } from '@amr/travel-domain/comparison';
 import { projectPlanDisplay } from '../journeys/planning.ts';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';

@@ -5,6 +5,7 @@ coverage/
 pnpm-lock.yaml
 .scratch/
 .evidence/
+legacy/
 # Preserve existing planning artifacts.
 docs/
 CONTEXT.md

@@ -9,7 +9,7 @@ WORKDIR /app
 # Copy workspace manifests first so dependency installation is reproducible and
 # cached independently from application source changes.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/fan/package.json apps/fan/package.json
+COPY legacy/react-native/package.json legacy/react-native/package.json
 COPY apps/admin/package.json apps/admin/package.json
 COPY services/api/package.json services/api/package.json
 COPY packages/contracts/package.json packages/contracts/package.json

@@ -82,7 +82,7 @@ adapter and map change must preserve geometry/source association and address
 native basemap provider privacy. No map package or provider was introduced here.
 Optional explicit location, verified race/calendar and news integration also
 remain open. No sample news, countdown, map or nonfunctional controls were added.
-See [selected design](../../DESIGN.md).
+See [selected design](../DESIGN.md).
 
 ## Proof and limits
 
@@ -92,7 +92,7 @@ Run `pnpm exec jest src/features --runInBand`, then the required checks in
 [verification](verification.md). The isolated HTTP proof is:
 
 ```sh
-pnpm db:run-test -- node --test --test-concurrency=1 apps/fan/src/features/rewards/testing/phone-http-proof.ts
+pnpm db:run-test -- node --test --test-concurrency=1 legacy/react-native/src/features/rewards/testing/phone-http-proof.ts
 ```
 
 That command is restricted to the author's disposable test namespace. It uses

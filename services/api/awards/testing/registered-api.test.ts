@@ -18,11 +18,11 @@ import { summarySchema } from '../../journeys/contracts.ts';
 import { historyEntry } from '../../points/contracts.ts';
 import { outcomeSchema, receiptSchema } from '../contracts.ts';
 import { awardRoute, awardReleaseFixture } from './fixtures.ts';
-import { createJourneyApi } from '../../../../apps/fan/src/features/journeys/api.ts';
+import { createJourneyApi } from '../../../../legacy/react-native/src/features/journeys/api.ts';
 import {
   createAccountApi,
   AccountError,
-} from '../../../../apps/fan/src/features/account/api.ts';
+} from '../../../../legacy/react-native/src/features/account/api.ts';
 
 if (
   process.env.NODE_ENV !== 'test' ||

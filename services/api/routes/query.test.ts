@@ -1,4 +1,4 @@
-import { parseComparison } from '../../../apps/fan/src/features/routes/api.ts';
+import { parseComparison } from '@amr/travel-domain/comparison';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createRouteQuery } from './query.ts';

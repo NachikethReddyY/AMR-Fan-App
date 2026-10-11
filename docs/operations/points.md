@@ -78,8 +78,8 @@ Run the focused state proof and the actual API adapter proof with an operations
 port lease and the worktree's disposable test namespace:
 
 ```sh
-pnpm exec jest apps/fan/src/features/account/session.test.ts apps/fan/src/features/points/history.test.ts --runInBand
-API_PORT=<leased-api-port> pnpm db:run-test -- node --test apps/fan/src/features/points/testing/http-proof.ts
+pnpm exec jest legacy/react-native/src/features/account/session.test.ts legacy/react-native/src/features/points/history.test.ts --runInBand
+API_PORT=<leased-api-port> pnpm db:run-test -- node --test legacy/react-native/src/features/points/testing/http-proof.ts
 ```
 
 The HTTP proof creates unique controlled identities, assigns only its synthetic

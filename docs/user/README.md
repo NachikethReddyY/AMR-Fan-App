@@ -33,7 +33,7 @@ between the same places; the extra-time limit is measured from the fastest route
 
 Tree participation, vouchers and driver outcomes remain demonstration fulfilment
 until arrangements exist. Team-reported ESG activity and personal examples remain
-distinct. See the [roadmap](../../ROADMAP.md) and
+distinct. See the [roadmap](../ROADMAP.md) and
 [feature specification](../features/README.md) for accepted scope and remaining implementation work.
 
 For installation, use the root [README](../../README.md). Report non-sensitive

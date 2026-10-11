@@ -1,7 +1,7 @@
 # Contributing
 
 Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md) and
-[roadmap](ROADMAP.md). Keep scope small and preserve accepted product behavior.
+[roadmap](docs/ROADMAP.md). Keep scope small and preserve accepted product behavior.
 The repository's visibility is a maintainer decision.
 
 ## Proposals, bugs and ownership

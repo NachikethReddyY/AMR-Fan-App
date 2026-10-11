@@ -2,7 +2,7 @@ FROM node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd
 WORKDIR /app
 # Reuse the repository lock, including the exact PDF.js and optional canvas pins.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/fan/package.json apps/fan/package.json
+COPY legacy/react-native/package.json legacy/react-native/package.json
 COPY apps/admin/package.json apps/admin/package.json
 COPY services/api/package.json services/api/package.json
 COPY packages/contracts/package.json packages/contracts/package.json

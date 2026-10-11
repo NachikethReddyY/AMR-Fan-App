@@ -24,7 +24,7 @@ The following review records the earlier draft, not the current native proof. It
 
 ## Purpose
 
-A fan travelling locally to or from a selected race needs to compare duration, estimated emissions and provisional points, choose a route, and know when points become earned. The first screen must make those comparisons readable outdoors on a phone. The wider app later includes challenges, rewards and individual tree requests under the [product specification](docs/fan-app-specification.md).
+A fan travelling locally to or from a selected race needs to compare duration, estimated emissions and provisional points, choose a route, and know when points become earned. The first screen must make those comparisons readable outdoors on a phone. The wider app later includes challenges, rewards and individual tree requests under the [product specification](fan-app-specification.md).
 
 ## Apple HIG review of the first draft
 
@@ -38,7 +38,7 @@ This review examined three static phone mockups and 13 color tokens against Appl
 | Action and recovery | Incomplete | Three start actions and four journey-state specimens; inspected copy and controls | The location requirement sat in tiny footer text. Tracking and evidence-gap examples named a next step without showing its control. | High for the static examples; live permissions and tracking remain untested. |
 | Control accessibility | Unverified | Three mockups; inspected HTML structure | Route rows and buttons are static `div` specimens, so this artifact cannot prove native hit targets, selection announcements or press behavior. | High that proof is absent; no claim about future native controls. |
 
-The correction is project guidance for this app, not a claim that every Apple recommendation must override the selected Aston Martin character. The [project HIG notes](docs/agents/apple-hig-findings.md) give source links and checks for future screens.
+The correction is project guidance for this app, not a claim that every Apple recommendation must override the selected Aston Martin character. The [project HIG notes](agents/apple-hig-findings.md) give source links and checks for future screens.
 
 ## Evidence and interpretation
 
@@ -48,7 +48,7 @@ The correction is project guidance for this app, not a claim that every Apple re
 
 ## Color tokens
 
-Keep the surrounding [prototype document](prototypes/brand-directions.html) on the neutral black/gray HTML-communicator palette. **Only the app mockups and token specimens use the colors below.** Green is one brand fill, used for the race header or primary action; ordinary app areas remain neutral. Lime is a small F1 accent, not a second family of backgrounds.
+Keep the surrounding [prototype document](../prototypes/brand-directions.html) on the neutral black/gray HTML-communicator palette. **Only the app mockups and token specimens use the colors below.** Green is one brand fill, used for the race header or primary action; ordinary app areas remain neutral. Lime is a small F1 accent, not a second family of backgrounds.
 
 | Token | Value | Role and pairing |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ Request location when the selected action needs it and explain what recording wi
 
 ## Historical alternatives
 
-[Open the revised phone concepts and state specimens](prototypes/brand-directions.html). All route data, balances and circuit geometry are illustrative. The three concepts hold content and selected route constant.
+[Open the revised phone concepts and state specimens](../prototypes/brand-directions.html). All route data, balances and circuit geometry are illustrative. The three concepts hold content and selected route constant.
 
 | Option | Layout decision | Check before selection |
 | --- | --- | --- |

@@ -1,3 +1,48 @@
+## 2026-10-11: Production cleanup — React Native to legacy, README, 1.0 release draft (done, uncommitted)
+
+Requested: production cleanup and organization; AI-generated clutter consolidated;
+README rewrite; whole-repo cleanup; new iOS/Android release; React Native moved
+to a legacy folder (Swift-App and Kotlin-App stay as the phone apps, admin
+dashboard stays); unknown cleanups proposed before moving. Release scope agreed
+as tag + release notes draft only — no tag, push, publish or store upload from
+this task. Legacy catch-all agreed as propose-first: nothing else moves without
+approval. Tracking: unlinked (no owning issue supplied).
+
+Done locally, not committed/pushed/tagged: `apps/fan` moved to
+`legacy/react-native` with `legacy/README.md`; root scripts, 8 Dockerfiles,
+CI export step, 4 backend test imports and 7 doc references rewired; two route
+tests now import maintained `@amr/travel-domain/comparison` directly; README
+rewritten around Swift/Kotlin/admin/API; release draft at
+`docs/operations/release-notes-1.0-draft.md` (iOS 1.0/1, Android 1.0/1); stray
+`tagger?}` removed. Proof: frozen lockfile verify, full install, API typecheck,
+query/routes/ai/account/journey/submissions/rewards/awards/activity/impact/reports
+unit suites, tooling (30/30), database config (5/5), admin build+tests green.
+Baseline failures, unchanged by this task: `agents:check` private-path findings
+in older bug.md/work.md entries, 8 prettier warnings in untouched files, and 14
+pre-existing participation admin eval failures (proven identical with HEAD
+content). Database-gated suites and device builds remain unverified here (no
+Docker, no device consent). Awaiting approval on the legacy proposal list in
+work.md before any further moves.
+
+## 2026-10-11: Pre-existing failures found during cleanup verification (unlinked)
+
+Not caused by the cleanup, not fixed here, recorded for triage:
+
+- `services/api/submissions/participation/admin/app.test.mjs`: 14 failures,
+  all `Cannot use import statement outside a module` from the test's
+  single-replace `window.eval` of the admin page scripts. Reproduced with
+  byte-identical HEAD content, so the admin page sources outgrew the test's
+  eval harness before this task.
+- `pnpm format:check`: 8 warnings (`apps/admin/pages/points/app.js`,
+  `services/api/api/app.ts`, `services/api/auth/admin-origin.test.ts`,
+  `services/api/auth/admin.js`, `services/api/auth/admin.test.mjs`,
+  `services/api/auth/oidc.test.ts`, `services/api/points/route-reward.ts`,
+  `services/api/points/route-summary.ts`) with the pinned prettier 3.9.9;
+  none of these files were touched by the cleanup.
+- `pnpm agents:check`: private-machine-path findings against older
+  bug.md/work.md entries (a supplied download path copied into the record);
+  present at HEAD.
+
 ## 2026-10-08: Travel showed provider errors for all modes (fixed)
 
 All Transit options read `provider error` with no CO2 estimates because BB-1's

@@ -2,6 +2,9 @@ packages:
   - apps/*
   - services/*
   - packages/*
+  # Archived Expo app: workspace member so backend contract tests resolve its
+  # client helpers. Not built, shipped, or checked standalone (see legacy/README.md).
+  - legacy/react-native
 allowBuilds:
   unrs-resolver: false
 overrides:

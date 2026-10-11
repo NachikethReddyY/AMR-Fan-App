@@ -1,8 +1,8 @@
 # Roadmap
 
 This is a public-ready summary of intent. The repository remains private until
-publication is authorized. The [specification](docs/fan-app-specification.md)
-links to the [feature documents](docs/features/README.md) that own detailed scope; no delivery dates are promised.
+publication is authorized. The [specification](fan-app-specification.md)
+links to the [feature documents](features/README.md) that own detailed scope; no delivery dates are promised.
 
 | Stage                          | State                | Observable outcome                                                                               |
 | ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------ |

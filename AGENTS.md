@@ -53,7 +53,7 @@ branch, worktree and existing changes. Preserve work owned by another task.
    write a focused failing test when there is a practical local target. Scale
    verification to the claim; trivial documentation edits need link/content checks.
 4. Implement the smallest complete change. Keep validation and external I/O at
-   adapter boundaries, calculations and policy pure, and UI faithful to `DESIGN.md`.
+   adapter boundaries, calculations and policy pure, and UI faithful to `docs/DESIGN.md`.
    Keep related backend logic together. Prefer idiomatic, strict TypeScript,
    discriminated unions and validated external inputs over casts and extra layers.
 5. Run focused proof and the applicable checks in
@@ -103,7 +103,7 @@ explicitly requested; see [collaboration](docs/agents/collaboration.md).
 | Diagnosing a defect or regression | [amr-debug](.agents/skills/amr-debug/SKILL.md) |
 | Changing terminology, architecture or maintained documentation | [amr-docs](.agents/skills/amr-docs/SKILL.md) |
 | Preparing, reviewing or explicitly delivering a PR | [file-pr](.agents/skills/file-pr/SKILL.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Touching iOS navigation, controls, layout, permissions or accessibility | `docs/agents/apple-hig-findings.md` and `DESIGN.md`, when available; see the design status below |
+| Touching iOS navigation, controls, layout, permissions or accessibility | `docs/agents/apple-hig-findings.md` and `docs/DESIGN.md`, when available; see the design status below |
 | Working with issues, triage or domain decisions | [issue tracker](docs/agents/issue-tracker.md), [labels](docs/agents/triage-labels.md), [domain docs](docs/agents/domain.md) |
 
 For new substantial UI directions, obtain a design selection before real components.
