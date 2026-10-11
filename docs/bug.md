@@ -47,7 +47,7 @@ Not caused by the cleanup, not fixed here, recorded for triage:
 
 All Transit options read `provider error` with no CO2 estimates because BB-1's
 OneMap access token had expired server-side while the cached credential still
-looked valid. The user renewed `/home/bb-1/.auth/amr-onemap.json`; the BB-1 API
+looked valid. The user renewed the OneMap credential file on the BB-1 host; the BB-1 API
 image was rebuilt and `bb1-api-1` recreated. Live coordinate and name plans
 now return routes with a recommendation.
 
@@ -247,7 +247,7 @@ Edited by gpt-6-luna through pi (host unknown).
 ## 2026-10-07: Use the supplied Singapore circuit SVG (unlinked)
 
 Replaced the hand-drawn circuit geometry in the native Impact animation with the
-user-supplied `/Users/nr/Downloads/Singapore_street_circuit.svg`, copied into the
+a user-supplied Singapore circuit SVG file, copied into the
 app asset catalog as `SingaporeStreetCircuit`. The animation still uses the same
 slow-fast-slow timing and Replay/reduced-motion behavior. Native rendering remains
 unverified.
@@ -1323,7 +1323,7 @@ Preserve the separate durable-store, photo HTTP and route owners' paths.
 Read-only official docs and the existing Helium console established the gateway
 Jev request path, both models' displayed rates including Luna tiers/cache, and
 the finite AMR key quota/model restrictions. Full response/echo, image bounds and
-failure/failover charges remain missing. See [contract evidence](docs/ai/gateway-contract.md).
+failure/failover charges remain missing. See [contract evidence](ai/gateway-contract.md).
 No live requests, account changes or replacement credentials were used.
 
 The durable owner retains `cost-reservation.ts`, its PostgreSQL implementation,
@@ -1351,7 +1351,7 @@ Recorded by gpt-6-astra through Codex (T3 Code).
 Record every actionable request, correction or reproducible finding here.
 Read open entries at task start. Keep stable IDs and link the owning issue when
 available. An entry does not authorize unrelated work. Sensitive findings follow
-[SECURITY.md](SECURITY.md), with only a sanitized reference here.
+[SECURITY.md](../SECURITY.md), with only a sanitized reference here.
 
 | ID          | Kind and source                                     | Acceptance criterion                                                                                                                           | Owner / tracker                                                                            | Status                                                                                                                  |
 | ----------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
@@ -1706,7 +1706,7 @@ DAST10202 and exact-source candidate is pending; no production deployment.
 Edited by gpt-6-astra through Codex (T3 Code).
 
 PR46 delivery update: user accepted the exact three-form10202 exception; see
-[exception record](docs/operations/admin-dast-exception.md). Retained DAST still
+[exception record](operations/admin-dast-exception.md). Retained DAST still
 fails. Route-main refresh is local only, with scheduled gates and root review
 pending. No blanket exception, scanner suppression or cloud action.
 

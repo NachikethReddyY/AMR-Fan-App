@@ -225,11 +225,7 @@ byId('adjustment').addEventListener('submit', (event) => {
     return;
   }
   void work(async () => {
-    const result = await api(
-      '/v1/admin/points/adjustments',
-      'POST',
-      action,
-    );
+    const result = await api('/v1/admin/points/adjustments', 'POST', action);
     pending = null;
     byId('delta').value = '';
     byId('reason').value = '';

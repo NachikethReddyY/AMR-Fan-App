@@ -23,7 +23,7 @@ good defaults; explicit authority boundaries and data protections still apply.
 An Aston Martin Formula One fan app for the Make a Mark hackathon: fans use the
 React Native phone app; admins will use a separate web app. Sustainable travel,
 fan engagement, rewards and sourced ESG information define the product. Read
-[CONTEXT.md](CONTEXT.md) for domain terms and the
+[CONTEXT.md](docs/CONTEXT.md) for domain terms and the
 [specification](docs/fan-app-specification.md) for accepted behavior and open choices.
 
 The repository currently contains an Expo starter, not the planned product.
@@ -66,7 +66,7 @@ For a bug or large task, maintain a thread-specific heading in the existing loca
 scratch files in an OS temporary directory. `TODO.md` is historical tracked local
 planning: leave new task plans unstaged. Durable summaries belong in `work.md`.
 
-Record each new actionable steering request in [bug.md](bug.md), including requests
+Record each new actionable steering request in [bug.md](docs/bug.md), including requests
 that are not defects. This is a triage inbox, not automatic authorization to fix
 unrelated bugs. Link maintainer work to its GitHub issue/project item when one
 exists; ask for tracker-write authority when missing, and record `unlinked` locally.
@@ -102,7 +102,7 @@ explicitly requested; see [collaboration](docs/agents/collaboration.md).
 | Investigating latency, rendering, traffic or cost | [amr-performance](.agents/skills/amr-performance/SKILL.md) |
 | Diagnosing a defect or regression | [amr-debug](.agents/skills/amr-debug/SKILL.md) |
 | Changing terminology, architecture or maintained documentation | [amr-docs](.agents/skills/amr-docs/SKILL.md) |
-| Preparing, reviewing or explicitly delivering a PR | [file-pr](.agents/skills/file-pr/SKILL.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Preparing, reviewing or explicitly delivering a PR | [file-pr](.agents/skills/file-pr/SKILL.md), [CONTRIBUTING.md](docs/CONTRIBUTING.md) |
 | Touching iOS navigation, controls, layout, permissions or accessibility | `docs/agents/apple-hig-findings.md` and `docs/DESIGN.md`, when available; see the design status below |
 | Working with issues, triage or domain decisions | [issue tracker](docs/agents/issue-tracker.md), [labels](docs/agents/triage-labels.md), [domain docs](docs/agents/domain.md) |
 
@@ -164,7 +164,7 @@ platform; static mocks or exports do not establish native acceptance.
 
 ## Attribution and handoff
 
-Record work in [work.md](work.md). End agent-authored issue/PR comments, PR bodies
+Record work in [work.md](docs/work.md). End agent-authored issue/PR comments, PR bodies
 and work entries with `<Action> by <exact model ID> through <harness> (<host if known>).`
 For example: `Edited by gpt-6-astra through Codex (T3 Code).` Use trusted runtime
 metadata; ask if identity is unknown. Never infer a model variant from the app name.

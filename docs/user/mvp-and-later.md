@@ -2,7 +2,7 @@
 
 Presentation notes, updated 26 September 2026. This is a record of explicit
 scope decisions, not a claim that every MVP feature is implemented or installed.
-The [glossary](../../CONTEXT.md) defines product terms. Current user decisions
+The [glossary](../CONTEXT.md) defines product terms. Current user decisions
 supersede older planning examples.
 
 ## Required before the final APK

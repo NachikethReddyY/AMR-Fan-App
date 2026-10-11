@@ -40,7 +40,11 @@ async function token(
 }
 test('browser config exposes only the public OIDC metadata and requires HTTPS redirect', () => {
   assert.deepEqual(
-    oidcBrowserConfig(config, 'web-client', 'https://admin.example.test/admin/'),
+    oidcBrowserConfig(
+      config,
+      'web-client',
+      'https://admin.example.test/admin/',
+    ),
     {
       mode: 'oidc',
       authority: 'https://identity.example.test/tenant',
@@ -49,9 +53,12 @@ test('browser config exposes only the public OIDC metadata and requires HTTPS re
       scope: 'api://amr-api/account.access',
     },
   );
-  assert.deepEqual(oidcBrowserConfig(config, 'web-client', 'http://evil.test/'), {
-    mode: 'unavailable',
-  });
+  assert.deepEqual(
+    oidcBrowserConfig(config, 'web-client', 'http://evil.test/'),
+    {
+      mode: 'unavailable',
+    },
+  );
 });
 
 test('verified access token returns only issuer and subject, never client roles or email identity', async () => {

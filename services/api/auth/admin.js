@@ -123,7 +123,10 @@ function randomBytes(size) {
 function base64Url(bytes) {
   let value = '';
   for (const byte of bytes) value += String.fromCharCode(byte);
-  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
+  return btoa(value)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/u, '');
 }
 
 async function pkcePair() {
@@ -198,7 +201,10 @@ export async function oidcSession(config, request = fetch) {
     headers: { Authorization: `Bearer ${signed.access_token}` },
   });
   const appSession = await json(session);
-  if (typeof appSession.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/u.test(appSession.token))
+  if (
+    typeof appSession.token !== 'string' ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(appSession.token)
+  )
     throw failure();
   window.history.replaceState({}, '', window.location.pathname);
   return appSession.token;

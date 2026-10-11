@@ -22,7 +22,7 @@ Docker socket. Gitleaks output is redacted. Source scans disable networking and
 Semgrep metrics/version checks. The dependency audit sends package/version
 metadata to the package registry; it does not send source or user data.
 
-There is currently one triaged moderate tooling advisory in [bug.md](../../bug.md).
+There is currently one triaged moderate tooling advisory in [bug.md](../bug.md).
 The high-severity audit gate has two narrow exceptions for advisories with no
 published fix: `GHSA-86w9-cpqp-85rv` (`node-forge` through Expo CLI signing
 tools) and `GHSA-vfj7-8cjw-p6xm` (`braces` through Metro/Jest file matching).

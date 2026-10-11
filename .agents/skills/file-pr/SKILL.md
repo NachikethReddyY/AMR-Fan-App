@@ -7,7 +7,7 @@ description: Review, file, or update a pull request. Use when the user points at
 
 ## AMR project rules
 
-Read [AGENTS.md](../../../AGENTS.md) and [CONTRIBUTING.md](../../../CONTRIBUTING.md)
+Read [AGENTS.md](../../../AGENTS.md) and [CONTRIBUTING.md](../../../docs/CONTRIBUTING.md)
 before PR work. They define local verification, focused scope, size labels,
 review requests, evidence handling, monitoring and exact model attribution.
 Invoking this skill alone does not authorize commits, pushes, PR creation,

@@ -2,7 +2,7 @@
 
 No production environment, release credentials or persistent dev service is
 configured. Do not infer a destination or deploy as part of verification.
-Read [Contributing](../../CONTRIBUTING.md) for commits and PRs.
+Read [Contributing](../CONTRIBUTING.md) for commits and PRs.
 
 For explicitly authorized delivery:
 

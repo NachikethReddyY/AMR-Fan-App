@@ -1,7 +1,7 @@
 # Contributing
 
-Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md) and
-[roadmap](docs/ROADMAP.md). Keep scope small and preserve accepted product behavior.
+Read [AGENTS.md](../AGENTS.md), the [documentation index](README.md) and
+[roadmap](ROADMAP.md). Keep scope small and preserve accepted product behavior.
 The repository's visibility is a maintainer decision.
 
 ## Proposals, bugs and ownership
@@ -13,7 +13,7 @@ evidence. Discussion is not implementation approval. Accepted maintainer work
 belongs in a GitHub issue or project item with an owner.
 
 Report reproducible non-sensitive bugs using the issue template. Security reports
-follow [SECURITY.md](SECURITY.md). Agents capture steering in `bug.md` and durable
+follow [SECURITY.md](../SECURITY.md). Agents capture steering in `bug.md` and durable
 work in `work.md`; these do not replace the owning issue. If tracker write
 permission is absent, mark the local work unlinked instead of creating an issue.
 
@@ -21,7 +21,7 @@ permission is absent, mark the local work unlinked instead of creating an issue.
 
 Use pnpm and the versions in `package.json`/`.node-version`. Plan the acceptance
 behavior, add a focused test when appropriate, then implement and verify.
-Run `pnpm check` and applicable [security checks](docs/operations/security-testing.md)
+Run `pnpm check` and applicable [security checks](operations/security-testing.md)
 before any push. UI verification requires explicit consent. Keep plans, raw
 research, screenshots and scratch files out of new commits; promote accepted
 decisions into maintained docs.

@@ -83,9 +83,12 @@ test('OIDC deployment exposes public browser config without changing server auth
   const address = server.address();
   assert.ok(address && typeof address !== 'string');
   try {
-    const response = await fetch(`http://127.0.0.1:${address.port}/admin/config`, {
-      headers: { Origin: 'https://admin.example.test' },
-    });
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/admin/config`,
+      {
+        headers: { Origin: 'https://admin.example.test' },
+      },
+    );
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).auth, {
       mode: 'oidc',

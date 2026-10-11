@@ -12,7 +12,11 @@ export async function readRouteSummary(
 ) {
   const actor = await authenticateSession(pool, token);
   return transaction(pool, async (client) => {
-    const profile = await readOwnedProfile(client, actor.principalId, profileId);
+    const profile = await readOwnedProfile(
+      client,
+      actor.principalId,
+      profileId,
+    );
     const session = await client.query(
       `SELECT 1 FROM app.sessions
        WHERE token_hash=$1 AND principal_id=$2 AND revoked_at IS NULL

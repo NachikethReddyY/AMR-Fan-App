@@ -39,7 +39,7 @@ Run the phone apps natively:
 - iOS: open `Swift-App/Swift-App.xcodeproj` in Xcode and run the `Swift-App` scheme.
 - Android: open `Kotlin-App` in Android Studio and run the `app` configuration.
 
-See the [1.0 release draft](docs/operations/release-notes-1.0-draft.md) for
+See the [1.0 release notes](docs/operations/release-notes-1.0.md) for
 app versions, build commands and known limits.
 
 ## Checks

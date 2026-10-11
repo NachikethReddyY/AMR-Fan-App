@@ -79,7 +79,7 @@ Cleaned up by Muse Spark through opencode (exact model variant unconfirmed).
 
 ## 2026-10-08: BB-1 rebuilt after OneMap token renewal; travel routes live again
 
-BB-1's `/home/bb-1/.auth/amr-onemap.json` holds a token-shape value
+The OneMap credential file on the BB-1 host holds a token-shape value
 (`ONEMAP_EMAIL` + `ONEMAP_APIKKEY`) with a 3-day OneMap-side expiry, cached in
 memory as valid. Route endpoints returned 401, so every transport-plan mode
 reported `provider_error` (the screenshot); name queries hit search's
@@ -256,7 +256,7 @@ Edited by gpt-6-luna through pi (host unknown).
 
 ## 2026-10-07: Supplied Singapore circuit asset (local)
 
-Copied `/Users/nr/Downloads/Singapore_street_circuit.svg` into
+Copied the user-supplied Singapore circuit SVG file into
 `Swift-App/Swift-App/Assets.xcassets/SingaporeStreetCircuit.imageset` and changed
 `ImpactLapView` to display that asset instead of the generated circuit path. The
 moving car remains an animation overlay; report and three-view behavior are
@@ -1457,7 +1457,7 @@ stays unstaged in TODO. Evidence is private under
 `.evidence/google-routing-budget/`. Application code only increments the counter;
 database operators and compromised database credentials remain outside the cap.
 
-The [route operations contract](docs/operations/routes.md) records SKU sources,
+The [route operations contract](operations/routes.md) records SKU sources,
 limits and rollout requirements. Migration `0012_google_route_budget.sql` SHA256
 is `00aeddb091fe0c43ff753ef6d89e937d041a07cef4849c06240f54aa625dff45`.
 Runtime requires table SELECT and column UPDATE(used_attempts), nothing else.
@@ -1492,7 +1492,7 @@ Implemented by gpt-6-sol through Codex (T3 Code).
 
 Tracking: TEST-DATA-001, unlinked. Root approved a data-only slice on
 `feat/labelled-test-data`, based on `7754117`. The public
-[getTestDataView()](legacy/react-native/src/features/test-data/index.ts) export takes no arguments and
+[getTestDataView()](../legacy/react-native/src/features/test-data/index.ts) export takes no arguments and
 returns a deeply readonly display type with string leaves: label, notice,
 summary, activity, rewards, travelNotice and travel. It uses no account hooks,
 session selection, callbacks, API requests, storage or provider objects. Each
@@ -1561,7 +1561,7 @@ criteria, displayed model rates and finite key quota. The pure request mapper
 copies validated route/activity decisions into that documented request and caps
 the serialized body at 60,000 bytes. It has no dispatch, credentials or response
 parser. Existing product transport and upstream parsing remain unchanged.
-[Contract evidence](docs/ai/gateway-contract.md) distinguishes observed facts
+[Contract evidence](ai/gateway-contract.md) distinguishes observed facts
 from unresolved billing, substitution, image and response contracts.
 
 Three new failing-first tests and 21 existing decision tests pass. The tests
@@ -1619,7 +1619,7 @@ Corrected by gpt-6-astra through Codex (T3 Code).
 - Repaired the baseline formatting failure and replaced web theme inline HTML with direct layout-effect initialization. System mode reads the current preference and cleans up its listener when mode changes. Original security rules remain enabled.
 - Proof: `pnpm db:verify` passed real restart persistence, bidirectional namespace denial, preservation of peer/development data during own reset, repeatable migration/seed, exact single loopback binding and credential permissions. Seven database tests passed, including rollback, twelve concurrent increments, migration drift/missing migration and restricted privileges. `pnpm check`, frozen install, `pnpm security:check` and iOS/Android exports passed. Browser fixture of the actual web provider passed initial system mode and Light/Dark/System changes with zero inline scripts.
 - Security scorecard: source secrets pass (one full repository snapshot); SAST pass (25 source targets, four unchanged rules); scanner acceptance/rejection fixtures pass; database isolation/rollback/concurrency pass (two namespaces and twelve writes); production local-seed/configuration denial pass. Confidence is high for these executed local boundaries; no claim of product authorization or cloud deployment proof. One pre-existing moderate UUID tooling advisory remains visible as SEC-001; no high/critical audit findings.
-- Evidence: ignored `.evidence/local-infrastructure/`, including `db-verify.txt`, `security.txt`, `check-current.txt`, native export logs, theme screenshot and browser results. Commands and Azure setup gates: [local development](docs/operations/local-development.md). Shared PostgreSQL intentionally remains running on leased `127.0.0.1:55432`; owner is this infrastructure worktree, Compose project `amr-local-postgres`. Stop with `pnpm db:stop` only after consumers release it. Temporary theme server stopped; preview proof complete.
+- Evidence: ignored `.evidence/local-infrastructure/`, including `db-verify.txt`, `security.txt`, `check-current.txt`, native export logs, theme screenshot and browser results. Commands and Azure setup gates: [local development](operations/local-development.md). Shared PostgreSQL intentionally remains running on leased `127.0.0.1:55432`; owner is this infrastructure worktree, Compose project `amr-local-postgres`. Stop with `pnpm db:stop` only after consumers release it. Temporary theme server stopped; preview proof complete.
 - Limits: Azure credentials/services, cloud transaction/deployment checks, production authentication and all product behavior remain pending their owners. Hosted PR checks and independent review follow delivery; no merge or cloud action authorized here. Operations serializes this branch's record integration.
 
 Implemented by gpt-6-astra through Codex (T3 Code).
@@ -1636,7 +1636,7 @@ Prepared by gpt-6-astra through Codex (T3 Code).
 ## 2026-09-25: final specification HTML on Postplan
 
 - Owner: gpt-6-astra through Codex (T3 Code). Tracking: SPEC-011; [implementation tracker #3](https://github.com/NachikethReddyY/AMR-Fan-App/issues/3).
-- Created [the HTML reading copy](docs/fan-app-final-spec.html) from the accepted specification, all 12 feature documents and the shared points/rewards design. Added a plain-language overview, contents navigation, expandable dependencies and all 82 acceptance cases. The Markdown feature specifications remain the maintained source; the HTML is a dated snapshot.
+- Created [the HTML reading copy](fan-app-final-spec.html) from the accepted specification, all 12 feature documents and the shared points/rewards design. Added a plain-language overview, contents navigation, expandable dependencies and all 82 acceptance cases. The Markdown feature specifications remain the maintained source; the HTML is a dated snapshot.
 - Preserved the phone app, actual location assessment, capped 50-point fallback, difference-only later awards, shared submission model, paid voting and report extraction/review. Kept implementation choices and unimplemented status explicit. App code and the separate team brief remain untouched by this task.
 - Proof: checked 320 source statements/table cells and 55 internal links; parsed HTML without errors; JavaScript syntax and Postplan validation passed. The local curl readback matched the 115,792-byte file. `pnpm agents:check` passed. Evidence is local in `.evidence/spec-html/`. Rendered layout, responsive behavior and interaction execution remain unverified because browser testing was not requested.
 - External action: published [the final specification](https://dcv0l5eirsbh.postplan.dev) as public Postplan version 1. Both the public page and raw HTML returned HTTP 200 and matched the verified local file byte for byte. Excluded private repository links, identifiers and local paths from the document; process-scoped Git discovery isolation prevented repository metadata attachment, confirmed by reading back the draft metadata. No commit, GitHub push or application deployment was performed in this task.
@@ -2046,7 +2046,7 @@ Edited by gpt-6-astra through Codex (T3 Code).
   Dynamic Type/accessibility evidence, live provider provisioning, hosted checks and manager-scheduled independent exact-commit Astra review.
   No external tenant, admin identity, cloud resource or deployment was invented.
 - Evidence: ignored `.evidence/account-4/`; sanitized setup and API contract in
-  [account operations](docs/operations/accounts.md). Database and API leases are
+  [account operations](operations/accounts.md). Database and API leases are
   isolated; shared PostgreSQL lifecycle remains with infrastructure.
 
 Edited by gpt-6-astra through Codex (T3 Code).
@@ -2425,7 +2425,7 @@ Implemented selected photo-first camera/review/description module with camera-on
 permissions, denial/retake/cancel states, transient capture cleanup and a disabled
 availability check that sends no photo/description. App/auth/dock and production
 API registration remain owned by mobile/infra; exact proposed integration is in
-[photo handoff](docs/internals/photo-activity-integration.md).
+[photo handoff](internals/photo-activity-integration.md).
 
 Added bounded in-memory image decoding and canonical pixel hashing, immutable
 minimal claim migration 0010, disposable-only synthetic accounting proof and
@@ -2480,7 +2480,7 @@ assessment changes. Only sharp 0.35.4 is added as a dependency. The real API now
 registers owner/session-checked activity availability (200 unavailable) and photo
 submission (503 unavailable), without reading media or calling a claim writer.
 The new receipt table and existing award hooks support atomic synthetic bus
-top-ups. [Integration contract](docs/internals/photo-activity-integration.md)
+top-ups. [Integration contract](internals/photo-activity-integration.md)
 records exact grants and the mandatory migration-before-award-reader deployment
 order. Infrastructure owns the hosted upgrader. Live assessment/credit stays off.
 
@@ -2723,7 +2723,7 @@ both histories are retained. The admin patch, all14 browser assets and build
 script are unchanged. Original e71 evidence and local TODO edits are preserved.
 
 The user accepted only the independently reviewed10202 false positives on the
-three unchanged login forms. [Exact exception record](docs/operations/admin-dast-exception.md)
+three unchanged login forms. [Exact exception record](operations/admin-dast-exception.md)
 retains the failed scan, source hashes and scope without changing scanner rules
 or global policy. No refreshed execution is claimed. Impact owns the heavy slot;
 full/security/DAST/browser gates and affected independent review remain scheduled
@@ -2904,7 +2904,7 @@ planned-distance shortcut or new earning rule is introduced.
 
 Primary SBF SEFR source research found candidate Singapore passenger-km factors;
 registry access returned HTTP 403. Single-driver occupancy conversion and common
-CO2e boundary remain unproved. The [release procedure](docs/operations/journey-award-release.md)
+CO2e boundary remain unproved. The [release procedure](operations/journey-award-release.md)
 records that precise gap and a physical field protocol. Hashes bind evidence;
 reviewed actual observations establish calibration. GPS never verifies mode,
 measures carbon or creates offsets.
@@ -3137,7 +3137,7 @@ Reports passive DAST and cleanup: the actual reports admin page returned 200;
 the spider followed all five admin forms. The scan remains failed with five
 10202 instances and informational 10031. Root accepted only the two additional
 points/rewards instances after independent review; the original three-form
-exception remains separate. [Exact source-bound disposition](docs/operations/admin-dast-exception.md)
+exception remains separate. [Exact source-bound disposition](operations/admin-dast-exception.md)
 records the nine original-image/source hashes. The initial parser scanner could
 not write its startup log. A retry with the owned writable working directory
 returned exit 0, 60 rule passes and zero alerts; `/health` returned 200 and ZAP
@@ -4532,10 +4532,10 @@ The preparation checkpoint above was superseded by the user-authorized Azure
 deployment. The running API uses source `36996ec`; its migration job succeeded
 and `/health` and `/ready` return 200. The current branch also contains later
 migration-tooling and secret-scope refinements. It does not automatically replace
-the running revision. [Swift integration](deploy/azure/swift-integration.md)
+the running revision. [Swift integration](../deploy/azure/swift-integration.md)
 records the deployed image and tenant identifiers.
 
-Added the [complete endpoint directory](docs/operations/staging-endpoints.md)
+Added the [complete endpoint directory](operations/staging-endpoints.md)
 from the deployed HTTP handlers, including RSS, auth, admin, and disabled routes.
 Fresh read-only checks confirmed health/readiness 200, an empty public rewards
 catalogue 200, RSS 200, and admin browser auth unavailable. Luna, live routes,

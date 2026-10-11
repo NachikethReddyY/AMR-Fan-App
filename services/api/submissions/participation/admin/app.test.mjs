@@ -128,7 +128,7 @@ async function page(t, custom = () => undefined) {
     authSource.replaceAll('export ', '') +
       '\n' +
       source.replace(
-        "import { bindPasswordSignIn } from '../../../auth/admin.js';",
+        "import { bindPasswordSignIn, loadAdminConfig } from '../../../auth/admin.js';",
         '',
       ),
   );
@@ -193,11 +193,16 @@ test('current admin gate, literal content, exact totals/timestamps, labels and s
       p.byId('ranking').textContent.indexOf('Second exact tie'),
   );
   assert.equal(
-    p.calls.find((c) => c.path === '/v1/admin/session').headers.Authorization,
+    p.calls.find(
+      (c) => c.path === '/v1/admin/session' && c.headers.Authorization,
+    ).headers.Authorization,
     'Bearer memory-token',
   );
+  assert.ok(p.calls.every((c) => c.cache === 'no-store'));
   assert.ok(
-    p.calls.every((c) => c.credentials === 'omit' && c.cache === 'no-store'),
+    p.calls
+      .filter((c) => c.path.startsWith('/v1/'))
+      .every((c) => c.credentials === 'include'),
   );
   assert.equal(p.window.localStorage.length, 0);
   assert.equal(p.window.sessionStorage.length, 0);
@@ -630,7 +635,9 @@ test('hosted sign-in uses the shared helper, clears passwords and retains actor-
   await signIn();
   assert.equal(p.byId('workspace').hidden, false);
   assert.equal(
-    p.calls.find((c) => c.path === '/v1/admin/session').headers.Authorization,
+    p.calls.find(
+      (c) => c.path === '/v1/admin/session' && c.headers.Authorization,
+    ).headers.Authorization,
     'Bearer ' + 'a'.repeat(43),
   );
   await p.click('create');

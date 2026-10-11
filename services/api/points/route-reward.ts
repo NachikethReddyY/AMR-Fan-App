@@ -8,7 +8,13 @@ const inputSchema = z.strictObject({
   requestId: z.uuid(),
   routeId: z.string().trim().min(1).max(200),
   savedKg: z.number().finite().min(0).max(40),
-  distanceMeters: z.number().finite().nonnegative().max(1000000).nullable().optional(),
+  distanceMeters: z
+    .number()
+    .finite()
+    .nonnegative()
+    .max(1000000)
+    .nullable()
+    .optional(),
 });
 const outcomeSchema = z.strictObject({
   points: z.number().int().nonnegative(),

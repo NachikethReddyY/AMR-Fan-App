@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  loadAdminConfig,
-  oidcAuthorizeUrl,
-  passwordSession,
-} from './admin.js';
+import { loadAdminConfig, oidcAuthorizeUrl, passwordSession } from './admin.js';
 const config = {
   mode: 'supabase',
   url: 'https://folakoxsilrfemctvlxj.supabase.co',
@@ -39,7 +35,10 @@ test('OIDC authorize URL uses PKCE and the configured web redirect', () => {
   );
   assert.equal(url.origin, 'https://login.example.test');
   assert.equal(url.pathname, '/tenant/oauth2/v2.0/authorize');
-  assert.equal(url.searchParams.get('redirect_uri'), 'https://admin.example.test/admin/');
+  assert.equal(
+    url.searchParams.get('redirect_uri'),
+    'https://admin.example.test/admin/',
+  );
   assert.equal(url.searchParams.get('code_challenge'), 'challenge-value');
   assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
 });

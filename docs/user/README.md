@@ -37,7 +37,7 @@ distinct. See the [roadmap](../ROADMAP.md) and
 [feature specification](../features/README.md) for accepted scope and remaining implementation work.
 
 For installation, use the root [README](../../README.md). Report non-sensitive
-defects through [Contributing](../../CONTRIBUTING.md); report sensitive security
+defects through [Contributing](../CONTRIBUTING.md); report sensitive security
 findings using [SECURITY.md](../../SECURITY.md).
 
 Written by gpt-6-astra through Codex (T3 Code).

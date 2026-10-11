@@ -375,9 +375,15 @@ export function createApi({
             profileId: routeReward[1],
           }),
         );
-      const routeSummary = /^\/v1\/profiles\/([^/]+)\/route-summary$/.exec(path);
+      const routeSummary = /^\/v1\/profiles\/([^/]+)\/route-summary$/.exec(
+        path,
+      );
       if (routeSummary && req.method === 'GET')
-        return send(res, 200, await readRouteSummary(pool, token, routeSummary[1]));
+        return send(
+          res,
+          200,
+          await readRouteSummary(pool, token, routeSummary[1]),
+        );
       const photoResponse = await photoActivity(req, path);
       if (photoResponse)
         return send(res, photoResponse.status, photoResponse.body);
